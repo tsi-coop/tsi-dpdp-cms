@@ -135,6 +135,12 @@
             <version>2.20.100</version>
         </dependency>
 
+        <dependency>
+            <groupId>dnsjava</groupId>
+            <artifactId>dnsjava</artifactId>
+            <version>3.5.2</version> <!-- Use the latest stable version -->
+        </dependency>
+
     </dependencies>
 
     <build>
