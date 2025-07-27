@@ -1,0 +1,4001 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TSI Coop DPDP Policy & Account Management API",
+    "version": "1.0.0",
+    "description": "This API provides access to the active Digital Personal Data Protection (DPDP) consent policies for Data Fiduciaries,\nin compliance with the DPDP Act, 2023, and includes core account management functionalities.\n\n**API Setu Portal Alignment:**\nThis specification aligns with best practices for secure and auditable government-related APIs, ensuring:\n- Robust authentication and authorization where required.\n- Clear request/response structures.\n- Comprehensive error handling.\n- Support for request tracing and idempotency where applicable."
+  },
+  "servers": [
+    {
+      "url": "https://api.tsicoop.com/dpdp",
+      "description": "Production Server"
+    },
+    {
+      "url": "https://staging.tsicoop.com/dpdp",
+      "description": "Staging Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Policies",
+      "description": "Operations related to Consent Policies"
+    },
+    {
+      "name": "Account Management",
+      "description": "Operations related to user and business accounts"
+    },
+    {
+      "name": "Fiduciaries",
+      "description": "Management of Data Fiduciary profiles"
+    },
+    {
+      "name": "Processors",
+      "description": "Management of Data Processor profiles"
+    },
+    {
+      "name": "Grievances",
+      "description": "Management of Data Principal grievances and requests"
+    },
+    {
+      "name": "Notifications",
+      "description": "Management and dispatch of system notifications"
+    },
+    {
+      "name": "Audit Logs",
+      "description": "Retrieval of immutable system audit logs"
+    },
+    {
+      "name": "Data Retention & Purge",
+      "description": "Management of data retention policies and purge requests"
+    },
+    {
+      "name": "Regulatory Reporting",
+      "description": "Communication and reporting with the Data Protection Board (DPB)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY",
+        "description": "API Key for server-to-server or trusted client-side applications. Must be associated with a Data Fiduciary."
+      },
+      "OAuth2Auth": {
+        "type": "oauth2",
+        "description": "OAuth 2.0 based authentication for administrative or authenticated user dashboards. Uses standard JWT Bearer tokens.",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "https://auth.tsicoop.com/oauth2/authorize",
+            "scopes": {
+              "policy:read": "Read consent policy details.",
+              "account:manage": "Manage account details.",
+              "fiduciary:manage": "Manage Data Fiduciary profiles.",
+              "processor:manage": "Manage Data Processor profiles.",
+              "grievance:submit": "Submit grievances.",
+              "grievance:manage": "Manage grievances (DPO/Admin).",
+              "notification:manage": "Manage notification templates.",
+              "notification:dispatch": "Dispatch notifications.",
+              "audit:read": "Read audit logs.",
+              "retention:manage": "Manage data retention policies.",
+              "purge:initiate": "Initiate data purge requests.",
+              "purge:confirm": "Confirm data purge status.",
+              "regulatory:manage": "Manage DPB registrations and submissions."
+            }
+          },
+          "clientCredentials": {
+            "tokenUrl": "https://auth.tsicoop.com/oauth2/token",
+            "scopes": {
+              "policy:read": "Read consent policy details.",
+              "account:manage": "Manage account details.",
+              "fiduciary:manage": "Manage Data Fiduciary profiles.",
+              "processor:manage": "Manage Data Processor profiles.",
+              "grievance:submit": "Submit grievances.",
+              "grievance:manage": "Manage grievances (DPO/Admin).",
+              "notification:manage": "Manage notification templates.",
+              "notification:dispatch": "Dispatch notifications.",
+              "audit:read": "Read audit logs.",
+              "retention:manage": "Manage data retention policies.",
+              "purge:initiate": "Initiate data purge requests.",
+              "purge:confirm": "Confirm data purge status.",
+              "regulatory:manage": "Manage DPB registrations and submissions."
+            }
+          }
+        }
+      },
+      "MutualTLSAuth": {
+        "type": "mutualTLS",
+        "description": "Mutual TLS (Two-Way SSL) authentication required for highly sensitive communication,\nsuch as integration with regulatory bodies (e.g., Data Protection Board - DPB).\nBoth client and server verify X.509 certificates."
+      }
+    },
+    "schemas": {
+      "Policy": {
+        "type": "object",
+        "required": [
+          "policy_id",
+          "version",
+          "effective_date",
+          "jurisdiction",
+          "data_fiduciary_info",
+          "languages"
+        ],
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "description": "Unique identifier for the policy type.",
+            "example": "tsi_coop_web_data_policy_v2025_06"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version number of the policy.",
+            "example": "1.0"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time from which this policy version becomes active.",
+            "example": "2025-06-03T00:00:00Z"
+          },
+          "last_updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last time this policy was modified.",
+            "example": "2025-06-03T07:30:00Z"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "description": "Primary legal jurisdiction this policy addresses (e.g., IN for India).",
+            "example": "IN"
+          },
+          "data_fiduciary_info": {
+            "type": "object",
+            "description": "Information about the Data Fiduciary.",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "TSI Coop"
+              },
+              "address": {
+                "type": "string",
+                "example": "123, Tech Plaza, Gandhipuram, Coimbatore - 641001, Tamil Nadu, India"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "example": "privacy@tsicoop.com"
+              },
+              "phone": {
+                "type": "string",
+                "example": "+91 90000 11223"
+              }
+            }
+          },
+          "languages": {
+            "type": "object",
+            "description": "Multilingual content for the policy. Keys are language codes (e.g., 'en', 'ta', 'hi').",
+            "patternProperties": {
+              "^[a-z]{2}$": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Main title of the privacy policy/consent notice.",
+                    "example": "TSI Coop Website Data & Privacy Policy"
+                  },
+                  "introduction": {
+                    "type": "string",
+                    "description": "General overview and commitment to privacy."
+                  },
+                  "general_purpose_description": {
+                    "type": "string",
+                    "description": "Summary of overall data processing reasons."
+                  },
+                  "data_processing_purposes": {
+                    "type": "array",
+                    "description": "List of specific purposes for data processing.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Unique, language-agnostic identifier for the purpose."
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Localized display name of the purpose."
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Localized detailed explanation."
+                        },
+                        "legal_basis": {
+                          "type": "string",
+                          "description": "Legal ground for processing (e.g., Consent, Contractual Necessity)."
+                        },
+                        "data_categories_involved": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "recipients_or_third_parties": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "retention_period": {
+                          "type": "string"
+                        },
+                        "is_mandatory_for_service": {
+                          "type": "boolean"
+                        },
+                        "is_sensitive": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  },
+                  "data_categories_details": {
+                    "type": "array",
+                    "description": "Definitions for each type of personal data collected.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "is_sensitive": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  },
+                  "data_principal_rights_summary": {
+                    "type": "string"
+                  },
+                  "grievance_redressal_info": {
+                    "type": "string"
+                  },
+                  "buttons": {
+                    "type": "object",
+                    "properties": {
+                      "accept_all": {
+                        "type": "string"
+                      },
+                      "reject_all_non_essential": {
+                        "type": "string"
+                      },
+                      "manage_preferences": {
+                        "type": "string"
+                      },
+                      "save_preferences": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "links": {
+                    "type": "object",
+                    "properties": {
+                      "full_privacy_policy_text": {
+                        "type": "string"
+                      },
+                      "full_privacy_policy_url": {
+                        "type": "string",
+                        "format": "url"
+                      },
+                      "terms_of_service_text": {
+                        "type": "string"
+                      },
+                      "terms_of_service_url": {
+                        "type": "string",
+                        "format": "url"
+                      }
+                    }
+                  },
+                  "important_note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "DedupAccountRequest": {
+          "type": "object",
+          "required": [
+            "_func",
+            "email",
+            "type"
+          ],
+          "properties": {
+            "_func": {
+              "type": "string",
+              "description": "Function identifier for the API call.",
+              "enum": [
+                "dedup_account"
+              ]
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "The email address to check for registration.",
+              "example": "satish@tsiconsulting.in"
+            },
+            "type": {
+              "type": "string",
+              "description": "The type of account to check.",
+              "enum": [
+                "BUSINESS",
+                "PROFESSIONAL"
+              ]
+            }
+          },
+          "examples": {
+            "dedupBusiness": {
+              "summary": "Example Request for Business Account Dedup",
+              "value": {
+                "_func": "dedup_account",
+                "email": "satish@tsiconsulting.in",
+                "type": "BUSINESS"
+              }
+            },
+            "dedupProfessional": {
+              "summary": "Example Request for Professional Account Dedup",
+              "value": {
+                "_func": "dedup_account",
+                "email": "satish2020@gmail.com",
+                "type": "PROFESSIONAL"
+              }
+            }
+          }
+        },
+        "DedupAccountResponse": {
+          "type": "object",
+          "required": [
+            "_exists"
+          ],
+          "properties": {
+            "_exists": {
+              "type": "boolean",
+              "description": "Indicates whether an account with the given email and type already exists.",
+              "example": true
+            }
+          },
+          "examples": {
+            "existsTrue": {
+              "summary": "Account Exists",
+              "value": {
+                "_exists": true
+              }
+            },
+            "existsFalse": {
+              "summary": "Account Does Not Exist",
+              "value": {
+                "_exists": false
+              }
+            }
+          }
+        },
+        "Error": {
+          "type": "object",
+          "required": [
+            "error"
+          ],
+          "properties": {
+            "error": {
+              "type": "object",
+              "required": [
+                "code",
+                "message"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "A unique identifier for the error type.",
+                  "example": "INVALID_FIDUCIARY_ID"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "A human-readable description of the error.",
+                  "example": "The provided fiduciaryId is invalid or not found."
+                },
+                "details": {
+                  "type": "array",
+                  "description": "Optional: More specific details, validation errors array.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "example": [
+                    "Parameter 'fiduciaryId' is required."
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "UserRequest": {
+          "type": "object",
+          "properties": {
+            "_func": {
+              "type": "string",
+              "description": "Function identifier for the API call.",
+              "enum": [
+                "list_users",
+                "get_user",
+                "create_user",
+                "update_user",
+                "delete_user",
+                "list_roles",
+                "get_role",
+                "create_role",
+                "update_role",
+                "delete_role"
+              ]
+            },
+            "user_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the CMS user.",
+              "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+            },
+            "username": {
+              "type": "string",
+              "description": "Username for the CMS user.",
+              "minLength": 3,
+              "maxLength": 50,
+              "example": "john.doe"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "Email address of the CMS user.",
+              "example": "john.doe@example.com"
+            },
+            "password": {
+              "type": "string",
+              "description": "Password for the CMS user (for create/update).",
+              "minLength": 8,
+              "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+])[A-Za-z\\d!@#$%^&*()_+]{8,}$",
+              "example": "StrongP@ssw0rd!"
+            },
+            "role_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the role assigned to the user.",
+              "example": "b1c2d3e4-f5a6-7890-1234-567890abcdef"
+            },
+            "status": {
+              "type": "string",
+              "description": "Status of the user account.",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE",
+                "PENDING_MFA_SETUP"
+              ],
+              "example": "ACTIVE"
+            },
+            "search": {
+              "type": "string",
+              "description": "Search term for listing users or roles.",
+              "example": "admin"
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number for pagination.",
+              "minimum": 1,
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of items per page for pagination.",
+              "minimum": 1,
+              "example": 10
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the role.",
+              "example": "Administrator"
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of the role.",
+              "example": "Full system administration access."
+            },
+            "permissions": {
+              "type": "array",
+              "description": "Array of permission objects for a role.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "resource": {
+                    "type": "string",
+                    "example": "cms:user"
+                  },
+                  "action": {
+                    "type": "string",
+                    "example": "manage"
+                  }
+                },
+                "required": [
+                  "resource",
+                  "action"
+                ]
+              },
+              "example": [
+                {
+                  "resource": "cms:user",
+                  "action": "manage"
+                },
+                {
+                  "resource": "policy",
+                  "action": "read"
+                }
+              ]
+            }
+          },
+          "discriminator": {
+            "propertyName": "_func"
+          },
+          "examples": {
+            "ListUsers": {
+              "summary": "Example Request for List Users",
+              "value": {
+                "_func": "list_users",
+                "status": "ACTIVE",
+                "page": 1
+              }
+            },
+            "CreateUser": {
+              "summary": "Example Request for Create User",
+              "value": {
+                "_func": "create_user",
+                "username": "newuser",
+                "email": "newuser@example.com",
+                "password": "SecureP@ss1",
+                "role_id": "b1c2d3e4-f5a6-7890-1234-567890abcdef"
+              }
+            },
+            "CreateRole": {
+              "summary": "Example Request for Create Role",
+              "value": {
+                "_func": "create_role",
+                "name": "Viewer",
+                "permissions": [
+                  {
+                    "resource": "audit",
+                    "action": "read"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "UserResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "message": {
+              "type": "string",
+              "example": "User created successfully."
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                },
+                "username": {
+                  "type": "string",
+                  "example": "john.doe"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john.doe@example.com"
+                },
+                "status": {
+                  "type": "string",
+                  "example": "ACTIVE"
+                },
+                "role_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "b1c2d3e4-f5a6-7890-1234-567890abcdef"
+                },
+                "role_name": {
+                  "type": "string",
+                  "example": "Administrator"
+                },
+                "last_login_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Administrator"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "Full system administration access."
+                },
+                "is_system_role": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "resource": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "examples": {
+            "UserCreated": {
+              "summary": "Example Response for User Creation",
+              "value": {
+                "success": true,
+                "data": {
+                  "user_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "username": "newuser",
+                  "email": "newuser@example.com",
+                  "status": "ACTIVE",
+                  "role_id": "b1c2d3e4-f5a6-7890-1234-567890abcdef",
+                  "message": "User created successfully."
+                }
+              }
+            },
+            "RoleCreated": {
+              "summary": "Example Response for Role Creation",
+              "value": {
+                "success": true,
+                "data": {
+                  "role_id": "c1d2e3f4-a5b6-7890-1234-567890abcdef",
+                  "name": "Viewer",
+                  "message": "Role created successfully."
+                }
+              }
+            },
+            "UserFetched": {
+              "summary": "Example Response for Get User",
+              "value": {
+                "success": true,
+                "data": {
+                  "user_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "username": "john.doe",
+                  "email": "john.doe@example.com",
+                  "status": "ACTIVE",
+                  "role_id": "b1c2d3e4-f5a6-7890-1234-567890abcdef",
+                  "role_name": "Administrator",
+                  "last_login_at": "2025-05-29T10:00:00Z",
+                  "created_at": "2025-01-01T00:00:00Z",
+                  "updated_at": "2025-05-29T10:00:00Z"
+                }
+              }
+            },
+            "UserList": {
+              "summary": "Example Response for List Users",
+              "value": [
+                {
+                  "user_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "username": "john.doe",
+                  "email": "john.doe@example.com",
+                  "status": "ACTIVE",
+                  "role": "Administrator",
+                  "last_login_at": "2025-05-29T10:00:00Z",
+                  "created_at": "2025-01-01T00:00:00Z",
+                  "updated_at": "2025-05-29T10:00:00Z"
+                }
+              ]
+            }
+          }
+        },
+        "FiduciaryRequest": {
+          "type": "object",
+          "properties": {
+            "_func": {
+              "type": "string",
+              "enum": [
+                "list_fiduciaries",
+                "get_fiduciary",
+                "create_fiduciary",
+                "update_fiduciary",
+                "delete_fiduciary",
+                "validate_domain"
+              ]
+            },
+            "fiduciary_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the Data Fiduciary.",
+              "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the Data Fiduciary.",
+              "example": "TSI Coop"
+            },
+            "contact_person": {
+              "type": "string",
+              "description": "Primary contact person for the Fiduciary.",
+              "example": "Jane Doe"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "Email address of the Fiduciary.",
+              "example": "privacy@tsicoop.com"
+            },
+            "phone": {
+              "type": "string",
+              "description": "Phone number of the Fiduciary.",
+              "example": "+919000011223"
+            },
+            "address": {
+              "type": "string",
+              "description": "Registered address of the Fiduciary.",
+              "example": "123, Tech Plaza, Coimbatore, India"
+            },
+            "primary_domain": {
+              "type": "string",
+              "description": "Primary domain of the Fiduciary's website.",
+              "example": "tsicoop.com"
+            },
+            "cms_cname": {
+              "type": "string",
+              "description": "CNAME where the CMS is deployed for this Fiduciary.",
+              "example": "consent.tsicoop.com"
+            },
+            "is_significant_data_fiduciary": {
+              "type": "boolean",
+              "description": "Indicates if the Fiduciary is a Significant Data Fiduciary.",
+              "example": false
+            },
+            "dpo_user_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the CMS user designated as DPO for this Fiduciary.",
+              "nullable": true,
+              "example": "d1e2f3a4-b5c6-7890-1234-567890abcdef"
+            },
+            "dpb_registration_id": {
+              "type": "string",
+              "description": "DPB-provided registration ID for the Fiduciary.",
+              "nullable": true,
+              "example": "DPB-REG-XYZ789"
+            },
+            "status": {
+              "type": "string",
+              "description": "Status of the Fiduciary profile.",
+              "enum": [
+                "PENDING",
+                "VALIDATED",
+                "FAILED",
+                "ACTIVE",
+                "INACTIVE",
+                "REVOKED"
+              ],
+              "example": "ACTIVE"
+            },
+            "search": {
+              "type": "string",
+              "description": "Search term for listing Fiduciaries.",
+              "example": "TSI"
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number for pagination.",
+              "minimum": 1,
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of items per page for pagination.",
+              "minimum": 1,
+              "example": 10
+            }
+          },
+          "discriminator": {
+            "propertyName": "_func"
+          },
+          "examples": {
+            "CreateFiduciary": {
+              "summary": "Example Request for Create Fiduciary",
+              "value": {
+                "_func": "create_fiduciary",
+                "name": "New Business Solutions Ltd.",
+                "email": "privacy@newbusiness.com",
+                "primary_domain": "newbusiness.com",
+                "cms_cname": "consent.newbusiness.com"
+              }
+            },
+            "ValidateDomain": {
+              "summary": "Example Request for Validate Domain",
+              "value": {
+                "_func": "validate_domain",
+                "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+              }
+            }
+          }
+        },
+        "FiduciaryResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "message": {
+              "type": "string",
+              "example": "Fiduciary created successfully."
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "fiduciary_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "New Business Solutions Ltd."
+                },
+                "primary_domain": {
+                  "type": "string",
+                  "example": "newbusiness.com"
+                },
+                "cms_cname": {
+                  "type": "string",
+                  "example": "consent.newbusiness.com"
+                },
+                "dns_txt_record_token": {
+                  "type": "string",
+                  "example": "dpdp-verify-xyz123abc"
+                },
+                "domain_validation_status": {
+                  "type": "string",
+                  "example": "PENDING"
+                },
+                "contact_person": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "phone": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "address": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "is_significant_data_fiduciary": {
+                  "type": "boolean"
+                },
+                "dpo_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "dpb_registration_id": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "created_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "last_updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_updated_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "examples": {
+            "FiduciaryCreated": {
+              "summary": "Example Response for Fiduciary Creation",
+              "value": {
+                "success": true,
+                "data": {
+                  "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "name": "New Business Solutions Ltd.",
+                  "primary_domain": "newbusiness.com",
+                  "cms_cname": "consent.newbusiness.com",
+                  "dns_txt_record_token": "dpdp-verify-xyz123abc",
+                  "domain_validation_status": "PENDING",
+                  "message": "Fiduciary created successfully. Please add the DNS TXT record for validation."
+                }
+              }
+            },
+            "FiduciaryList": {
+              "summary": "Example Response for List Fiduciaries",
+              "value": [
+                {
+                  "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "name": "TSI Coop",
+                  "email": "privacy@tsicoop.com",
+                  "primary_domain": "tsicoop.com",
+                  "status": "ACTIVE",
+                  "domain_validation_status": "VALIDATED"
+                }
+              ]
+            }
+          }
+        },
+        "ProcessorRequest": {
+          "type": "object",
+          "properties": {
+            "_func": {
+              "type": "string",
+              "enum": [
+                "list_processors",
+                "get_processor",
+                "create_processor",
+                "update_processor",
+                "delete_processor"
+              ]
+            },
+            "processor_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the Data Processor.",
+              "example": "b1c2d3e4-f5a6-7890-1234-567890abcdef"
+            },
+            "fiduciary_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the associated Data Fiduciary.",
+              "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the Data Processor.",
+              "example": "AnalyticsPro Inc."
+            },
+            "contact_person": {
+              "type": "string",
+              "description": "Primary contact person for the Processor.",
+              "nullable": true,
+              "example": "Bob Integrator"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "Email address of the Processor.",
+              "nullable": true,
+              "example": "contact@analyticspro.com"
+            },
+            "phone": {
+              "type": "string",
+              "description": "Phone number of the Processor.",
+              "nullable": true,
+              "example": "+919123456789"
+            },
+            "address": {
+              "type": "string",
+              "description": "Registered address of the Processor.",
+              "nullable": true,
+              "example": "Cloud Park, Mumbai, India"
+            },
+            "jurisdiction": {
+              "type": "string",
+              "description": "Primary jurisdiction of the Processor.",
+              "nullable": true,
+              "example": "IN"
+            },
+            "dpa_reference": {
+              "type": "string",
+              "description": "Reference ID for the Data Processing Agreement.",
+              "nullable": true,
+              "example": "DPA-TSI-Fid-Analytics-2025"
+            },
+            "dpa_effective_date": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Effective date of the DPA.",
+              "nullable": true,
+              "example": "2025-05-01T00:00:00Z"
+            },
+            "dpa_expiry_date": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Expiry date of the DPA.",
+              "nullable": true,
+              "example": "2026-05-01T00:00:00Z"
+            },
+            "processing_purposes": {
+              "type": "array",
+              "description": "Array of purpose IDs this Processor is authorized for.",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "purpose_website_analytics",
+                "purpose_engagement_tracking"
+              ]
+            },
+            "data_categories_processed": {
+              "type": "array",
+              "description": "Array of data category IDs this Processor processes.",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "website_usage_data",
+                "device_info"
+              ]
+            },
+            "security_measures_description": {
+              "type": "string",
+              "description": "High-level description of Processor's security measures.",
+              "nullable": true,
+              "example": "ISO 27001 certified, AES-256 encryption at rest."
+            },
+            "status": {
+              "type": "string",
+              "description": "Status of the Processor profile.",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE",
+                "REVOKED"
+              ],
+              "example": "ACTIVE"
+            },
+            "search": {
+              "type": "string",
+              "description": "Search term for listing Processors.",
+              "example": "cloud"
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number for pagination.",
+              "minimum": 1,
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of items per page for pagination.",
+              "minimum": 1,
+              "example": 10
+            }
+          },
+          "discriminator": {
+            "propertyName": "_func"
+          },
+          "examples": {
+            "CreateProcessor": {
+              "summary": "Example Request for Create Processor",
+              "value": {
+                "_func": "create_processor",
+                "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "name": "Cloud Storage Solutions",
+                "processing_purposes": [
+                  "purpose_website_analytics"
+                ],
+                "data_categories_processed": [
+                  "website_usage_data"
+                ]
+              }
+            },
+            "ListProcessors": {
+              "summary": "Example Request for List Processors",
+              "value": {
+                "_func": "list_processors",
+                "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "status": "ACTIVE"
+              }
+            }
+          }
+        },
+        "ProcessorResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "message": {
+              "type": "string",
+              "example": "Processor created successfully."
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "processor_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "b1c2d3e4-f5a6-7890-1234-567890abcdef"
+                },
+                "fiduciary_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Cloud Storage Solutions"
+                },
+                "contact_person": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "nullable": true
+                },
+                "phone": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "address": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "jurisdiction": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "dpa_reference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "dpa_effective_date": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "dpa_expiry_date": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "processing_purposes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "data_categories_processed": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "security_measures_description": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "created_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "last_updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_updated_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "examples": {
+            "ProcessorCreated": {
+              "summary": "Example Response for Processor Creation",
+              "value": {
+                "success": true,
+                "data": {
+                  "processor_id": "b1c2d3e4-f5a6-7890-1234-567890abcdef",
+                  "name": "Cloud Storage Solutions",
+                  "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "message": "Processor created successfully."
+                }
+              }
+            },
+            "ProcessorList": {
+              "summary": "Example Response for List Processors",
+              "value": [
+                {
+                  "processor_id": "b1c2d3e4-f5a6-7890-1234-567890abcdef",
+                  "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "name": "AnalyticsPro Inc.",
+                  "status": "ACTIVE"
+                }
+              ]
+            }
+          }
+        },
+        "GrievanceRequest": {
+          "type": "object",
+          "properties": {
+            "_func": {
+              "type": "string",
+              "enum": [
+                "submit_grievance",
+                "get_grievance",
+                "list_grievances",
+                "update_grievance_status",
+                "add_grievance_communication"
+              ]
+            },
+            "grievance_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the grievance.",
+              "example": "g1h2i3j4-k5l6-7890-1234-567890abcdef"
+            },
+            "user_id": {
+              "type": "string",
+              "description": "ID of the Data Principal submitting the grievance.",
+              "example": "data_principal_xyz789"
+            },
+            "fiduciary_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the Data Fiduciary this grievance is against.",
+              "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+            },
+            "type": {
+              "type": "string",
+              "description": "Type of grievance or request.",
+              "enum": [
+                "DATA_ACCESS_REQUEST",
+                "CORRECTION_REQUEST",
+                "ERASURE_REQUEST",
+                "GENERAL_COMPLAINT"
+              ],
+              "example": "ERASURE_REQUEST"
+            },
+            "subject": {
+              "type": "string",
+              "description": "Short summary of the grievance.",
+              "example": "Request to delete my account data"
+            },
+            "description": {
+              "type": "string",
+              "description": "Detailed description of the grievance/request.",
+              "example": "I would like all my personal data associated with my account to be permanently deleted."
+            },
+            "attachments": {
+              "type": "array",
+              "description": "Array of file references/URLs for supporting documents.",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true,
+              "example": []
+            },
+            "language": {
+              "type": "string",
+              "description": "Language of submission (e.g., 'en', 'ta').",
+              "example": "en"
+            },
+            "status": {
+              "type": "string",
+              "description": "New status of the grievance.",
+              "enum": [
+                "NEW",
+                "ACKNOWLEDGED",
+                "IN_PROGRESS",
+                "PENDING_DP_RESPONSE",
+                "PENDING_DPO_APPROVAL",
+                "RESOLVED",
+                "ESCALATED",
+                "CLOSED"
+              ],
+              "example": "IN_PROGRESS"
+            },
+            "resolution_details": {
+              "type": "string",
+              "description": "Details of the steps taken to resolve the grievance.",
+              "nullable": true,
+              "example": "Data deletion confirmed and verified."
+            },
+            "assigned_dpo_user_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the CMS user (DPO/agent) assigned to handle the grievance.",
+              "nullable": true,
+              "example": "d1e2f3a4-b5c6-7890-1234-567890abcdef"
+            },
+            "message": {
+              "type": "string",
+              "description": "Communication message to add to the grievance log.",
+              "example": "Acknowledged request and started investigation."
+            },
+            "sender": {
+              "type": "string",
+              "description": "Sender of the communication message.",
+              "enum": [
+                "DP",
+                "DPO",
+                "SYSTEM"
+              ],
+              "example": "DPO"
+            },
+            "channel": {
+              "type": "string",
+              "description": "Channel of communication.",
+              "enum": [
+                "PORTAL",
+                "EMAIL",
+                "SMS"
+              ],
+              "example": "PORTAL"
+            },
+            "search": {
+              "type": "string",
+              "description": "Search term for listing grievances.",
+              "example": "access"
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number for pagination.",
+              "minimum": 1,
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of items per page for pagination.",
+              "minimum": 1,
+              "example": 10
+            }
+          },
+          "discriminator": {
+            "propertyName": "_func"
+          },
+          "examples": {
+            "SubmitGrievance": {
+              "summary": "Example Request for Submit Grievance",
+              "value": {
+                "_func": "submit_grievance",
+                "user_id": "data_principal_xyz789",
+                "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "type": "ERASURE_REQUEST",
+                "subject": "Request to delete my account data",
+                "description": "I would like all my personal data associated with my account to be permanently deleted from your systems as per my right to erasure.",
+                "language": "en"
+              }
+            },
+            "UpdateGrievanceStatus": {
+              "summary": "Example Request for Update Grievance Status",
+              "value": {
+                "_func": "update_grievance_status",
+                "grievance_id": "g1h2i3j4-k5l6-7890-1234-567890abcdef",
+                "status": "IN_PROGRESS",
+                "assigned_dpo_user_id": "d1e2f3a4-b5c6-7890-1234-567890abcdef"
+              }
+            }
+          }
+        },
+        "GrievanceResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "message": {
+              "type": "string",
+              "example": "Grievance submitted successfully."
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "grievance_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "g1h2i3j4-k5l6-7890-1234-567890abcdef"
+                },
+                "user_id": {
+                  "type": "string",
+                  "example": "data_principal_xyz789"
+                },
+                "fiduciary_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                },
+                "type": {
+                  "type": "string",
+                  "example": "ERASURE_REQUEST"
+                },
+                "subject": {
+                  "type": "string",
+                  "example": "Request to delete my account data"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "I would like all my personal data associated with my account to be permanently deleted."
+                },
+                "submission_timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "status": {
+                  "type": "string",
+                  "example": "NEW"
+                },
+                "assigned_dpo_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "resolution_details": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "resolution_timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "communication_log": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "sender": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "channel": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "attachments": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "due_date": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_updated_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "examples": {
+            "GrievanceSubmitted": {
+              "summary": "Example Response for Grievance Submission",
+              "value": {
+                "success": true,
+                "data": {
+                  "grievance_id": "g1h2i3j4-k5l6-7890-1234-567890abcdef",
+                  "user_id": "data_principal_xyz789",
+                  "message": "Grievance submitted successfully."
+                }
+              }
+            },
+            "GrievanceFetched": {
+              "summary": "Example Response for Get Grievance",
+              "value": {
+                "success": true,
+                "data": {
+                  "grievance_id": "g1h2i3j4-k5l6-7890-1234-567890abcdef",
+                  "user_id": "data_principal_xyz789",
+                  "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "type": "GENERAL_COMPLAINT",
+                  "subject": "Issue with service access",
+                  "description": "I am unable to access the provider zone after updating my consent preferences.",
+                  "submission_timestamp": "2025-05-30T10:00:00Z",
+                  "status": "NEW",
+                  "communication_log": [
+                    {
+                      "timestamp": "2025-05-30T10:00:00Z",
+                      "sender": "Data Principal",
+                      "message": "Grievance submitted: Issue with service access",
+                      "channel": "PORTAL"
+                    }
+                  ],
+                  "due_date": "2025-06-29T10:00:00Z"
+                }
+              }
+            }
+          }
+        },
+        "NotificationRequest": {
+          "type": "object",
+          "properties": {
+            "_func": {
+              "type": "string",
+              "enum": [
+                "create_template",
+                "update_template",
+                "get_template",
+                "list_templates",
+                "dispatch_notification",
+                "list_notification_instances",
+                "mark_notification_read"
+              ]
+            },
+            "template_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the notification template.",
+              "example": "t1e2m3p4-l5a6-7890-1234-567890abcdef"
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the notification template.",
+              "example": "Policy Update Notification"
+            },
+            "category": {
+              "type": "string",
+              "description": "Category of the notification.",
+              "enum": [
+                "Compliance",
+                "Security",
+                "Grievance",
+                "Operational"
+              ],
+              "example": "Compliance"
+            },
+            "severity": {
+              "type": "string",
+              "description": "Severity level of the notification.",
+              "enum": [
+                "CRITICAL",
+                "HIGH",
+                "MEDIUM",
+                "INFO"
+              ],
+              "example": "INFO"
+            },
+            "channels_enabled": {
+              "type": "array",
+              "description": "Array of channels enabled for this template.",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "EMAIL",
+                  "SMS",
+                  "IN_APP"
+                ]
+              },
+              "example": [
+                "EMAIL",
+                "IN_APP"
+              ]
+            },
+            "content_template": {
+              "type": "object",
+              "description": "Multilingual content template with placeholders.",
+              "patternProperties": {
+                "^[a-z]{2}$": {
+                  "type": "object",
+                  "properties": {
+                    "subject": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "action_text": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "example": {
+                "en": {
+                  "subject": "Important: Privacy Policy Update",
+                  "body": "Dear {user_name},\n\nOur Privacy Policy has been updated to version {policy_version}...",
+                  "action_text": "Review Policy"
+                }
+              }
+            },
+            "action_link_template": {
+              "type": "string",
+              "description": "URL template for clickable actions in notifications.",
+              "nullable": true,
+              "example": "https://www.tsicoop.com/privacy-policy-v{policy_version}"
+            },
+            "recipient_type": {
+              "type": "string",
+              "description": "Type of recipient for notification dispatch.",
+              "enum": [
+                "DATA_PRINCIPAL",
+                "DPO_ADMIN",
+                "DATA_PROCESSOR"
+              ],
+              "example": "DATA_PRINCIPAL"
+            },
+            "recipient_id": {
+              "type": "string",
+              "description": "ID of the specific recipient (user_id, fiduciary_id, processor_id).",
+              "example": "data_principal_xyz789"
+            },
+            "fiduciary_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Contextual Fiduciary ID for the notification.",
+              "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+            },
+            "payload_data": {
+              "type": "object",
+              "description": "Data to populate template placeholders.",
+              "example": {
+                "user_name": "John Doe",
+                "policy_version": "1.1",
+                "effective_date": "2025-06-01"
+              }
+            },
+            "status": {
+              "type": "string",
+              "description": "Status filter for notification instances.",
+              "enum": [
+                "SENT",
+                "FAILED",
+                "DELIVERED",
+                "READ"
+              ],
+              "example": "SENT"
+            },
+            "search": {
+              "type": "string",
+              "description": "Search term for listing templates.",
+              "example": "update"
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number for pagination.",
+              "minimum": 1,
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of items per page for pagination.",
+              "minimum": 1,
+              "example": 10
+            }
+          },
+          "discriminator": {
+            "propertyName": "_func"
+          },
+          "examples": {
+            "CreateTemplate": {
+              "summary": "Example Request for Create Notification Template",
+              "value": {
+                "_func": "create_template",
+                "name": "Grievance Resolved",
+                "category": "Grievance",
+                "severity": "INFO",
+                "channels_enabled": [
+                  "EMAIL",
+                  "IN_APP"
+                ],
+                "content_template": {
+                  "en": {
+                    "subject": "Grievance {grievance_id} Resolved",
+                    "body": "Dear {user_name},\n\nYour grievance with ID {grievance_id} has been resolved. {action_link}",
+                    "action_text": "View Grievance"
+                  }
+                },
+                "action_link_template": "https://www.tsicoop.com/user/grievances/{grievance_id}"
+              }
+            },
+            "DispatchNotification": {
+              "summary": "Example Request for Dispatch Notification",
+              "value": {
+                "_func": "dispatch_notification",
+                "template_id": "t1e2m3p4-l5a6-7890-1234-567890abcdef",
+                "recipient_type": "DATA_PRINCIPAL",
+                "recipient_id": "data_principal_xyz789",
+                "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "payload_data": {
+                  "user_name": "John Doe",
+                  "grievance_id": "g1h2i3j4-k5l6-7890-1234-567890abcdef"
+                }
+              }
+            }
+          }
+        },
+        "NotificationResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "message": {
+              "type": "string",
+              "example": "Notification template created successfully."
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "template_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "t1e2m3p4-l5a6-7890-1234-567890abcdef"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Policy Update Notification"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "Compliance"
+                },
+                "severity": {
+                  "type": "string",
+                  "example": "INFO"
+                },
+                "channels_enabled": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "content_template": {
+                  "type": "object"
+                },
+                "action_link_template": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "created_by_user_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "last_updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_updated_by_user_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "examples": {
+            "TemplateCreated": {
+              "summary": "Example Response for Template Creation",
+              "value": {
+                "success": true,
+                "data": {
+                  "template_id": "t1e2m3p4-l5a6-7890-1234-567890abcdef",
+                  "name": "Policy Update Notification",
+                  "message": "Notification template created successfully."
+                }
+              }
+            },
+            "DispatchInitiated": {
+              "summary": "Example Response for Dispatch Notification",
+              "value": {
+                "success": true,
+                "message": "Notification dispatch initiated."
+              }
+            }
+          }
+        },
+        "AuditLogRequest": {
+          "type": "object",
+          "properties": {
+            "_func": {
+              "type": "string",
+              "enum": [
+                "log_event",
+                "list_audit_logs",
+                "get_audit_log_entry"
+              ]
+            },
+            "actor_user_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the CMS user who performed the action.",
+              "nullable": true,
+              "example": "u1s2e3r4-a5d6-7890-1234-567890abcdef"
+            },
+            "actor_system_id": {
+              "type": "string",
+              "description": "ID of the system process/service that performed the action.",
+              "nullable": true,
+              "example": "ConsentRecordService"
+            },
+            "action_type": {
+              "type": "string",
+              "description": "Type of action performed.",
+              "example": "CONSENT_RECORDED"
+            },
+            "entity_type": {
+              "type": "string",
+              "description": "Type of entity affected by the action.",
+              "example": "ConsentRecord"
+            },
+            "entity_id": {
+              "type": "string",
+              "description": "ID of the affected entity.",
+              "example": "c1o2n3s4-e5n6t7-8901-2345-67890abcdef"
+            },
+            "context_details": {
+              "type": "object",
+              "description": "JSON payload with additional details or changes.",
+              "nullable": true,
+              "example": {
+                "preferences_changed": {
+                  "purpose_analytics": true
+                },
+                "previous_status": "PENDING"
+              }
+            },
+            "ip_address": {
+              "type": "string",
+              "format": "ipv4",
+              "description": "IP address from where the action originated.",
+              "nullable": true,
+              "example": "192.168.1.100"
+            },
+            "status": {
+              "type": "string",
+              "description": "Status of the action.",
+              "enum": [
+                "SUCCESS",
+                "FAILURE"
+              ],
+              "example": "SUCCESS"
+            },
+            "source_module": {
+              "type": "string",
+              "description": "Module that generated the log entry.",
+              "example": "ConsentRecordService"
+            },
+            "search": {
+              "type": "string",
+              "description": "Search term for listing audit logs.",
+              "example": "user_linked"
+            },
+            "action_type_filter": {
+              "type": "string",
+              "description": "Filter by action type.",
+              "example": "USER_LINKED"
+            },
+            "entity_type_filter": {
+              "type": "string",
+              "description": "Filter by entity type.",
+              "example": "User"
+            },
+            "entity_id_filter": {
+              "type": "string",
+              "description": "Filter by entity ID.",
+              "example": "data_principal_xyz789"
+            },
+            "status_filter": {
+              "type": "string",
+              "description": "Filter by status.",
+              "example": "SUCCESS"
+            },
+            "start_date": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Start date for filtering logs (ISO 8601).",
+              "nullable": true,
+              "example": "2025-05-01T00:00:00Z"
+            },
+            "end_date": {
+              "type": "string",
+              "format": "date-time",
+              "description": "End date for filtering logs (ISO 8601).",
+              "nullable": true,
+              "example": "2025-05-30T23:59:59Z"
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number for pagination.",
+              "minimum": 1,
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of items per page for pagination.",
+              "minimum": 1,
+              "example": 10
+            },
+            "audit_log_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the audit log entry.",
+              "example": "a1u2d3i4t-l5o6g7-8901-2345-67890abcdef"
+            }
+          },
+          "discriminator": {
+            "propertyName": "_func"
+          },
+          "examples": {
+            "LogEvent": {
+              "summary": "Example Request for Log Event",
+              "value": {
+                "_func": "log_event",
+                "actor_system_id": "PolicyService",
+                "action_type": "POLICY_PUBLISHED",
+                "entity_type": "ConsentPolicy",
+                "entity_id": "test_policy_xyz",
+                "status": "SUCCESS",
+                "source_module": "PolicyService"
+              }
+            },
+            "ListAuditLogs": {
+              "summary": "Example Request for List Audit Logs",
+              "value": {
+                "_func": "list_audit_logs",
+                "action_type_filter": "CONSENT_RECORDED",
+                "start_date": "2025-05-01T00:00:00Z"
+              }
+            }
+          }
+        },
+        "AuditLogResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "message": {
+              "type": "string",
+              "example": "Audit log entry created successfully."
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "audit_log_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "a1u2d3i4t-l5o6g7-8901-2345-67890abcdef"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "actor_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "actor_system_id": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "action_type": {
+                  "type": "string"
+                },
+                "entity_type": {
+                  "type": "string"
+                },
+                "entity_id": {
+                  "type": "string"
+                },
+                "context_details": {
+                  "type": "object"
+                },
+                "ip_address": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "source_module": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "examples": {
+            "LogEventCreated": {
+              "summary": "Example Response for Log Event Creation",
+              "value": {
+                "success": true,
+                "data": {
+                  "audit_log_id": "a1u2d3i4t-l5o6g7-8901-2345-67890abcdef",
+                  "message": "Audit log entry created successfully."
+                }
+              }
+            },
+            "AuditLogFetched": {
+              "summary": "Example Response for Get Audit Log Entry",
+              "value": {
+                "success": true,
+                "data": {
+                  "id": "a1u2d3i4t-l5o6g7-8901-2345-67890abcdef",
+                  "timestamp": "2025-05-30T10:00:00Z",
+                  "actor_user_id": "u1s2e3r4-a5d6-7890-1234-567890abcdef",
+                  "action_type": "CONSENT_RECORDED",
+                  "entity_type": "ConsentRecord",
+                  "entity_id": "c1o2n3s4-e5n6t7-8901-2345-67890abcdef",
+                  "status": "SUCCESS",
+                  "source_module": "ConsentRecordService"
+                }
+              }
+            }
+          }
+        },
+        "DataRetentionRequest": {
+          "type": "object",
+          "properties": {
+            "_func": {
+              "type": "string",
+              "enum": [
+                "create_retention_policy",
+                "update_retention_policy",
+                "get_retention_policy",
+                "list_retention_policies",
+                "delete_retention_policy",
+                "initiate_purge_request",
+                "confirm_purge_status",
+                "list_purge_requests"
+              ]
+            },
+            "policy_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the retention policy.",
+              "example": "r1e2t3e4n-t5i6o7n-8901-2345-67890abcdef"
+            },
+            "fiduciary_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the associated Data Fiduciary.",
+              "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the retention policy.",
+              "example": "Marketing Data 2 Year Retention"
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of the retention policy.",
+              "nullable": true,
+              "example": "Policy for marketing consent data retention."
+            },
+            "applicable_purposes": {
+              "type": "array",
+              "description": "Array of purpose IDs this policy applies to.",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "purpose_marketing_communication"
+              ]
+            },
+            "applicable_data_categories": {
+              "type": "array",
+              "description": "Array of data category IDs this policy applies to.",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "email_address",
+                "product_interest_summary"
+              ]
+            },
+            "retention_duration_value": {
+              "type": "integer",
+              "description": "Numeric value for retention duration.",
+              "minimum": 0,
+              "example": 2
+            },
+            "retention_duration_unit": {
+              "type": "string",
+              "description": "Unit for retention duration.",
+              "enum": [
+                "DAYS",
+                "MONTHS",
+                "YEARS"
+              ],
+              "example": "YEARS"
+            },
+            "retention_start_event": {
+              "type": "string",
+              "description": "Event that triggers the retention clock.",
+              "enum": [
+                "CONSENT_GIVEN",
+                "SERVICE_TERMINATED",
+                "LAST_ACTIVITY_DATE",
+                "TRANSACTION_COMPLETED",
+                "CONSENT_WITHDRAWN"
+              ],
+              "example": "CONSENT_WITHDRAWN"
+            },
+            "action_at_expiry": {
+              "type": "string",
+              "description": "Action to take when retention period expires.",
+              "enum": [
+                "DELETE",
+                "ANONYMIZE",
+                "ARCHIVE"
+              ],
+              "example": "DELETE"
+            },
+            "legal_reference": {
+              "type": "string",
+              "description": "Optional legal reference justifying the period.",
+              "nullable": true,
+              "example": "DPDP Act, Section X"
+            },
+            "status": {
+              "type": "string",
+              "description": "Status of the retention policy.",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ],
+              "example": "ACTIVE"
+            },
+            "user_id": {
+              "type": "string",
+              "description": "Data Principal ID whose data is to be purged.",
+              "example": "data_principal_xyz789"
+            },
+            "processor_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the Processor if purge is specific to them.",
+              "nullable": true,
+              "example": "b1c2d3e4-f5a6-7890-1234-567890abcdef"
+            },
+            "trigger_event": {
+              "type": "string",
+              "description": "Event triggering the purge request.",
+              "enum": [
+                "ERASURE_REQUEST",
+                "RETENTION_POLICY_EXPIRY"
+              ],
+              "example": "ERASURE_REQUEST"
+            },
+            "data_categories_to_purge": {
+              "type": "array",
+              "description": "Specific data categories to purge.",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "email_address",
+                "website_usage_data"
+              ]
+            },
+            "processing_purposes_affected": {
+              "type": "array",
+              "description": "Specific purposes affected by the purge.",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "purpose_marketing_communication"
+              ]
+            },
+            "purge_request_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the purge request.",
+              "example": "p1u2r3g4e-r5e6q7-8901-2345-67890abcdef"
+            },
+            "records_affected_count": {
+              "type": "integer",
+              "description": "Number of records affected by the purge.",
+              "minimum": 0,
+              "example": 123
+            },
+            "details": {
+              "type": "string",
+              "description": "Additional details about the purge operation.",
+              "nullable": true,
+              "example": "Data purged from analytics system."
+            },
+            "error_message": {
+              "type": "string",
+              "description": "Error message if the purge failed.",
+              "nullable": true,
+              "example": "Database connection lost during purge."
+            },
+            "confirmed_by_entity_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the entity (DF/DP) confirming the purge.",
+              "example": "f1d2u3c4i-a5r6y7-8901-2345-67890abcdef"
+            },
+            "search": {
+              "type": "string",
+              "description": "Search term for listing policies or purge requests.",
+              "example": "user_xyz"
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number for pagination.",
+              "minimum": 1,
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of items per page for pagination.",
+              "minimum": 1,
+              "example": 10
+            }
+          },
+          "discriminator": {
+            "propertyName": "_func"
+          },
+          "examples": {
+            "CreateRetentionPolicy": {
+              "summary": "Example Request for Create Retention Policy",
+              "value": {
+                "_func": "create_retention_policy",
+                "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "name": "Marketing Data 2 Year Retention",
+                "retention_duration_value": 2,
+                "retention_duration_unit": "YEARS",
+                "retention_start_event": "CONSENT_WITHDRAWN",
+                "action_at_expiry": "DELETE"
+              }
+            },
+            "InitiatePurgeRequest": {
+              "summary": "Example Request for Initiate Purge Request",
+              "value": {
+                "_func": "initiate_purge_request",
+                "user_id": "data_principal_xyz789",
+                "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "trigger_event": "ERASURE_REQUEST"
+              }
+            },
+            "ConfirmPurgeStatus": {
+              "summary": "Example Request for Confirm Purge Status",
+              "value": {
+                "_func": "confirm_purge_status",
+                "purge_request_id": "p1u2r3g4e-r5e6q7-8901-2345-67890abcdef",
+                "status": "COMPLETED",
+                "records_affected_count": 123,
+                "confirmed_by_entity_id": "f1d2u3c4i-a5r6y7-8901-2345-67890abcdef"
+              }
+            }
+          }
+        },
+        "DataRetentionResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "message": {
+              "type": "string",
+              "example": "Retention policy created successfully."
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "policy_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "r1e2t3e4n-t5i6o7n-8901-2345-67890abcdef"
+                },
+                "fiduciary_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "applicable_purposes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "applicable_data_categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "retention_duration_value": {
+                  "type": "integer"
+                },
+                "retention_duration_unit": {
+                  "type": "string"
+                },
+                "retention_start_event": {
+                  "type": "string"
+                },
+                "action_at_expiry": {
+                  "type": "string"
+                },
+                "legal_reference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "created_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "last_updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_updated_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "purge_request_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "p1u2r3g4e-r5e6q7-8901-2345-67890abcdef"
+                },
+                "user_id": {
+                  "type": "string"
+                },
+                "processor_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "trigger_event": {
+                  "type": "string"
+                },
+                "records_affected_count": {
+                  "type": "integer"
+                },
+                "details": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "legal_exception_applied_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "error_message": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "examples": {
+            "PolicyCreated": {
+              "summary": "Example Response for Retention Policy Creation",
+              "value": {
+                "success": true,
+                "data": {
+                  "policy_id": "r1e2t3e4n-t5i6o7n-8901-2345-67890abcdef",
+                  "name": "Marketing Data 2 Year Retention",
+                  "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "message": "Retention policy created successfully."
+                }
+              }
+            },
+            "PurgeRequestInitiated": {
+              "summary": "Example Response for Purge Request Initiation",
+              "value": {
+                "success": true,
+                "data": {
+                  "purge_request_id": "p1u2r3g4e-r5e6q7-8901-2345-67890abcdef",
+                  "status": "PENDING",
+                  "message": "Purge request initiated successfully."
+                }
+              }
+            },
+            "PurgeStatusConfirmed": {
+              "summary": "Example Response for Purge Status Confirmation",
+              "value": {
+                "success": true,
+                "message": "Purge status confirmed."
+              }
+            }
+          }
+        },
+        "RegulatoryRequest": {
+          "type": "object",
+          "properties": {
+            "_func": {
+              "type": "string",
+              "enum": [
+                "create_dpb_registration",
+                "update_dpb_registration",
+                "get_dpb_registration",
+                "list_dpb_registrations",
+                "test_dpb_connection",
+                "submit_dpb_report",
+                "list_dpb_submissions"
+              ]
+            },
+            "registration_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the DPB registration.",
+              "example": "r1e2g3i4s-t5r6a7t-8901-2345-67890abcdef"
+            },
+            "fiduciary_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the associated Data Fiduciary.",
+              "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+            },
+            "dpb_registration_id": {
+              "type": "string",
+              "description": "DPB-provided registration ID.",
+              "example": "DPB-REG-XYZ789"
+            },
+            "dpb_endpoint_url": {
+              "type": "string",
+              "format": "url",
+              "description": "URL for the DPB's API endpoint.",
+              "example": "https://api.dpb.gov.in/v1/fiduciary-register"
+            },
+            "client_certificate": {
+              "type": "string",
+              "description": "Client certificate in PEM format.",
+              "example": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+            },
+            "private_key": {
+              "type": "string",
+              "description": "Private key in PEM format.",
+              "example": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+            },
+            "status": {
+              "type": "string",
+              "description": "Status of the DPB registration.",
+              "enum": [
+                "PENDING",
+                "REGISTERED",
+                "FAILED"
+              ],
+              "example": "PENDING"
+            },
+            "report_type": {
+              "type": "string",
+              "description": "Type of report to submit.",
+              "enum": [
+                "BREACH_NOTIFICATION",
+                "COMPLIANCE_REPORT"
+              ],
+              "example": "BREACH_NOTIFICATION"
+            },
+            "report_data": {
+              "type": "object",
+              "description": "The actual report payload (JSON structure depends on report type).",
+              "example": {
+                "breach_id": "BREACH-2025-001",
+                "affected_data_principals_count": 1500
+              }
+            },
+            "search": {
+              "type": "string",
+              "description": "Search term for listing registrations or submissions.",
+              "example": "TSI"
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number for pagination.",
+              "minimum": 1,
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of items per page for pagination.",
+              "minimum": 1,
+              "example": 10
+            }
+          },
+          "discriminator": {
+            "propertyName": "_func"
+          },
+          "examples": {
+            "CreateDpbRegistration": {
+              "summary": "Example Request for Create DPB Registration",
+              "value": {
+                "_func": "create_dpb_registration",
+                "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "dpb_registration_id": "DPB-REG-XYZ789",
+                "dpb_endpoint_url": "https://api.dpb.gov.in/v1/fiduciary-register",
+                "client_certificate": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+                "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+              }
+            },
+            "SubmitDpbReport": {
+              "summary": "Example Request for Submit DPB Report",
+              "value": {
+                "_func": "submit_dpb_report",
+                "registration_id": "r1e2g3i4s-t5r6a7t-8901-2345-67890abcdef",
+                "report_type": "BREACH_NOTIFICATION",
+                "report_data": {
+                  "breach_id": "BREACH-2025-001",
+                  "affected_data_principals_count": 1500
+                }
+              }
+            }
+          }
+        },
+        "RegulatoryResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "message": {
+              "type": "string",
+              "example": "DPB registration created successfully."
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "registration_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "r1e2g3i4s-t5r6a7t-8901-2345-67890abcdef"
+                },
+                "fiduciary_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "dpb_registration_id": {
+                  "type": "string"
+                },
+                "dpb_endpoint_url": {
+                  "type": "string",
+                  "format": "url"
+                },
+                "client_certificate": {
+                  "type": "string"
+                },
+                "private_key": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "last_successful_communication_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "created_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "last_updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_updated_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "submission_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "s1u2b3m4i5s6s7i8o9n-1234-5678-90ab-cdef12345678"
+                },
+                "report_type": {
+                  "type": "string"
+                },
+                "submission_timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "confirmation_receipt": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "error_details": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "submitted_by_user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "examples": {
+            "RegistrationCreated": {
+              "summary": "Example Response for DPB Registration Creation",
+              "value": {
+                "success": true,
+                "data": {
+                  "registration_id": "r1e2g3i4s-t5r6a7t-8901-2345-67890abcdef",
+                  "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "dpb_registration_id": "DPB-REG-XYZ789",
+                  "message": "DPB registration created successfully."
+                }
+              }
+            },
+            "ReportSubmitted": {
+              "summary": "Example Response for DPB Report Submission",
+              "value": {
+                "success": true,
+                "data": {
+                  "submission_id": "s1u2b3m4i5s6s7i8o9n-1234-5678-90ab-cdef12345678",
+                  "message": "DPB report submission record saved successfully."
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": {
+        "FiduciaryIdParam": {
+          "name": "fiduciaryId",
+          "in": "query",
+          "description": "Unique identifier of the Data Fiduciary for whom the policy is being requested.",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+          }
+        },
+        "JurisdictionParam": {
+          "name": "jurisdiction",
+          "in": "query",
+          "description": "The primary legal jurisdiction for the policy (e.g., 'IN' for India).",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "example": "IN"
+          }
+        },
+        "LangParam": {
+          "name": "lang",
+          "in": "query",
+          "description": "Preferred language code for the policy content (e.g., 'en', 'ta', 'hi').",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "example": "en"
+          }
+        }
+      }
+    },
+    "paths": {
+      "/personal-data-policies/active": {
+        "get": {
+          "tags": [
+            "Policies"
+          ],
+          "summary": "Get Active Personal Data Consent Policy",
+          "operationId": "getActivePersonalDataPolicy",
+          "description": "Retrieves the currently active Personal Data Consent Policy for a specified Data Fiduciary and jurisdiction.\nThis endpoint is used by client applications (e.g., website frontends) to dynamically render consent forms and ensure transparent data processing.\n\n**API Setu Portal Considerations:**\n- Clients should use the `lang` query parameter to request content in a specific language.\n- Robust error handling for invalid parameters or policy not found.\n- Supports caching via standard HTTP caching headers (ETag, Cache-Control) to optimize performance.",
+          "parameters": [
+            {
+              "$ref": "#/components/parameters/FiduciaryIdParam"
+            },
+            {
+              "$ref": "#/components/parameters/JurisdictionParam"
+            },
+            {
+              "$ref": "#/components/parameters/LangParam"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successfully retrieved the active personal data consent policy.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Policy"
+                  },
+                  "examples": {
+                    "TSI_Coop_Policy_EN": {
+                      "summary": "TSI Coop Policy in English",
+                      "value": {
+                        "policy_id": "tsi_coop_web_data_policy_v2025_06",
+                        "version": "1.0",
+                        "effective_date": "2025-06-03T00:00:00Z",
+                        "last_updated": "2025-06-03T07:30:00Z",
+                        "jurisdiction": "IN",
+                        "data_fiduciary_info": {
+                          "name": "TSI Coop",
+                          "address": "123, Tech Plaza, Gandhipuram, Coimbatore - 641001, Tamil Nadu, India",
+                          "email": "privacy@tsicoop.com",
+                          "phone": "+91 90000 11223"
+                        },
+                        "languages": {
+                          "en": {
+                            "title": "TSI Coop Website Data & Privacy Policy",
+                            "introduction": "At TSI Coop, we are committed to transparently collecting...",
+                            "general_purpose_description": "We collect data for account management...",
+                            "data_processing_purposes": [
+                              {
+                                "id": "purpose_account_management",
+                                "name": "Account Registration & Management",
+                                "description": "To create and manage your account...",
+                                "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
+                                "is_mandatory_for_service": true,
+                                "is_sensitive": false
+                              }
+                            ],
+                            "data_categories_details": [
+                              {
+                                "id": "email_address",
+                                "name": "Email Address",
+                                "description": "Your professional email address...",
+                                "is_sensitive": false
+                              }
+                            ],
+                            "data_principal_rights_summary": "As per the Digital Personal Data Protection Act, 2023, you have rights...",
+                            "grievance_redressal_info": "For any data protection concerns...",
+                            "buttons": {
+                              "accept_all": "Accept All & Continue",
+                              "reject_all_non_essential": "Reject Non-Essential",
+                              "manage_preferences": "Manage My Preferences",
+                              "save_preferences": "Save Choices"
+                            },
+                            "links": {
+                              "full_privacy_policy_text": "Full Privacy Policy",
+                              "full_privacy_policy_url": "https://www.tsicoop.com/privacy-policy-en",
+                              "terms_of_service_text": "Terms of Service",
+                              "terms_of_service_url": "https://www.tsicoop.com/terms-of-service-en"
+                            },
+                            "important_note": "Your email address and basic account details are essential..."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad Request - Invalid or missing parameters.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  },
+                  "example": {
+                    "error": {
+                      "code": "INVALID_PARAMETERS",
+                      "message": "Required query parameter 'fiduciaryId' is missing.",
+                      "details": [
+                        "Parameter 'fiduciaryId' is required."
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  },
+                  "example": {
+                    "error": {
+                      "code": "AUTHENTICATION_FAILED",
+                      "message": "Invalid API Key or missing Authorization header."
+                    }
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  },
+                  "example": {
+                    "error": {
+                      "code": "ACCESS_DENIED",
+                      "message": "Insufficient permissions to access this resource."
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - No active policy found for the given criteria.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  },
+                  "example": {
+                    "error": {
+                      "code": "POLICY_NOT_FOUND",
+                      "message": "No active policy found for the specified fiduciaryId and jurisdiction."
+                    }
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  },
+                  "example": {
+                    "error": {
+                      "code": "SERVER_ERROR",
+                      "message": "An unexpected error occurred on the server."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "ApiKeyAuth": []
+            },
+            {
+              "OAuth2Auth": [
+                "policy:read"
+              ]
+            },
+            {
+              "MutualTLSAuth": []
+            }
+          ]
+        }
+      },
+      "/api/app/register": {
+        "post": {
+          "tags": [
+            "Account Management"
+          ],
+          "summary": "Check for existing business or professional account",
+          "operationId": "dedupAccount",
+          "description": "Checks if a business account is already registered with the company’s domain\nor a Professional account is already registered with the provided email address.\nThis API is designed for pre-registration checks and does not require authorization.\n\n**API Setu Portal Considerations:**\n- This endpoint is publicly accessible for initial account checks.\n- Provides a clear, boolean response for existence.",
+          "requestBody": {
+            "description": "Account deduplication request payload.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DedupAccountRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successfully checked account existence.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DedupAccountResponse"
+                  },
+                  "examples": {
+                    "accountExists": {
+                      "summary": "Account Exists",
+                      "value": {
+                        "_exists": true
+                      }
+                    },
+                    "accountDoesNotExist": {
+                      "summary": "Account Does Not Exist",
+                      "value": {
+                        "_exists": false
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad Request - Invalid or missing parameters.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  },
+                  "example": {
+                    "error": {
+                      "code": "INVALID_REQUEST_BODY",
+                      "message": "Missing required field 'email' or 'type'."
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found (Though less common for POST, included for completeness as per request).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": []
+        }
+      },
+      "/user": {
+        "post": {
+          "tags": [
+            "Account Management"
+          ],
+          "summary": "Manage CMS Users and Roles",
+          "operationId": "manageCmsUsersAndRoles",
+          "description": "This endpoint provides various functionalities for managing CMS backend users and their roles.\nThe specific operation is determined by the `_func` field in the request body.",
+          "requestBody": {
+            "description": "Request payload for user and role management operations.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "OK - Operation successful (e.g., list, get, update).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  },
+                  "examples": {
+                    "UserFetched": {
+                      "$ref": "#/components/schemas/UserResponse/examples/UserFetched"
+                    },
+                    "UserList": {
+                      "$ref": "#/components/schemas/UserResponse/examples/UserList"
+                    }
+                  }
+                }
+              }
+            },
+            "201": {
+              "description": "Created - Resource created successfully (e.g., create user, create role).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  },
+                  "examples": {
+                    "UserCreated": {
+                      "$ref": "#/components/schemas/UserResponse/examples/UserCreated"
+                    },
+                    "RoleCreated": {
+                      "$ref": "#/components/schemas/UserResponse/examples/RoleCreated"
+                    }
+                  }
+                }
+              }
+            },
+            "204": {
+              "description": "No Content - Resource deleted successfully (e.g., delete user, delete role)."
+            },
+            "400": {
+              "description": "Bad Request - Invalid input or missing required fields.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - Resource not found.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists or cannot be deleted due to assignment.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2Auth": [
+                "account:manage"
+              ]
+            }
+          ]
+        }
+      },
+      "/fiduciary": {
+        "post": {
+          "tags": [
+            "Fiduciaries"
+          ],
+          "summary": "Manage Data Fiduciary Profiles",
+          "operationId": "manageDataFiduciaries",
+          "description": "This endpoint provides various functionalities for managing Data Fiduciary profiles.\nThe specific operation is determined by the `_func` field in the request body.",
+          "requestBody": {
+            "description": "Request payload for Data Fiduciary management operations.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiduciaryRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "OK - Operation successful (e.g., list, get, update, validate domain).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FiduciaryResponse"
+                  },
+                  "examples": {
+                    "FiduciaryFetched": {
+                      "$ref": "#/components/schemas/FiduciaryResponse/examples/FiduciaryFetched"
+                    },
+                    "FiduciaryList": {
+                      "$ref": "#/components/schemas/FiduciaryResponse/examples/FiduciaryList"
+                    }
+                  }
+                }
+              }
+            },
+            "201": {
+              "description": "Created - Resource created successfully (e.g., create fiduciary).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FiduciaryResponse"
+                  },
+                  "examples": {
+                    "FiduciaryCreated": {
+                      "$ref": "#/components/schemas/FiduciaryResponse/examples/FiduciaryCreated"
+                    }
+                  }
+                }
+              }
+            },
+            "204": {
+              "description": "No Content - Resource deleted successfully (e.g., delete fiduciary)."
+            },
+            "400": {
+              "description": "Bad Request - Invalid input or missing required fields.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - Resource not found.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2Auth": [
+                "fiduciary:manage"
+              ]
+            }
+          ]
+        }
+      },
+      "/processor": {
+        "post": {
+          "tags": [
+            "Processors"
+          ],
+          "summary": "Manage Data Processor Profiles",
+          "operationId": "manageDataProcessors",
+          "description": "This endpoint provides various functionalities for managing Data Processor profiles.\nThe specific operation is determined by the `_func` field in the request body.",
+          "requestBody": {
+            "description": "Request payload for Data Processor management operations.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessorRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "OK - Operation successful (e.g., list, get, update).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProcessorResponse"
+                  },
+                  "examples": {
+                    "ProcessorFetched": {
+                      "$ref": "#/components/schemas/ProcessorResponse/examples/ProcessorFetched"
+                    },
+                    "ProcessorList": {
+                      "$ref": "#/components/schemas/ProcessorResponse/examples/ProcessorList"
+                    }
+                  }
+                }
+              }
+            },
+            "201": {
+              "description": "Created - Resource created successfully (e.g., create processor).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProcessorResponse"
+                  },
+                  "examples": {
+                    "ProcessorCreated": {
+                      "$ref": "#/components/schemas/ProcessorResponse/examples/ProcessorCreated"
+                    }
+                  }
+                }
+              }
+            },
+            "204": {
+              "description": "No Content - Resource deleted successfully (e.g., delete processor)."
+            },
+            "400": {
+              "description": "Bad Request - Invalid input or missing required fields.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - Resource not found.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2Auth": [
+                "processor:manage"
+              ]
+            }
+          ]
+        }
+      },
+      "/grievance": {
+        "post": {
+          "tags": [
+            "Grievances"
+          ],
+          "summary": "Manage Data Principal Grievances and Requests",
+          "operationId": "manageGrievances",
+          "description": "This endpoint provides various functionalities for managing Data Principal grievances and privacy requests.\nThe specific operation is determined by the `_func` field in the request body.",
+          "requestBody": {
+            "description": "Request payload for grievance management operations.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrievanceRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "OK - Operation successful (e.g., get, list, update status, add communication).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/GrievanceResponse"
+                  },
+                  "examples": {
+                    "GrievanceFetched": {
+                      "$ref": "#/components/schemas/GrievanceResponse/examples/GrievanceFetched"
+                    }
+                  }
+                }
+              }
+            },
+            "201": {
+              "description": "Created - Resource created successfully (e.g., submit grievance).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/GrievanceResponse"
+                  },
+                  "examples": {
+                    "GrievanceSubmitted": {
+                      "$ref": "#/components/schemas/GrievanceResponse/examples/GrievanceSubmitted"
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad Request - Invalid input or missing required fields.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - Resource not found.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2Auth": [
+                "grievance:submit",
+                "grievance:manage"
+              ]
+            }
+          ]
+        }
+      },
+      "/notification": {
+        "post": {
+          "tags": [
+            "Notifications"
+          ],
+          "summary": "Manage Notification Templates and Dispatch Notifications",
+          "operationId": "manageNotifications",
+          "description": "This endpoint provides functionalities for managing notification templates and dispatching notifications.\nThe specific operation is determined by the `_func` field in the request body.",
+          "requestBody": {
+            "description": "Request payload for notification management operations.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "OK - Operation successful (e.g., get template, list templates, dispatch notification, mark read).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotificationResponse"
+                  },
+                  "examples": {
+                    "DispatchInitiated": {
+                      "$ref": "#/components/schemas/NotificationResponse/examples/DispatchInitiated"
+                    }
+                  }
+                }
+              }
+            },
+            "201": {
+              "description": "Created - Resource created successfully (e.g., create template).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotificationResponse"
+                  },
+                  "examples": {
+                    "TemplateCreated": {
+                      "$ref": "#/components/schemas/NotificationResponse/examples/TemplateCreated"
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad Request - Invalid input or missing required fields.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - Resource not found.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2Auth": [
+                "notification:manage",
+                "notification:dispatch"
+              ]
+            }
+          ]
+        }
+      },
+      "/audit": {
+        "post": {
+          "tags": [
+            "Audit Logs"
+          ],
+          "summary": "Manage Audit Logs",
+          "operationId": "manageAuditLogs",
+          "description": "This endpoint provides functionalities for logging and retrieving immutable audit logs.\nThe specific operation is determined by the `_func` field in the request body.",
+          "requestBody": {
+            "description": "Request payload for audit log operations.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "OK - Operation successful (e.g., list, get).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AuditLogResponse"
+                  },
+                  "examples": {
+                    "AuditLogFetched": {
+                      "$ref": "#/components/schemas/AuditLogResponse/examples/AuditLogFetched"
+                    }
+                  }
+                }
+              }
+            },
+            "201": {
+              "description": "Created - Resource created successfully (e.g., log event).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AuditLogResponse"
+                  },
+                  "examples": {
+                    "LogEventCreated": {
+                      "$ref": "#/components/schemas/AuditLogResponse/examples/LogEventCreated"
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad Request - Invalid input or missing required fields.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - Resource not found.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2Auth": [
+                "audit:read"
+              ]
+            }
+          ]
+        }
+      },
+      "/retention": {
+        "post": {
+          "tags": [
+            "Data Retention & Purge"
+          ],
+          "summary": "Manage Data Retention Policies and Purge Requests",
+          "operationId": "manageDataRetentionAndPurge",
+          "description": "This endpoint provides functionalities for managing data retention policies and orchestrating purge requests.\nThe specific operation is determined by the `_func` field in the request body.",
+          "requestBody": {
+            "description": "Request payload for data retention and purge operations.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataRetentionRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "OK - Operation successful (e.g., list, get, update, confirm purge).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DataRetentionResponse"
+                  },
+                  "examples": {
+                    "PurgeStatusConfirmed": {
+                      "$ref": "#/components/schemas/DataRetentionResponse/examples/PurgeStatusConfirmed"
+                    }
+                  }
+                }
+              }
+            },
+            "201": {
+              "description": "Created - Resource created successfully (e.g., create policy, initiate purge request).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DataRetentionResponse"
+                  },
+                  "examples": {
+                    "PolicyCreated": {
+                      "$ref": "#/components/schemas/DataRetentionResponse/examples/PolicyCreated"
+                    },
+                    "PurgeRequestInitiated": {
+                      "$ref": "#/components/schemas/DataRetentionResponse/examples/PurgeRequestInitiated"
+                    }
+                  }
+                }
+              }
+            },
+            "204": {
+              "description": "No Content - Resource deleted successfully (e.g., delete policy)."
+            },
+            "400": {
+              "description": "Bad Request - Invalid input or missing required fields.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - Resource not found.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2Auth": [
+                "retention:manage",
+                "purge:initiate",
+                "purge:confirm"
+              ]
+            }
+          ]
+        }
+      },
+      "/regulatory": {
+        "post": {
+          "tags": [
+            "Regulatory Reporting"
+          ],
+          "summary": "Manage DPB Registrations and Report Submissions",
+          "operationId": "manageRegulatoryCompliance",
+          "description": "This endpoint provides functionalities for managing DPB registrations and submitting reports to the Data Protection Board.\nThe specific operation is determined by the `_func` field in the request body.",
+          "requestBody": {
+            "description": "Request payload for regulatory compliance operations.",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegulatoryRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "OK - Operation successful (e.g., get registration, list, update registration, test connection).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RegulatoryResponse"
+                  },
+                  "examples": {
+                    "RegistrationCreated": {
+                      "$ref": "#/components/schemas/RegulatoryResponse/examples/RegistrationCreated"
+                    }
+                  }
+                }
+              }
+            },
+            "201": {
+              "description": "Created - Resource created successfully (e.g., create registration, submit report).",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RegulatoryResponse"
+                  },
+                  "examples": {
+                    "ReportSubmitted": {
+                      "$ref": "#/components/schemas/RegulatoryResponse/examples/ReportSubmitted"
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad Request - Invalid input or missing required fields.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Authentication required or failed.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Forbidden - Authenticated but not authorized.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not Found - Resource not found.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal Server Error.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2Auth": [
+                "regulatory:manage"
+              ]
+            },
+            {
+              "MutualTLSAuth": []
+            }
+          ]
+        }
+      }
+    }
+  }
+}
