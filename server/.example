@@ -1,0 +1,22 @@
+# .env.example
+# This file serves as a template for the .env file, which should
+# contain actual sensitive configuration and MUST NOT be committed to Git.
+#
+# To use: Copy this file to .env and fill in the placeholder values.
+
+# --- Basic Configuration ---
+JAVA_HOME=
+JETTY_HOME=
+JETTY_BASE=
+
+# --- Database Configuration ---
+# Recommended: A strong, random password.
+POSTGRES_HOST=jdbc:postgresql://localhost:5433
+POSTGRES_DB=
+POSTGRES_USER=
+POSTGRES_PASSWD=
+
+# --- Application Configuration ---
+TSI_DPDP_CMS_STEALTH_ENV=local
+TSI_DPDP_CMS_STEALTH_HOME=
+

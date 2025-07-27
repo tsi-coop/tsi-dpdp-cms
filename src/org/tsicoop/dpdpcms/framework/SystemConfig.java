@@ -40,14 +40,10 @@ public class SystemConfig {
         if (appConfig == null) {
             appConfig = new Properties();
         }
-        System.out.println("DB:"+System.getenv("POSTGRES_DB"));
         appConfig.setProperty("framework.db.name",System.getenv("POSTGRES_DB"));
         appConfig.setProperty("framework.db.user",System.getenv("POSTGRES_USER"));
         appConfig.setProperty("framework.db.password",System.getenv("POSTGRES_PASSWD"));
         appConfig.setProperty("framework.db.host",System.getenv("POSTGRES_HOST"));
-        appConfig.setProperty("aws.region",System.getenv("AWS_REGION"));
-        appConfig.setProperty("aws.kms.identifier",System.getenv("AWS_KMS_KEY_IDENTIFIER"));
-        appConfig.setProperty("tsi.lookup.salt",System.getenv("TSI_LOOKUP_SALT"));
     }
 
     public static Properties getAppConfig() {

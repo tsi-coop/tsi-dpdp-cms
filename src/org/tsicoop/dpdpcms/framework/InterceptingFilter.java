@@ -129,6 +129,6 @@ public class InterceptingFilter implements Filter {
         System.out.println("Loaded TSI App Config");
         JSONSchemaValidator.createInstance(filterConfig.getServletContext());
         System.out.println("Loaded TSI Schema Validator");
-        System.out.println("TSI Aadhaar Vault Plus Service started in "+System.getenv("TSI_AADHAR_VAULT_PLUS_ENV")+" environment");
+        System.out.println("TSI DPDP CMS Service started in "+System.getenv("TSI_DPDP_CMS_ENV")+" environment");
     }
 }
