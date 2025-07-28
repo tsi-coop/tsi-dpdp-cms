@@ -5,12 +5,44 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Set default timezone for the session (optional, but good for consistency)
--- It's often recommended to set this to 'UTC' for server-side applications
--- and handle timezone conversions in the application layer or presentation layer.
 SET TIMEZONE TO 'Asia/Kolkata'; -- Or 'UTC' if your application primarily uses UTC internally
 
 --
--- Table: fiduciaries
+-- 1. Table: roles (Must be created before users)
+-- Defines roles and their permissions.
+--
+CREATE TABLE IF NOT EXISTS roles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL UNIQUE, -- e.g., 'Admin', 'DPO', 'Auditor'
+    description TEXT,
+    permissions JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of strings, e.g., ["fiduciary:create", "policy:publish"]
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+--
+-- 2. Table: users (Must be created after roles, before fiduciaries, processors, etc.)
+-- CMS internal users: DPOs, Admins, Auditors, Operators
+--
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255), -- Can be NULL initially for first-time setup
+    mfa_secret VARCHAR(255), -- For TOTP
+    mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, PENDING_MFA_SETUP
+    role_id UUID NOT NULL, -- FIX: Added role_id directly
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id) -- FIX: Added FK to roles
+);
+
+--
+-- 3. Table: fiduciaries (Can be created now, references users)
 -- Manages registered Data Fiduciary profiles.
 --
 CREATE TABLE IF NOT EXISTS fiduciaries (
@@ -21,23 +53,20 @@ CREATE TABLE IF NOT EXISTS fiduciaries (
     phone VARCHAR(50),
     address TEXT,
     primary_domain VARCHAR(255) NOT NULL UNIQUE,
-    cms_cname VARCHAR(255) UNIQUE, -- CNAME can be null if not using aggregator mode or not yet set
+    cms_cname VARCHAR(255) UNIQUE,
     dns_txt_record_token VARCHAR(255) UNIQUE,
     domain_validation_status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- PENDING, VALIDATED, FAILED
     is_significant_data_fiduciary BOOLEAN NOT NULL DEFAULT FALSE,
-    dpo_user_id UUID, -- FK to users(id) - will be added later by ALTER TABLE
+    dpo_user_id UUID REFERENCES users(id), -- FK to users(id)
     dpb_registration_id VARCHAR(100) UNIQUE,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID, -- FK to users(id) - will be added later
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID, -- FK to users(id) - will be added later
-    deleted_at TIMESTAMP WITH TIME ZONE,
-    deleted_by_user_id UUID -- FK to users(id) - will be added later
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 --
--- Table: processors
+-- 4. Table: processors (Can be created now, references fiduciaries and users)
 -- Stores registered Data Processor profiles.
 --
 CREATE TABLE IF NOT EXISTS processors (
@@ -57,16 +86,12 @@ CREATE TABLE IF NOT EXISTS processors (
     security_measures_description TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID, -- FK to users(id) - will be added later
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID, -- FK to users(id) - will be added later
-    deleted_at TIMESTAMP WITH TIME ZONE,
-    deleted_by_user_id UUID, -- FK to users(id) - will be added later
-    UNIQUE (fiduciary_id, name) -- Ensures a processor name is unique per fiduciary
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 --
--- Table: consent_policies
+-- 5. Table: consent_policies (Can be created now, references fiduciaries)
 -- Stores definitions of personal data and cookie consent policies.
 --
 CREATE TABLE IF NOT EXISTS consent_policies (
@@ -78,17 +103,14 @@ CREATE TABLE IF NOT EXISTS consent_policies (
     jurisdiction VARCHAR(5) NOT NULL,
     policy_content JSONB NOT NULL, -- Full multilingual JSON policy
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID, -- FK to users(id) - will be added later
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID, -- FK to users(id) - will be added later
     deleted_at TIMESTAMP WITH TIME ZONE,
-    deleted_by_user_id UUID, -- FK to users(id) - will be added later
     PRIMARY KEY (id, version),
     UNIQUE (fiduciary_id, jurisdiction, status) -- Ensures only one active policy per fiduciary/jurisdiction at a time
 );
 
 --
--- Table: consent_records
+-- 6. Table: consent_records (Can be created now, references fiduciaries and consent_policies)
 -- Stores every instance of Data Principal consent.
 --
 CREATE TABLE IF NOT EXISTS consent_records (
@@ -101,108 +123,23 @@ CREATE TABLE IF NOT EXISTS consent_records (
     jurisdiction VARCHAR(5) NOT NULL,
     language_selected VARCHAR(5) NOT NULL,
     consent_status_general VARCHAR(50) NOT NULL, -- granted, denied, custom
-    consent_mechanism VARCHAR(100) NOT NULL, -- FIX: Added missing comma here
+    consent_mechanism VARCHAR(100) NOT NULL,
     ip_address INET,
     user_agent TEXT,
     data_point_consents JSONB NOT NULL, -- Granular consent for each purpose/category
     is_active_consent BOOLEAN NOT NULL DEFAULT TRUE, -- Flag for current active consent
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID, -- FIX: Added this column
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID, -- FIX: Added this column
-    FOREIGN KEY (policy_id, policy_version) REFERENCES consent_policies(id, version),
-    -- Constraint to ensure only one active consent record per user per fiduciary
-    UNIQUE (user_id, fiduciary_id, is_active_consent) WHERE is_active_consent IS TRUE
+    FOREIGN KEY (policy_id, policy_version) REFERENCES consent_policies(id, version)
 );
 
---
--- Table: users (CMS internal users: DPOs, Admins, Auditors, Operators)
---
-CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    mfa_secret VARCHAR(255), -- For TOTP
-    mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, PENDING_MFA_SETUP
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_login_at TIMESTAMP WITH TIME ZONE,
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP WITH TIME ZONE,
-    deleted_by_user_id UUID -- Self-referencing FK, will be added later
-);
-
--- Add FKs to fiduciaries and processors tables that reference users(id)
--- These ALTER TABLE statements must come AFTER the 'users' table is created
-ALTER TABLE fiduciaries
-ADD CONSTRAINT fk_fiduciaries_dpo_user
-FOREIGN KEY (dpo_user_id) REFERENCES users(id);
-
-ALTER TABLE fiduciaries
-ADD CONSTRAINT fk_fiduciaries_created_by
-FOREIGN KEY (created_by_user_id) REFERENCES users(id);
-
-ALTER TABLE fiduciaries
-ADD CONSTRAINT fk_fiduciaries_last_updated_by
-FOREIGN KEY (last_updated_by_user_id) REFERENCES users(id);
-
-ALTER TABLE fiduciaries
-ADD CONSTRAINT fk_fiduciaries_deleted_by
-FOREIGN KEY (deleted_by_user_id) REFERENCES users(id);
-
-
-ALTER TABLE processors
-ADD CONSTRAINT fk_processors_created_by
-FOREIGN KEY (created_by_user_id) REFERENCES users(id);
-
-ALTER TABLE processors
-ADD CONSTRAINT fk_processors_last_updated_by
-FOREIGN KEY (last_updated_by_user_id) REFERENCES users(id);
-
-ALTER TABLE processors
-ADD CONSTRAINT fk_processors_deleted_by
-FOREIGN KEY (deleted_by_user_id) REFERENCES users(id);
-
-ALTER TABLE consent_policies
-ADD CONSTRAINT fk_consent_policies_created_by
-FOREIGN KEY (created_by_user_id) REFERENCES users(id);
-
-ALTER TABLE consent_policies
-ADD CONSTRAINT fk_consent_policies_last_updated_by
-FOREIGN KEY (last_updated_by_user_id) REFERENCES users(id);
-
-ALTER TABLE consent_policies
-ADD CONSTRAINT fk_consent_policies_deleted_by
-FOREIGN KEY (deleted_by_user_id) REFERENCES users(id);
+-- FIX: Define the partial unique index separately after table creation
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_consent
+ON consent_records (user_id, fiduciary_id) WHERE is_active_consent IS TRUE;
 
 
 --
--- Table: roles
--- Defines roles and their permissions.
---
-CREATE TABLE IF NOT EXISTS roles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(100) NOT NULL UNIQUE, -- e.g., 'Admin', 'DPO', 'Auditor'
-    description TEXT,
-    permissions JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of strings, e.g., ["fiduciary:create", "policy:publish"]
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
---
--- Table: user_roles (Junction table for N:M relationship between users and roles)
---
-CREATE TABLE IF NOT EXISTS user_roles (
-    user_id UUID NOT NULL REFERENCES users(id),
-    role_id UUID NOT NULL REFERENCES roles(id),
-    assigned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    assigned_by_user_id UUID REFERENCES users(id),
-    PRIMARY KEY (user_id, role_id)
-);
-
---
--- Table: audit_logs
+-- 7. Table: audit_logs (Can be created now, references users)
 -- Stores immutable logs of all significant system events and user actions.
 --
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -216,11 +153,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     context_details JSONB, -- JSON payload of relevant data/changes
     ip_address INET,
     status VARCHAR(50) NOT NULL, -- SUCCESS, FAILURE
-    source_module VARCHAR(100) NOT NULL -- e.g., PolicyService, ConsentRecordService
+    source_module VARCHAR(100) NOT NULL
 );
 
 --
--- Table: grievances
+-- 8. Table: grievances (Can be created now, references users and fiduciaries)
 -- Stores Data Principal grievances.
 --
 CREATE TABLE IF NOT EXISTS grievances (
@@ -242,7 +179,7 @@ CREATE TABLE IF NOT EXISTS grievances (
 );
 
 --
--- Table: retention_policies
+-- 9. Table: retention_policies (Can be created now, references fiduciaries and users)
 -- Defines data retention rules.
 --
 CREATE TABLE IF NOT EXISTS retention_policies (
@@ -265,7 +202,7 @@ CREATE TABLE IF NOT EXISTS retention_policies (
 );
 
 --
--- Table: api_keys (New table for API Keys Management)
+-- 10. Table: api_keys (Can be created now, references fiduciaries and processors and users)
 --
 CREATE TABLE IF NOT EXISTS api_keys (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -285,7 +222,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 --
--- Table: legal_retention_exceptions (New table for legal hold exceptions)
+-- 11. Table: legal_retention_exceptions (Can be created now, references fiduciaries and users)
 --
 CREATE TABLE IF NOT EXISTS legal_retention_exceptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -305,7 +242,7 @@ CREATE TABLE IF NOT EXISTS legal_retention_exceptions (
 );
 
 --
--- Table: purge_requests (New table to track purge operations)
+-- 12. Table: purge_requests (Can be created now, references users, fiduciaries, processors, legal_retention_exceptions)
 --
 CREATE TABLE IF NOT EXISTS purge_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -329,7 +266,7 @@ CREATE TABLE IF NOT EXISTS purge_requests (
 );
 
 --
--- Table: notification_templates (For NotificationService)
+-- 13. Table: notification_templates (Can be created now, references users)
 --
 CREATE TABLE IF NOT EXISTS notification_templates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -346,7 +283,7 @@ CREATE TABLE IF NOT EXISTS notification_templates (
 );
 
 --
--- Table: notification_instances (For NotificationService)
+-- 14. Table: notification_instances (Can be created now, references notification_templates, fiduciaries, users)
 --
 CREATE TABLE IF NOT EXISTS notification_instances (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -375,9 +312,12 @@ INSERT INTO roles (id, name, description, permissions, created_at, last_updated_
 -- Add a default admin user (IMPORTANT: CHANGE PASSWORD AFTER INITIAL SETUP)
 -- You should replace 'your_initial_admin_password_hash_here' with a strong hash generated by your application
 -- For a real system, initial admin creation should be part of a secure setup process, not hardcoded.
-INSERT INTO users (id, username, email, password_hash, mfa_enabled, status, created_at, last_updated_at) VALUES
-    (uuid_generate_v4(), 'superadmin', 'admin@tsicoop.org', 'your_initial_admin_password_hash_here', FALSE, 'ACTIVE', NOW(), NOW());
+DO $$
+DECLARE
+    admin_role_id UUID;
+BEGIN
+    SELECT id INTO admin_role_id FROM roles WHERE name = 'Admin';
 
--- Assign the 'Admin' role to the default admin user
-INSERT INTO user_roles (user_id, role_id, assigned_at) VALUES
-    ((SELECT id FROM users WHERE username = 'superadmin'), (SELECT id FROM roles WHERE name = 'Admin'), NOW());
+    INSERT INTO users (id, username, email, password_hash, mfa_enabled, status, role_id, created_at, last_updated_at) VALUES
+        (uuid_generate_v4(), 'superadmin', 'admin@tsicoop.org', NULL, FALSE, 'PENDING_PASSWORD_SETUP', admin_role_id, NOW(), NOW()); -- Password NULL, status PENDING_PASSWORD_SETUP
+END $$;
