@@ -901,7 +901,7 @@ public class User implements REST {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "DELETE FROM users WHERE user_id = ?"; // Assuming 'user_id' is the PK
+        String sql = "DELETE FROM users WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
