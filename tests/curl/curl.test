@@ -1,0 +1,20 @@
+TSI DPDP CMS - v0.1
+--------------------------------------------------------------------------------------------
+##Admin
+# Reset Admin Password
+curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-dpdp-cms-stealth\tests\curl\admin\reset_password.json http://localhost:8080/api/v1/admin/user
+# Login
+curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-aadhaar-vault-plus\api-tests\admin\login.json http://localhost:8080/api/admin/login
+# Gat All Clients
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiU1lTVEVNX0FETUlOIiwibmFtZSI6ImFkbWluIiwic3ViIjoiYWRtaW5AdHNpY29vcC5vcmciLCJpYXQiOjE3NTI1MDA4OTQsImV4cCI6MTc1MzM2NDg5NH0.H2E11JTIGShGRm2KYtY3AjMpK7k_vVLWuoQtfkuhKBI" -d @C:\work\tsi-aadhaar-vault-plus\api-tests\admin\get_all_clients.json http://localhost:8080/api/admin/clients
+
+##Client
+# Register
+curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-aadhaar-vault-plus\api-tests\client\register_client.json http://localhost:8080/api/client/register
+# Store ID
+curl -X POST -H "Content-Type: application/json" -H "X-API-Key:ext-087b93c0-fccf-4698-851d-76ccb2560cd2" -H "X-API-Secret:ext-64327d26-3995-48cd-b480-8c8c0a1b6490" -d @C:\work\tsi-aadhaar-vault-plus\api-tests\client\store_id.json http://localhost:8080/api/client/vault
+# Fetch ID By Reference
+curl -X POST -H "Content-Type: application/json" -H "X-API-Key:ext-05757707-9b35-4571-b53e-d6c57754a5b5" -H "X-API-Secret:ext-047fdee0-83cc-4e27-aca2-49ad738ba76b" -d @C:\work\tsi-aadhaar-vault-plus\api-tests\client\fetch_id_by_reference.json http://localhost:8080/api/client/vault
+# Fetch Reference By ID Value
+curl -X POST -H "Content-Type: application/json" -H "X-API-Key:ext-05757707-9b35-4571-b53e-d6c57754a5b5" -H "X-API-Secret:ext-047fdee0-83cc-4e27-aca2-49ad738ba76b" -d @C:\work\tsi-aadhaar-vault-plus\api-tests\client\fetch_reference_by_id_value.json http://localhost:8080/api/client/vault
+

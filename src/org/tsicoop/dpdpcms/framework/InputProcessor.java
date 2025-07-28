@@ -48,6 +48,12 @@ public class InputProcessor {
         return validheader;
     }
 
+    public static boolean processClientHeader(HttpServletRequest request, HttpServletResponse response) {
+        boolean validheader = false;
+        // To do:
+        return validheader;
+    }
+
     public static String getEmail(HttpServletRequest req){
         JSONObject authToken = null;
         String email = null;

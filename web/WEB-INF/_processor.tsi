@@ -1,10 +1,5 @@
-# Client APIs
-/api/client/register=org.tsicoop.aadhaarvault.api.client.RegisterClient
-/api/client/vault=org.tsicoop.aadhaarvault.api.client.Vault
+# Service definitions
+/api/v1/user=org.tsicoop.dpdpcms.service.User
+/api/v1/consent=org.tsicoop.dpdpcms.api.client.RegisterClient
+/api/v1/policy=org.tsicoop.dpdpcms.api.client.Vault
 
-# Admin Handlers
-/api/admin/register=org.tsicoop.aadhaarvault.api.admin.Register
-/api/admin/login=org.tsicoop.aadhaarvault.api.admin.Login
-/api/admin/clients=org.tsicoop.aadhaarvault.api.admin.Clients
-/api/admin/IDTypes=org.tsicoop.aadhaarvault.api.admin.IDTypes
-/api/admin/audit=org.tsicoop.aadhaarvault.api.admin.Audit

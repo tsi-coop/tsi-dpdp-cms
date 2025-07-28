@@ -23,7 +23,7 @@ public class SystemConfig {
 
     private static byte[] masterAESKey;
 
-    public static void loadProcessors(ServletContext ctx) {
+    public static void loadProcessorConfig(ServletContext ctx) {
        if (processorConfig == null) {
             processorConfig = new Properties();
             try {

@@ -1,5 +1,6 @@
 package org.tsicoop.dpdpcms.service; // Package changed as requested
 
+import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available in the new package structure
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -109,7 +110,61 @@ public class User implements REST {
             }
 
             switch (func.toLowerCase()) {
-                // --- User Management ---
+                // --- User Authentication ---
+                case "login":
+                    String loginIdentifier = (String) input.get("identifier"); // Can be username or email
+                    String loginPassword = (String) input.get("password");
+
+                    if (loginIdentifier == null || loginIdentifier.isEmpty() || loginPassword == null || loginPassword.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Identifier and password are required for login.", req.getRequestURI());
+                        return;
+                    }
+
+                    output = authenticateUser(loginIdentifier, loginPassword);
+                    if (output.containsKey("error")) { // Check if authentication failed
+                        int statusCode = (Integer) output.get("status_code");
+                        OutputProcessor.errorResponse(res, statusCode, (String) output.get("error_message"), (String) output.get("error_details"), req.getRequestURI());
+                    } else {
+                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
+                    }
+                    break;
+
+                case "reset_password": // Modified function for general password reset
+                    String emailToReset = (String) input.get("email");
+                    String newPassword = (String) input.get("new_password");
+
+                    if (emailToReset == null || emailToReset.isEmpty() || newPassword == null || newPassword.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Email and new password are required for 'reset_password'.", req.getRequestURI());
+                        return;
+                    }
+                    // Validate email format
+                    if (!EMAIL_PATTERN.matcher(emailToReset).matches()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid email format for password reset.", req.getRequestURI());
+                        return;
+                    }
+
+                    // Validate new password complexity
+                    if (!PASSWORD_PATTERN.matcher(newPassword).matches()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "New password does not meet complexity requirements.", req.getRequestURI());
+                        return;
+                    }
+
+                    // In a real system, you'd add authorization check here:
+                    // Only an Admin/DPO (with specific permission) or a valid password reset token holder should call this.
+                    // AuthContext authContext = (AuthContext) req.getAttribute("authContext");
+                    // if (authContext == null || !authContext.hasPermission("user:reset_password")) { // Example permission
+                    //    OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Not authorized to reset user password.", req.getRequestURI());
+                    //    return;
+                    // }
+
+                    output = resetUserPassword(emailToReset, newPassword);
+                    if (output.containsKey("error")) {
+                        int statusCode = (Integer) output.get("status_code");
+                        OutputProcessor.errorResponse(res, statusCode, (String) output.get("error_message"), (String) output.get("error_details"), req.getRequestURI());
+                    } else {
+                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
+                    }
+                    break;
                 case "list_users":
                     String userStatusFilter = (String) input.get("status");
                     String userSearch = (String) input.get("search");
@@ -379,6 +434,183 @@ public class User implements REST {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred: " + e.getMessage(), req.getRequestURI());
         }
     }
+
+    /**
+     * Authenticates a user based on identifier (username or email) and password.
+     * @param identifier Username or email.
+     * @param password Raw password.
+     * @return JSONObject containing user details and JWT on success, or error details.
+     * @throws SQLException if a database access error occurs.
+     */
+    private JSONObject authenticateUser(String identifier, String password) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        JSONObject result = new JSONObject();
+
+        // Query by username or email
+        String sql = "SELECT u.id AS user_id, u.username, u.email, u.password_hash, u.status, u.mfa_enabled, r.name AS role_name, r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE (u.username = ? OR u.email = ?) AND u.deleted_at IS NULL";
+
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, identifier);
+            pstmt.setString(2, identifier);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                String userId = rs.getString("user_id");
+                String username = rs.getString("username");
+                String email = rs.getString("email");
+                String storedHashedPassword = rs.getString("password_hash");
+                String status = rs.getString("status");
+                boolean mfaEnabled = rs.getBoolean("mfa_enabled");
+                String roleName = rs.getString("role_name");
+                String permissionsJson = rs.getString("permissions"); // Permissions from roles table (JSONB)
+
+                if (!"ACTIVE".equalsIgnoreCase(status)) {
+                    result.put("error", true);
+                    result.put("status_code", HttpServletResponse.SC_FORBIDDEN);
+                    result.put("error_message", "Account is not active.");
+                    result.put("error_details", "User account status: " + status);
+                    return result;
+                }
+
+                if (passwordHasher.verifyPassword(password, storedHashedPassword)) {
+                    // Update last login time
+                    updateLastLoginTime(UUID.fromString(userId));
+
+                    if (mfaEnabled) {
+                        result.put("success", true);
+                        result.put("message", "MFA required.");
+                        result.put("user_id", userId);
+                        result.put("mfa_required", true);
+                        // In a real system, trigger MFA challenge here (e.g., send OTP to email/phone)
+                    } else {
+                        // Generate JWT token
+                        // This is a placeholder for actual JWT generation logic
+                        // In a real system, you'd use a library like jjwt (e.g., io.jsonwebtoken)
+                        JSONObject claims = new JSONObject();
+                        claims.put("userId", userId);
+                        claims.put("username", username);
+                        claims.put("email", email);
+                        claims.put("role", roleName);
+                        try {
+                            claims.put("permissions", new JSONParser().parse(permissionsJson)); // Parse permissions JSONB
+                        } catch (ParseException e) {
+                            System.err.println("Failed to parse permissions JSON for user " + userId + ": " + e.getMessage());
+                            claims.put("permissions", new JSONArray()); // Default to empty array
+                        }
+
+                        // String jwtToken = JwtUtil.generateToken(claims); // Actual JWT generation
+                        String jwtToken = "mock_jwt_token_for_" + userId; // Mock JWT
+
+                        result.put("success", true);
+                        result.put("message", "Login successful.");
+                        result.put("user_id", userId);
+                        result.put("username", username);
+                        result.put("email", email);
+                        result.put("role", roleName);
+                        result.put("token", jwtToken);
+                        result.put("mfa_required", false);
+                    }
+                } else {
+                    result.put("error", true);
+                    result.put("status_code", HttpServletResponse.SC_UNAUTHORIZED);
+                    result.put("error_message", "Invalid credentials.");
+                    result.put("error_details", "Password mismatch.");
+                }
+            } else {
+                result.put("error", true);
+                result.put("status_code", HttpServletResponse.SC_UNAUTHORIZED);
+                result.put("error_message", "Invalid credentials.");
+                result.put("error_details", "User not found.");
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return result;
+    }
+
+    /**
+     * Allows an authorized user to reset the password for any user.
+     * This function should be protected by strong authorization (e.g., Admin/DPO permission).
+     * @param email The email of the user whose password is to be reset.
+     * @param newPassword The new password (raw string).
+     * @return JSONObject indicating success or error.
+     * @throws SQLException if a database access error occurs.
+     */
+    private JSONObject resetUserPassword(String email, String newPassword) throws SQLException {
+        JSONObject result = new JSONObject();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+
+        // Find the user by email
+        String checkSql = "SELECT id, status FROM users WHERE email = ? AND deleted_at IS NULL";
+        // Update password and set status to ACTIVE if it was PENDING_PASSWORD_SETUP or similar
+        String updateSql = "UPDATE users SET password_hash = ?, status = 'ACTIVE', last_updated_at = NOW() WHERE id = ?";
+
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(checkSql);
+            pstmt.setString(1, email);
+            rs = pstmt.executeQuery();
+
+            if (!rs.next()) {
+                result.put("error", true);
+                result.put("status_code", HttpServletResponse.SC_NOT_FOUND);
+                result.put("error_message", "User not found with email: " + email + ".");
+                return result;
+            }
+
+            UUID userId = UUID.fromString(rs.getString("id")); // Get the actual user_id
+            String currentStatus = rs.getString("status");
+
+            // User exists, proceed to update password
+            pstmt = conn.prepareStatement(updateSql);
+            pstmt.setString(1, passwordHasher.hashPassword(newPassword));
+            pstmt.setObject(2, userId);
+
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows > 0) {
+                result.put("success", true);
+                result.put("message", "Password reset successfully.");
+                result.put("user_id", userId.toString());
+            } else {
+                result.put("error", true);
+                result.put("status_code", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                result.put("error_message", "Failed to reset password.");
+            }
+
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return result;
+    }
+
+    /**
+     * Updates the last_login_at timestamp for a user.
+     */
+    private void updateLastLoginTime(UUID userId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        PoolDB pool = new PoolDB();
+        String sql = "UPDATE users SET last_login_at = NOW() WHERE id = ?"; // Use 'id' as PK
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, userId);
+            pstmt.executeUpdate();
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
+    }
+
+
+
 
     @Override
     public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {

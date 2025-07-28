@@ -27,4 +27,21 @@ public class PasswordHasher {
     public boolean checkPassword(String plaintextPassword, String hashedPassword) {
         return BCrypt.checkpw(plaintextPassword, hashedPassword);
     }
+
+    /**
+     * Verifies a plain-text password against a BCrypt hashed password.
+     *
+     * @param plainTextPassword The password provided by the user (in plain text).
+     * @param hashedPassword The stored BCrypt hashed password from the database.
+     * @return true if the plain-text password matches the hash, false otherwise.
+     */
+    public boolean verifyPassword(String plainTextPassword, String hashedPassword) {
+        if (plainTextPassword == null || hashedPassword == null) {
+            // Handle null inputs gracefully, perhaps throw IllegalArgumentException or return false
+            return false;
+        }
+        // BCrypt.checkpw(plain_password, hashed_password)
+        // This method handles extracting the salt from the hashed password and comparing.
+        return BCrypt.checkpw(plainTextPassword, hashedPassword);
+    }
 }
