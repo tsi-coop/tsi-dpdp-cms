@@ -872,7 +872,7 @@ public class User implements REST {
         if (roleId != null) { sqlBuilder.append(", role_id = ?"); params.add(roleId); }
         if (status != null && !status.isEmpty()) { sqlBuilder.append(", status = ?"); params.add(status); }
 
-        sqlBuilder.append(" WHERE user_id = ?");
+        sqlBuilder.append(" WHERE id = ?");
         params.add(userId);
 
         try {
