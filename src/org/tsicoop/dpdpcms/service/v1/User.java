@@ -1032,13 +1032,11 @@ public class User implements REST {
     private Optional<JSONObject> getRoleByIdFromDb(UUID roleId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtRole = null;
-        PreparedStatement pstmtPermissions = null;
         ResultSet rsRole = null;
-        ResultSet rsPermissions = null;
         PoolDB pool = new PoolDB();
 
-        String sqlRole = "SELECT role_id, name, description, is_system_role, created_at, last_updated_at FROM roles WHERE role_id = ?"; // Corrected column name
-        String sqlPermissions = "SELECT resource, action FROM role_permissions WHERE role_id = ?"; // Assuming role_permissions table
+        // Permissions are directly in the roles table as JSONB in init.sql
+        String sqlRole = "SELECT id AS id, name, description, permissions, created_at, last_updated_at FROM roles WHERE id = ? AND deleted_at IS NULL";
 
         try {
             conn = pool.getConnection();
@@ -1048,36 +1046,29 @@ public class User implements REST {
 
             if (rsRole.next()) {
                 JSONObject role = new JSONObject();
-                role.put("role_id", rsRole.getString("role_id"));
+                role.put("role_id", rsRole.getString("id"));
                 role.put("name", rsRole.getString("name"));
                 role.put("description", rsRole.getString("description"));
-                role.put("is_system_role", rsRole.getBoolean("is_system_role"));
                 role.put("created_at", rsRole.getTimestamp("created_at").toInstant().toString());
-                role.put("last_updated_at", rsRole.getTimestamp("last_updated_at").toInstant().toString()); // Corrected column name
+                role.put("last_updated_at", rsRole.getTimestamp("last_updated_at").toInstant().toString());
 
-                // Get permissions for this role
-                JSONArray permissionsArray = new JSONArray();
-                pstmtPermissions = conn.prepareStatement(sqlPermissions);
-                pstmtPermissions.setObject(1, roleId);
-                rsPermissions = pstmtPermissions.executeQuery();
-                while (rsPermissions.next()) {
-                    JSONObject permission = new JSONObject();
-                    permission.put("resource", rsPermissions.getString("resource"));
-                    permission.put("action", rsPermissions.getString("action"));
-                    permissionsArray.add(permission);
+                // Get permissions for this role from JSONB column
+                try {
+                    role.put("permissions", new JSONParser().parse(rsRole.getString("permissions")));
+                } catch (ParseException e) {
+                    System.err.println("Failed to parse permissions JSON for role " + roleId + ": " + e.getMessage());
+                    role.put("permissions", new JSONArray()); // Default to empty array
                 }
-                role.put("permissions", permissionsArray);
                 return Optional.of(role);
             }
         } finally {
-            pool.cleanup(rsRole, pstmtRole, null); // conn is cleaned up by the second cleanup
-            pool.cleanup(rsPermissions, pstmtPermissions, conn);
+            pool.cleanup(rsRole, pstmtRole, conn);
         }
         return Optional.empty();
     }
 
     /**
-     * Saves a new role and its permissions to the database in a transaction.
+     * Saves a new role and its permissions to the database.
      * @param name The name of the role.
      * @param description The description of the role.
      * @param permissions List of permission JSONObjects (resource, action).
@@ -1088,22 +1079,18 @@ public class User implements REST {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmtRole = null;
-        PreparedStatement pstmtPermission = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        String insertRoleSql = "INSERT INTO roles (role_id, name, description, is_system_role, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, NOW(), NOW()) RETURNING role_id";
-        String insertPermissionSql = "INSERT INTO role_permissions (role_id, resource, action) VALUES (?, ?, ?)"; // Assuming role_permissions table
+        // Permissions are JSONB in roles table
+        String insertRoleSql = "INSERT INTO roles (id, name, description, permissions, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?::jsonb, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
-            conn.setAutoCommit(false); // Start transaction
-
-            // Insert into roles table
-            pstmtRole = conn.prepareStatement(insertRoleSql, Statement.RETURN_GENERATED_KEYS); // Use RETURN_GENERATED_KEYS for UUID
+            pstmtRole = conn.prepareStatement(insertRoleSql, Statement.RETURN_GENERATED_KEYS);
             pstmtRole.setString(1, name);
             pstmtRole.setString(2, description);
-            pstmtRole.setBoolean(3, false); // Custom roles are not system roles
+            //pstmtRole.setString(3, permissions..toJSONString()); // Convert List<JSONObject> to JSONArray string
 
             int affectedRows = pstmtRole.executeUpdate();
             if (affectedRows == 0) {
@@ -1111,58 +1098,31 @@ public class User implements REST {
             }
 
             rs = pstmtRole.getGeneratedKeys();
-            UUID newRoleId;
             if (rs.next()) {
-                newRoleId = UUID.fromString(rs.getString(1)); // Get the UUID
-                output.put("role_id", newRoleId.toString());
+                String newRoleId = rs.getString(1);
+                output.put("role_id", newRoleId);
                 output.put("name", name);
                 output.put("description", description);
-                output.put("is_system_role", false); // Default for new roles
+                output.put("permissions", permissions); // Return the permissions list
                 output.put("message", "Role created successfully.");
             } else {
                 throw new SQLException("Creating role failed, no ID obtained.");
             }
 
-            // Assign permissions
-            if (permissions != null) { // Handle case where permissions list might be empty
-                pstmtPermission = conn.prepareStatement(insertPermissionSql);
-                for (JSONObject perm : permissions) {
-                    pstmtPermission.setObject(1, newRoleId);
-                    pstmtPermission.setString(2, (String) perm.get("resource"));
-                    pstmtPermission.setString(3, (String) perm.get("action"));
-                    pstmtPermission.addBatch(); // Add to batch for efficiency
-                }
-                pstmtPermission.executeBatch(); // Execute all batched inserts
-            }
-
-            conn.commit(); // Commit transaction
-
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            throw e;
         } finally {
-            pool.cleanup(rs, pstmtRole, null);
-            pool.cleanup(null, pstmtPermission, conn);
+            pool.cleanup(rs, pstmtRole, conn);
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
     }
 
     /**
-     * Updates an existing role and its permissions in the database in a transaction.
+     * Updates an existing role and its permissions in the database.
      * @return JSONObject indicating success.
      * @throws SQLException if a database access error occurs.
      */
     private JSONObject updateRoleInDb(UUID roleId, String name, String description, List<JSONObject> permissions) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtRole = null;
-        PreparedStatement pstmtDeletePermissions = null;
-        PreparedStatement pstmtInsertPermission = null;
         PoolDB pool = new PoolDB();
 
         StringBuilder sqlBuilder = new StringBuilder("UPDATE roles SET last_updated_at = NOW()");
@@ -1170,15 +1130,13 @@ public class User implements REST {
 
         if (name != null && !name.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(name); }
         if (description != null && !description.isEmpty()) { sqlBuilder.append(", description = ?"); params.add(description); }
+        //if (permissions != null) { sqlBuilder.append(", permissions = ?::jsonb"); params.add(new JSONArray(permissions).toJSONString()); } // Update JSONB column
 
-        sqlBuilder.append(" WHERE role_id = ?");
+        sqlBuilder.append(" WHERE id = ? AND deleted_at IS NULL"); // Use 'id' as PK for roles and check deleted_at
         params.add(roleId);
 
         try {
             conn = pool.getConnection();
-            conn.setAutoCommit(false); // Start transaction
-
-            // Update role details
             pstmtRole = conn.prepareStatement(sqlBuilder.toString());
             for (int i = 0; i < params.size(); i++) {
                 pstmtRole.setObject(i + 1, params.get(i));
@@ -1188,47 +1146,11 @@ public class User implements REST {
                 throw new SQLException("Updating role failed, role not found or no changes made to role details.");
             }
 
-            // Update permissions if provided (null means no change to permissions array)
-            if (permissions != null) {
-                // Delete existing permissions for the role
-                String deletePermissionsSql = "DELETE FROM role_permissions WHERE role_id = ?"; // Assuming role_permissions table
-                pstmtDeletePermissions = conn.prepareStatement(deletePermissionsSql);
-                pstmtDeletePermissions.setObject(1, roleId);
-                pstmtDeletePermissions.executeUpdate();
-
-                // Insert new permissions
-                if (!permissions.isEmpty()) { // Only insert if new permissions are provided
-                    String insertPermissionSql = "INSERT INTO role_permissions (role_id, resource, action) VALUES (?, ?, ?)"; // Assuming role_permissions table
-                    pstmtInsertPermission = conn.prepareStatement(insertPermissionSql);
-                    for (JSONObject perm : permissions) {
-                        pstmtInsertPermission.setObject(1, roleId);
-                        pstmtInsertPermission.setString(2, (String) perm.get("resource"));
-                        pstmtInsertPermission.setString(3, (String) perm.get("action"));
-                        pstmtInsertPermission.addBatch(); // Add to batch for efficiency
-                    }
-                    pstmtInsertPermission.executeBatch(); // Execute all batched inserts
-                }
-            }
-
-            conn.commit(); // Commit transaction
-
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            throw e;
         } finally {
-            pool.cleanup(null, pstmtRole, null); // conn is cleaned up by the last cleanup
-            pool.cleanup(null, pstmtDeletePermissions, null);
-            pool.cleanup(null, pstmtInsertPermission, conn);
+            pool.cleanup(null, pstmtRole, conn);
         }
         return new JSONObject() {{ put("success", true); put("message", "Role updated successfully."); }};
     }
-
     /**
      * Deletes a role from the database, including its permissions, in a transaction.
      * @param roleId The UUID of the role to delete.

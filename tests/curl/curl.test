@@ -17,6 +17,8 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms-stealth\tests\curl\admin\delete_user.json http://localhost:8080/api/v1/admin/user
 # List Roles
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms-stealth\tests\curl\admin\list_roles.json http://localhost:8080/api/v1/admin/user
+# Get Role
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms-stealth\tests\curl\admin\get_role.json http://localhost:8080/api/v1/admin/user
 
 ##Client
 # Register
