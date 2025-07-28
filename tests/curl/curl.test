@@ -5,8 +5,8 @@ TSI DPDP CMS - v0.1
 curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-dpdp-cms-stealth\tests\curl\admin\reset_password.json http://localhost:8080/api/v1/admin/user
 # Login
 curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-dpdp-cms-stealth\tests\curl\admin\login.json http://localhost:8080/api/v1/admin/user
-# Gat All Clients
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiU1lTVEVNX0FETUlOIiwibmFtZSI6ImFkbWluIiwic3ViIjoiYWRtaW5AdHNpY29vcC5vcmciLCJpYXQiOjE3NTI1MDA4OTQsImV4cCI6MTc1MzM2NDg5NH0.H2E11JTIGShGRm2KYtY3AjMpK7k_vVLWuoQtfkuhKBI" -d @C:\work\tsi-aadhaar-vault-plus\api-tests\admin\get_all_clients.json http://localhost:8080/api/admin/clients
+# List Users
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms-stealth\tests\curl\admin\list_users.json http://localhost:8080/api/v1/admin/user
 
 ##Client
 # Register

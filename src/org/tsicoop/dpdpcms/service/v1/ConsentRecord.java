@@ -1,4 +1,4 @@
-package org.tsicoop.dpdpcms.service; // Package changed as requested
+package org.tsicoop.dpdpcms.service.v1; // Package changed as requested
 
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available
 import jakarta.servlet.http.HttpServletRequest;

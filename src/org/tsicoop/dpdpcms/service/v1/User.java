@@ -1,4 +1,4 @@
-package org.tsicoop.dpdpcms.service; // Package changed as requested
+package org.tsicoop.dpdpcms.service.v1; // Package changed as requested
 
 import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available in the new package structure
@@ -727,7 +727,7 @@ public class User implements REST {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT u.user_id, u.username, u.email, u.status, u.last_login_at, u.created_at, u.last_updated_at, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE 1=1");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT u.id, u.username, u.email, u.status, u.last_login_at, u.created_at, u.last_updated_at, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
@@ -754,7 +754,7 @@ public class User implements REST {
 
             while (rs.next()) {
                 JSONObject user = new JSONObject();
-                user.put("user_id", rs.getString("user_id"));
+                user.put("user_id", rs.getString("id"));
                 user.put("username", rs.getString("username"));
                 user.put("email", rs.getString("email"));
                 user.put("status", rs.getString("status"));

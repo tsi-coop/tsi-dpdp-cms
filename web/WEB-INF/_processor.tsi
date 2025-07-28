@@ -1,5 +1,5 @@
 # Service definitions
-/api/v1/user=org.tsicoop.dpdpcms.service.User
+/api/v1/user=org.tsicoop.dpdpcms.service.v1.User
 /api/v1/consent=org.tsicoop.dpdpcms.api.client.RegisterClient
 /api/v1/policy=org.tsicoop.dpdpcms.api.client.Vault
 

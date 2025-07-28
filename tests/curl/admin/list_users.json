@@ -1,0 +1,7 @@
+{
+  "_func": "list_users",
+  "status": "ACTIVE",
+  "search": "john",
+  "page": 1,
+  "limit": 10
+}
