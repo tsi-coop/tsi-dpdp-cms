@@ -703,7 +703,7 @@ public class User implements REST {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM roles WHERE role_id = ?";
+        String sql = "SELECT COUNT(*) FROM roles WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -818,7 +818,7 @@ public class User implements REST {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         // Use RETURNING user_id to get the generated UUID
-        String sql = "INSERT INTO users (user_id, username, email, password_hash, role_id, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING user_id";
+        String sql = "INSERT INTO users (id, username, email, password_hash, role_id, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
