@@ -781,7 +781,7 @@ public class User implements REST {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT u.user_id, u.username, u.email, u.password_hash, u.status, u.last_login_at, u.created_at, u.last_updated_at, r.role_id, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.user_id = ?";
+        String sql = "SELECT u.id, u.username, u.email, u.password_hash, u.status, u.last_login_at, u.created_at, u.last_updated_at, r.id, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -789,12 +789,11 @@ public class User implements REST {
             rs = pstmt.executeQuery();
             if (rs.next()) {
                 JSONObject user = new JSONObject();
-                user.put("user_id", rs.getString("user_id"));
+                user.put("user_id", rs.getString("id"));
                 user.put("username", rs.getString("username"));
                 user.put("email", rs.getString("email"));
                 // user.put("password_hash", rs.getString("password_hash")); // Do NOT expose password hash via API
                 user.put("status", rs.getString("status"));
-                user.put("role_id", rs.getString("role_id"));
                 user.put("role_name", rs.getString("role_name"));
                 user.put("last_login_at", rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toInstant().toString() : null);
                 user.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
