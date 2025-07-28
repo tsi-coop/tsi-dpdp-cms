@@ -987,7 +987,7 @@ public class User implements REST {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT role_id, name, description, is_system_role, created_at, last_updated_at FROM roles WHERE 1=1"); // Corrected column name
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, description, created_at, last_updated_at FROM roles WHERE 1=1"); // Corrected column name
         List<Object> params = new ArrayList<>();
 
         if (search != null && !search.isEmpty()) {
@@ -1010,10 +1010,9 @@ public class User implements REST {
 
             while (rs.next()) {
                 JSONObject role = new JSONObject();
-                role.put("role_id", rs.getString("role_id"));
+                role.put("role_id", rs.getString("id"));
                 role.put("name", rs.getString("name"));
                 role.put("description", rs.getString("description"));
-                role.put("is_system_role", rs.getBoolean("is_system_role"));
                 role.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 role.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString()); // Corrected column name
                 rolesArray.add(role);
