@@ -4,8 +4,6 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONObject; // For parsing input in validateRequestFunc
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -13,8 +11,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.UUID; // For UUID parsing
 
 
 public class InterceptingFilter implements Filter {
@@ -190,7 +186,7 @@ public class InterceptingFilter implements Filter {
 
 
             // --- Instantiate and execute Servlet ---
-            REST action = ((REST) Class.forName(classname).getConstructor().newInstance());
+            Action action = ((Action) Class.forName(classname).getConstructor().newInstance());
 
             // The service's own validate method (e.g., checking method, specific input fields)
             boolean validRequest = action.validate(method, req, res);

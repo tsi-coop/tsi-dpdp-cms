@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "contact_person": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "primary_domain": {
+      "type": "string"
+    },
+    "cms_cname": {
+      "type": "string"
+    },
+    "is_significant_data_fiduciary": {
+      "type": "boolean"
+    },
+    "dpo_user_id": {},
+    "dpb_registration_id": {}
+  },
+  "required": [
+    "_func",
+    "name",
+    "contact_person",
+    "email",
+    "phone",
+    "address",
+    "primary_domain",
+    "cms_cname",
+    "is_significant_data_fiduciary",
+    "dpo_user_id",
+    "dpb_registration_id"
+  ]
+}

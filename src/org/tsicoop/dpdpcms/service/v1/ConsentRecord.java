@@ -41,23 +41,7 @@ import java.util.Optional;
  * - Assumes 'fiduciaries' and 'consent_policies' tables exist for FK references.
  * - Assumes 'users' table exists for created_by_user_id etc. in audit logs.
  */
-public class ConsentRecord implements REST {
-
-    // All HTTP methods will now defer to the POST method
-    @Override
-    public void get(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "GET method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void put(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "PUT method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void delete(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "DELETE method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
+public class ConsentRecord implements Action {
 
     /**
      * Handles all Consent Record Management operations via a single POST endpoint.

@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
  * will need to be adjusted to match your 'backend_users', 'backend_roles', 'backend_user_roles'
  * and the JSONB permissions column in 'backend_roles'.
  */
-public class User implements REST {
+public class User implements Action {
 
     private final PasswordHasher passwordHasher = new PasswordHasher();
 
@@ -47,22 +47,6 @@ public class User implements REST {
             Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+])[A-Za-z\\d!@#$%^&*()_+]{8,}$");
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$");
-
-    // All HTTP methods will now defer to the POST method
-    @Override
-    public void get(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "GET method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void put(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "PUT method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void delete(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "DELETE method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
 
     /**
      * Handles all User and Role Management operations via a single POST endpoint.

@@ -4,7 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONObject;
 
-public interface REST {
+public interface Action {
 
     String NONE = "none";
     String CSV_OUTPUT = "csv";
@@ -13,13 +13,7 @@ public interface REST {
     String DELIMITER = ".";
     JSONObject validator = null;
 
-    void get(HttpServletRequest req, HttpServletResponse res);
-
     void post(HttpServletRequest req, HttpServletResponse res);
-
-    void delete(HttpServletRequest req, HttpServletResponse res);
-
-    void put(HttpServletRequest req, HttpServletResponse res);
 
     boolean validate(String method, HttpServletRequest req, HttpServletResponse res);
 }

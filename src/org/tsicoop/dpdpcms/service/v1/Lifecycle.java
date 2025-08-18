@@ -47,23 +47,7 @@ import java.util.Optional;
  * created_by_user_id (UUID), last_updated_at (TIMESTAMPZ).
  * - Assumes 'fiduciaries', 'users', 'legal_retention_exceptions' tables exist for FKs and lookups.
  */
-public class Lifecycle implements REST {
-
-    // All HTTP methods will now defer to the POST method
-    @Override
-    public void get(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "GET method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void put(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "PUT method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void delete(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "DELETE method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
+public class Lifecycle implements Action {
 
     /**
      * Handles all Data Retention and Purge Management operations via a single POST endpoint.

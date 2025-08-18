@@ -40,26 +40,10 @@ import java.util.regex.Pattern; // For domain validation, if needed
  * deleted_at (TIMESTAMPZ), deleted_by_user_id (UUID).
  * - Assumes 'fiduciaries' and 'users' tables exist for FK references.
  */
-public class Processor implements REST {
+public class Processor implements Action {
 
     // Regex for basic domain validation (simplified, if processor has a domain to validate)
     private static final Pattern DOMAIN_PATTERN = Pattern.compile("^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$");
-
-    // All HTTP methods will now defer to the POST method
-    @Override
-    public void get(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "GET method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void put(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "PUT method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void delete(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "DELETE method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
 
     /**
      * Handles all Data Processor Management operations via a single POST endpoint.

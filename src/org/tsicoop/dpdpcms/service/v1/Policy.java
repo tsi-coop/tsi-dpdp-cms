@@ -37,27 +37,11 @@ import java.util.regex.Pattern; // Not strictly needed for PolicyService, but ke
  * deleted_at (TIMESTAMPZ), deleted_by_user_id (UUID).
  * - Assumes 'users' table exists for FK references to created_by_user_id etc.
  */
-public class Policy implements REST {
+public class Policy implements Action {
 
     // Regex for basic validation (not exhaustive for all fields, but for consistency)
     private static final Pattern POLICY_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{3,255}$");
     private static final Pattern VERSION_PATTERN = Pattern.compile("^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"); // e.g., 1.0, 1.0.1
-
-    // All HTTP methods will now defer to the POST method
-    @Override
-    public void get(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "GET method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void put(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "PUT method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void delete(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "DELETE method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
 
     /**
      * Handles all Policy Management operations via a single POST endpoint.

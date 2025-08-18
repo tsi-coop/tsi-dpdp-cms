@@ -37,27 +37,11 @@ import java.util.Optional;
  * last_updated_by_user_id (UUID), due_date (TIMESTAMPZ).
  * - Assumes 'fiduciaries' and 'users' tables exist for FK references.
  */
-public class Grievance implements REST {
+public class Grievance implements Action {
 
     // Define standard SLA for different grievance types (e.g., in days)
     private static final int DEFAULT_SLA_DAYS = 30; // DPDP Act typically gives 30 days
     private static final int ERASURE_SLA_DAYS = 7; // Example: Erasure might have shorter SLA
-
-    // All HTTP methods will now defer to the POST method
-    @Override
-    public void get(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "GET method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void put(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "PUT method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void delete(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "DELETE method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
 
     /**
      * Handles all Grievance Management operations via a single POST endpoint.

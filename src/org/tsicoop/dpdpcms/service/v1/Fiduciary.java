@@ -1,6 +1,6 @@
 package org.tsicoop.dpdpcms.service.v1;
 
-import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available
+import org.tsicoop.dpdpcms.framework.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
@@ -11,15 +11,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement; // For Statement.RETURN_GENERATED_KEYS
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.regex.Pattern; // For domain validation, if needed
 
-// Assuming a DNS verification utility class exists or is integrated
-// import org.tsicoop.dpdpcms.util.DnsVerifier; // Example
 
 /**
  * FiduciaryService class for managing Data Fiduciary profiles.
@@ -40,27 +38,11 @@ import java.util.regex.Pattern; // For domain validation, if needed
  * deleted_at (TIMESTAMPZ), deleted_by_user_id (UUID).
  * - Assumes 'users' table exists for FK references to created_by_user_id etc.
  */
-public class Fiduciary implements REST {
+public class Fiduciary implements Action {
 
     // Regex for basic domain validation (simplified)
     private static final Pattern DOMAIN_PATTERN = Pattern.compile("^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$");
     private static final Pattern CNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$");
-
-    // All HTTP methods will now defer to the POST method
-    @Override
-    public void get(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "GET method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void put(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "PUT method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
-
-    @Override
-    public void delete(HttpServletRequest req, HttpServletResponse res) {
-        OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "DELETE method is not used directly. Use POST with '_func' attribute.", req.getRequestURI());
-    }
 
     /**
      * Handles all Data Fiduciary Management operations via a single POST endpoint.
