@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-title TSI Aadhaar Vault Plus
+title TSI DPDP CMS
 :: Check if .env file exists
 if not exist ".env" (
     echo Error: .env file not found. Please create it.

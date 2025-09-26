@@ -13,10 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement; // Added for Statement.RETURN_GENERATED_KEYS
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -662,7 +659,7 @@ public class User implements Action {
         sqlBuilder.append(")"); // Close the OR group
 
         if (excludeUserId != null) {
-            sqlBuilder.append(" AND user_id != ?"); // Use 'user_id' as primary key name for users table
+            sqlBuilder.append(" AND id != ?"); // Use 'user_id' as primary key name for users table
             params.add(excludeUserId);
         }
 
@@ -1074,7 +1071,7 @@ public class User implements Action {
             pstmtRole = conn.prepareStatement(insertRoleSql, Statement.RETURN_GENERATED_KEYS);
             pstmtRole.setString(1, name);
             pstmtRole.setString(2, description);
-            //pstmtRole.setString(3, permissions..toJSONString()); // Convert List<JSONObject> to JSONArray string
+            pstmtRole.setString(3, convertListToJsonString(permissions)); // Convert List<JSONObject> to JSONArray string
 
             int affectedRows = pstmtRole.executeUpdate();
             if (affectedRows == 0) {
@@ -1097,6 +1094,17 @@ public class User implements Action {
             pool.cleanup(rs, pstmtRole, conn);
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
+    }
+
+    public static String convertListToJsonString(List<JSONObject> jsonObjectList) {
+        JSONObject perm = null;
+        JSONArray perms = new JSONArray();
+        Iterator it = jsonObjectList.iterator();
+        while(it.hasNext()){
+            perm = (JSONObject) it.next();
+            perms.add(perm);
+        }
+        return perms.toString();
     }
 
     /**

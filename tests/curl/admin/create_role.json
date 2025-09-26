@@ -1,0 +1,9 @@
+{
+  "_func": "create_role",
+  "name": "Custom Editor",
+  "description": "Can edit content and view reports.",
+  "permissions": [
+    {"resource": "cms:content", "action": "edit"},
+    {"resource": "report:audit", "action": "read"}
+  ]
+}
