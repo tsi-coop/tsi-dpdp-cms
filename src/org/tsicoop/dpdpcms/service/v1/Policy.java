@@ -83,7 +83,6 @@ public class Policy implements Action {
                 }
             }
 
-
             switch (func.toLowerCase()) {
                 case "list_policies":
                     String statusFilter = (String) input.get("status");
@@ -402,7 +401,7 @@ public class Policy implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id FROM consent_policies WHERE id = ? AND version = ? AND deleted_at IS NULL";
+        String sql = "SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at FROM consent_policies WHERE id = ? AND version = ? AND deleted_at IS NULL";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -419,9 +418,7 @@ public class Policy implements Action {
                 policy.put("jurisdiction", rs.getString("jurisdiction"));
                 policy.put("policy_content", new JSONParser().parse(rs.getString("policy_content"))); // Parse JSONB to JSONObject
                 policy.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
-                policy.put("created_by_user_id", rs.getString("created_by_user_id"));
                 policy.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
-                policy.put("last_updated_by_user_id", rs.getString("last_updated_by_user_id"));
                 return Optional.of(policy);
             }
         } catch (ParseException e) {
@@ -442,7 +439,7 @@ public class Policy implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id FROM consent_policies WHERE fiduciary_id = ? AND jurisdiction = ? AND status = 'ACTIVE' AND effective_date <= NOW() AND deleted_at IS NULL ORDER BY effective_date DESC LIMIT 1";
+        String sql = "SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at FROM consent_policies WHERE fiduciary_id = ? AND jurisdiction = ? AND status = 'ACTIVE' AND effective_date <= NOW() AND deleted_at IS NULL ORDER BY effective_date DESC LIMIT 1";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -459,9 +456,7 @@ public class Policy implements Action {
                 policy.put("jurisdiction", rs.getString("jurisdiction"));
                 policy.put("policy_content", new JSONParser().parse(rs.getString("policy_content")));
                 policy.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
-                policy.put("created_by_user_id", rs.getString("created_by_user_id"));
                 policy.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
-                policy.put("last_updated_by_user_id", rs.getString("last_updated_by_user_id"));
                 return Optional.of(policy);
             }
         } catch (ParseException e) {
@@ -482,7 +477,7 @@ public class Policy implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, NOW(), ?, NOW(), ?)";
+        String sql = "INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, NOW(),NOW())";
 
         try {
             conn = pool.getConnection();
@@ -494,8 +489,6 @@ public class Policy implements Action {
             pstmt.setString(5, status);
             pstmt.setString(6, jurisdiction);
             pstmt.setString(7, policyContent.toJSONString()); // Pass JSON as String, cast to JSONB
-            pstmt.setObject(8, createdByUserId);
-            pstmt.setObject(9, createdByUserId); // Same for created_by and last_updated_by initially
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -562,8 +555,8 @@ public class Policy implements Action {
         PreparedStatement pstmtActivate = null;
         PoolDB pool = new PoolDB();
 
-        String deactivateSql = "UPDATE consent_policies SET status = 'ARCHIVED', last_updated_at = NOW(), last_updated_by_user_id = ? WHERE fiduciary_id = ? AND jurisdiction = ? AND status = 'ACTIVE'";
-        String activateSql = "UPDATE consent_policies SET status = 'ACTIVE', last_updated_at = NOW(), last_updated_by_user_id = ? WHERE id = ? AND version = ?";
+        String deactivateSql = "UPDATE consent_policies SET status = 'ARCHIVED', last_updated_at = NOW() WHERE fiduciary_id = ? AND jurisdiction = ? AND status = 'ACTIVE'";
+        String activateSql = "UPDATE consent_policies SET status = 'ACTIVE', last_updated_at = NOW() WHERE id = ? AND version = ?";
 
         try {
             conn = pool.getConnection();
@@ -571,16 +564,14 @@ public class Policy implements Action {
 
             // 1. Deactivate any currently ACTIVE policy for this fiduciary and jurisdiction
             pstmtDeactivate = conn.prepareStatement(deactivateSql);
-            pstmtDeactivate.setObject(1, publishedByUserId);
-            pstmtDeactivate.setObject(2, fiduciaryId);
-            pstmtDeactivate.setString(3, jurisdiction);
+            pstmtDeactivate.setObject(1, fiduciaryId);
+            pstmtDeactivate.setString(2, jurisdiction);
             pstmtDeactivate.executeUpdate();
 
             // 2. Activate the specified policy version
             pstmtActivate = conn.prepareStatement(activateSql);
-            pstmtActivate.setObject(1, publishedByUserId);
-            pstmtActivate.setString(2, policyId);
-            pstmtActivate.setString(3, version);
+            pstmtActivate.setString(1, policyId);
+            pstmtActivate.setString(2, version);
             int affectedRows = pstmtActivate.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Publishing policy failed, target policy not found or not in DRAFT/INACTIVE status.");

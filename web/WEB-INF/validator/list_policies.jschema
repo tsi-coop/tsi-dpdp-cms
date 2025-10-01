@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "search": {
+      "type": "string"
+    },
+    "fiduciary_id_filter": {
+      "type": "string"
+    },
+    "page": {
+      "type": "number"
+    },
+    "limit": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "_func",
+    "status",
+    "search",
+    "fiduciary_id_filter",
+    "page",
+    "limit"
+  ]
+}

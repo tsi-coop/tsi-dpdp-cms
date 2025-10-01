@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "policy_id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
+    },
+    "effective_date": {
+      "type": "string"
+    },
+    "jurisdiction": {
+      "type": "string"
+    },
+    "policy_content": {
+      "type": "object",
+      "properties": {
+        "en": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "data_processing_purposes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "legal_basis": {
+                    "type": "string"
+                  },
+                  "is_mandatory_for_service": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "description",
+                  "legal_basis",
+                  "is_mandatory_for_service"
+                ]
+              }
+            }
+          },
+          "required": [
+            "title",
+            "data_processing_purposes"
+          ]
+        }
+      },
+      "required": [
+        "en"
+      ]
+    }
+  },
+  "required": [
+    "_func",
+    "policy_id",
+    "version",
+    "fiduciary_id",
+    "effective_date",
+    "jurisdiction",
+    "policy_content"
+  ]
+}

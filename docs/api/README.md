@@ -2128,3 +2128,65 @@ JSON
 ]
 
 
+1. Accounting entries validation
+2. 
+
+
+1. Reports 
+2. GL balance validation
+3. Double the capacity - end the speculation
+3. How many EoDs, how many days, 
+accounting entries eod
+5. Likely date - Monday parallel run (Post migration)
+
+
+1. GL balance vs accounting vs working register comparison (CST)
+2. Clean migration (CST)
+3. Lifecycle deployment & sync fixes
+4. Dvara steps: 
+ - Neminath to share the list
+ - Randhir to confirm lifecycle
+
+Key items for next review: 29th Sep 2025
+
+1. Clean Lifecycle testing, Clean migration, Clean sync
+2. Report checklist 
+a. Burnol Validation Report - Post Migration, Post EOD (CST)
+b. GL Balance vs Working register movement: Open Balance, Daily turnover movement Cr/Dr, Closing Balance of GL balance table vs Working Register vs Ledger Entries (CST)
+c. All data Report (DS)
+d. Future Projection Report (CST)
+e. Demand vs Collection (CST)
+f. Perdix Datawarehouse reports comparison with Burnol amended DW reports (DS)
+
+
+
+1. Clean Lifecycle testing, Clean migration, Clean sync
+2. Report checklist
+Burnol Validation Report - Post Migration, Post EOD (CST)
+GL Balance vs Working register movement: Open Balance, Daily turnover movement Cr/Dr, Closing Balance of GL balance table vs Working Register vs Ledger Entries (CST)
+All data Report (DS)
+Future Projection Report (CST)
+Demand vs Collection (CST)
+Perdix Datawarehouse reports comparison with Burnol amended DW reports (DS)
+
+
+Pending:
+1. lms_recon, delta - movement between two dates, insert into table (Sanjay)
+2. GL balance - EOD
+3. Reporting
+4. Issues fix, fly way
+5. Multiple day sync & eod
+
+
+We are a non-profit foundation focused on the Indian Micro, Small, and Medium Enterprises (MSMEs) ecosystem. Our mission is to enable these businesses to implement successful technology strategies by partnering with niche local providers. We recognize the potential of a scalable blockchain solution in achieving this mission.
+
+https://in.linkedin.com/in/satishayyaswami
+
+Status Review - 29/09/2025
+
+1. Time out on NPA accounts (Randhir) - Further discussion
+2. Value dated settlements - Issue
+3. GL balance EOD
+
+
+
