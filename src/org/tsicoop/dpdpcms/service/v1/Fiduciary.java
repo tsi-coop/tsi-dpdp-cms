@@ -211,38 +211,49 @@ public class Fiduciary implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
                     break;
 
-                case "validate_domain":
+                case "validate_fiduciary_domain":
                     if (fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'validate_domain'.", req.getRequestURI());
                         return;
                     }
-                    Optional<JSONObject> fidToValidate = getFiduciaryFromDb(fiduciaryId);
-                    if (fidToValidate.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Data Fiduciary with ID '" + fiduciaryId + "' not found for domain validation.", req.getRequestURI());
-                        return;
+                    if(System.getenv("TSI_DPDP_CMS_ENV").contains("local")){
+                        String validationStatus = "VALIDATED";
+                        updateFiduciaryDomainValidationStatus(fiduciaryId, validationStatus);
+                        output = new JSONObject();
+                        output.put("fiduciary_id", fiduciaryId.toString());
+                        output.put("domain_validation_status", validationStatus);
+                        output.put("message","Domain validation successful.");
+                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
+                        break;
+
+                    }else {
+                        Optional<JSONObject> fidToValidate = getFiduciaryFromDb(fiduciaryId);
+                        if (fidToValidate.isEmpty()) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Data Fiduciary with ID '" + fiduciaryId + "' not found for domain validation.", req.getRequestURI());
+                            return;
+                        }
+                        String cmsCnameToValidate = (String) fidToValidate.get().get("cms_cname");
+                        dnsTxtToken = (String) fidToValidate.get().get("dns_txt_record_token");
+
+                        if (cmsCnameToValidate == null || cmsCnameToValidate.isEmpty() || dnsTxtToken == null || dnsTxtToken.isEmpty()) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "CMS CNAME or DNS TXT token not set for this Fiduciary. Please update Fiduciary profile first.", req.getRequestURI());
+                            return;
+                        }
+
+                        // --- Call DNS verification utility ---
+                        // This is a placeholder for actual DNS lookup logic
+                        boolean isDnsTxtVerified = DnsVerifier.verifyDnsTxtRecord(cmsCnameToValidate, "dpdp-verify=" + dnsTxtToken);
+                        // --- End DNS verification call ---
+
+                        String validationStatus = isDnsTxtVerified ? "VALIDATED" : "FAILED";
+                        updateFiduciaryDomainValidationStatus(fiduciaryId, validationStatus);
+                        output = new JSONObject();
+                        output.put("fiduciary_id", fiduciaryId.toString());
+                        output.put("domain_validation_status", validationStatus);
+                        output.put("message", isDnsTxtVerified ? "Domain validation successful." : "Domain validation failed. Please check your DNS TXT record.");
+                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
+                        break;
                     }
-                    String cmsCnameToValidate = (String) fidToValidate.get().get("cms_cname");
-                    dnsTxtToken = (String) fidToValidate.get().get("dns_txt_record_token");
-
-                    if (cmsCnameToValidate == null || cmsCnameToValidate.isEmpty() || dnsTxtToken == null || dnsTxtToken.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "CMS CNAME or DNS TXT token not set for this Fiduciary. Please update Fiduciary profile first.", req.getRequestURI());
-                        return;
-                    }
-
-                    // --- Call DNS verification utility ---
-                    // This is a placeholder for actual DNS lookup logic
-                    boolean isDnsTxtVerified = DnsVerifier.verifyDnsTxtRecord(cmsCnameToValidate, "dpdp-verify=" + dnsTxtToken);
-                    // --- End DNS verification call ---
-
-                    String validationStatus = isDnsTxtVerified ? "VALIDATED" : "FAILED";
-                    updateFiduciaryDomainValidationStatus(fiduciaryId, validationStatus, currentCmsUserId);
-                    output = new JSONObject();
-                    output.put("fiduciary_id", fiduciaryId.toString());
-                    output.put("domain_validation_status", validationStatus);
-                    output.put("message", isDnsTxtVerified ? "Domain validation successful." : "Domain validation failed. Please check your DNS TXT record.");
-                    OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
-                    break;
-
                 default:
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
                     break;
@@ -562,17 +573,16 @@ public class Fiduciary implements Action {
      * Updates the domain validation status of a fiduciary.
      * @throws SQLException if a database access error occurs.
      */
-    private void updateFiduciaryDomainValidationStatus(UUID fiduciaryId, String validationStatus, UUID updatedByUserId) throws SQLException {
+    private void updateFiduciaryDomainValidationStatus(UUID fiduciaryId, String validationStatus) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE fiduciaries SET domain_validation_status = ?, last_updated_at = NOW(), last_updated_by_user_id = ? WHERE id = ? AND deleted_at IS NULL";
+        String sql = "UPDATE fiduciaries SET domain_validation_status = ?, last_updated_at = NOW() WHERE id = ? AND deleted_at IS NULL";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, validationStatus);
-            pstmt.setObject(2, updatedByUserId);
-            pstmt.setObject(3, fiduciaryId);
+            pstmt.setObject(2, fiduciaryId);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Updating fiduciary domain validation status failed, fiduciary not found.");

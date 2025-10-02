@@ -936,7 +936,7 @@ Request:
 JSON
 
 {
-  "_func": "validate_domain",
+  "_func": "validate_fiduciary_domain",
   "fiduciary_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef" // Required
 }
 Response (200 OK):
