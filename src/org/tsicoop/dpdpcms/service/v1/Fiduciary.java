@@ -146,7 +146,6 @@ public class Fiduciary implements Action {
                     break;
 
                 case "update_fiduciary":
-                    System.out.println("here1");
                     if (fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'update_fiduciary'.", req.getRequestURI());
                         return;
@@ -155,7 +154,6 @@ public class Fiduciary implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Data Fiduciary with ID '" + fiduciaryId + "' not found.", req.getRequestURI());
                         return;
                     }
-                    System.out.println("here2");
                     name = (String) input.get("name");
                     contactPerson = (String) input.get("contact_person");
                     email = (String) input.get("email");
@@ -167,7 +165,6 @@ public class Fiduciary implements Action {
                     dpoUserIdStr = (String) input.get("dpo_user_id");
                     dpbRegId = (String) input.get("dpb_registration_id");
                     statusFilter = (String) input.get("status"); // 'status' is the field name in JSON
-                    System.out.println("here3");
                     if (name == null && contactPerson == null && email == null && phone == null && address == null &&
                             primaryDomain == null && cmsCname == null && isSignificant == null && dpoUserIdStr == null &&
                             dpbRegId == null && statusFilter == null) {
@@ -196,7 +193,6 @@ public class Fiduciary implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Provided DPO User ID not found for update.", req.getRequestURI());
                         return;
                     }
-                    System.out.println("here4");
                     output = updateFiduciaryInDb(fiduciaryId, name, contactPerson, email, phone, address, primaryDomain, cmsCname,
                             isSignificant, dpoUserId, dpbRegId, statusFilter, currentCmsUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
@@ -544,7 +540,6 @@ public class Fiduciary implements Action {
 
         sqlBuilder.append(" WHERE id = ? AND deleted_at IS NULL");
         params.add(fiduciaryId);
-        System.out.println("query:"+sqlBuilder.toString());
 
         try {
             conn = pool.getConnection();
