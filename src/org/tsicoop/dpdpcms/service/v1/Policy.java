@@ -514,10 +514,8 @@ public class Policy implements Action {
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("UPDATE consent_policies SET last_updated_at = NOW(), last_updated_by_user_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("UPDATE consent_policies SET last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
-        params.add(updatedByUserId);
-
         if (fiduciaryId != null) { sqlBuilder.append(", fiduciary_id = ?"); params.add(fiduciaryId); }
         if (effectiveDate != null) { sqlBuilder.append(", effective_date = ?"); params.add(effectiveDate); }
         if (jurisdiction != null && !jurisdiction.isEmpty()) { sqlBuilder.append(", jurisdiction = ?"); params.add(jurisdiction); }
@@ -602,13 +600,12 @@ public class Policy implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE consent_policies SET deleted_at = NOW(), deleted_by_user_id = ? WHERE id = ? AND version = ? AND status != 'ACTIVE'"; // Cannot delete active
+        String sql = "UPDATE consent_policies SET deleted_at = NOW() WHERE id = ? AND version = ? AND status != 'ACTIVE'"; // Cannot delete active
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, deletedByUserId);
-            pstmt.setString(2, policyId);
-            pstmt.setString(3, version);
+            pstmt.setString(1, policyId);
+            pstmt.setString(2, version);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Deleting policy failed, policy not found or is ACTIVE.");

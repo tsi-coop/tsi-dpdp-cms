@@ -5,16 +5,20 @@ TSI DPDP CMS - v0.1
 curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\reset_password.json http://localhost:8080/api/v1/admin/user
 # Login
 curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\login.json http://localhost:8080/api/v1/admin/user
-# List Users
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_users.json http://localhost:8080/api/v1/admin/user
-# Get User
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_user.json http://localhost:8080/api/v1/admin/user
 # List Roles
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_roles.json http://localhost:8080/api/v1/admin/user
 # Create Role
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_role.json http://localhost:8080/api/v1/admin/user
 # Get Role
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_role.json http://localhost:8080/api/v1/admin/user
+# Update Role
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_role.json http://localhost:8080/api/v1/admin/user
+# Delete Role
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\delete_role.json http://localhost:8080/api/v1/admin/user
+# List Users
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_users.json http://localhost:8080/api/v1/admin/user
+# Get User
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_user.json http://localhost:8080/api/v1/admin/user
 # Create User
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_user.json http://localhost:8080/api/v1/admin/user
 # Update User
@@ -29,6 +33,8 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_fiduciaries.json http://localhost:8080/api/v1/admin/fiduciary
 # Get Fiduciary
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_fiduciary.json http://localhost:8080/api/v1/admin/fiduciary
+# Update Fiduciary
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_fiduciary.json http://localhost:8080/api/v1/admin/fiduciary
 
 ##Admin - Policy Service
 # List Policies
@@ -37,8 +43,12 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_policy.json http://localhost:8080/api/v1/admin/policy
 # Get Policy
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_policy.json http://localhost:8080/api/v1/admin/policy
+# Update Policy
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_policy.json http://localhost:8080/api/v1/admin/policy
 # Publish Policy
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\publish_policy.json http://localhost:8080/api/v1/admin/policy
+# Delete Policy
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\delete_policy.json http://localhost:8080/api/v1/admin/policy
 # Get Active Policy
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_active_policy.json http://localhost:8080/api/v1/admin/policy
 
@@ -53,3 +63,5 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\client\record_consent.json http://localhost:8080/api/v1/client/consent
 # Get Active Consent
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\client\get_active_consent.json http://localhost:8080/api/v1/client/consent
+# Link User
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\client\link_user.json http://localhost:8080/api/v1/client/consent

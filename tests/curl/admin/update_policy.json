@@ -1,0 +1,16 @@
+{
+  "_func": "update_policy",
+  "policy_id": "new_app_privacy_policy3",
+  "version": "1.0",
+  "fiduciary_id": "ea30beff-ab1b-4c26-9dea-b0316103f6a7",
+  "effective_date": "2025-06-05T00:00:00Z",
+  "jurisdiction": "IN",
+  "policy_content": {
+    "en": {
+      "title": "Updated Active Policy Title",
+      "data_processing_purposes": [
+        {"id": "purpose_app_analytics", "name": "App Analytics", "description": "Updated description...", "legal_basis": "Consent", "is_mandatory_for_service": false}
+      ]
+    }
+  }
+}

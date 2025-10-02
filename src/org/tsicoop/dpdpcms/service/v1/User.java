@@ -916,7 +916,7 @@ public class User implements Action {
         params.add(roleName);
 
         if (excludeRoleId != null) {
-            sqlBuilder.append(" AND role_id != ?");
+            sqlBuilder.append(" AND id != ?");
             params.add(excludeRoleId);
         }
 
@@ -1154,17 +1154,11 @@ public class User implements Action {
         PreparedStatement pstmtDeleteRole = null;
         PoolDB pool = new PoolDB();
 
-        String deletePermissionsSql = "DELETE FROM role_permissions WHERE role_id = ?"; // Assuming role_permissions table
-        String deleteRoleSql = "DELETE FROM roles WHERE role_id = ?";
+        String deleteRoleSql = "DELETE FROM roles WHERE id = ?";
 
         try {
             conn = pool.getConnection();
             conn.setAutoCommit(false); // Start transaction
-
-            // Delete associated permissions first
-            pstmtDeletePermissions = conn.prepareStatement(deletePermissionsSql);
-            pstmtDeletePermissions.setObject(1, roleId);
-            pstmtDeletePermissions.executeUpdate();
 
             // Then delete the role itself
             pstmtDeleteRole = conn.prepareStatement(deleteRoleSql);

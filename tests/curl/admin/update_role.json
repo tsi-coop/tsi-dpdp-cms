@@ -1,0 +1,11 @@
+{
+  "_func": "update_role",
+  "role_id": "34397d2a-690f-431c-a5d2-99e5cf365278",
+  "name": "Updated Editor Role",
+  "description": "Updated description for editor role.",
+  "permissions": [
+    {"resource": "cms:content", "action": "edit"},
+    {"resource": "report:audit", "action": "read"},
+    {"resource": "cms:user", "action": "read"}
+  ]
+}
