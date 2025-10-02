@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
+    },
+    "policy_id": {
+      "type": "string"
+    },
+    "policy_version": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "jurisdiction": {
+      "type": "string"
+    },
+    "language_selected": {
+      "type": "string"
+    },
+    "consent_status_general": {
+      "type": "string"
+    },
+    "consent_mechanism": {
+      "type": "string"
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "data_point_consents": {
+      "type": "object",
+      "properties": {
+      },
+      "required": [
+      ]
+    }
+  },
+  "required": [
+    "_func",
+    "user_id",
+    "fiduciary_id",
+    "policy_id",
+    "policy_version",
+    "timestamp",
+    "jurisdiction",
+    "language_selected",
+    "consent_status_general",
+    "consent_mechanism",
+    "ip_address",
+    "user_agent",
+    "data_point_consents"
+  ]
+}

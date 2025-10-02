@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS consent_records (
     language_selected VARCHAR(5) NOT NULL,
     consent_status_general VARCHAR(50) NOT NULL, -- granted, denied, custom
     consent_mechanism VARCHAR(100) NOT NULL,
-    ip_address INET,
+    ip_address VARCHAR(100) NOT NULL,
     user_agent TEXT,
     data_point_consents JSONB NOT NULL, -- Granular consent for each purpose/category
     is_active_consent BOOLEAN NOT NULL DEFAULT TRUE, -- Flag for current active consent

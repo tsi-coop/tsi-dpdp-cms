@@ -41,7 +41,7 @@ import java.util.Optional;
  * - Assumes 'fiduciaries' and 'consent_policies' tables exist for FK references.
  * - Assumes 'users' table exists for created_by_user_id etc. in audit logs.
  */
-public class ConsentRecord implements Action {
+public class Consent implements Action {
 
     /**
      * Handles all Consent Record Management operations via a single POST endpoint.
@@ -93,7 +93,7 @@ public class ConsentRecord implements Action {
                     String languageSelected = (String) input.get("language_selected");
                     String consentStatusGeneral = (String) input.get("consent_status_general");
                     String consentMechanism = (String) input.get("consent_mechanism");
-                    String ipAddressStr = (String) input.get("ip_address"); // This should be captured by the API Gateway/Servlet
+                    String ipAddressStr = (String) req.getRemoteAddr();
                     String userAgent = (String) input.get("user_agent");
                     JSONObject dataPointConsents = (JSONObject) input.get("data_point_consents");
 
@@ -108,7 +108,6 @@ public class ConsentRecord implements Action {
                     }
 
                     Timestamp timestamp = Timestamp.from(Instant.parse(timestampStr));
-                    InetAddress ipAddress = (ipAddressStr != null && !ipAddressStr.isEmpty()) ? InetAddress.getByName(ipAddressStr) : null;
 
                     // Check if policy exists (important for provenance)
                     if (!policyExists(policyId, policyVersion, fiduciaryId)) {
@@ -117,7 +116,7 @@ public class ConsentRecord implements Action {
                     }
 
                     output = recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
-                            consentStatusGeneral, consentMechanism, ipAddress, userAgent, dataPointConsents, currentCmsUserId);
+                            consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, dataPointConsents, currentCmsUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -235,7 +234,7 @@ public class ConsentRecord implements Action {
     private JSONObject recordConsentToDb(String userId, UUID fiduciaryId, String policyId, String policyVersion,
                                          Timestamp timestamp, String jurisdiction, String languageSelected,
                                          String consentStatusGeneral, String consentMechanism,
-                                         InetAddress ipAddress, String userAgent, JSONObject dataPointConsents,
+                                         String ipAddress, String userAgent, JSONObject dataPointConsents,
                                          UUID actionByUserId) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
@@ -245,7 +244,7 @@ public class ConsentRecord implements Action {
         PoolDB pool = new PoolDB();
 
         String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
-        String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::inet, ?, ?::jsonb, TRUE, NOW(), NOW()) RETURNING id";
+        String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, TRUE, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -268,7 +267,7 @@ public class ConsentRecord implements Action {
             pstmtInsert.setString(7, languageSelected);
             pstmtInsert.setString(8, consentStatusGeneral);
             pstmtInsert.setString(9, consentMechanism);
-            pstmtInsert.setObject(10, ipAddress); // Use setObject for InetAddress
+            pstmtInsert.setString(10, ipAddress);
             pstmtInsert.setString(11, userAgent);
             pstmtInsert.setString(12, dataPointConsents.toJSONString());
 
