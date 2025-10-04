@@ -2126,3 +2126,90 @@ JSON
     "submitted_by_user_id": "user-uuid-1"
   }
 ]
+
+1. Operation: Generate New API Key (generate_api_key)
+   Used by CMS Administrators to create a new, cryptographically secure access key for a Data Fiduciary or Data Processor.
+
+
+Sample Request (Generate Key for Fiduciary Frontend)
+JSON
+
+{
+"_func": "generate_api_key",
+"fiduciary_id": "a1b2c3d4-e5f6-4000-8000-000000000001",
+"owner_type": "FIDUCIARY_APP",
+"description": "Website Frontend Consent Submission Key",
+"permissions": ["consent:write", "policy:read"]
+}
+Sample Success Response (HTTP 201 Created)
+Note: The raw_api_key is returned only once upon generation and must be stored securely by the consumer.
+
+JSON
+
+{
+"success": true,
+"data": {
+"key_id": "9b1a2b3c-4d5e-5f60-7a8b-1234567890ab",
+"raw_api_key": "7b5c3e1a-2d4f-5g6h-7i8j-k1l2m3n4o5p67890abcdef",
+"permissions": ["consent:write", "policy:read"],
+"fiduciary_id": "a1b2c3d4-e5f6-4000-8000-000000000001"
+},
+"message": "API Key created successfully. STORE THIS KEY SAFELY, IT WILL NOT BE SHOWN AGAIN."
+}
+2. Operation: Revoke API Key (revoke_api_key)
+   Used by CMS Administrators to permanently invalidate an API key.
+
+Sample Request (Revoke Key)
+JSON
+
+{
+"_func": "revoke_api_key",
+"key_id": "9b1a2b3c-4d5e-5f60-7a8b-1234567890ab"
+}
+Sample Success Response (HTTP 200 OK)
+JSON
+
+{
+"success": true,
+"message": "API Key revoked successfully."
+}
+3. Operation: List API Keys (list_api_keys)
+   Used by CMS Administrators to retrieve all keys associated with a Data Fiduciary, with filtering options.
+
+Sample Request (List Active Keys for Fiduciary)
+JSON
+
+{
+"_func": "list_api_keys",
+"fiduciary_id": "a1b2c3d4-e5f6-4000-8000-000000000001",
+"status": "ACTIVE"
+}
+Sample Success Response (HTTP 200 OK)
+JSON
+
+{
+"success": true,
+"data": [
+{
+"key_id": "9b1a2b3c-4d5e-5f60-7a8b-1234567890ab",
+"fiduciary_id": "a1b2c3d4-e5f6-4000-8000-000000000001",
+"owner_type": "FIDUCIARY_APP",
+"description": "Website Frontend Consent Submission Key",
+"status": "ACTIVE",
+"permissions": ["consent:write", "policy:read"],
+"created_at": "2025-05-30T09:30:00Z",
+"last_used_at": "2025-05-30T10:30:00Z",
+"expires_at": null
+},
+{
+"key_id": "c1d2e3f4-g5h6-7i8j-9k0l-1m2n3o4p5q6r",
+"fiduciary_id": "a1b2c3d4-e5f6-4000-8000-000000000001",
+"owner_type": "PROCESSOR_INTEGRATION",
+"description": "Analytics Purge Confirmation Key",
+"status": "REVOKED",
+"permissions": ["purge:confirm"],
+"created_at": "2024-01-15T12:00:00Z",
+"expires_at": null
+}
+]
+}

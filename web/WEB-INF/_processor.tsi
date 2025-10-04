@@ -3,5 +3,5 @@
 /api/v1/fiduciary=org.tsicoop.dpdpcms.service.v1.Fiduciary
 /api/v1/policy=org.tsicoop.dpdpcms.service.v1.Policy
 /api/v1/consent=org.tsicoop.dpdpcms.service.v1.Consent
-
+/api/v1/apikey=org.tsicoop.dpdpcms.service.v1.ApiKey
 

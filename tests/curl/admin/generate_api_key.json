@@ -1,0 +1,7 @@
+{
+  "_func": "generate_api_key",
+  "fiduciary_id": "ea30beff-ab1b-4c26-9dea-b0316103f6a7",
+  "owner_type": "FIDUCIARY_APP",
+  "description": "Website Frontend Consent Submission Key",
+  "permissions": ["consent:write", "policy:read"]
+}

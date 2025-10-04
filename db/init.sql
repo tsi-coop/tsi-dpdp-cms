@@ -214,11 +214,9 @@ CREATE TABLE IF NOT EXISTS api_keys (
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED, EXPIRED
     permissions JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of granted API permissions
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID REFERENCES users(id),
     expires_at TIMESTAMP WITH TIME ZONE,
     last_used_at TIMESTAMP WITH TIME ZONE,
-    revoked_at TIMESTAMP WITH TIME ZONE,
-    revoked_by_user_id UUID REFERENCES users(id)
+    revoked_at TIMESTAMP WITH TIME ZONE
 );
 
 --
