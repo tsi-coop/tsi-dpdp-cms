@@ -9,6 +9,10 @@ import org.json.simple.parser.JSONParser;
 import java.io.BufferedReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -48,10 +52,54 @@ public class InputProcessor {
         return validheader;
     }
 
-    public static boolean processClientHeader(HttpServletRequest request, HttpServletResponse response) {
+    public static boolean processClientHeader(HttpServletRequest req, HttpServletResponse res) {
         boolean validheader = false;
-        // To do:
+        String apiKey = req.getHeader("X-API-Key");
+        String apiSecret = req.getHeader("X-API-Secret");
+
+        if (apiKey == null || apiSecret == null) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Missing API Key or Secret.", req.getRequestURI());
+            return false;
+        }
+
+        // Validate API Key and Secret against the api_user table
+        try {
+            if (!isValidApiClient(apiKey, apiSecret)) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Invalid or inactive API Key/Secret.", req.getRequestURI());
+                return false;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "Authentication failed due to database error.", req.getRequestURI());
+            return false;
+        }
+
         return validheader;
+    }
+
+    private static boolean isValidApiClient(String apiKey, String apiSecret) throws SQLException {
+        boolean valid = false;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        String sql = "SELECT status FROM api_keys WHERE id = ? AND key_value = ?";
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, apiKey);
+            pstmt.setString(2, apiSecret);
+            rs = pstmt.executeQuery();
+            if(rs.next()){
+                String status = rs.getString("status");
+                if(status.equalsIgnoreCase("ACTIVE")){
+                    valid = true;
+                }
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return valid;
     }
 
     public static String getEmail(HttpServletRequest req){

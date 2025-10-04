@@ -484,8 +484,8 @@ public class User implements Action {
                             claims.put("permissions", new JSONArray()); // Default to empty array
                         }
 
-                        // String jwtToken = JwtUtil.generateToken(claims); // Actual JWT generation
-                        String jwtToken = "mock_jwt_token_for_" + userId; // Mock JWT
+                        String generatedToken = JWTUtil.generateToken(email,username,roleName);
+
 
                         result.put("success", true);
                         result.put("message", "Login successful.");
@@ -493,7 +493,7 @@ public class User implements Action {
                         result.put("username", username);
                         result.put("email", email);
                         result.put("role", roleName);
-                        result.put("token", jwtToken);
+                        result.put("token", generatedToken);
                         result.put("mfa_required", false);
                     }
                 } else {
