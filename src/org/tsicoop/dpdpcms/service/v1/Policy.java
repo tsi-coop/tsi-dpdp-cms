@@ -147,7 +147,7 @@ public class Policy implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid version format (e.g., 1.0, 1.0.1).", req.getRequestURI());
                         return;
                     }
-                    Timestamp effectiveDate = Timestamp.from(Instant.parse(effectiveDateStr));
+                    Timestamp effectiveDate = Timestamp.from(Instant.now());
 
                     if (policyExists(policyIdStr, versionStr)) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_CONFLICT, "Conflict", "Policy with ID '" + policyIdStr + "' and version '" + versionStr + "' already exists.", req.getRequestURI());

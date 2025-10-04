@@ -50,7 +50,7 @@ curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-dpdp-cms\tests\
 # List Policies
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_policies.json http://localhost:8080/api/v1/admin/policy
 # Create Policy
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_policy.json http://localhost:8080/api/v1/admin/policy
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\policy_v1.json http://localhost:8080/api/v1/admin/policy
 # Get Policy
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer mock_jwt_token_for_ac59ffea-45e7-43f3-8023-2369134c9fdf" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_policy.json http://localhost:8080/api/v1/admin/policy
 # Update Policy
