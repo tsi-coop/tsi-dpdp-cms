@@ -15,6 +15,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.UUID;
 
 public class InputProcessor {
     public final static String REQUEST_DATA = "input_json";
@@ -68,12 +69,14 @@ public class InputProcessor {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Invalid or inactive API Key/Secret.", req.getRequestURI());
                 return false;
             }
+            else{
+                validheader = true;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "Authentication failed due to database error.", req.getRequestURI());
             return false;
         }
-
         return validheader;
     }
 
@@ -87,7 +90,7 @@ public class InputProcessor {
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, apiKey);
+            pstmt.setObject(1, UUID.fromString(apiKey));
             pstmt.setString(2, apiSecret);
             rs = pstmt.executeQuery();
             if(rs.next()){
