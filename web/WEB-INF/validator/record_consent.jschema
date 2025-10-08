@@ -40,11 +40,30 @@
       "type": "string"
     },
     "data_point_consents": {
-      "type": "object",
-      "properties": {
-      },
-      "required": [
-      ]
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "data_point_id": {
+            "type": "string"
+          },
+          "consent_granted": {
+            "type": "boolean"
+          },
+          "purpose_agreed_to": {
+            "type": "string"
+          },
+          "timestamp_updated": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data_point_id",
+          "consent_granted",
+          "purpose_agreed_to",
+          "timestamp_updated"
+        ]
+      }
     }
   },
   "required": [
@@ -56,10 +75,6 @@
     "timestamp",
     "jurisdiction",
     "language_selected",
-    "consent_status_general",
-    "consent_mechanism",
-    "ip_address",
-    "user_agent",
     "data_point_consents"
   ]
 }

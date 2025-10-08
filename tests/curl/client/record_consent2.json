@@ -1,0 +1,47 @@
+{
+  "_func": "record_consent",
+  "user_id": "anon_1759906681526_zi26nj",
+  "fiduciary_id": "ea30beff-ab1b-4c26-9dea-b0316103f6a7",
+  "policy_id": "new_app_privacy_policy3",
+  "policy_version": "1.0",
+  "timestamp": "2025-10-08T06:58:36.424Z",
+  "jurisdiction": "IN",
+  "language_selected": "en",
+  "consent_status_general": "granted_all",
+  "consent_mechanism": "save_preferences_center",
+  "ip_address": "2131212312",
+  "user_agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+  "data_point_consents": [
+    {
+      "data_point_id": "purpose_account_management",
+      "consent_granted": true,
+      "purpose_agreed_to": "Account Registration & Management",
+      "timestamp_updated": "2025-10-08T06:58:36.424Z"
+    },
+    {
+      "data_point_id": "purpose_website_analytics",
+      "consent_granted": true,
+      "purpose_agreed_to": "Website Analytics & Performance",
+      "timestamp_updated": "2025-10-08T06:58:36.424Z"
+    },
+    {
+      "data_point_id": "purpose_community_engagement",
+      "consent_granted": true,
+      "purpose_agreed_to": "Community Engagement",
+      "timestamp_updated": "2025-10-08T06:58:36.424Z"
+    },
+    {
+      "data_point_id": "purpose_solution_service_training_showcase",
+      "consent_granted": true,
+      "purpose_agreed_to": "Solutions and Services Showcase",
+      "timestamp_updated": "2025-10-08T06:58:36.424Z"
+    },
+    {
+      "data_point_id": "purpose_maturity_capability_assessment",
+      "consent_granted": true,
+      "purpose_agreed_to": "Maturity Assessments",
+      "timestamp_updated": "2025-10-08T06:58:36.424Z"
+    }
+  ],
+  "is_active_consent": true
+}

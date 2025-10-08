@@ -11,12 +11,37 @@
   "consent_mechanism": "preference_center_save_click",
   "ip_address": "192.168.1.10",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-  "data_point_consents": {
-    "purpose_account_management": true,
-    "purpose_website_analytics": true,
-    "purpose_engagement_tracking": false,
-    "purpose_product_service_showcase": true,
-    "purpose_maturity_assessment": false,
-    "purpose_education_network": true
-  }
+  "data_point_consents":
+    [
+      {
+        "data_point_id":"purpose_account_management",
+        "consent_granted":true,
+        "purpose_agreed_to":"Account Registration & Management",
+        "timestamp_updated":"2025-10-07T05:22:25.529Z"
+      },
+      {
+        "data_point_id":"purpose_website_analytics",
+        "consent_granted":false,
+        "purpose_agreed_to":"Website Analytics & Performance",
+        "timestamp_updated":"2025-10-07T05:22:25.529Z"
+      },
+      {
+        "data_point_id":"purpose_community_engagement",
+        "consent_granted":true,
+        "purpose_agreed_to":"Community Engagement",
+        "timestamp_updated":"2025-10-07T05:22:25.529Z"
+      },
+      {
+        "data_point_id":"purpose_solution_service_training_showcase",
+        "consent_granted":true,
+        "purpose_agreed_to":"Solutions and Services Showcase",
+        "timestamp_updated":"2025-10-07T05:22:25.529Z"
+      },
+      {
+        "data_point_id":"purpose_maturity_capability_assessment",
+        "consent_granted":false,
+        "purpose_agreed_to":"Maturity Assessments",
+        "timestamp_updated":"2025-10-07T05:22:25.529Z"
+      }
+    ]
 }

@@ -95,7 +95,7 @@ public class Consent implements Action {
                     String consentMechanism = (String) input.get("consent_mechanism");
                     String ipAddressStr = (String) req.getRemoteAddr();
                     String userAgent = (String) input.get("user_agent");
-                    JSONObject dataPointConsents = (JSONObject) input.get("data_point_consents");
+                    JSONArray dataPointConsents = (JSONArray) input.get("data_point_consents");
 
                     // Basic validation
                     if (userId == null || userId.isEmpty() || fiduciaryId == null || policyId == null || policyId.isEmpty() ||
@@ -234,7 +234,7 @@ public class Consent implements Action {
     private JSONObject recordConsentToDb(String userId, UUID fiduciaryId, String policyId, String policyVersion,
                                          Timestamp timestamp, String jurisdiction, String languageSelected,
                                          String consentStatusGeneral, String consentMechanism,
-                                         String ipAddress, String userAgent, JSONObject dataPointConsents,
+                                         String ipAddress, String userAgent, JSONArray dataPointConsents,
                                          UUID actionByUserId) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;

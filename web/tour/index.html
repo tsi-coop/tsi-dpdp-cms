@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en"> <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Tour</title>
+    <style>
+        /* (Keep your existing CSS styles from previous example here) */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .cookie-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #333;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+        }
+        .cookie-banner p {
+            margin: 0 15px 0 0;
+            flex-grow: 1;
+            font-size: 0.9em;
+        }
+        .cookie-banner button {
+            background-color: #006A67;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin-left: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s ease;
+        }
+        .cookie-banner button:hover {
+            background-color: #0056b3;
+        }
+        .cookie-banner .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Preference Center Styles */
+        .preference-center-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            display: none; /* Hidden by default */
+        }
+        .preference-center-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #333;
+        }
+        .preference-center-content h2 {
+            margin-top: 0;
+            color: #006A67;
+            font-size: 1.5em;
+        }
+        .preference-center-content .category {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .preference-center-content .category h3 {
+            margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1em;
+            color: #555;
+        }
+        .preference-center-content .category p {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+        .preference-center-content .category .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .preference-center-content .category .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .preference-center-content .category .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .preference-center-content .category .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        .preference-center-content .category input:checked + .slider {
+            background-color: #006A67;
+        }
+        .preference-center-content .category input:focus + .slider {
+            box-shadow: 0 0 1px #006A67;
+        }
+        .preference-center-content .category input:checked + .slider:before {
+            -webkit-transform: translateX(20px);
+            -ms-transform: translateX(20px);
+            transform: translateX(20px);
+        }
+        .preference-center-content .footer-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .cookie-settings-link {
+            position: fixed;
+            bottom: 50px;
+            right: 10px;
+            font-size: 0.8em;
+            color: #006A67;
+            cursor: pointer;
+            z-index: 999;
+        }
+
+        .category .details {
+            margin-top: 10px;
+            padding-left: 10px;
+            border-left: 2px solid #ddd;
+            font-size: 0.8em;
+            color: #777;
+        }
+        .category .details strong {
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+<a href="https://tsicoop.org" target="_blank"><img src = "https://tsicoop.org/logo.svg" alt="TSI Coop Foundation"/></a>
+<h1>TSI DPDP CMS Client - Interactive Tour</h1>
+<h3>Welcome to Your Privacy Journey with TSI DPDP CMS!</h3>
+<p>Hello and welcome to this interactive tour of the TSI DPDP Consent Management System Client! At TSI Cooperative Foundation, we believe in transparent and user-empowering data privacy. As a Data Fiduciary,, we are committed to upholding your rights under the Digital Personal Data Protection (DPDP) Act, 2023.</p>
+
+<p>This tour will walk you through how our system puts you in control of your personal data.</p>
+
+<h3>About TSI Digital Hub</h3>
+<p>An open source digital platform for industry associations that connects business IT departments with solutions, services and talent. More details <a href="https://techadvisory.substack.com/p/getting-the-msme-tech-ecosystem-in" target="_blank">here</a>.</p>
+
+<h3>Understanding Your Data & Our Purposes</h3>
+<p>Before we dive into the demo, let's briefly look at the types of information we might collect and why. Remember, you control what you share!</p>
+
+<h3>We Collect Data For These Core Purposes</h3>
+
+<p><strong>Account Registration & Management</strong>: To create and manage your business or professional account, enable login, and provide access to exclusive content and services on the TSI Coop website. This data is essential for you to have an account with us.</p>
+
+<p><strong>Website Analytics & Performance</strong>: To understand how visitors use our website, which pages are most popular, and identify areas for improvement. This helps us enhance your browse experience and site performance.</p>
+
+<p><strong>Community Engagement</strong>: Your community interactions such as technical posts, meetings/webinars invite, enquiries, RFPs, testimonials, support requests and grievances. This helps us offer stakeholder collaboration in the MSME tech ecosystem.</p>
+
+<p><strong>Solutions & Services Showcase</strong>: Solutions and Services that will help the MSMEs & Professionals to discover and benefit. This will help us expand the reach of local providers.</p>
+
+<p><strong>Maturity Assessments</strong>: Digital Maturity Assessments of businesses and Capability Maturity Assessment of local providers. This helps us offer Ratings & advise on areas of improvement. </p>
+
+<h3>The Data Fields Involved Include</h3>
+
+<p>Email Address, Business Name, Professional Name, College Name, Industry Type, City, Organization Type.</p>
+
+<p>Website Usage Data, Device Information.</p>
+
+<p>Engagement Interactions (e.g., technical post views, meetings, inquiries, RFPs, testimonials, support request, grievances).</p>
+
+<p>Solution & Service details of local providers.</p>
+
+<p>Maturity Assessment Responses.</p>
+
+<h1>Your Interactive Demo Journey: Putting You in Control</h1>
+<p>Let's begin! Follow the steps below and click on the elements within the demo page to see how it all works.</p>
+
+<h3>Step 1: Your First Interaction - The Consent Banner</h3>
+
+<p>What you see: When you first visit the site (or if your consent has expired), a Consent Banner will appear at the bottom of your screen (see below). This is our way of giving you clear notice as soon as you arrive.</p>
+
+<p><strong>Your Action</strong>: You have three clear options:</p>
+
+<p>Click "Accept All & Continue": This quickly grants consent for all non-essential purposes.</p>
+
+<p>Click "Reject Non-Essential": This will only enable the absolutely necessary functions of the website.</p>
+
+<p>Click "Manage My Preferences": This is where you get granular control!</p>
+
+<h3>Step 2: Granular Control - Managing Your Preferences</h3>
+
+<p><strong>How to access</strong>: If you clicked "Manage My Preferences" on the banner, or if you click the "Privacy Choices" link at the bottom-right of the page now, a modal window (the "Preference Center") will pop up.</p>
+
+<p><strong>What you see:</strong></p>
+
+<p>A list of all our data processing purposes (like "Website Analytics," "Personalized Marketing," etc.).</p>
+
+<p>Mandatory purposes (like "Account Registration") will be marked as "Mandatory for Service" and their toggles will be disabled, as they are essential for core site functionality.</p>
+
+<p>For optional purposes, you'll see a toggle switch.</p>
+
+<p><strong>Your Action:</strong></p>
+
+<p>Toggle the switches to your desired "ON" (accept) or "OFF" (reject) position for each purpose.</p>
+
+<p>Click "Save Choices" at the bottom of the modal to apply your selections.</p>
+
+<p><strong>Observe</strong>: Watch how the console messages change, indicating which scripts (e.g., analytics, community engagement) are now active or inactive based on your choices!</p>
+
+<h3>Step 3: Checking Your Choices - "View Preferences"</h3>
+
+<p><strong>What it is</strong>: This feature allows you to see the exact JSON representation of your current consent preferences stored in your browser.</p>
+
+<div id="view-preferences"><strong>Your Action</strong>: Click the <a href="">View Preferences</a> link on the page.</div>
+
+<p><strong>Observe</strong>: A modal will appear showing a formatted JSON object. This is your personal consent artifact!</p>
+
+<p>If you haven't made a choice yet, it will politely inform you.</p>
+
+<p>If you've made choices, you'll see policyId, policyVersion, timestamp, mechanism, and your preferences (a list of purpose_id: true/false). This is our auditable record of your choices.</p>
+
+<h3>Step 4: Linking Your Identity - "Link Principal"</h3>
+
+<p><strong>The Challenge</strong>: Sometimes, you interact with a website before logging in (an "anonymous" session). Later, you log in. How do we connect those early choices to your official account? This is where "Link Principal" comes in.</p>
+
+<div id="link-principal"><strong>Your Action</strong>: Click the <a href="">Link Principal</a> link on the page.</div>
+
+<p><strong>Observe:</strong></p>
+
+<p>If you see a modal asking for your Name and Email, it means your browser has an anonymous ID that can be linked. Fill in details and click "Submit & Link Account." We'll simulate receiving a "Principal ID."</p>
+
+<p>If you immediately see a modal saying "Account Already Linked!", it means your browser already has a non-anonymous ID associated with it.</p>
+
+<p><strong>Observe (after linking)</strong>: The modal will update to show your new, persistent principal_id stored in your browser's local storage, along with all your consent preferences under this unified ID. In a real system, this ID would be your authenticated user ID from our backend.</p>
+
+<h3>Step 5: Consent-Gated Features - "Add Post" & "Provider Zone"</h3>
+
+<p><strong>The Principle</strong>: Certain functionalities on our site require your consent for specific data processing purposes.</p>
+
+<p><strong>Your Action (Add Post):</strong></p>
+
+<div id="validate-add-post">Click <a href="">Add Post</a></div>
+
+<p><strong>Observe</strong>: A modal will appear.</p>
+
+<p>If your "Community Engagement" preference is OFF, it will deny access and prompt you to "Manage Preferences."</p>
+
+<p>If your "Community Engagement" preference is ON, it will grant access.</p>
+
+<p><strong>Try This</strong>: If denied, click "Manage Preferences" from the modal, enable "Community Engagement", "Save Choices", then try "Add Post" again.
+
+<p><strong>Your Action (Provider Zone):</strong></p>
+
+<div id="validate-provider-zone">Click <a href="">Provider Zone</a></div>
+
+<p><strong>Observe</strong>: A modal will appear.</p>
+
+<p>If your "Solutions & Services Showcase" preference is OFF, it will deny access.</p>
+
+<p>If your "Solutions & Services Showcase" preference is ON, it will grant access.</p>
+
+<p><strong>Try This</strong>: Adjust the "Solutions & Services Showcase" preference in "Manage Preferences" and re-test.</p>
+
+<h3>Conclusion: Trust, Transparency, and Control</h3>
+<p>This tour demonstrates how TSI Digital Hub empowers you to manage your privacy. Our system not only complies with the DPDP Act but strives to give you full transparency and control over your personal data. We are continuously working to make your experience secure, seamless, and trustworthy.</p>
+
+<p><strong>Thank you for taking the tour!</strong></p>
+
+
+
+<div id="cookie-consent-banner" class="cookie-banner">
+</div>
+
+<div id="preference-center-overlay" class="preference-center-overlay">
+    <div class="preference-center-content">
+        <div class="footer-buttons">
+            <button id="save-preferences">Save Choices</button>
+        </div>
+    </div>
+</div>
+
+<a href="#" id="open-cookie-settings" class="cookie-settings-link">Privacy Choices</a>
+
+<script type="text/plain" data-consent-category="purpose_website_analytics" src="https://www.googletagmanager.com/gtag/js?id=G-YOURANALYTICSID"></script>
+<script type="text/plain" data-consent-category="purpose_website_analytics">
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-YOURANALYTICSID');
+        console.log('Google Analytics for TSI Coop activated!');
+    </script>
+
+<script type="text/plain" data-consent-category="purpose_engagement_tracking">
+        console.log('TSI Coop Engagement Tracking script activated!');
+        // Example: Third-party CRM pixel or custom engagement tracker
+        // initTSIEngagementTracker();
+    </script>
+
+<script>
+        console.log('Essential website script for TSI Coop loaded.');
+        // Example: Authentication flow, core site functionalities
+
+    </script>
+
+<script type="application/json" id="config-data">
+    {
+        "tsi_dpdp_cms_fiduciarykey": "4b11744a-2fdf-4e99-be87-654887f5834e",
+        "tsi_dpdp_cms_policykey": "91facc77-f1b6-456d-9796-f6ad3e2d7135",
+        "tsi_dpdp_cms_localstoragekey": "tsi_coop_sandbox_envt_consent",
+        "tsi_dpdp_cms_apibaseurl": "https://dpdp-cms.tsicoop.org",
+        "tsi_dpdp_cms_consentexpiry": 365
+    }
+</script>
+
+<script src="consent-manager.js"> </script>
+
+</body>
+</html>
