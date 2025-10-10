@@ -392,7 +392,7 @@ public class Processor implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id FROM processors WHERE id = ? AND fiduciary_id = ? AND deleted_at IS NULL";
+        String sql = "SELECT id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, last_updated_at FROM processors WHERE id = ? AND fiduciary_id = ? AND deleted_at IS NULL";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -417,9 +417,7 @@ public class Processor implements Action {
                 processor.put("security_measures_description", rs.getString("security_measures_description"));
                 processor.put("status", rs.getString("status"));
                 processor.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
-                processor.put("created_by_user_id", rs.getString("created_by_user_id"));
                 processor.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
-                processor.put("last_updated_by_user_id", rs.getString("last_updated_by_user_id"));
                 return Optional.of(processor);
             }
         } catch (ParseException e) {
@@ -444,7 +442,7 @@ public class Processor implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "INSERT INTO processors (id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, NOW(), ?, NOW(), ?) RETURNING id";
+        String sql = "INSERT INTO processors (id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -463,8 +461,6 @@ public class Processor implements Action {
             pstmt.setString(12, dataCategoriesProcessed.toJSONString());
             pstmt.setString(13, securityMeasures);
             pstmt.setString(14, status);
-            pstmt.setObject(15, createdByUserId);
-            pstmt.setObject(16, createdByUserId);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -500,9 +496,8 @@ public class Processor implements Action {
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("UPDATE processors SET last_updated_at = NOW(), last_updated_by_user_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("UPDATE processors SET last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
-        params.add(updatedByUserId);
 
         if (name != null && !name.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(name); }
         if (contactPerson != null) { sqlBuilder.append(", contact_person = ?"); params.add(contactPerson); }

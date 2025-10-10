@@ -38,6 +38,19 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhb
 # Validate Fiduciary Domain
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\validate_fiduciary_domain.json http://localhost:8080/api/v1/admin/fiduciary
 
+##Admin - Processor Service
+# Create Processor
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMDcyNDkxLCJleHAiOjE3NjA5MzY0OTF9.CHme1_uimgvHCpJqqjk5lAYb8Xd5mnMAboDXAdVDav0" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_processor.json http://localhost:8080/api/v1/admin/processor
+# List Processors
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMDczMTgwLCJleHAiOjE3NjA5MzcxODB9.HyKiW615I5X1BqRrAhqvSrkj1hNk8YOC7QW-H1eviLM" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_processors.json http://localhost:8080/api/v1/admin/processor
+# Get Processor
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMDc2MDk2LCJleHAiOjE3NjA5NDAwOTZ9.kVx4LpirU_mxHo8fvlpn02Zm5B5QhGLO9oyz-4ouqdM" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_processor.json http://localhost:8080/api/v1/admin/processor
+# Update Processor
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMDc3NTc4LCJleHAiOjE3NjA5NDE1Nzh9.VUM0PLqtSvzLmBiVPoLH4Oy9-Ujg6mC9zu_qkramNLI" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_processor.json http://localhost:8080/api/v1/admin/processor
+# Delete Processor
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMDc3OTg2LCJleHAiOjE3NjA5NDE5ODZ9.Ia5de8u0hSkmQqwsvtUHhkKcfMJ_v_pbmnaM0FTx4S8" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_processor.json http://localhost:8080/api/v1/admin/processor
+
+
 ##Admin - ApiKey Service
 # Generate API Key
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NjQ4NDY1LCJleHAiOjE3NjA1MTI0NjV9.cW6MKhm6DI3D08ootiQ9OSa4fI41vK4-GdxJ-E8hRWY" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\generate_api_key.json http://localhost:8080/api/v1/admin/apikey

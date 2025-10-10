@@ -1,0 +1,24 @@
+{
+  "_func": "create_processor",
+  "fiduciary_id": "ea30beff-ab1b-4c26-9dea-b0316103f6a7",
+  "name": "Cloud Storage Solutions",
+  "contact_person": "Bob Integrator",
+  "email": "contact@cloudstorage.com",
+  "phone": "+919123456789",
+  "address": "Cloud Park, Mumbai, India",
+  "jurisdiction": "IN",
+  "dpa_reference": "DPA-TSI-Fid-Cloud-2025",
+  "dpa_effective_date": "2025-05-01T00:00:00Z",
+  "dpa_expiry_date": null,
+  "processing_purposes": [
+    "purpose_website_analytics",
+    "purpose_engagement_tracking"
+  ],
+  "data_categories_processed": [
+    "website_usage_data",
+    "device_info",
+    "engagement_interactions"
+  ],
+  "security_measures_description": "ISO 27001 certified, AES-256 encryption at rest.",
+  "status": "ACTIVE"
+}
