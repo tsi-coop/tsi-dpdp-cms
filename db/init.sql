@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS grievances (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id VARCHAR(255) NOT NULL, -- Data Principal's ID
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
+    type VARCHAR(30) NOT NULL,
     subject VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     submission_timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -174,7 +175,6 @@ CREATE TABLE IF NOT EXISTS grievances (
     communication_log JSONB,
     attachments JSONB,
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID REFERENCES users(id),
     due_date TIMESTAMP WITH TIME ZONE
 );
 

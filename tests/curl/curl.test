@@ -50,6 +50,16 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhb
 # Delete Processor
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMDc3OTg2LCJleHAiOjE3NjA5NDE5ODZ9.Ia5de8u0hSkmQqwsvtUHhkKcfMJ_v_pbmnaM0FTx4S8" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_processor.json http://localhost:8080/api/v1/admin/processor
 
+##Admin - Grievance Service
+# Get Grievance
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMTk4MDY0LCJleHAiOjE3NjEwNjIwNjR9.Py1lU2qmcTz7tJBvqnygFFkiabibRsUBr_Nq8ZgdGNQ" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_grievance.json http://localhost:8080/api/v1/admin/grievance
+# List Grievances
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMjQ3MTMxLCJleHAiOjE3NjExMTExMzF9.CKD60OjQFpfmKpi3frl9eeYDXW1nzGV3mcy6XfKQIH4" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_grievances.json http://localhost:8080/api/v1/admin/grievance
+# Update Grievance Status
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMjQ5NTQ5LCJleHAiOjE3NjExMTM1NDl9.Al02MY7iQT4hzCl5gq9adr_Y-z_Jm8eZpraNL-v2dgY" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_grievance_status.json http://localhost:8080/api/v1/admin/grievance
+# Add Grievance Communication
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMjUwNjU1LCJleHAiOjE3NjExMTQ2NTV9.WVXNM3F8A9zU9czwtHOhYwjEjb1iZvF3sVwbrHSvG1I" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\add_grievance_communication.json http://localhost:8080/api/v1/admin/grievance
+
 
 ##Admin - ApiKey Service
 # Generate API Key
@@ -88,3 +98,9 @@ curl -X POST -H "Content-Type: application/json" -H "X-API-Key:4ffd432c-72db-47d
 curl -X POST -H "Content-Type: application/json" -H "X-API-Key:4ffd432c-72db-47d9-aa21-47c89ad45055" -H "X-API-Secret:HASHED_7d55c489-42a1-4112-9d8d-25049cf7420b48c43b8d713048f89ebc2b4ed8262efa" -d @C:\work\tsi-dpdp-cms\tests\curl\client\get_active_consent.json http://localhost:8080/api/v1/client/consent
 # Link User
 curl -X POST -H "Content-Type: application/json" -H "X-API-Key:4ffd432c-72db-47d9-aa21-47c89ad45055" -H "X-API-Secret:HASHED_7d55c489-42a1-4112-9d8d-25049cf7420b48c43b8d713048f89ebc2b4ed8262efa" -d @C:\work\tsi-dpdp-cms\tests\curl\client\link_user.json http://localhost:8080/api/v1/client/consent
+
+##Client - Grievance
+# Submit Grievance
+curl -X POST -H "Content-Type: application/json" -H "X-API-Key:4ffd432c-72db-47d9-aa21-47c89ad45055" -H "X-API-Secret:HASHED_7d55c489-42a1-4112-9d8d-25049cf7420b48c43b8d713048f89ebc2b4ed8262efa" -d @C:\work\tsi-dpdp-cms\tests\curl\client\submit_grievance.json http://localhost:8080/api/v1/client/grievance
+# Get Grievance
+curl -X POST -H "Content-Type: application/json" -H "X-API-Key:4ffd432c-72db-47d9-aa21-47c89ad45055" -H "X-API-Secret:HASHED_7d55c489-42a1-4112-9d8d-25049cf7420b48c43b8d713048f89ebc2b4ed8262efa" -d @C:\work\tsi-dpdp-cms\tests\curl\client\get_grievance.json http://localhost:8080/api/v1/client/grievance

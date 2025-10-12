@@ -133,14 +133,7 @@ public class Grievance implements Action {
                     String statusFilter = (String) input.get("status");
                     String typeFilter = (String) input.get("type");
                     String assignedDpoIdStr = (String) input.get("assigned_dpo_user_id"); // For DPO dashboard
-                    UUID assignedDpoId = null;
-                    if (assignedDpoIdStr != null && !assignedDpoIdStr.isEmpty()) {
-                        try { assignedDpoId = UUID.fromString(assignedDpoIdStr); } catch (IllegalArgumentException e) { /* handled below */ }
-                    }
-                    if (assignedDpoIdStr != null && assignedDpoId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid 'assigned_dpo_user_id' format.", req.getRequestURI());
-                        return;
-                    }
+
                     String search = (String) input.get("search");
                     // fiduciaryId is required for listing grievances
                     if (fiduciaryId == null) {
@@ -150,7 +143,7 @@ public class Grievance implements Action {
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
 
-                    outputArray = listGrievancesFromDb(fiduciaryId, statusFilter, typeFilter, assignedDpoId, search, page, limit);
+                    outputArray = listGrievancesFromDb(fiduciaryId, statusFilter, typeFilter, assignedDpoIdStr, search, page, limit);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -167,15 +160,6 @@ public class Grievance implements Action {
 
                     String newStatus = (String) input.get("status");
                     String resolutionDetails = (String) input.get("resolution_details");
-                    String assignedDpoIdForUpdateStr = (String) input.get("assigned_dpo_user_id");
-                    UUID assignedDpoIdForUpdate = null;
-                    if (assignedDpoIdForUpdateStr != null && !assignedDpoIdForUpdateStr.isEmpty()) {
-                        try { assignedDpoIdForUpdate = UUID.fromString(assignedDpoIdForUpdateStr); } catch (IllegalArgumentException e) { /* handled below */ }
-                    }
-                    if (assignedDpoIdForUpdateStr != null && assignedDpoIdForUpdate == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid 'assigned_dpo_user_id' format for update.", req.getRequestURI());
-                        return;
-                    }
 
                     if (newStatus == null || newStatus.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "New 'status' is required for 'update_grievance_status'.", req.getRequestURI());
@@ -189,7 +173,7 @@ public class Grievance implements Action {
                         return;
                     }
 
-                    output = updateGrievanceStatusInDb(grievanceId, newStatus, resolutionDetails, assignedDpoIdForUpdate, actionByCmsUserId);
+                    output = updateGrievanceStatusInDb(grievanceId, newStatus, resolutionDetails);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
 
                     // --- Trigger Downstream Actions based on status update ---
@@ -218,7 +202,7 @@ public class Grievance implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (message, sender, channel) for 'add_grievance_communication'.", req.getRequestURI());
                         return;
                     }
-                    addCommunicationToGrievance(grievanceId, message, sender, channel, actionByCmsUserId);
+                    addCommunicationToGrievance(grievanceId, message, sender, channel);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Communication added successfully."); }});
                     break;
 
@@ -314,7 +298,7 @@ public class Grievance implements Action {
         initialCommunication.put("channel", "PORTAL");
         communicationLog.add(initialCommunication);
 
-        String sql = "INSERT INTO grievances (id, user_id, fiduciary_id, type, subject, description, submission_timestamp, status, communication_log, attachments, due_date, last_updated_at, last_updated_by_user_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, NOW(), ?) RETURNING id";
+        String sql = "INSERT INTO grievances (id, user_id, fiduciary_id, type, subject, description, submission_timestamp, status, communication_log, attachments, due_date, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -329,7 +313,6 @@ public class Grievance implements Action {
             pstmt.setString(8, communicationLog.toJSONString());
             pstmt.setString(9, attachments != null ? attachments.toJSONString() : "[]");
             pstmt.setTimestamp(10, dueDate);
-            pstmt.setObject(11, submittedByCmsUserId); // User who submitted (if CMS user) or null
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -365,7 +348,7 @@ public class Grievance implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, user_id, fiduciary_id, type, subject, description, submission_timestamp, status, assigned_dpo_user_id, resolution_details, resolution_timestamp, communication_log, attachments, due_date, last_updated_at, last_updated_by_user_id FROM grievances WHERE id = ?";
+        String sql = "SELECT id, user_id, fiduciary_id, type, subject, description, submission_timestamp, status, assigned_dpo_user_id, resolution_details, resolution_timestamp, communication_log, attachments, due_date, last_updated_at FROM grievances WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -388,7 +371,6 @@ public class Grievance implements Action {
                 grievance.put("attachments", new JSONParser().parse(rs.getString("attachments")));
                 grievance.put("due_date", rs.getTimestamp("due_date").toInstant().toString());
                 grievance.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
-                grievance.put("last_updated_by_user_id", rs.getString("last_updated_by_user_id"));
                 return Optional.of(grievance);
             }
         } catch (ParseException e) {
@@ -404,7 +386,7 @@ public class Grievance implements Action {
      * @return JSONArray of grievance JSONObjects.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONArray listGrievancesFromDb(UUID fiduciaryId, String statusFilter, String typeFilter, UUID assignedDpoId, String search, int page, int limit) throws SQLException {
+    private JSONArray listGrievancesFromDb(UUID fiduciaryId, String statusFilter, String typeFilter, String assignedDpoId, String search, int page, int limit) throws SQLException {
         JSONArray grievancesArray = new JSONArray();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -423,10 +405,6 @@ public class Grievance implements Action {
             sqlBuilder.append(" AND type = ?");
             params.add(typeFilter);
         }
-        if (assignedDpoId != null) {
-            sqlBuilder.append(" AND assigned_dpo_user_id = ?");
-            params.add(assignedDpoId);
-        }
         if (search != null && !search.isEmpty()) {
             sqlBuilder.append(" AND (subject ILIKE ? OR description ILIKE ? OR user_id ILIKE ?)");
             params.add("%" + search + "%");
@@ -437,7 +415,7 @@ public class Grievance implements Action {
         sqlBuilder.append(" ORDER BY submission_timestamp DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
-
+        //System.out.println(sqlBuilder.toString());
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sqlBuilder.toString());
@@ -470,24 +448,19 @@ public class Grievance implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject updateGrievanceStatusInDb(UUID grievanceId, String newStatus, String resolutionDetails, UUID assignedDpoId, UUID updatedByUserId) throws SQLException {
+    private JSONObject updateGrievanceStatusInDb(UUID grievanceId, String newStatus, String resolutionDetails) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("UPDATE grievances SET status = ?, last_updated_at = NOW(), last_updated_by_user_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("UPDATE grievances SET status = ?, last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
         params.add(newStatus);
-        params.add(updatedByUserId);
 
         if (resolutionDetails != null && !resolutionDetails.isEmpty()) {
             sqlBuilder.append(", resolution_details = ?");
             params.add(resolutionDetails);
             sqlBuilder.append(", resolution_timestamp = NOW()"); // Set resolution timestamp if details provided
-        }
-        if (assignedDpoId != null) {
-            sqlBuilder.append(", assigned_dpo_user_id = ?");
-            params.add(assignedDpoId);
         }
 
         sqlBuilder.append(" WHERE id = ?");
@@ -514,13 +487,13 @@ public class Grievance implements Action {
      * Adds a communication entry to a grievance's communication_log.
      * @throws SQLException if a database access error occurs.
      */
-    private void addCommunicationToGrievance(UUID grievanceId, String message, String sender, String channel, UUID addedByUserId) throws SQLException {
+    private void addCommunicationToGrievance(UUID grievanceId, String message, String sender, String channel) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
         // Append new communication to the existing JSONB array
-        String sql = "UPDATE grievances SET communication_log = communication_log || ?::jsonb, last_updated_at = NOW(), last_updated_by_user_id = ? WHERE id = ?";
+        String sql = "UPDATE grievances SET communication_log = communication_log || ?::jsonb, last_updated_at = NOW() WHERE id = ?";
 
         JSONObject newCommunication = new JSONObject();
         newCommunication.put("timestamp", Instant.now().toString());
@@ -535,8 +508,7 @@ public class Grievance implements Action {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, communicationArray.toJSONString()); // Append the new JSON object
-            pstmt.setObject(2, addedByUserId);
-            pstmt.setObject(3, grievanceId);
+            pstmt.setObject(2, grievanceId);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {

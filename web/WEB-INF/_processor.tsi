@@ -5,4 +5,5 @@
 /api/v1/consent=org.tsicoop.dpdpcms.service.v1.Consent
 /api/v1/apikey=org.tsicoop.dpdpcms.service.v1.ApiKey
 /api/v1/processor=org.tsicoop.dpdpcms.service.v1.Processor
+/api/v1/grievance=org.tsicoop.dpdpcms.service.v1.Grievance
 

@@ -1253,7 +1253,6 @@ JSON
   "grievance_id": "g1h2i3j4-k5l6-7890-1234-567890abcdef", // Required
   "status": "IN_PROGRESS",                               // Required: New status
   "resolution_details": "Data deletion confirmed and verified.", // Optional: Details of resolution
-  "assigned_dpo_user_id": "d1e2f3a4-b5c6-7890-1234-567890abcdef" // Optional: Reassign or confirm assignment
 }
 Response (200 OK):
 
