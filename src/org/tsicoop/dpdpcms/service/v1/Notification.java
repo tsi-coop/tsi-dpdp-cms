@@ -83,7 +83,7 @@ public class Notification implements Action {
 
             switch (func.toLowerCase()) {
                 // --- Notification Template Management ---
-                case "create_template":
+                case "create_notification_template":
                     String name = (String) input.get("name");
                     String category = (String) input.get("category");
                     String severity = (String) input.get("severity");
@@ -101,11 +101,11 @@ public class Notification implements Action {
                         return;
                     }
 
-                    output = saveNotificationTemplateToDb(name, category, severity, channelsEnabledJson, contentTemplate, actionLinkTemplate, actionByCmsUserId);
+                    output = saveNotificationTemplateToDb(name, category, severity, channelsEnabledJson, contentTemplate, actionLinkTemplate);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
-                case "update_template":
+                case "update_notification_template":
                     if (templateId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'template_id' is required for 'update_template'.", req.getRequestURI());
                         return;
@@ -131,11 +131,11 @@ public class Notification implements Action {
                         return;
                     }
 
-                    output = updateNotificationTemplateInDb(templateId, name, category, severity, channelsEnabledJson, contentTemplate, actionLinkTemplate, actionByCmsUserId);
+                    output = updateNotificationTemplateInDb(templateId, name, category, severity, channelsEnabledJson, contentTemplate, actionLinkTemplate);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
-                case "get_template":
+                case "get_notification_template":
                     if (templateId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'template_id' is required for 'get_template'.", req.getRequestURI());
                         return;
@@ -149,7 +149,7 @@ public class Notification implements Action {
                     }
                     break;
 
-                case "list_templates":
+                case "list_notification_templates":
                     String templateCategoryFilter = (String) input.get("category");
                     String templateSeverityFilter = (String) input.get("severity");
                     String templateSearch = (String) input.get("search");
@@ -305,7 +305,7 @@ public class Notification implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, name, category, severity, channels_enabled, content_template, action_link_template, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id FROM notification_templates WHERE id = ?";
+        String sql = "SELECT id, name, category, severity, channels_enabled, content_template, action_link_template, created_at, last_updated_at FROM notification_templates WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -321,9 +321,7 @@ public class Notification implements Action {
                 template.put("content_template", new JSONParser().parse(rs.getString("content_template")));
                 template.put("action_link_template", rs.getString("action_link_template"));
                 template.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
-                template.put("created_by_user_id", rs.getString("created_by_user_id"));
                 template.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
-                template.put("last_updated_by_user_id", rs.getString("last_updated_by_user_id"));
                 return Optional.of(template);
             }
         } catch (ParseException e) {
@@ -337,13 +335,13 @@ public class Notification implements Action {
     /**
      * Saves a new notification template to the database.
      */
-    private JSONObject saveNotificationTemplateToDb(String name, String category, String severity, JSONArray channelsEnabled, JSONObject contentTemplate, String actionLinkTemplate, UUID createdByUserId) throws SQLException {
+    private JSONObject saveNotificationTemplateToDb(String name, String category, String severity, JSONArray channelsEnabled, JSONObject contentTemplate, String actionLinkTemplate) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "INSERT INTO notification_templates (id, name, category, severity, channels_enabled, content_template, action_link_template, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?::jsonb, ?::jsonb, ?, NOW(), ?, NOW(), ?) RETURNING id";
+        String sql = "INSERT INTO notification_templates (id, name, category, severity, channels_enabled, content_template, action_link_template, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?::jsonb, ?::jsonb, ?, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -354,8 +352,6 @@ public class Notification implements Action {
             pstmt.setString(4, channelsEnabled.toJSONString());
             pstmt.setString(5, contentTemplate.toJSONString());
             pstmt.setString(6, actionLinkTemplate);
-            pstmt.setObject(7, createdByUserId);
-            pstmt.setObject(8, createdByUserId);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -380,14 +376,13 @@ public class Notification implements Action {
     /**
      * Updates an existing notification template in the database.
      */
-    private JSONObject updateNotificationTemplateInDb(UUID templateId, String name, String category, String severity, JSONArray channelsEnabled, JSONObject contentTemplate, String actionLinkTemplate, UUID updatedByUserId) throws SQLException {
+    private JSONObject updateNotificationTemplateInDb(UUID templateId, String name, String category, String severity, JSONArray channelsEnabled, JSONObject contentTemplate, String actionLinkTemplate) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("UPDATE notification_templates SET last_updated_at = NOW(), last_updated_by_user_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("UPDATE notification_templates SET last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
-        params.add(updatedByUserId);
 
         if (name != null && !name.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(name); }
         if (category != null && !category.isEmpty()) { sqlBuilder.append(", category = ?"); params.add(category); }
@@ -438,8 +433,7 @@ public class Notification implements Action {
             params.add(severityFilter);
         }
         if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (name ILIKE ? OR description ILIKE ?)"); // Assuming description exists or search applies to name
-            params.add("%" + search + "%");
+            sqlBuilder.append(" AND (name ILIKE ?)");
             params.add("%" + search + "%");
         }
 
@@ -499,25 +493,26 @@ public class Notification implements Action {
 
         // Mock recipient resolution based on type (replace with actual service calls)
         if ("DATA_PRINCIPAL".equalsIgnoreCase(recipientType)) {
-            // In real system, query User Service for email/phone by recipientId (Data Principal ID)
+            // To do: query User Service for email/phone by recipientId (Data Principal ID)
             recipientEmail = "data.principal@example.com";
             recipientPhone = "+919876543210";
             // recipientLang = userService.getUserLanguage(recipientId); // Get language from user profile
         } else if ("DPO_ADMIN".equalsIgnoreCase(recipientType)) {
-            // In real system, query User Service for email/phone by recipientId (CMS User ID)
-            recipientEmail = "dpo.admin@tsicoop.com";
+            // To do: query User Service for email/phone by recipientId (CMS User ID)
+            recipientEmail = "dpo.admin@tsicoop.org";
             recipientPhone = "+919988776655";
             // recipientLang = userService.getUserLanguage(recipientId);
         } else if ("DATA_PROCESSOR".equalsIgnoreCase(recipientType)) {
-            // In real system, query Processor Service for email/phone by recipientId (Processor ID)
+            // To do:  query Processor Service for email/phone by recipientId (Processor ID)
             recipientEmail = "processor.contact@example.com";
             recipientPhone = "+919123456789";
             // recipientLang = processorService.getProcessorLanguage(recipientId);
         }
 
         // Personalize content
-        String subject = (String) contentTemplate.get("subject"); // Assuming subject is part of template JSON
-        String body = (String) contentTemplate.get(recipientLang); // Get localized content based on recipient's language
+        JSONObject ct = (JSONObject) contentTemplate.get(recipientLang);
+        String subject = (String) ct.get("subject"); // Assuming subject is part of template JSON
+        String body = (String) ct.get("body"); // Get localized content based on recipient's language
         String actionLink = actionLinkTemplate; // Simple for now, real links need payload data
 
         // Replace placeholders in subject, body, and actionLink
@@ -575,7 +570,7 @@ public class Notification implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "INSERT INTO notification_instances (id, template_id, recipient_type, recipient_id, fiduciary_id, status, channel_used, sent_at, payload_data, error_details, created_at, created_by_user_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, NOW(), ?::jsonb, ?, NOW(), ?) RETURNING id";
+        String sql = "INSERT INTO notification_instances (id, template_id, recipient_type, recipient_id, fiduciary_id, status, channel_used, sent_at, payload_data, error_details, created_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, NOW(), ?::jsonb, ?, NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -588,7 +583,6 @@ public class Notification implements Action {
             pstmt.setString(6, channelUsed);
             pstmt.setString(7, payloadData.toJSONString());
             pstmt.setString(8, errorDetails);
-            pstmt.setObject(9, createdByUserId);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {

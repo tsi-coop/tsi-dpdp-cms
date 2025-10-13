@@ -1,0 +1,8 @@
+{
+  "_func": "list_notification_templates",
+  "category": "Compliance",
+  "severity": "HIGH",
+  "search": "policy",
+  "page": 1,
+  "limit": 10
+}

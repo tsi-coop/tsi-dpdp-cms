@@ -1,0 +1,20 @@
+{
+  "_func": "create_notification_template",
+  "name": "Policy Update Notification",
+  "category": "Compliance",
+  "severity": "INFO",
+  "channels_enabled": ["EMAIL", "IN_APP"],
+  "content_template": {
+    "en": {
+      "subject": "Important: Privacy Policy Update",
+      "body": "Dear {user_name},\n\nOur Privacy Policy has been updated to version {policy_version}, effective {effective_date}. Please review the changes. {action_link}",
+      "action_text": "Review Policy"
+    },
+    "ta": {
+      "subject": "முக்கியமானது: தனியுரிமைக் கொள்கை புதுப்பிப்பு",
+      "body": "அன்புள்ள {user_name},\n\nஎங்கள் தனியுரிமைக் கொள்கை பதிப்பு {policy_version} புதுப்பிக்கப்பட்டுள்ளது, இது {effective_date} முதல் நடைமுறைக்கு வருகிறது. மாற்றங்களை மதிப்பாய்வு செய்யவும். {action_link}",
+      "action_text": "கொள்கையை மதிப்பாய்வு செய்யவும்"
+    }
+  },
+  "action_link_template": "[https://www.tsicoop.com/privacy-policy-v](https://www.tsicoop.com/privacy-policy-v){policy_version}"
+}

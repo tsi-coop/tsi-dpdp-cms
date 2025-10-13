@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "template_id": {
+      "type": "string"
+    },
+    "recipient_type": {
+      "type": "string"
+    },
+    "recipient_id": {
+      "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
+    },
+    "payload_data": {
+      "type": "object",
+      "properties": {
+        "user_name": {
+          "type": "string"
+        },
+        "policy_version": {
+          "type": "string"
+        },
+        "effective_date": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "user_name",
+        "policy_version",
+        "effective_date"
+      ]
+    }
+  },
+  "required": [
+    "_func",
+    "template_id",
+    "recipient_type",
+    "recipient_id",
+    "fiduciary_id",
+    "payload_data"
+  ]
+}

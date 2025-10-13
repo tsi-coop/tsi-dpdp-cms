@@ -60,6 +60,20 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhb
 # Add Grievance Communication
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMjUwNjU1LCJleHAiOjE3NjExMTQ2NTV9.WVXNM3F8A9zU9czwtHOhYwjEjb1iZvF3sVwbrHSvG1I" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\add_grievance_communication.json http://localhost:8080/api/v1/admin/grievance
 
+##Admin - Notification Service
+# Create Notification Template
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMjU2NDEyLCJleHAiOjE3NjExMjA0MTJ9.w24WEVKixZSvLEzAnpZjDa6xTRqOVDWtWFl5NsJme74" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_notification_template.json http://localhost:8080/api/v1/admin/notification
+# Update Notification Template
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMjYzMzQxLCJleHAiOjE3NjExMjczNDF9.JNJYXWfc4H4xKYIektfGfYSxn8CzYDJI_JJ_vRPFvjE" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_notification_template.json http://localhost:8080/api/v1/admin/notification
+# Get Notification Template
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMjY0MjAwLCJleHAiOjE3NjExMjgyMDB9.fNrDj5oepp0jeYTGrxJ8kqrPUOZTP4YxuvEjexuuPOw" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_notification_template.json http://localhost:8080/api/v1/admin/notification
+# List Notification Templates
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMzIxNjQyLCJleHAiOjE3NjExODU2NDJ9.jpkjc5Co4LcKMrjfp4XGYhoTBIG0riIXHMCrrVCqAH8" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_notification_templates.json http://localhost:8080/api/v1/admin/notification
+# Dispatch notification
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMzYzOTg3LCJleHAiOjE3NjEyMjc5ODd9.9DfUaIpamMAo1uEnVafxd328qsC92tJT8tn9sf_O98s" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\dispatch_notification.json http://localhost:8080/api/v1/admin/notification
+# List notification instances
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMzY1MTY1LCJleHAiOjE3NjEyMjkxNjV9.661614De65CvgV6SqzKDmwoKYkRTZz6_7E0M30GHCJY" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_notification_instances.json http://localhost:8080/api/v1/admin/notification
+
 
 ##Admin - ApiKey Service
 # Generate API Key

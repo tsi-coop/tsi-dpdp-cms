@@ -1,0 +1,12 @@
+{
+  "_func": "dispatch_notification",
+  "template_id": "96c91372-9678-4510-9a21-572d891159e4",
+  "recipient_type": "DATA_PRINCIPAL",
+  "recipient_id": "data_principal_xyz789",
+  "fiduciary_id": "ea30beff-ab1b-4c26-9dea-b0316103f6a7",
+  "payload_data": {
+    "user_name": "John Doe",
+    "policy_version": "1.1",
+    "effective_date": "2025-06-01"
+  }
+}
