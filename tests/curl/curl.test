@@ -73,6 +73,8 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhb
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMzYzOTg3LCJleHAiOjE3NjEyMjc5ODd9.9DfUaIpamMAo1uEnVafxd328qsC92tJT8tn9sf_O98s" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\dispatch_notification.json http://localhost:8080/api/v1/admin/notification
 # List notification instances
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwMzY1MTY1LCJleHAiOjE3NjEyMjkxNjV9.661614De65CvgV6SqzKDmwoKYkRTZz6_7E0M30GHCJY" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_notification_instances.json http://localhost:8080/api/v1/admin/notification
+# Mark Notification Read
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNDA4MDI5LCJleHAiOjE3NjEyNzIwMjl9.Oi1v1dbh6qhGIs3PJGaA3PPGWaqVRqi4kXO152viDNU" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\mark_notification_read.json http://localhost:8080/api/v1/admin/notification
 
 
 ##Admin - ApiKey Service
