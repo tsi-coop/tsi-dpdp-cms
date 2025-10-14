@@ -76,6 +76,13 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhb
 # Mark Notification Read
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNDA4MDI5LCJleHAiOjE3NjEyNzIwMjl9.Oi1v1dbh6qhGIs3PJGaA3PPGWaqVRqi4kXO152viDNU" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\mark_notification_read.json http://localhost:8080/api/v1/admin/notification
 
+##Admin - Audit Service
+# Log Event
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNDMyMDY0LCJleHAiOjE3NjEyOTYwNjR9.DP3Zz54SekaLuipw-o3rlYvLD7SL4txgyBFIffcobfg" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\log_event.json http://localhost:8080/api/v1/admin/audit
+# List Audit Logs
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNDQ3NTQ3LCJleHAiOjE3NjEzMTE1NDd9.63rMi_NE-fuZpk8IbwDlRhMqM-uwuO75A9CBfblnlcM" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_audit_logs.json http://localhost:8080/api/v1/admin/audit
+# Get Audit Log Entry
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNDQ4MTc0LCJleHAiOjE3NjEzMTIxNzR9.QZzp3KZkcARZlbfRpA6ZbIFA1WoN4JFxidW1LAf9BWE" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_audit_log_entry.json http://localhost:8080/api/v1/admin/audit
 
 ##Admin - ApiKey Service
 # Generate API Key
@@ -83,7 +90,7 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhb
 # Revoke API Key
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\revoke_api_key.json http://localhost:8080/api/v1/admin/apikey
 # List API Keys
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_api_keys.json http://localhost:8080/api/v1/admin/apikey
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNDQ3NTQ3LCJleHAiOjE3NjEzMTE1NDd9.63rMi_NE-fuZpk8IbwDlRhMqM-uwuO75A9CBfblnlcM" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_api_keys.json http://localhost:8080/api/v1/admin/apikey
 
 ##Admin - Policy Service
 # List Policies

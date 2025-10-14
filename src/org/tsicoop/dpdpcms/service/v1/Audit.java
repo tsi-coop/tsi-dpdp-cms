@@ -52,21 +52,6 @@ public class Audit implements Action {
         JSONObject output = null;
         JSONArray outputArray = null;
 
-        // Note: For audit logs, the actor_user_id should typically come from the
-        // authenticated context of the microservice making the log request,
-        // not directly from the input JSON for security/integrity.
-        // For this template, we'll assume it's passed or derived.
-        UUID actorUserId = null;
-        String actorUserIdStr = (String) input.get("actor_user_id");
-        if (actorUserIdStr != null && !actorUserIdStr.isEmpty()) {
-            try {
-                actorUserId = UUID.fromString(actorUserIdStr);
-            } catch (IllegalArgumentException e) {
-                // Log this as a warning, but don't fail the audit log request
-                System.err.println("AuditLogService: Invalid actor_user_id format provided: " + actorUserIdStr);
-            }
-        }
-
         try {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
@@ -74,6 +59,21 @@ public class Audit implements Action {
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
                 return;
+            }
+
+            // Note: For audit logs, the actor_user_id should typically come from the
+            // authenticated context of the microservice making the log request,
+            // not directly from the input JSON for security/integrity.
+            // For this template, we'll assume it's passed or derived.
+            UUID actorUserId = null;
+            String actorUserIdStr = (String) input.get("actor_user_id");
+            if (actorUserIdStr != null && !actorUserIdStr.isEmpty()) {
+                try {
+                    actorUserId = UUID.fromString(actorUserIdStr);
+                } catch (IllegalArgumentException e) {
+                    // Log this as a warning, but don't fail the audit log request
+                    System.err.println("AuditLogService: Invalid actor_user_id format provided: " + actorUserIdStr);
+                }
             }
 
             switch (func.toLowerCase()) {
@@ -95,8 +95,7 @@ public class Audit implements Action {
                         return;
                     }
 
-                    InetAddress ipAddress = (ipAddressStr != null && !ipAddressStr.isEmpty()) ? InetAddress.getByName(ipAddressStr) : null;
-
+                    String ipAddress = "0.0.0.0"; // To do
                     output = logEventToDb(actorUserId, actorSystemId, actionType, entityType, entityId, contextDetails, ipAddress, status, sourceModule);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
@@ -187,7 +186,7 @@ public class Audit implements Action {
      * @return JSONObject containing the new log entry's ID.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject logEventToDb(UUID actorUserId, String actorSystemId, String actionType, String entityType, String entityId, JSONObject contextDetails, InetAddress ipAddress, String status, String sourceModule) throws SQLException {
+    private JSONObject logEventToDb(UUID actorUserId, String actorSystemId, String actionType, String entityType, String entityId, JSONObject contextDetails, String ipAddress, String status, String sourceModule) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -205,7 +204,7 @@ public class Audit implements Action {
             pstmt.setString(4, entityType);
             pstmt.setString(5, entityId);
             pstmt.setString(6, contextDetails != null ? contextDetails.toJSONString() : null);
-            pstmt.setObject(7, ipAddress); // Use setObject for InetAddress
+            pstmt.setString(7, ipAddress); // Use setObject for InetAddress
             pstmt.setString(8, status);
             pstmt.setString(9, sourceModule);
 
@@ -278,7 +277,7 @@ public class Audit implements Action {
         sqlBuilder.append(" ORDER BY timestamp DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
-
+        //System.out.println(sqlBuilder.toString());
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sqlBuilder.toString());

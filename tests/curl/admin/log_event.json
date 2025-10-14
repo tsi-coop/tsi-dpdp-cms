@@ -1,0 +1,15 @@
+{
+  "_func": "log_event",
+  "actor_user_id": "u1s2e3r4-a5d6-7890-1234-567890abcdef",
+  "actor_system_id": "ConsentRecordService",
+  "action_type": "CONSENT_RECORDED",
+  "entity_type": "ConsentRecord",
+  "entity_id": "c1o2n3s4-e5n6t7-8901-2345-67890abcdef",
+  "context_details": {
+    "preferences_changed": {"purpose_analytics": true},
+    "previous_status": "PENDING"
+  },
+  "ip_address": "192.168.1.100",
+  "status": "SUCCESS",
+  "source_module": "ConsentRecordService"
+}

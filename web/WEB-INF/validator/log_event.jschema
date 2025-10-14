@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "actor_user_id": {
+      "type": "string"
+    },
+    "actor_system_id": {
+      "type": "string"
+    },
+    "action_type": {
+      "type": "string"
+    },
+    "entity_type": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "context_details": {
+      "type": "object",
+      "properties": {
+        "preferences_changed": {
+          "type": "object",
+          "properties": {
+            "purpose_analytics": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "purpose_analytics"
+          ]
+        },
+        "previous_status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "preferences_changed",
+        "previous_status"
+      ]
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "source_module": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "_func",
+    "actor_user_id",
+    "actor_system_id",
+    "action_type",
+    "entity_type",
+    "entity_id",
+    "context_details",
+    "ip_address",
+    "status",
+    "source_module"
+  ]
+}
