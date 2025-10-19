@@ -8,4 +8,5 @@
 /api/v1/grievance=org.tsicoop.dpdpcms.service.v1.Grievance
 /api/v1/notification=org.tsicoop.dpdpcms.service.v1.Notification
 /api/v1/audit=org.tsicoop.dpdpcms.service.v1.Audit
+/api/v1/lifecycle=org.tsicoop.dpdpcms.service.v1.Lifecycle
 

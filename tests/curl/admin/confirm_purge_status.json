@@ -1,0 +1,9 @@
+{
+  "_func": "confirm_purge_status",
+  "purge_request_id": "f8dcd0a4-4de6-4cb1-96dc-357875a3c56e",
+  "status": "COMPLETED",
+  "records_affected_count": 123,
+  "details": "User data deleted from CRM and Analytics DB.",
+  "error_message": null,
+  "confirmed_by_entity_id": "ea30beff-ab1b-4c26-9dea-b0316103f6a7"
+}

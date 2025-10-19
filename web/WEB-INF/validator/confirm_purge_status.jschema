@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "purge_request_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "records_affected_count": {
+      "type": "number"
+    },
+    "details": {
+      "type": "string"
+    },
+    "error_message": {},
+    "confirmed_by_entity_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "_func",
+    "purge_request_id",
+    "status",
+    "records_affected_count",
+    "details",
+    "error_message",
+    "confirmed_by_entity_id"
+  ]
+}

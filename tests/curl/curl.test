@@ -84,6 +84,24 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhb
 # Get Audit Log Entry
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNDQ4MTc0LCJleHAiOjE3NjEzMTIxNzR9.QZzp3KZkcARZlbfRpA6ZbIFA1WoN4JFxidW1LAf9BWE" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_audit_log_entry.json http://localhost:8080/api/v1/admin/audit
 
+##Admin - Lifecycle Service
+# Create Retention Policy
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNjY2NDA2LCJleHAiOjE3NjE1MzA0MDZ9.ok54nrhiG-84BdkD5R2QlfzUHPxad4uijRdBsuqv6cU" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_retention_policy.json http://localhost:8080/api/v1/admin/lifecycle
+# Update Retention Policy
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNjY2NTYxLCJleHAiOjE3NjE1MzA1NjF9.9y_syY5yUemhLg09rAM8_U_wVIdToLNIDyD7z69E24o" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_retention_policy.json http://localhost:8080/api/v1/admin/lifecycle
+# Get Retention Policy
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNjY3Mjk0LCJleHAiOjE3NjE1MzEyOTR9.J6COeYIjx8cfB0g3K5By_7O-1GUHWTE29xunL2hu4Ko" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_retention_policy.json http://localhost:8080/api/v1/admin/lifecycle
+# List Retention Policies
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwNzYxNTIzLCJleHAiOjE3NjE2MjU1MjN9.sFdbjWFnhNZu9T8lSOvmDPIgcazYeIib_aDfLIHG2xs" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_retention_policies.json http://localhost:8080/api/v1/admin/lifecycle
+# Delete Retention Policy
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwODc1OTkwLCJleHAiOjE3NjE3Mzk5OTB9.e3evdhJLSgesFVVQy0pgMUt6jlRtcgNz3qNSZsiZP24" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\delete_retention_policy.json http://localhost:8080/api/v1/admin/lifecycle
+# Initiate Purge Request
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwODgwMjg3LCJleHAiOjE3NjE3NDQyODd9.l47i2VCOMavHBP-gMCQAQlknhz4RiEmeQZq7olA32SY" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\initiate_purge_request.json http://localhost:8080/api/v1/admin/lifecycle
+# Confirm Purge Status
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwODgyMzc4LCJleHAiOjE3NjE3NDYzNzh9.ODbnLvGSZdpvHQWEa69nS-rBHYXUez9h4rDK82yHx70" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\confirm_purge_status.json http://localhost:8080/api/v1/admin/lifecycle
+# List Purge Requests
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwODgyODkyLCJleHAiOjE3NjE3NDY4OTJ9.Bmmqsvi826VmxZBcmeXKZ0C-KvJFuLIDPKHleZHkgJw" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_purge_requests.json http://localhost:8080/api/v1/admin/lifecycle
+
 ##Admin - ApiKey Service
 # Generate API Key
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NjQ4NDY1LCJleHAiOjE3NjA1MTI0NjV9.cW6MKhm6DI3D08ootiQ9OSa4fI41vK4-GdxJ-E8hRWY" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\generate_api_key.json http://localhost:8080/api/v1/admin/apikey

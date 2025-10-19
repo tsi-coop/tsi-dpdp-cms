@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "applicable_purposes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "applicable_data_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "retention_duration_value": {
+      "type": "number"
+    },
+    "retention_duration_unit": {
+      "type": "string"
+    },
+    "retention_start_event": {
+      "type": "string"
+    },
+    "action_at_expiry": {
+      "type": "string"
+    },
+    "legal_reference": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "_func",
+    "fiduciary_id",
+    "name",
+    "description",
+    "applicable_purposes",
+    "applicable_data_categories",
+    "retention_duration_value",
+    "retention_duration_unit",
+    "retention_start_event",
+    "action_at_expiry",
+    "legal_reference",
+    "status"
+  ]
+}

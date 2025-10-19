@@ -1,0 +1,8 @@
+{
+  "_func": "update_retention_policy",
+  "policy_id": "de066c87-3953-4043-b59f-52b55adef069",
+  "name": "Marketing Data 2 Year Retention (Revised)",
+  "retention_duration_value": 5,
+  "retention_duration_unit": "YEARS",
+  "status": "INACTIVE"
+}

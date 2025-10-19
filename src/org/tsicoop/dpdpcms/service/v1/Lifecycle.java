@@ -360,7 +360,6 @@ public class Lifecycle implements Action {
             sqlBuilder.append(" AND id != ?");
             params.add(excludePolicyId);
         }
-        sqlBuilder.append(" AND deleted_at IS NULL"); // Only consider non-deleted policies
 
         try {
             conn = pool.getConnection();
@@ -388,7 +387,7 @@ public class Lifecycle implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "INSERT INTO retention_policies (id, fiduciary_id, name, description, applicable_purposes, applicable_data_categories, retention_duration_value, retention_duration_unit, retention_start_event, action_at_expiry, legal_reference, status, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, ?, ?, ?, ?, NOW(), ?, NOW(), ?) RETURNING id";
+        String sql = "INSERT INTO retention_policies (id, fiduciary_id, name, description, applicable_purposes, applicable_data_categories, retention_duration_value, retention_duration_unit, retention_start_event, action_at_expiry, legal_reference, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -404,8 +403,6 @@ public class Lifecycle implements Action {
             pstmt.setString(9, actionAtExpiry);
             pstmt.setString(10, legalReference);
             pstmt.setString(11, status);
-            pstmt.setObject(12, createdByUserId);
-            pstmt.setObject(13, createdByUserId);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -440,9 +437,8 @@ public class Lifecycle implements Action {
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("UPDATE retention_policies SET last_updated_at = NOW(), last_updated_by_user_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("UPDATE retention_policies SET last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
-        params.add(updatedByUserId);
 
         if (name != null && !name.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(name); }
         if (description != null) { sqlBuilder.append(", description = ?"); params.add(description); }
@@ -455,7 +451,7 @@ public class Lifecycle implements Action {
         if (legalReference != null) { sqlBuilder.append(", legal_reference = ?"); params.add(legalReference); }
         if (status != null && !status.isEmpty()) { sqlBuilder.append(", status = ?"); params.add(status); }
 
-        sqlBuilder.append(" WHERE id = ? AND deleted_at IS NULL");
+        sqlBuilder.append(" WHERE id = ?");
         params.add(policyId);
 
         try {
@@ -485,7 +481,7 @@ public class Lifecycle implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, fiduciary_id, name, description, applicable_purposes, applicable_data_categories, retention_duration_value, retention_duration_unit, retention_start_event, action_at_expiry, legal_reference, status, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id FROM retention_policies WHERE id = ? AND deleted_at IS NULL";
+        String sql = "SELECT id, fiduciary_id, name, description, applicable_purposes, applicable_data_categories, retention_duration_value, retention_duration_unit, retention_start_event, action_at_expiry, legal_reference, status, created_at, created_by_user_id, last_updated_at, last_updated_by_user_id FROM retention_policies WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -531,7 +527,7 @@ public class Lifecycle implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, name, description, retention_duration_value, retention_duration_unit, retention_start_event, action_at_expiry, status, created_at, last_updated_at FROM retention_policies WHERE fiduciary_id = ? AND deleted_at IS NULL");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, name, description, retention_duration_value, retention_duration_unit, retention_start_event, action_at_expiry, status, created_at, last_updated_at FROM retention_policies WHERE fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
@@ -549,7 +545,7 @@ public class Lifecycle implements Action {
         sqlBuilder.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
-
+        System.out.println(sqlBuilder.toString());
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sqlBuilder.toString());
@@ -587,12 +583,11 @@ public class Lifecycle implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE retention_policies SET deleted_at = NOW(), deleted_by_user_id = ?, status = 'INACTIVE' WHERE id = ? AND deleted_at IS NULL";
+        String sql = "UPDATE retention_policies SET status = 'INACTIVE' WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, deletedByUserId);
-            pstmt.setObject(2, policyId);
+            pstmt.setObject(1, policyId);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Deleting retention policy failed, policy not found or already deleted.");
@@ -622,7 +617,7 @@ public class Lifecycle implements Action {
         String status = (legalExceptionId != null) ? "UNDER_LEGAL_HOLD" : "PENDING";
         String errorMessage = (legalExceptionId != null) ? "Purge under legal hold due to exception." : null;
 
-        String sql = "INSERT INTO purge_requests (id, user_id, fiduciary_id, processor_id, trigger_event, data_categories_to_purge, processing_purposes_affected, status, initiated_at, created_by_user_id, last_updated_at, legal_exception_applied_id, error_message) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, NOW(), ?, NOW(), ?, ?) RETURNING id";
+        String sql = "INSERT INTO purge_requests (id, user_id, fiduciary_id, processor_id, trigger_event, data_categories_to_purge, processing_purposes_affected, status, initiated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -634,9 +629,6 @@ public class Lifecycle implements Action {
             pstmt.setString(5, dataCategoriesToPurge != null ? dataCategoriesToPurge.toJSONString() : "[]");
             pstmt.setString(6, processingPurposesAffected != null ? processingPurposesAffected.toJSONString() : "[]");
             pstmt.setString(7, status);
-            pstmt.setObject(8, initiatedByUserId);
-            pstmt.setObject(9, legalExceptionId);
-            pstmt.setString(10, errorMessage);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -690,7 +682,7 @@ public class Lifecycle implements Action {
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
-        String sql = "UPDATE purge_requests SET status = ?, records_affected_count = ?, details = ?, error_message = ?, confirmed_by_entity_id = ?, confirmed_at = NOW(), last_updated_at = NOW(), last_updated_by_user_id = ? WHERE id = ?";
+        String sql = "UPDATE purge_requests SET status = ?, records_affected_count = ?, details = ?, error_message = ?, confirmed_by_entity_id = ?, confirmed_at = NOW(), last_updated_at = NOW() WHERE id = ?";
 
         try {
             conn = pool.getConnection();
@@ -700,8 +692,7 @@ public class Lifecycle implements Action {
             pstmt.setString(3, details);
             pstmt.setString(4, errorMessage);
             pstmt.setObject(5, confirmedByEntityId);
-            pstmt.setObject(6, updatedByUserId);
-            pstmt.setObject(7, purgeRequestId);
+            pstmt.setObject(6, purgeRequestId);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
