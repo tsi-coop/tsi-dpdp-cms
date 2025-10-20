@@ -102,10 +102,6 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhb
 # List Purge Requests
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwODgyODkyLCJleHAiOjE3NjE3NDY4OTJ9.Bmmqsvi826VmxZBcmeXKZ0C-KvJFuLIDPKHleZHkgJw" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_purge_requests.json http://localhost:8080/api/v1/admin/lifecycle
 
-##Admin - DPB Service
-# Create DPB Registration
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYwODg4MDMwLCJleHAiOjE3NjE3NTIwMzB9.USBXjQceokv7aLY2X2pc0tMeKa7n80JL_k7xs7Rq0VM" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_dpb_registration.json http://localhost:8080/api/v1/admin/dpb
-
 ##Admin - ApiKey Service
 # Generate API Key
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NjQ4NDY1LCJleHAiOjE3NjA1MTI0NjV9.cW6MKhm6DI3D08ootiQ9OSa4fI41vK4-GdxJ-E8hRWY" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\generate_api_key.json http://localhost:8080/api/v1/admin/apikey

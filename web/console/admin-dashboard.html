@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSI DPDP CMS - Admin Dashboard</title>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            /* Make sidebar fixed and visible only on large screens */
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px); /* Hidden by default on mobile */
+        }
+
+        .sidebar.open {
+            transform: translateX(0); /* Visible state for mobile */
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568; /* Gray-700 */
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4; /* Light teal background */
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .metric-value {
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+            font-weight: 700;
+        }
+
+        .alert-critical {
+            background-color: #fee2e2; /* Red-100 */
+            border-color: #f87171; /* Red-400 */
+            color: #b91c1c; /* Red-700 */
+        }
+
+        .table-header {
+            background-color: #f1f5f9; /* Gray-100 */
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0); /* Always visible on desktop */
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px; /* Offset main content by sidebar width */
+            }
+        }
+    </style>
+  <!-- Icons (Lucide) - REMOVED ICON SCRIPT BLOCK -->
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+  <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+  <span class="text-xl font-bold primary-text">CMS Dashboard</span>
+  <div class="text-sm text-gray-500">Admin User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+  <div>
+    <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+      <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+    </div>
+    <nav class="flex flex-col space-y-1 mt-4 px-3">
+      <a href="#" class="nav-link active">
+        Dashboard
+      </a>
+      <a href="#" class="nav-link">
+        Fiduciaries
+      </a>
+      <a href="#" class="nav-link">
+        Data Processors
+      </a>
+      <a href="#" class="nav-link">
+        CMS Users
+      </a>
+      <a href="#" class="nav-link">
+        System Purge
+      </a>
+      <a href="#" class="nav-link">
+        API Keys
+      </a>
+    </nav>
+  </div>
+  <div class="p-3 border-t border-gray-200">
+    <a href="#" class="nav-link">
+      System Config
+    </a>
+    <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+      <span>Admin User</span>
+      <span class="text-xs font-semibold text-red-500">Logout</span>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+  <h1 class="text-3xl font-semibold text-gray-800 mb-6 hidden lg:block">System Administration Dashboard</h1>
+
+  <!-- 1. CORE OPERATIONAL METRICS (Simplified) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Widget 1: Total Fiduciaries -->
+    <div class="card col-span-1 md:col-span-1">
+      <h3 class="text-lg font-semibold mb-2 accent-text">
+        Total Fiduciaries
+      </h3>
+      <p class="metric-value text-gray-800">12</p>
+      <p class="text-sm text-gray-500 mt-2">10 Active, 2 Pending Validation.</p>
+    </div>
+
+    <!-- Widget 2: Data Processors -->
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-2 accent-text">Active Data Processors</h3>
+      <p class="metric-value text-gray-800">25</p>
+      <p class="text-sm text-gray-500 mt-2">Configured across all Fiduciaries.</p>
+    </div>
+
+    <!-- Widget 3: CMS Users -->
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-2 accent-text">CMS Internal Users</h3>
+      <p class="metric-value text-gray-800">18</p>
+      <p class="text-sm text-gray-500 mt-2">Total registered user accounts.</p>
+    </div>
+
+    <!-- Widget 4: Critical Security Alerts -->
+    <div class="card alert-critical">
+      <h3 class="text-lg font-semibold mb-2 text-red-700">
+        Key Management Alerts
+      </h3>
+      <p class="metric-value text-red-700">1</p>
+      <p class="text-sm mt-2">1 API Key expired 2 days ago.</p>
+    </div>
+  </div>
+
+  <!-- 2. PENDING ACTIONS & VALIDATION (Simplified) -->
+  <div class="card mb-8">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Pending System Actions</h2>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead>
+        <tr class="table-header">
+          <th class="px-4 py-2 text-sm">Entity</th>
+          <th class="px-4 py-2 text-sm">Target ID</th>
+          <th class="px-4 py-2 text-sm">Action Required</th>
+          <th class="px-4 py-2 text-sm">Status</th>
+          <th class="px-4 py-2 text-sm">Action</th>
+        </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">Fiduciary</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">Alpha Solutions</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-blue-600 font-medium">Domain Validation</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm bg-yellow-100 text-yellow-800 rounded-full">PENDING ACTION</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium">Validate</button>
+          </td>
+        </tr>
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">API Key</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">Key ID: 1A2B-3C4D</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600 font-medium">Revocation Review</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm bg-red-100 text-red-800 rounded-full">EXPIRED</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium">Manage Key</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. CONFIGURATION AND AUDIT SHORTCUTS -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Audit & Purge Snapshot -->
+    <div class="card">
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">Audit & Purge Snapshot</h2>
+      <div class="space-y-3">
+        <p class="text-sm">
+          <span class="font-medium text-gray-700">Audit Log Records (Last 24h):</span> <span class="primary-text">12,500</span>
+        </p>
+        <p class="text-sm">
+          <span class="font-medium text-gray-700">Pending System Purges:</span> <span class="primary-text">43 Scheduled Jobs</span>
+        </p>
+        <p class="text-sm">
+          <span class="font-medium text-gray-700">DPB Service Status:</span> <span class="text-green-600 font-bold">ACTIVE</span>
+        </p>
+      </div>
+      <div class="mt-4 pt-4 border-t">
+        <button class="bg-gray-200 text-gray-700 p-2 rounded-md text-sm hover:bg-gray-300 mr-3">View Full Audit Log</button>
+        <button class="bg-gray-200 text-gray-700 p-2 rounded-md text-sm hover:bg-gray-300">Manage System Purge</button>
+      </div>
+    </div>
+
+    <!-- Configuration Management -->
+    <div class="card">
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">Configuration Management</h2>
+      <div class="space-y-3">
+        <p class="text-sm">
+          <span class="font-medium text-gray-700">Active Policy Versions:</span> <span class="primary-text">3 Unique Policies</span>
+        </p>
+        <p class="text-sm">
+          <span class="font-medium text-gray-700">Default Consent Expiry:</span> <span class="primary-text">365 Days</span>
+        </p>
+        <p class="text-sm">
+          <span class="font-medium text-gray-700">CMS Admins with MFA Enabled:</span> <span class="primary-text">100%</span>
+        </p>
+      </div>
+      <div class="mt-4 pt-4 border-t">
+        <button class="bg-gray-200 text-gray-700 p-2 rounded-md text-sm hover:bg-gray-300 mr-3">Manage Config</button>
+        <button class="bg-gray-200 text-gray-700 p-2 rounded-md text-sm hover:bg-gray-300">Manage API Keys</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menu-toggle');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('hidden');
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+
+        // Close menu when a navigation link is clicked on mobile
+        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    toggleMenu();
+                }
+            });
+        });
+
+    </script>
+
+</body>
+
+</html>
