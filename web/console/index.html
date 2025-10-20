@@ -133,31 +133,104 @@
 </div>
 
 <script>
-        function handleLogin(event) {
-            event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const messageArea = document.getElementById('login-message');
+ /**
+ * Function to handle the admin login process via API authentication.
+ * This version removes the MFA check and redirects directly to the dashboard upon success.
+ */
+/**
+ * Function to handle the admin login process via API authentication using the Fetch API.
+ * The function is asynchronous to prevent blocking the UI thread.
+ */
+async function handleLogin(event) {
+    // Configuration Constants
+    const API_LOGIN_URL = 'http://localhost:8080/api/v1/admin/user';
+    const DASHBOARD_URL = 'admin/dashboard.html';
 
-            messageArea.classList.add('hidden');
-            messageArea.classList.remove('text-red-500', 'text-green-500', 'text-blue-500');
+    event.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const messageArea = document.getElementById('login-message');
 
-            // --- Server-Side Logic Simulation ---
-            // 1. Authenticate user/password.
-            // 2. If successful, check MFA status.
-            // 3. If MFA is required/not set up, proceed to MFA screen.
+    // Clear previous state
+    messageArea.textContent = '';
+    messageArea.classList.add('hidden');
+    messageArea.classList.remove('text-red-500', 'text-green-500', 'text-blue-500');
 
-            if (password.length < 12) {
-                messageArea.textContent = "Error: Invalid credentials or password is too short.";
-                messageArea.classList.remove('hidden');
+    // Client-side validation
+    if (password.length < 12) {
+        messageArea.textContent = "Error: Password must be at least 12 characters long.";
+        messageArea.classList.remove('hidden');
+        messageArea.classList.add('text-red-500');
+        return;
+    }
+
+    // Show a loading state
+    messageArea.textContent = "Logging in...";
+    messageArea.classList.remove('hidden');
+    messageArea.classList.add('text-blue-500');
+
+    try {
+        // 1. Prepare Payload
+        const payload = {
+            _func: "login",
+            identifier: email,
+            password: password
+        };
+
+        // 2. Perform Asynchronous API Authentication using Fetch
+        const response = await fetch(API_LOGIN_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        // 3. Process Response
+        if (response.ok) {
+            const responseData = await response.json();
+            if (response.ok && responseData.success === true) {
+                // --- SUCCESS: HTTP status 2xx and 'success' is true ---
+
+                console.log('Authentication successful. Received data:', responseData);
+
+                // CRITICAL STEP: Store Authentication Token (e.g., JWT) here
+                // localStorage.setItem('authToken', responseData.token);
+
+                // Redirect the user to the admin dashboard
+                messageArea.textContent = "Login successful. Redirecting...";
+                window.location.href = DASHBOARD_URL;
+
+            } else {
+                // --- FAILURE: HTTP status is non-2xx OR HTTP status is 2xx but success=false ---
+
+                let errorText = "Authentication failed. Please check your credentials.";
+                console.log(errorText);
+                if (responseData.error && responseData.error_message) {
+                    // Scenario 1: API returns a structured error object (preferred)
+                    errorText = responseData.error_details;
+                }
+
+                messageArea.textContent = errorText;
+                messageArea.classList.remove('text-blue-500', 'hidden');
                 messageArea.classList.add('text-red-500');
-                return;
+                console.error('Login failed. Response Data:', responseData);
             }
-
-            // 2. Perform the Redirection
-            window.location.href = 'admin/dashboard.html';
+        }else{
+            errorText = `Login failed (Status: ${response.status}). Check credentials.`;
+            messageArea.textContent = errorText;
+            messageArea.classList.remove('text-blue-500', 'hidden');
+            messageArea.classList.add('text-red-500');
+            console.error('Login failed. Response Data:', responseData);
         }
-    </script>
+
+    } catch (error) {
+        // Handle network error (e.g., server down, DNS resolution failure)
+        messageArea.textContent = 'Cannot connect to the authentication server. Check network connection.';
+        messageArea.classList.remove('text-blue-500', 'hidden');
+        messageArea.classList.add('text-red-500');
+        console.error('Network or server connection error:', error);
+    }
+}
+</script>
 </body>
 
 </html>
