@@ -85,7 +85,7 @@
     <div class="text-center mb-6">
         <span class="text-3xl font-bold primary-text">TSI DPDP CMS</span>
         <h1 class="text-xl font-semibold mt-2 text-gray-700">Administrator / DPO Login</h1>
-        <p class="text-sm text-gray-500 mt-1">Access to Compliance Management System</p>
+        <p class="text-sm text-gray-500 mt-1">Consent Management System</p>
     </div>
 
     <!-- Login Form -->
@@ -204,22 +204,20 @@ async function handleLogin(event) {
 
                 let errorText = "Authentication failed. Please check your credentials.";
                 console.log(errorText);
-                if (responseData.error && responseData.error_message) {
+                if (responseData.error && responseData.message) {
                     // Scenario 1: API returns a structured error object (preferred)
-                    errorText = responseData.error_details;
+                    errorText = responseData.message;
                 }
 
                 messageArea.textContent = errorText;
                 messageArea.classList.remove('text-blue-500', 'hidden');
                 messageArea.classList.add('text-red-500');
-                console.error('Login failed. Response Data:', responseData);
             }
         }else{
             errorText = `Login failed (Status: ${response.status}). Check credentials.`;
             messageArea.textContent = errorText;
             messageArea.classList.remove('text-blue-500', 'hidden');
             messageArea.classList.add('text-red-500');
-            console.error('Login failed. Response Data:', responseData);
         }
 
     } catch (error) {
