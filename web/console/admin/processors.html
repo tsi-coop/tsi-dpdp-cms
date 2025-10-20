@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSI DPDP CMS - Data Processors Management</title>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 700px; /* Wider for DPA fields */
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+  <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+  <span class="text-xl font-bold primary-text">CMS Processors</span>
+  <div class="text-sm text-gray-500">Admin User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+  <div>
+    <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+      <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+    </div>
+    <nav class="flex flex-col space-y-1 mt-4 px-3">
+      <a href="admin_dashboard.html" class="nav-link">
+        Dashboard
+      </a>
+      <a href="fiduciaries.html" class="nav-link">
+        Fiduciaries
+      </a>
+      <a class="nav-link active">
+        Data Processors
+      </a>
+      <a href="users.html" class="nav-link">
+        CMS Users
+      </a>
+      <a href="lifecycle.html" class="nav-link">
+        Lifecycle
+      </a>
+      <a href="#" class="nav-link">
+        API Keys
+      </a>
+    </nav>
+  </div>
+  <div class="p-3 border-t border-gray-200">
+    <a href="config.html" class="nav-link">
+      System Config
+    </a>
+    <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+      <span>Admin User</span>
+      <span class="text-xs font-semibold text-red-500">Logout</span>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-semibold text-gray-800">Manage Data Processors</h1>
+    <button id="add-processor-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
+      + Add New Processor
+    </button>
+  </div>
+
+  <!-- Data Processors List Card -->
+  <div class="card mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <input type="text" placeholder="Search Processors or Purpose..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+      <span class="text-sm text-gray-500">Showing 1 - 8 of 25 Processors</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead>
+        <tr class="table-header">
+          <th class="px-4 py-3 text-sm">Processor Name</th>
+          <th class="px-4 py-3 text-sm">Associated Fiduciary</th>
+          <th class="px-4 py-3 text-sm">Primary Purpose(s)</th>
+          <th class="px-4 py-3 text-sm">DPA Status</th>
+          <th class="px-4 py-3 text-sm">Status</th>
+          <th class="px-4 py-3 text-sm">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="processor-list-body" class="bg-white divide-y divide-gray-200">
+        <!-- Sample Data Row 1 (Active, Validated) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">AnalyticsPro Cloud</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Alpha Solutions Pvt. Ltd.</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Website Analytics, Reporting</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">SIGNED</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">View DPA</button>
+            <button class="text-red-600 hover:text-red-900 font-medium text-sm">Deactivate</button>
+          </td>
+        </tr>
+        <!-- Sample Data Row 2 (Inactive, Invalid Key) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">SMS Gateway Inc.</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Beta Tech Corp</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Notification Delivery</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">EXPIRED</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">INACTIVE</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
+            <button class="text-green-600 hover:text-green-900 font-medium text-sm">Reactivate</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 flex justify-between items-center text-sm">
+      <button class="text-gray-600 hover:primary-text">Previous</button>
+      <span class="text-gray-600">Page 1 of 3</span>
+      <button class="text-gray-600 hover:primary-text">Next</button>
+    </div>
+  </div>
+</main>
+
+<!-- Modal for Adding/Editing Data Processor -->
+<div id="processor-modal-overlay" class="modal-overlay">
+  <div class="modal-content">
+    <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New Data Processor</h2>
+    <form id="processor-form" class="space-y-4">
+
+      <!-- Section 1: Association & Name -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="processor-name" class="block text-sm font-medium text-gray-700">Processor Legal Name</label>
+          <input type="text" id="processor-name" name="name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div>
+          <label for="fiduciary-association" class="block text-sm font-medium text-gray-700">Associated Data Fiduciary</label>
+          <select id="fiduciary-association" name="fiduciaryId" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="" disabled selected>Select Fiduciary...</option>
+            <!-- Options loaded from CMS DB -->
+            <option value="alpha">Alpha Solutions Pvt. Ltd.</option>
+            <option value="beta">Beta Tech Corp</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 2: Processing Scope & Categories -->
+      <div>
+        <label for="processing-scope" class="block text-sm font-medium text-gray-700">Primary Processing Purpose(s)</label>
+        <input type="text" id="processing-scope" name="scope" required placeholder="e.g., Marketing Analytics, Cloud Storage, Customer Support" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        <p class="mt-1 text-xs text-gray-500">Define the exact service this processor provides.</p>
+      </div>
+
+      <div>
+        <label for="data-categories" class="block text-sm font-medium text-gray-700">Data Categories Processed</label>
+        <textarea id="data-categories" name="dataCategories" required rows="2" placeholder="e.g., email_address, browsing_history, contact_information" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+        <p class="mt-1 text-xs text-gray-500">Reference IDs from the Fiduciary's consent policy.</p>
+      </div>
+
+      <!-- Section 3: DPA Details -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border border-blue-200 p-3 rounded-md bg-blue-50">
+        <div class="md:col-span-3"><h4 class="font-semibold text-blue-800">Data Processing Agreement (DPA) Details</h4></div>
+        <div>
+          <label for="dpa-reference" class="block text-sm font-medium text-gray-700">DPA Reference / ID</label>
+          <input type="text" id="dpa-reference" name="dpaReference" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div>
+          <label for="dpa-effective-date" class="block text-sm font-medium text-gray-700">Effective Date</label>
+          <input type="date" id="dpa-effective-date" name="dpaEffectiveDate" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div>
+          <label for="dpa-expiry-date" class="block text-sm font-medium text-gray-700">Expiry Date (Optional)</label>
+          <input type="date" id="dpa-expiry-date" name="dpaExpiryDate" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div class="md:col-span-3">
+          <label for="dpa-url" class="block text-sm font-medium text-gray-700">DPA Document URL/Link</label>
+          <input type="url" id="dpa-url" name="dpaUrl" placeholder="https://..." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <p class="mt-1 text-xs text-gray-500">Link to the signed, secure DPA document (external storage).</p>
+        </div>
+      </div>
+
+      <!-- Section 4: Operational Details -->
+      <div>
+        <label for="processor-jurisdiction" class="block text-sm font-medium text-gray-700">Processor Jurisdiction</label>
+        <input type="text" id="processor-jurisdiction" name="jurisdiction" placeholder="e.g., India, US, EU" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        <p class="mt-1 text-xs text-gray-500">Primary location of the data processing infrastructure.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+        <button type="submit" id="save-processor-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Processor</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+        // --- Sidebar Logic ---
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menu-toggle');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('hidden');
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+
+        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    toggleMenu();
+                }
+            });
+        });
+
+        // --- Processor Management Logic ---
+
+        const modalOverlay = document.getElementById('processor-modal-overlay');
+        const addProcessorBtn = document.getElementById('add-processor-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const processorForm = document.getElementById('processor-form');
+
+        // Helper function to show modal
+        addProcessorBtn.addEventListener('click', () => {
+            document.getElementById('modal-title').textContent = "Add New Data Processor";
+            processorForm.reset();
+            modalOverlay.style.display = 'flex';
+        });
+
+        // Helper function to close modal
+        closeModalBtn.addEventListener('click', (e) => {
+             e.preventDefault();
+             modalOverlay.style.display = 'none';
+        });
+
+        // Handle Form Submission (Save Data Processor)
+        processorForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(processorForm);
+            const data = Object.fromEntries(formData.entries());
+
+            // 1. Placeholder for API Call to SAVE Data Processor details
+            console.log("Submitting Data Processor Data:", data);
+
+            // In a real application, this would call: POST /api/processors
+
+            try {
+                // Mock API call to simulate successful creation
+
+                // --- MOCK SUCCESS SCENARIO ---
+                alert(`Processor '${data.name}' successfully registered and linked to Fiduciary ${data.fiduciaryId}.`);
+                modalOverlay.style.display = 'none';
+
+                // 2. Refresh list or add the new processor to the table (omitted for simplicity)
+
+            } catch (error) {
+                console.error("Processor creation failed:", error);
+                alert("Failed to create Processor. Check console for details.");
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

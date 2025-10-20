@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSI DPDP CMS - Data Fiduciaries Management</title>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+  <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+  <span class="text-xl font-bold primary-text">CMS Fiduciaries</span>
+  <div class="text-sm text-gray-500">Admin User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+  <div>
+    <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+      <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+    </div>
+    <nav class="flex flex-col space-y-1 mt-4 px-3">
+      <a href="dashboard.html" class="nav-link">
+        Dashboard
+      </a>
+      <a href="#" class="nav-link active">
+        Fiduciaries
+      </a>
+      <a href="processors.html" class="nav-link">
+        Data Processors
+      </a>
+      <a href="users.html" class="nav-link">
+        CMS Users
+      </a>
+      <a href="lifecycle.html" class="nav-link">
+        Lifecycle
+      </a>
+      <a href="apikeys.html" class="nav-link">
+        API Keys
+      </a>
+    </nav>
+  </div>
+  <div class="p-3 border-t border-gray-200">
+    <a href="config.html" class="nav-link">
+      System Config
+    </a>
+    <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+      <span>Admin User</span>
+      <span class="text-xs font-semibold text-red-500">Logout</span>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-semibold text-gray-800">Manage Data Fiduciaries</h1>
+    <button id="add-fiduciary-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
+      + Add New Fiduciary
+    </button>
+  </div>
+
+  <!-- Fiduciaries List Card -->
+  <div class="card mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <input type="text" placeholder="Search Fiduciaries or Domains..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+      <span class="text-sm text-gray-500">Showing 1 - 10 of 12 Fiduciaries</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead>
+        <tr class="table-header">
+          <th class="px-4 py-3 text-sm">Fiduciary Name</th>
+          <th class="px-4 py-3 text-sm">Domain</th>
+          <th class="px-4 py-3 text-sm">CMS CNAME</th>
+          <th class="px-4 py-3 text-sm">Status</th>
+          <th class="px-4 py-3 text-sm">Validation</th>
+          <th class="px-4 py-3 text-sm">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="fiduciary-list-body" class="bg-white divide-y divide-gray-200">
+        <!-- Sample Data Row 1 (Active, Validated) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Alpha Solutions Pvt. Ltd.</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">alpha-solutions.in</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">consent.alpha-solutions.in</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="text-green-600 font-medium">Validated (2025-01-15)</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
+            <button class="text-red-600 hover:text-red-900 font-medium text-sm">Deactivate</button>
+          </td>
+        </tr>
+        <!-- Sample Data Row 2 (Inactive, Invalid Key) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Beta Tech Corp</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">betatech.com</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">privacy.betatech.com</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">INACTIVE</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="text-red-600 font-medium">Validation Failed</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
+            <button class="text-green-600 hover:text-green-900 font-medium text-sm">Reactivate</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 flex justify-between items-center text-sm">
+      <button class="text-gray-600 hover:primary-text">Previous</button>
+      <span class="text-gray-600">Page 1 of 2</span>
+      <button class="text-gray-600 hover:primary-text">Next</button>
+    </div>
+  </div>
+</main>
+
+<!-- Modal for Adding/Editing Fiduciary -->
+<div id="fiduciary-modal-overlay" class="modal-overlay">
+  <div class="modal-content">
+    <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New Data Fiduciary</h2>
+    <form id="fiduciary-form" class="space-y-4">
+
+      <!-- Section: General Details -->
+      <div>
+        <label for="fiduciary-name" class="block text-sm font-medium text-gray-700">Fiduciary Legal Name</label>
+        <input type="text" id="fiduciary-name" name="name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+      </div>
+
+      <!-- Section: Contact Details -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="fiduciary-email" class="block text-sm font-medium text-gray-700">Contact Email</label>
+          <input type="email" id="fiduciary-email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        <div>
+          <label for="fiduciary-phone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
+          <input type="text" id="fiduciary-phone" name="phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+      </div>
+
+      <!-- Section: Domain Details (Crucial for Validation) -->
+      <div>
+        <label for="fiduciary-domain" class="block text-sm font-medium text-gray-700">Primary Domain (e.g., example.com)</label>
+        <input type="text" id="fiduciary-domain" name="primaryDomain" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <p class="mt-1 text-xs text-gray-500">Used for CNAME generation and ownership validation.</p>
+      </div>
+
+      <div>
+        <label for="fiduciary-cname" class="block text-sm font-medium text-gray-700">CMS Deployment CNAME (e.g., consent.example.com)</label>
+        <input type="text" id="fiduciary-cname" name="cmsCname" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <p class="mt-1 text-xs text-red-500 hidden" id="cname-warning">Warning: This CNAME must be correctly configured in the Fiduciary's DNS pointing back to the CMS.</p>
+      </div>
+
+      <!-- Section: Admin Association -->
+      <div>
+        <label for="fiduciary-dpo" class="block text-sm font-medium text-gray-700">Associated DPO/Admin User ID (CMS User)</label>
+        <input type="text" id="fiduciary-dpo" name="dpoUserId" placeholder="UUID of assigned CMS user" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <p class="mt-1 text-xs text-gray-500">Links a CMS user for managing this Fiduciary.</p>
+      </div>
+
+      <div id="validation-section" class="border border-yellow-300 bg-yellow-50 p-3 rounded-md hidden">
+        <h4 class="font-semibold text-orange-600 mb-2">DNS Verification Required</h4>
+        <p class="text-sm text-gray-700 mb-2">Please ask the Data Fiduciary's IT team to add the following TXT record to their primary domain:</p>
+        <code id="txt-record-output" class="block bg-gray-100 p-2 break-all text-xs font-mono text-gray-900 border rounded"></code>
+        <button type="button" id="verify-dns-btn" class="mt-3 primary-bg text-white px-3 py-1 rounded-md text-sm hover:bg-opacity-90">Run Verification Check</button>
+        <span id="validation-status" class="ml-4 text-sm font-medium text-gray-600"></span>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+        <button type="submit" id="save-fiduciary-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Fiduciary</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+        // --- Sidebar Logic (from previous files) ---
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menu-toggle');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('hidden');
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+
+        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    toggleMenu();
+                }
+            });
+        });
+
+        // --- Fiduciary Management Logic ---
+
+        const modalOverlay = document.getElementById('fiduciary-modal-overlay');
+        const addFiduciaryBtn = document.getElementById('add-fiduciary-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const fiduciaryForm = document.getElementById('fiduciary-form');
+        const validationSection = document.getElementById('validation-section');
+        const txtRecordOutput = document.getElementById('txt-record-output');
+        const verifyDnsBtn = document.getElementById('verify-dns-btn');
+        const validationStatus = document.getElementById('validation-status');
+
+        // Helper function to show modal
+        addFiduciaryBtn.addEventListener('click', () => {
+            document.getElementById('modal-title').textContent = "Add New Data Fiduciary";
+            fiduciaryForm.reset();
+            validationSection.classList.add('hidden');
+            validationStatus.textContent = '';
+            modalOverlay.style.display = 'flex';
+        });
+
+        // Helper function to close modal
+        closeModalBtn.addEventListener('click', () => {
+            modalOverlay.style.display = 'none';
+        });
+
+        // Generate a random mock verification token (UUID)
+        function generateVerificationToken() {
+             return 'tsi-dpdp-verify=' + crypto.randomUUID();
+        }
+
+        // Handle Form Submission (Step 1: Save Fiduciary Data)
+        fiduciaryForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(fiduciaryForm);
+            const data = Object.fromEntries(formData.entries());
+
+            // 1. Placeholder for API Call to SAVE Fiduciary details (initially NOT validated)
+            console.log("Submitting Fiduciary Data:", data);
+
+            // In a real application, this would call: POST /api/fiduciaries
+
+            try {
+                // Mock API call to simulate successful creation and return of token
+                // const response = await fetch('/api/fiduciaries', { method: 'POST', body: JSON.stringify(data) });
+                // const result = await response.json();
+
+                // --- MOCK SUCCESS SCENARIO ---
+                const generatedToken = generateVerificationToken();
+
+                // 2. Hide Save button, Show Validation Section
+                document.getElementById('save-fiduciary-btn').classList.add('hidden');
+                document.getElementById('close-modal-btn').textContent = "Done Later"; // Change button text
+
+                txtRecordOutput.textContent = generatedToken;
+                validationSection.classList.remove('hidden');
+
+                alert("Fiduciary successfully registered. Please proceed with DNS verification.");
+
+            } catch (error) {
+                console.error("Fiduciary creation failed:", error);
+                alert("Failed to create Fiduciary. Check console for details.");
+            }
+        });
+
+        // Handle DNS Verification Check
+        verifyDnsBtn.addEventListener('click', async function() {
+            const domain = document.getElementById('fiduciary-domain').value;
+            const expectedToken = txtRecordOutput.textContent.split('=')[1]; // Get the token part
+
+            if (!domain || !expectedToken) {
+                validationStatus.textContent = 'Error: Domain or Token missing.';
+                validationStatus.className = 'ml-4 text-sm font-medium text-red-600';
+                return;
+            }
+
+            validationStatus.textContent = 'Checking DNS...';
+            validationStatus.className = 'ml-4 text-sm font-medium text-blue-600';
+
+            // 1. Placeholder for API Call to run DNS lookup
+            // This would typically call: GET /api/fiduciaries/{id}/validate-dns?token={token}
+
+            // --- MOCK DNS CHECK SCENARIO ---
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate network latency
+            const isVerified = Math.random() > 0.5; // 50% chance of success
+
+            if (isVerified) {
+                validationStatus.textContent = 'VERIFIED! Domain ownership confirmed.';
+                validationStatus.className = 'ml-4 text-sm font-medium text-green-600';
+                // 2. In a real app, you would call a backend API to finalize the validation status in the DB
+                // Call: PUT /api/fiduciaries/{id}/status?validationStatus=Validated
+
+                // 3. Update UI to show final status
+                document.getElementById('close-modal-btn').textContent = "Close";
+
+            } else {
+                validationStatus.textContent = 'FAILED. TXT record not found or incorrect.';
+                validationStatus.className = 'ml-4 text-sm font-medium text-red-600';
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

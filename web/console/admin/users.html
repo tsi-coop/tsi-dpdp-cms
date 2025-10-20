@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSI DPDP CMS - User Management</title>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 500px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+  <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+  <span class="text-xl font-bold primary-text">CMS Users</span>
+  <div class="text-sm text-gray-500">Admin User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+  <div>
+    <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+      <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+    </div>
+    <nav class="flex flex-col space-y-1 mt-4 px-3">
+      <a href="admin_dashboard.html" class="nav-link">
+        Dashboard
+      </a>
+      <a href="fiduciaries.html" class="nav-link">
+        Fiduciaries
+      </a>
+      <a href="processors.html" class="nav-link">
+        Data Processors
+      </a>
+      <a href="#" class="nav-link active">
+        CMS Users
+      </a>
+      <a href="lifecycle.html" class="nav-link">
+        Lifecycle
+      </a>
+      <a href="#" class="nav-link">
+        API Keys
+      </a>
+    </nav>
+  </div>
+  <div class="p-3 border-t border-gray-200">
+    <a href="config.html" class="nav-link">
+      System Config
+    </a>
+    <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+      <span>Admin User</span>
+      <span class="text-xs font-semibold text-red-500">Logout</span>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-semibold text-gray-800">Manage CMS Users</h1>
+    <button id="add-user-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
+      + Add New CMS User
+    </button>
+  </div>
+
+  <!-- CMS Users List Card -->
+  <div class="card mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <input type="text" placeholder="Search User Name or Role..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+      <span class="text-sm text-gray-500">Showing 1 - 10 of 18 Users</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead>
+        <tr class="table-header">
+          <th class="px-4 py-3 text-sm">User Name</th>
+          <th class="px-4 py-3 text-sm">Email</th>
+          <th class="px-4 py-3 text-sm">Roles</th>
+          <th class="px-4 py-3 text-sm">MFA Status</th>
+          <th class="px-4 py-3 text-sm">Status</th>
+          <th class="px-4 py-3 text-sm">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="user-list-body" class="bg-white divide-y divide-gray-200">
+        <!-- Sample Data Row 1 (Admin) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Jane Doe (Admin)</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">jane.doe@tsicoop.com</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Admin, Auditor</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="text-green-600 font-medium">Enabled</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
+            <button class="text-red-600 hover:text-red-900 font-medium text-sm">Deactivate</button>
+          </td>
+        </tr>
+        <!-- Sample Data Row 2 (DPO) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">John Smith</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">john.smith@tsicoop.com</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">DPO, Operator</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="text-red-600 font-medium">Pending Setup</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">PENDING</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
+            <button class="text-green-600 hover:text-green-900 font-medium text-sm">Reset MFA</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 flex justify-between items-center text-sm">
+      <button class="text-gray-600 hover:primary-text">Previous</button>
+      <span class="text-gray-600">Page 1 of 2</span>
+      <button class="text-gray-600 hover:primary-text">Next</button>
+    </div>
+  </div>
+</main>
+
+<!-- Modal for Adding New CMS User -->
+<div id="user-modal-overlay" class="modal-overlay">
+  <div class="modal-content">
+    <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New CMS User</h2>
+    <form id="user-form" class="space-y-4">
+
+      <!-- Section 1: User Identity -->
+      <div>
+        <label for="user-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+        <input type="text" id="user-name" name="name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="user-email" class="block text-sm font-medium text-gray-700">Email (Username)</label>
+          <input type="email" id="user-email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div>
+          <label for="user-phone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
+          <input type="text" id="user-phone" name="phone" placeholder="(Optional)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
+      </div>
+
+      <!-- Section 2: Role Assignment -->
+      <div class="border border-indigo-200 p-3 rounded-md bg-indigo-50">
+        <h4 class="font-semibold text-indigo-800 mb-2">Role Assignment</h4>
+        <p class="text-xs text-gray-600 mb-3">Assign one or more roles to define user permissions.</p>
+
+        <div class="space-y-2">
+          <!-- Role Checkboxes -->
+          <label class="flex items-center space-x-2 text-sm">
+            <input type="checkbox" name="role" value="ADMIN" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+            <span class="font-medium">Administrator</span> (Full control over system settings & users)
+          </label>
+          <label class="flex items-center space-x-2 text-sm">
+            <input type="checkbox" name="role" value="DPO" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+            <span class="font-medium">DPO (Data Protection Officer)</span> (Policy, Grievance, Purge oversight)
+          </label>
+          <label class="flex items-center space-x-2 text-sm">
+            <input type="checkbox" name="role" value="AUDITOR" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+            <span class="font-medium">Auditor</span> (Read-only access to logs and reports)
+          </label>
+          <label class="flex items-center space-x-2 text-sm">
+            <input type="checkbox" name="role" value="OPERATOR" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+            <span class="font-medium">Operator</span> (Data entry, routine tasks, and processing)
+          </label>
+        </div>
+      </div>
+
+      <!-- Section 3: Initial Password & MFA -->
+      <div class="border border-gray-300 p-3 rounded-md">
+        <label for="initial-password" class="block text-sm font-medium text-gray-700">Initial Password (Required)</label>
+        <input type="password" id="initial-password" name="initialPassword" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        <p class="mt-1 text-xs text-red-600">User will be forced to reset password and set up MFA on first login.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+        <button type="submit" id="save-user-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Create User Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+        // --- Sidebar Logic ---
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menu-toggle');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('hidden');
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+
+        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    toggleMenu();
+                }
+            });
+        });
+
+        // --- User Management Logic ---
+
+        const modalOverlay = document.getElementById('user-modal-overlay');
+        const addUserBtn = document.getElementById('add-user-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const userForm = document.getElementById('user-form');
+
+        // Helper function to show modal
+        addUserBtn.addEventListener('click', () => {
+            document.getElementById('modal-title').textContent = "Add New CMS User";
+            userForm.reset();
+            modalOverlay.style.display = 'flex';
+        });
+
+        // Helper function to close modal
+        closeModalBtn.addEventListener('click', (e) => {
+             e.preventDefault();
+             modalOverlay.style.display = 'none';
+        });
+
+        // Handle Form Submission (Save CMS User)
+        userForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(userForm);
+            const data = {};
+
+            // Collect roles separately
+            const roles = [];
+            formData.forEach((value, key) => {
+                if (key === 'role') {
+                    roles.push(value);
+                } else {
+                    data[key] = value;
+                }
+            });
+            data.roles = roles;
+
+            if (data.roles.length === 0) {
+                 alert("Please assign at least one role to the new user.");
+                 return;
+            }
+
+            // 1. Placeholder for API Call to SAVE CMS User details
+            console.log("Submitting CMS User Data:", data);
+
+            // In a real application, this would call: POST /api/v1/users/register
+
+            try {
+                // Mock API call to simulate successful creation
+
+                // --- MOCK SUCCESS SCENARIO ---
+                alert(`User '${data.name}' created successfully with roles: ${data.roles.join(', ')}. They must set up MFA on first login.`);
+                modalOverlay.style.display = 'none';
+
+                // 2. Refresh list or add the new user to the table (omitted for simplicity)
+
+            } catch (error) {
+                console.error("User creation failed:", error);
+                alert("Failed to create user. Check console for details.");
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSI DPDP CMS - Data Lifecycle & Purge</title>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 650px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+  <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+  <span class="text-xl font-bold primary-text">System Purge</span>
+  <div class="text-sm text-gray-500">Admin User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+  <div>
+    <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+      <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+    </div>
+    <nav class="flex flex-col space-y-1 mt-4 px-3">
+      <a href="dashboard.html" class="nav-link">
+        Dashboard
+      </a>
+      <a href="fiduciaries.html" class="nav-link">
+        Fiduciaries
+      </a>
+      <a href="processors.html" class="nav-link">
+        Data Processors
+      </a>
+      <a href="users.html" class="nav-link">
+        CMS Users
+      </a>
+      <a href="#" class="nav-link active">
+        Lifecycle
+      </a>
+      <a href="apikeys.html" class="nav-link">
+        API Keys
+      </a>
+    </nav>
+  </div>
+  <div class="p-3 border-t border-gray-200">
+    <a href="config.html" class="nav-link">
+      System Config
+    </a>
+    <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+      <span>Admin User</span>
+      <span class="text-xs font-semibold text-red-500">Logout</span>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-semibold text-gray-800">Data Lifecycle & Purge Management</h1>
+    <button id="add-policy-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
+      + Define New Retention Policy
+    </button>
+  </div>
+
+  <!-- Tab Interface -->
+  <div class="mb-6 border-b border-gray-200">
+    <nav class="flex space-x-8">
+      <button class="tab-btn active-tab pb-3 text-sm font-medium primary-text border-b-2 border-current" data-tab="policies">Retention Policies</button>
+      <button class="tab-btn pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 transition duration-150" data-tab="requests">Active Purge Requests</button>
+      <button class="tab-btn pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 transition duration-150" data-tab="reports">Purge Reports</button>
+    </nav>
+  </div>
+
+  <!-- Tab Content Containers -->
+  <div id="policies-content" class="tab-content">
+    <div class="card">
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">Data Retention Policies</h2>
+      <div class="flex justify-between items-center mb-4">
+        <input type="text" placeholder="Search Policy Name or Legal Reference..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+        <span class="text-sm text-gray-500">Showing 1 - 5 of 8 Policies</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead>
+          <tr class="table-header">
+            <th class="px-4 py-3 text-sm">Policy Name</th>
+            <th class="px-4 py-3 text-sm">Fiduciary</th>
+            <th class="px-4 py-3 text-sm">Retention Period</th>
+            <th class="px-4 py-3 text-sm">Trigger Event</th>
+            <th class="px-4 py-3 text-sm">Action</th>
+            <th class="px-4 py-3 text-sm">Status</th>
+            <th class="px-4 py-3 text-sm">Actions</th>
+          </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+          <!-- Sample Policy Row 1 -->
+          <tr>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">PMLA Financial Records</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">SecureCredit Solutions</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">7 Years</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Account Closure</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600 font-medium">ARCHIVE</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+              <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
+              <button class="text-red-600 hover:text-red-900 font-medium text-sm">Deactivate</button>
+            </td>
+          </tr>
+          <!-- Sample Policy Row 2 -->
+          <tr>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Web Analytics Data</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Alpha Solutions</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">18 Months</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Consent Withdrawal</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-green-600 font-medium">DELETE</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+              <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
+              <button class="text-red-600 hover:text-red-900 font-medium text-sm">Deactivate</button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="requests-content" class="tab-content hidden">
+    <div class="card">
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">Active Purge Requests (Right to Erasure / Expiry)</h2>
+      <div class="flex justify-between items-center mb-4">
+        <input type="text" placeholder="Search by User ID or Processor..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+        <span class="text-sm text-gray-500">Total Pending: 45 Requests</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead>
+          <tr class="table-header">
+            <th class="px-4 py-3 text-sm">Request ID</th>
+            <th class="px-4 py-3 text-sm">Data Principal</th>
+            <th class="px-4 py-3 text-sm">Trigger</th>
+            <th class="px-4 py-3 text-sm">Target Processor</th>
+            <th class="px-4 py-3 text-sm">Status</th>
+            <th class="px-4 py-3 text-sm">Actions</th>
+          </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+          <!-- Sample Request Row 1 -->
+          <tr>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">REQ-2025-00123</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">user_GHT554</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-blue-600 font-medium">Erasure Request</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">AnalyticsPro Cloud</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">PENDING CONFIRMATION</span></td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+              <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">View Details</button>
+            </td>
+          </tr>
+          <!-- Sample Request Row 2 (Legal Hold) -->
+          <tr>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">EXP-2025-00400</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">user_XYZ999</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-orange-600 font-medium">Retention Expired</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Core DB (Internal)</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">UNDER LEGAL HOLD</span></td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+              <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">View Legal Exception</button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="reports-content" class="tab-content hidden">
+    <div class="card">
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">Completed Purge Reports</h2>
+      <p class="text-sm text-gray-600 mb-4">Audit trails of successful and failed data deletion/anonymization operations.</p>
+      <div class="flex justify-between items-center mb-4">
+        <input type="text" placeholder="Filter by Date or Status..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+        <button class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">Export Purge Logs</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead>
+          <tr class="table-header">
+            <th class="px-4 py-3 text-sm">Job ID</th>
+            <th class="px-4 py-3 text-sm">Fiduciary</th>
+            <th class="px-4 py-3 text-sm">Completion Date</th>
+            <th class="px-4 py-3 text-sm">Records Affected</th>
+            <th class="px-4 py-3 text-sm">Result</th>
+            <th class="px-4 py-3 text-sm">Actions</th>
+          </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+          <!-- Sample Report Row 1 -->
+          <tr>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">JOB-C-1005</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">SecureCredit Solutions</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">2025-05-15</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">8,900</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">SUCCESS</span></td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+              <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">View Audit Trail</button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal for Defining New Retention Policy -->
+<div id="policy-modal-overlay" class="modal-overlay">
+  <div class="modal-content">
+    <h2 id="policy-modal-title" class="text-2xl font-semibold primary-text mb-4">Define New Retention Policy</h2>
+    <form id="policy-form" class="space-y-4">
+
+      <!-- Section 1: Policy Identity -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="policy-name" class="block text-sm font-medium text-gray-700">Policy Name</label>
+          <input type="text" id="policy-name" name="name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div>
+          <label for="fiduciary-association" class="block text-sm font-medium text-gray-700">Associated Data Fiduciary</label>
+          <select id="fiduciary-association" name="fiduciaryId" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="" disabled selected>Select Fiduciary...</option>
+            <option value="alpha">Alpha Solutions Pvt. Ltd.</option>
+            <option value="beta">Beta Tech Corp</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 2: Retention Period & Action -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border border-indigo-200 p-3 rounded-md bg-indigo-50">
+        <div class="md:col-span-3"><h4 class="font-semibold text-indigo-800">Retention & Action</h4></div>
+        <div>
+          <label for="retention-value" class="block text-sm font-medium text-gray-700">Duration Value</label>
+          <input type="number" id="retention-value" name="value" required min="1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
+        <div>
+          <label for="retention-unit" class="block text-sm font-medium text-gray-700">Duration Unit</label>
+          <select id="retention-unit" name="unit" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+            <option value="DAYS">Days</option>
+            <option value="MONTHS">Months</option>
+            <option value="YEARS">Years</option>
+          </select>
+        </div>
+        <div>
+          <label for="action-expiry" class="block text-sm font-medium text-gray-700">Action at Expiry</label>
+          <select id="action-expiry" name="action" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+            <option value="DELETE">DELETE (Permanent Erasure)</option>
+            <option value="ANONYMIZE">ANONYMIZE (Irreversible Masking)</option>
+            <option value="ARCHIVE">ARCHIVE (Legal Hold, Restricted Access)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 3: Applicability & Trigger -->
+      <div class="border border-gray-300 p-3 rounded-md">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="trigger-event" class="block text-sm font-medium text-gray-700">Retention Start Event</label>
+            <select id="trigger-event" name="trigger" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+              <option value="ACCOUNT_CLOSURE">Account Closure/Termination</option>
+              <option value="CONSENT_WITHDRAWN">Consent Withdrawn</option>
+              <option value="LAST_ACTIVITY_DATE">Last Activity Date</option>
+              <option value="TRANSACTION_COMPLETED">Transaction Completed</option>
+            </select>
+          </div>
+          <div>
+            <label for="legal-reference" class="block text-sm font-medium text-gray-700">Legal/Regulatory Reference (Optional)</label>
+            <input type="text" id="legal-reference" name="legal" placeholder="e.g., PMLA 2002, RBI Norms" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label for="applicable-purposes" class="block text-sm font-medium text-gray-700">Applicable Processing Purposes (Multi-Select)</label>
+          <textarea id="applicable-purposes" name="purposes" rows="2" placeholder="e.g., purpose_kyc_validation, purpose_marketing_communication" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="close-modal-policy-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+        <button type="submit" id="save-policy-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Policy</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+        // --- Sidebar Logic ---
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menu-toggle');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('hidden');
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+
+        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    toggleMenu();
+                }
+            });
+        });
+
+        // --- Tab Logic ---
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        function switchTab(targetTab) {
+            tabBtns.forEach(btn => {
+                btn.classList.remove('active-tab', 'primary-text', 'border-current');
+                btn.classList.add('text-gray-500', 'hover:text-gray-700');
+            });
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            document.querySelector(`[data-tab="${targetTab}"]`).classList.add('active-tab', 'primary-text', 'border-current');
+            document.querySelector(`[data-tab="${targetTab}"]`).classList.remove('text-gray-500', 'hover:text-gray-700');
+            document.getElementById(`${targetTab}-content`).classList.remove('hidden');
+
+            // Show 'Add Policy' button only on the Policy tab
+            document.getElementById('add-policy-btn').style.display = (targetTab === 'policies') ? 'inline-block' : 'none';
+        }
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTab(btn.dataset.tab);
+            });
+        });
+
+        // --- Modal Logic ---
+        const policyModalOverlay = document.getElementById('policy-modal-overlay');
+        const addPolicyBtn = document.getElementById('add-policy-btn');
+        const closeModalPolicyBtn = document.getElementById('close-modal-policy-btn');
+        const policyForm = document.getElementById('policy-form');
+
+        // Helper function to show modal
+        addPolicyBtn.addEventListener('click', () => {
+            document.getElementById('policy-modal-title').textContent = "Define New Retention Policy";
+            policyForm.reset();
+            policyModalOverlay.style.display = 'flex';
+        });
+
+        // Helper function to close modal
+        closeModalPolicyBtn.addEventListener('click', (e) => {
+             e.preventDefault();
+             policyModalOverlay.style.display = 'none';
+        });
+
+        // Handle Form Submission (Save Policy)
+        policyForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(policyForm);
+            const data = Object.fromEntries(formData.entries());
+
+            // Process data for JSONB fields
+            data.purposes = data.purposes.split(',').map(p => p.trim()).filter(p => p.length > 0);
+
+            // 1. Placeholder for API Call to SAVE Retention Policy
+            console.log("Submitting Retention Policy Data:", data);
+
+            // In a real application, this would call: POST /api/lifecycle with _func: create_retention_policy
+
+            try {
+                // Mock API call to simulate successful creation
+
+                // --- MOCK SUCCESS SCENARIO ---
+                alert(`Retention Policy '${data.name}' saved successfully. It is now ACTIVE.`);
+                policyModalOverlay.style.display = 'none';
+
+                // 2. Refresh list or add the new policy to the table (omitted for simplicity)
+
+            } catch (error) {
+                console.error("Policy creation failed:", error);
+                alert("Failed to create Policy. Check console for details.");
+            }
+        });
+
+        // Initialize default tab view
+        document.addEventListener('DOMContentLoaded', () => {
+             document.getElementById('add-policy-btn').style.display = 'inline-block';
+        });
+    </script>
+
+</body>
+</html>

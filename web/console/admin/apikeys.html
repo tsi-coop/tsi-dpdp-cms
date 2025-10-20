@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSI DPDP CMS - API Keys Management</title>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 650px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Specific input styling for key viewing */
+        .key-input {
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #333;
+            background-color: #eef2ff; /* Light blue/purple background */
+            border: 1px solid #c7d2fe;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+  <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+  <span class="text-xl font-bold primary-text">API Keys</span>
+  <div class="text-sm text-gray-500">Admin User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+  <div>
+    <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+      <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+    </div>
+    <nav class="flex flex-col space-y-1 mt-4 px-3">
+      <a href="dashboard.html" class="nav-link">
+        Dashboard
+      </a>
+      <a href="fiduciaries.html" class="nav-link">
+        Fiduciaries
+      </a>
+      <a href="processors.html" class="nav-link">
+        Data Processors
+      </a>
+      <a href="users.html" class="nav-link">
+        CMS Users
+      </a>
+      <a href="lifecycle.html" class="nav-link">
+        Lifecycle
+      </a>
+      <a href="#" class="nav-link active">
+        API Keys
+      </a>
+    </nav>
+  </div>
+  <div class="p-3 border-t border-gray-200">
+    <a href="config.html" class="nav-link">
+      System Config
+    </a>
+    <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+      <span>Admin User</span>
+      <span class="text-xs font-semibold text-red-500">Logout</span>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-semibold text-gray-800">API Key Management</h1>
+    <button id="add-key-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
+      + Generate New API Key
+    </button>
+  </div>
+
+  <!-- API Keys List Card -->
+  <div class="card mb-8">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Issued API Access Keys</h2>
+    <p class="text-sm text-red-600 mb-4">WARNING: API Keys must be treated as passwords. Revoke immediately if compromised.</p>
+
+    <div class="flex justify-between items-center mb-4">
+      <input type="text" placeholder="Search by Fiduciary, Processor, or Description..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-lg">
+      <span class="text-sm text-gray-500">Showing 1 - 10 of 15 Keys</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead>
+        <tr class="table-header">
+          <th class="px-4 py-3 text-sm">Key Description</th>
+          <th class="px-4 py-3 text-sm">Owner Type</th>
+          <th class="px-4 py-3 text-sm">Associated Fiduciary</th>
+          <th class="px-4 py-3 text-sm">Permissions (Scopes)</th>
+          <th class="px-4 py-3 text-sm">Last Used</th>
+          <th class="px-4 py-3 text-sm">Status</th>
+          <th class="px-4 py-3 text-sm">Actions</th>
+        </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+        <!-- Sample Key Row 1 (Active Fiduciary Key) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Frontend Consent Submission</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">FIDUCIARY_APP</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Alpha Solutions Pvt. Ltd.</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-blue-600">consent:write, policy:read</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">5 minutes ago</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-red-600 hover:text-red-900 font-medium text-sm">Revoke</button>
+          </td>
+        </tr>
+        <!-- Sample Key Row 2 (Revoked Processor Key) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Analytics Purge Confirmation</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">PROCESSOR_INTEGRATION</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Beta Tech Corp</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">purge:confirm</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400">N/A</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">REVOKED</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm disabled:opacity-50" disabled>View Details</button>
+          </td>
+        </tr>
+        <!-- Sample Key Row 3 (Inactive Key) -->
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Internal DPO Tool Access</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">CMS_ADMIN_TOOL</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">TSI Coop (Internal)</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-blue-600">policy:read, audit:read</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">12 days ago</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">INACTIVE</span></td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-green-600 hover:text-green-900 font-medium text-sm">Activate</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 flex justify-between items-center text-sm">
+      <button class="text-gray-600 hover:primary-text">Previous</button>
+      <span class="text-gray-600">Page 1 of 2</span>
+      <button class="text-gray-600 hover:primary-text">Next</button>
+    </div>
+  </div>
+</main>
+
+<!-- Modal for Generating New API Key -->
+<div id="key-modal-overlay" class="modal-overlay">
+  <div class="modal-content">
+    <h2 id="key-modal-title" class="text-2xl font-semibold primary-text mb-4">Generate New API Key</h2>
+    <form id="key-form" class="space-y-4">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Fiduciary Association -->
+        <div>
+          <label for="fiduciary-association-key" class="block text-sm font-medium text-gray-700">Associated Data Fiduciary</label>
+          <select id="fiduciary-association-key" name="fiduciaryId" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="" disabled selected>Select Fiduciary...</option>
+            <option value="alpha">Alpha Solutions Pvt. Ltd.</option>
+            <option value="beta">Beta Tech Corp</option>
+          </select>
+        </div>
+
+        <!-- Key Owner Type -->
+        <div>
+          <label for="owner-type" class="block text-sm font-medium text-gray-700">Owner Type</label>
+          <select id="owner-type" name="ownerType" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+            <option value="FIDUCIARY_APP">Fiduciary App/Frontend</option>
+            <option value="PROCESSOR_INTEGRATION">Data Processor Integration</option>
+            <option value="CMS_ADMIN_TOOL">CMS Internal Tool</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Processor Association (Optional) -->
+      <div>
+        <label for="processor-association-key" class="block text-sm font-medium text-gray-700">Specific Data Processor (Optional)</label>
+        <select id="processor-association-key" name="processorId" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <option value="" selected>None / General Fiduciary Access</option>
+          <option value="analytics">AnalyticsPro Cloud</option>
+          <option value="sms">SMS Gateway Inc.</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500">Only select if this key is strictly for a Processor's integration.</p>
+      </div>
+
+      <!-- Key Description -->
+      <div>
+        <label for="key-description" class="block text-sm font-medium text-gray-700">Key Description / Purpose</label>
+        <input type="text" id="key-description" name="description" required placeholder="e.g., Key for Purge Confirmation Webhooks" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+      </div>
+
+      <!-- Permissions / Scopes -->
+      <div class="border border-purple-200 p-3 rounded-md bg-purple-50">
+        <h4 class="font-semibold text-purple-800 mb-2">Granular Permissions (Scopes)</h4>
+        <p class="text-xs text-gray-600 mb-3">Select the minimum necessary permissions for this key.</p>
+
+        <div class="grid grid-cols-2 gap-3 space-y-1 text-sm">
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" name="permission" value="consent:write" class="rounded border-gray-300 text-purple-600 shadow-sm focus:ring-purple-500">
+            <span>Consent Submission (consent:write)</span>
+          </label>
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" name="permission" value="consent:validate" class="rounded border-gray-300 text-purple-600 shadow-sm focus:ring-purple-500">
+            <span>Consent Validation (consent:validate)</span>
+          </label>
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" name="permission" value="policy:read" class="rounded border-gray-300 text-purple-600 shadow-sm focus:ring-purple-500">
+            <span>Policy Retrieval (policy:read)</span>
+          </label>
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" name="permission" value="purge:confirm" class="rounded border-gray-300 text-purple-600 shadow-sm focus:ring-purple-500">
+            <span>Purge Confirmation (purge:confirm)</span>
+          </label>
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" name="permission" value="grievance:submit" class="rounded border-gray-300 text-purple-600 shadow-sm focus:ring-purple-500">
+            <span>Grievance Submission (grievance:submit)</span>
+          </label>
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" name="permission" value="audit:read" class="rounded border-gray-300 text-purple-600 shadow-sm focus:ring-purple-500">
+            <span>Audit Log Read (audit:read)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Final Action Buttons -->
+      <div class="modal-footer">
+        <button type="button" id="close-modal-key-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+        <button type="submit" id="generate-key-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Generate Key</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal for Generated Key Display -->
+<div id="generated-key-modal" class="modal-overlay">
+  <div class="modal-content max-w-sm">
+    <h2 class="text-2xl font-semibold text-green-700 mb-4">Key Generated Successfully!</h2>
+    <p class="mb-4 text-sm text-red-700 font-semibold">⚠️ WARNING: This key will only be shown ONCE. Store it immediately and securely.</p>
+
+    <label for="display-key" class="block text-sm font-medium text-gray-700 mb-1">Generated API Key Value:</label>
+    <input type="text" id="display-key" readonly class="key-input w-full p-2 rounded-md select-all">
+
+    <div class="modal-footer">
+      <button type="button" id="copy-key-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Copy Key & Close</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+        // --- Sidebar Logic ---
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menu-toggle');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('hidden');
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+
+        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    toggleMenu();
+                }
+            });
+        });
+
+        // --- Modal & Form Logic ---
+        const keyModalOverlay = document.getElementById('key-modal-overlay');
+        const addKeyBtn = document.getElementById('add-key-btn');
+        const closeModalKeyBtn = document.getElementById('close-modal-key-btn');
+        const keyForm = document.getElementById('key-form');
+        const generatedKeyModal = document.getElementById('generated-key-modal');
+        const displayKeyInput = document.getElementById('display-key');
+        const copyKeyBtn = document.getElementById('copy-key-btn');
+
+
+        // Helper function to show generation modal
+        addKeyBtn.addEventListener('click', () => {
+            document.getElementById('key-modal-title').textContent = "Generate New API Key";
+            keyForm.reset();
+            keyModalOverlay.style.display = 'flex';
+        });
+
+        // Helper function to close generation modal
+        closeModalKeyBtn.addEventListener('click', (e) => {
+             e.preventDefault();
+             keyModalOverlay.style.display = 'none';
+        });
+
+        // Helper function to copy key to clipboard and close modal
+        copyKeyBtn.addEventListener('click', () => {
+            const key = displayKeyInput.value;
+            // Use execCommand for broader compatibility in some environments
+            try {
+                displayKeyInput.select();
+                document.execCommand('copy');
+                alert("API Key copied to clipboard. Close this window and store it safely.");
+            } catch (err) {
+                console.error('Could not copy text: ', err);
+                alert("Failed to automatically copy key. Please manually copy the value displayed.");
+            }
+            generatedKeyModal.style.display = 'none';
+            // Reload list (omitted)
+        });
+
+        // Handle Form Submission (Generate Key)
+        keyForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(keyForm);
+            const data = {};
+
+            // Collect permissions separately
+            const permissions = [];
+            formData.forEach((value, key) => {
+                if (key === 'permission') {
+                    permissions.push(value);
+                } else {
+                    data[key] = value;
+                }
+            });
+            data.permissions = permissions;
+
+            if (data.permissions.length === 0) {
+                 alert("Please select at least one permission scope for the API Key.");
+                 return;
+            }
+
+            // --- 1. Placeholder for API Call to GENERATE Key ---
+            console.log("Requesting Key Generation with Data:", data);
+
+            // Mock API Response (In real system, this key is generated securely on backend)
+            const MOCK_RAW_KEY = "DPDP-KEY-" + Math.random().toString(36).substring(2, 15) + "-" + Date.now();
+
+            try {
+                // Mock API call to simulate successful creation and secure hashing
+                // API Call: POST /api-keys with _func: generate_api_key
+
+                // --- MOCK SUCCESS SCENARIO ---
+
+                // 2. Hide configuration modal
+                keyModalOverlay.style.display = 'none';
+
+                // 3. Show generated key modal
+                displayKeyInput.value = MOCK_RAW_KEY;
+                generatedKeyModal.style.display = 'flex';
+
+            } catch (error) {
+                console.error("Key generation failed:", error);
+                alert("Failed to generate API Key. Check console for details.");
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>
