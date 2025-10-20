@@ -7,6 +7,7 @@
   <title>TSI DPDP CMS - Data Fiduciaries Management</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../env.js"></script>
   <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -190,19 +191,21 @@
 <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
 
 <!-- Main Content Area -->
+<!-- Main Content Area -->
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-semibold text-gray-800">Manage Data Fiduciaries</h1>
+    <h1 class="text-3xl font-semibold text-gray-800">Data Fiduciaries Management</h1>
     <button id="add-fiduciary-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
       + Add New Fiduciary
     </button>
   </div>
 
   <!-- Fiduciaries List Card -->
-  <div class="card mb-8">
+  <div class="card">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Registered Data Fiduciaries</h2>
     <div class="flex justify-between items-center mb-4">
-      <input type="text" placeholder="Search Fiduciaries or Domains..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
-      <span class="text-sm text-gray-500">Showing 1 - 10 of 12 Fiduciaries</span>
+      <input type="text" placeholder="Search by Name or Domain..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+      <span id="fiduciary-count" class="text-sm text-gray-500">Loading...</span>
     </div>
 
     <div class="overflow-x-auto">
@@ -210,47 +213,27 @@
         <thead>
         <tr class="table-header">
           <th class="px-4 py-3 text-sm">Fiduciary Name</th>
-          <th class="px-4 py-3 text-sm">Domain</th>
+          <th class="px-4 py-3 text-sm">Primary Domain</th>
           <th class="px-4 py-3 text-sm">CMS CNAME</th>
           <th class="px-4 py-3 text-sm">Status</th>
           <th class="px-4 py-3 text-sm">Validation</th>
           <th class="px-4 py-3 text-sm">Actions</th>
         </tr>
         </thead>
-        <tbody id="fiduciary-list-body" class="bg-white divide-y divide-gray-200">
-        <!-- Sample Data Row 1 (Active, Validated) -->
+        <tbody id="fiduciary-table-body" class="bg-white divide-y divide-gray-200">
+        <!-- Data will be dynamically inserted here -->
         <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Alpha Solutions Pvt. Ltd.</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">alpha-solutions.in</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">consent.alpha-solutions.in</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="text-green-600 font-medium">Validated (2025-01-15)</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
-            <button class="text-red-600 hover:text-red-900 font-medium text-sm">Deactivate</button>
-          </td>
-        </tr>
-        <!-- Sample Data Row 2 (Inactive, Invalid Key) -->
-        <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Beta Tech Corp</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">betatech.com</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">privacy.betatech.com</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">INACTIVE</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="text-red-600 font-medium">Validation Failed</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
-            <button class="text-green-600 hover:text-green-900 font-medium text-sm">Reactivate</button>
+          <td colspan="6" class="p-4 text-center text-gray-500">
+            Loading Fiduciary data...
           </td>
         </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="mt-4 flex justify-between items-center text-sm">
-      <button class="text-gray-600 hover:primary-text">Previous</button>
-      <span class="text-gray-600">Page 1 of 2</span>
-      <button class="text-gray-600 hover:primary-text">Next</button>
-    </div>
+    <p id="fiduciary-error-message" class="mt-4 text-sm text-red-600 hidden">
+      Failed to load data. Please check the API connection and token.
+    </p>
   </div>
 </main>
 
@@ -315,131 +298,213 @@
 </div>
 
 <script>
-        // --- Sidebar Logic (from previous files) ---
-        const sidebar = document.getElementById('sidebar');
-        const menuToggle = document.getElementById('menu-toggle');
-        const backdrop = document.getElementById('sidebar-backdrop');
+const API_URL_LIST = ENV_SERVER_URL+'/api/v1/admin/fiduciary';
+const API_URL_CREATE = ENV_SERVER_URL+'/api/v1/admin/fiduciary';
+const AUTH_TOKEN = localStorage.getItem('authToken');
+//console.log(AUTH_TOKEN);
 
-        function toggleMenu() {
-            sidebar.classList.toggle('open');
-            backdrop.classList.toggle('hidden');
+// --- DOM Elements ---
+const sidebar = document.getElementById('sidebar');
+const menuToggle = document.getElementById('menu-toggle');
+const backdrop = document.getElementById('sidebar-backdrop');
+const fiduciaryModalOverlay = document.getElementById('fiduciary-modal-overlay');
+const addFiduciaryBtn = document.getElementById('add-fiduciary-btn');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const fiduciaryForm = document.getElementById('fiduciary-form');
+const tableBody = document.getElementById('fiduciary-table-body');
+const countSpan = document.getElementById('fiduciary-count');
+const errorMessageP = document.getElementById('fiduciary-error-message');
+
+
+// --- Helper Functions ---
+
+function toggleMenu() {
+    sidebar.classList.toggle('open');
+    backdrop.classList.toggle('hidden');
+}
+
+function showModal(title) {
+    document.getElementById('modal-title').textContent = title;
+    fiduciaryForm.reset();
+    fiduciaryModalOverlay.style.display = 'flex';
+}
+
+function closeModal() {
+    fiduciaryModalOverlay.style.display = 'none';
+}
+
+function createStatusBadge(status) {
+    let colorClass = '';
+    switch (status) {
+        case 'ACTIVE':
+            colorClass = 'bg-green-100 text-green-800';
+            break;
+        case 'PENDING':
+            colorClass = 'bg-yellow-100 text-yellow-800';
+            break;
+        case 'INACTIVE':
+        case 'REVOKED':
+            colorClass = 'bg-red-100 text-red-800';
+            break;
+        case 'VALIDATED':
+            colorClass = 'bg-blue-100 text-blue-800';
+            break;
+        default:
+            colorClass = 'bg-gray-100 text-gray-800';
+    }
+    return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status}</span>`;
+}
+
+function createFiduciaryRow(fiduciary) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${fiduciary.name || 'N/A'}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${fiduciary.primary_domain || 'N/A'}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${fiduciary.cms_cname || 'N/A'}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.status)}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.domain_validation_status || 'PENDING')}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm">
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editFiduciary('${fiduciary.id}')">Edit</button>
+            <button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateFiduciary('${fiduciary.id}')">Deactivate</button>
+        </td>
+    `;
+    return row;
+}
+
+
+// --- Core Logic ---
+
+async function loadFiduciaries() {
+    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading Fiduciary data...</td></tr>`;
+    errorMessageP.classList.add('hidden');
+
+    try {
+        // The provided cURL uses POST with a JSON body for listing.
+        const listPayload = {
+            "_func": "list_fiduciaries",
+            "status": "",
+            "search": "",
+            "page": 1,
+            "limit": 50
+        };
+
+        const response = await fetch(API_URL_LIST, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AUTH_TOKEN}`
+            },
+            body: JSON.stringify(listPayload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API returned status ${response.status}`);
         }
 
-        menuToggle.addEventListener('click', toggleMenu);
-        backdrop.addEventListener('click', toggleMenu);
-        backdrop.addEventListener('click', toggleMenu);
+        const responseData = await response.json();
 
-        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth < 1024) {
-                    toggleMenu();
-                }
-            });
-        });
+        // Assuming responseData structure is: { success: true, data: [{...}, {...}] }
+        if (Array.isArray(responseData)) {
+            const fiduciaries = responseData;
+            tableBody.innerHTML = ''; // Clear loading message
 
-        // --- Fiduciary Management Logic ---
-
-        const modalOverlay = document.getElementById('fiduciary-modal-overlay');
-        const addFiduciaryBtn = document.getElementById('add-fiduciary-btn');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const fiduciaryForm = document.getElementById('fiduciary-form');
-        const validationSection = document.getElementById('validation-section');
-        const txtRecordOutput = document.getElementById('txt-record-output');
-        const verifyDnsBtn = document.getElementById('verify-dns-btn');
-        const validationStatus = document.getElementById('validation-status');
-
-        // Helper function to show modal
-        addFiduciaryBtn.addEventListener('click', () => {
-            document.getElementById('modal-title').textContent = "Add New Data Fiduciary";
-            fiduciaryForm.reset();
-            validationSection.classList.add('hidden');
-            validationStatus.textContent = '';
-            modalOverlay.style.display = 'flex';
-        });
-
-        // Helper function to close modal
-        closeModalBtn.addEventListener('click', () => {
-            modalOverlay.style.display = 'none';
-        });
-
-        // Generate a random mock verification token (UUID)
-        function generateVerificationToken() {
-             return 'tsi-dpdp-verify=' + crypto.randomUUID();
-        }
-
-        // Handle Form Submission (Step 1: Save Fiduciary Data)
-        fiduciaryForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-
-            const formData = new FormData(fiduciaryForm);
-            const data = Object.fromEntries(formData.entries());
-
-            // 1. Placeholder for API Call to SAVE Fiduciary details (initially NOT validated)
-            console.log("Submitting Fiduciary Data:", data);
-
-            // In a real application, this would call: POST /api/fiduciaries
-
-            try {
-                // Mock API call to simulate successful creation and return of token
-                // const response = await fetch('/api/fiduciaries', { method: 'POST', body: JSON.stringify(data) });
-                // const result = await response.json();
-
-                // --- MOCK SUCCESS SCENARIO ---
-                const generatedToken = generateVerificationToken();
-
-                // 2. Hide Save button, Show Validation Section
-                document.getElementById('save-fiduciary-btn').classList.add('hidden');
-                document.getElementById('close-modal-btn').textContent = "Done Later"; // Change button text
-
-                txtRecordOutput.textContent = generatedToken;
-                validationSection.classList.remove('hidden');
-
-                alert("Fiduciary successfully registered. Please proceed with DNS verification.");
-
-            } catch (error) {
-                console.error("Fiduciary creation failed:", error);
-                alert("Failed to create Fiduciary. Check console for details.");
-            }
-        });
-
-        // Handle DNS Verification Check
-        verifyDnsBtn.addEventListener('click', async function() {
-            const domain = document.getElementById('fiduciary-domain').value;
-            const expectedToken = txtRecordOutput.textContent.split('=')[1]; // Get the token part
-
-            if (!domain || !expectedToken) {
-                validationStatus.textContent = 'Error: Domain or Token missing.';
-                validationStatus.className = 'ml-4 text-sm font-medium text-red-600';
-                return;
-            }
-
-            validationStatus.textContent = 'Checking DNS...';
-            validationStatus.className = 'ml-4 text-sm font-medium text-blue-600';
-
-            // 1. Placeholder for API Call to run DNS lookup
-            // This would typically call: GET /api/fiduciaries/{id}/validate-dns?token={token}
-
-            // --- MOCK DNS CHECK SCENARIO ---
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate network latency
-            const isVerified = Math.random() > 0.5; // 50% chance of success
-
-            if (isVerified) {
-                validationStatus.textContent = 'VERIFIED! Domain ownership confirmed.';
-                validationStatus.className = 'ml-4 text-sm font-medium text-green-600';
-                // 2. In a real app, you would call a backend API to finalize the validation status in the DB
-                // Call: PUT /api/fiduciaries/{id}/status?validationStatus=Validated
-
-                // 3. Update UI to show final status
-                document.getElementById('close-modal-btn').textContent = "Close";
-
+            if (fiduciaries.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No Fiduciaries registered yet.</td></tr>`;
             } else {
-                validationStatus.textContent = 'FAILED. TXT record not found or incorrect.';
-                validationStatus.className = 'ml-4 text-sm font-medium text-red-600';
+                fiduciaries.forEach(fiduciary => {
+                    tableBody.appendChild(createFiduciaryRow(fiduciary));
+                });
+                countSpan.textContent = `Showing 1 - ${fiduciaries.length} of ${fiduciaries.length} Total`;
             }
+        } else {
+            // Handle API-level error (e.g., success: false)
+            throw new Error(responseData.message || 'API returned success: false.');
+        }
+
+    } catch (error) {
+        console.error("Error loading Fiduciaries:", error);
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">
+            Error connecting to the CMS API. Ensure the service is running and the token is valid.
+        </td></tr>`;
+        errorMessageP.classList.remove('hidden');
+        countSpan.textContent = '0 Total';
+    }
+}
+
+// Handles the Add New Fiduciary form submission
+fiduciaryForm.addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    const formData = new FormData(fiduciaryForm);
+    const data = Object.fromEntries(formData.entries());
+
+    const payload = {
+        "_func": "create_fiduciary",
+        "fiduciary_name": data.name,
+        "primary_domain": data.primary_domain,
+        "cms_cname": data.cms_cname,
+        "contact_email": data.email,
+        "status": data.status // ACTIVE or INACTIVE
+    };
+
+    try {
+        // --- MOCK: Show loading state in modal ---
+        document.getElementById('save-fiduciary-btn').textContent = 'Saving...';
+        document.getElementById('save-fiduciary-btn').disabled = true;
+
+        const response = await fetch(API_URL_CREATE, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AUTH_TOKEN}`
+            },
+            body: JSON.stringify(payload)
         });
 
-    </script>
+        const responseData = await response.json();
 
+        if (response.ok && responseData.success) {
+            alert("Fiduciary added successfully! Domain validation TXT record generated.");
+            closeModal();
+            loadFiduciaries(); // Reload list
+        } else {
+            const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
+            alert(`Failed to add Fiduciary: ${errorMsg}`);
+        }
+
+    } catch (error) {
+        console.error("Error creating Fiduciary:", error);
+        alert("Network error: Could not connect to API.");
+    } finally {
+        document.getElementById('save-fiduciary-btn').textContent = 'Save Fiduciary';
+        document.getElementById('save-fiduciary-btn').disabled = false;
+    }
+});
+
+// Placeholder functions (for demo only)
+function editFiduciary(id) {
+    alert(`Editing Fiduciary ID: ${id}. This would load data into the modal.`);
+    showModal('Edit Data Fiduciary');
+}
+
+function deactivateFiduciary(id) {
+    if (confirm(`Are you sure you want to DEACTIVATE Fiduciary ID ${id}? This will suspend all consent operations.`)) {
+        alert(`Fiduciary ${id} deactivated (Action logged).`);
+        // In production, this would call a PUT/POST endpoint with _func: deactivate_fiduciary
+        loadFiduciaries();
+    }
+}
+
+// --- Event Listeners and Initialization ---
+
+menuToggle.addEventListener('click', toggleMenu);
+backdrop.addEventListener('click', toggleMenu);
+addFiduciaryBtn.addEventListener('click', () => showModal('Add New Data Fiduciary'));
+closeModalBtn.addEventListener('click', closeModal);
+
+document.addEventListener('DOMContentLoaded', loadFiduciaries);
+
+</script>
 </body>
 
 </html>

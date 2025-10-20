@@ -7,6 +7,7 @@
     <title>TSI DPDP CMS - Console Login</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="env.js"></script>
     <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -142,8 +143,9 @@
  * The function is asynchronous to prevent blocking the UI thread.
  */
 async function handleLogin(event) {
+    //console.log(ENV_SERVER_URL);
     // Configuration Constants
-    const API_LOGIN_URL = 'http://localhost:8080/api/v1/admin/user';
+    const API_LOGIN_URL = ENV_SERVER_URL+'/api/v1/admin/user';
     const DASHBOARD_URL = 'admin/dashboard.html';
 
     event.preventDefault();
@@ -193,7 +195,7 @@ async function handleLogin(event) {
                 console.log('Authentication successful. Received data:', responseData);
 
                 // CRITICAL STEP: Store Authentication Token (e.g., JWT) here
-                // localStorage.setItem('authToken', responseData.token);
+                localStorage.setItem('authToken', responseData.token);
 
                 // Redirect the user to the admin dashboard
                 messageArea.textContent = "Login successful. Redirecting...";
