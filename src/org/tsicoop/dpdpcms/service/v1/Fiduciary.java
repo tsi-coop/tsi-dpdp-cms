@@ -374,7 +374,7 @@ public class Fiduciary implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, contact_person, email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at FROM fiduciaries");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, contact_person, email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at FROM fiduciaries WHERE status <> 'INACTIVE'");
         List<Object> params = new ArrayList<>();
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
@@ -383,7 +383,7 @@ public class Fiduciary implements Action {
         }
 
         if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (name ILIKE ? OR primary_domain ILIKE ? OR email ILIKE ?)");
+            sqlBuilder.append(" AND (name LIKE ? OR primary_domain LIKE ? OR email LIKE ?)");
             params.add("%" + search + "%");
             params.add("%" + search + "%");
             params.add("%" + search + "%");
@@ -392,6 +392,8 @@ public class Fiduciary implements Action {
         sqlBuilder.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
+
+        System.out.println(sqlBuilder.toString());
 
         try {
             conn = pool.getConnection();
