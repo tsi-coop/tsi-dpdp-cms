@@ -334,16 +334,15 @@ function showModal(title, isEdit = false) {
     document.getElementById('modal-title').textContent = title;
     fiduciaryForm.reset();
     fiduciaryIdHidden.value = ''; // Clear hidden ID by default
+    if(primaryDomainInput.disabled){
+      primaryDomainInput.disabled = false;
+      cmsCnameInput.disabled = false;
+    }
 
     if (isEdit) {
          document.getElementById('save-fiduciary-btn').textContent = 'Update Fiduciary';
-         // Optional: Disable domain fields during edit if primary domain is immutable
-         //primaryDomainInput.disabled = true;
-         //cmsCnameInput.disabled = true;
     } else {
          document.getElementById('save-fiduciary-btn').textContent = 'Save Fiduciary';
-         //primaryDomainInput.disabled = false;
-         //cmsCnameInput.disabled = false;
     }
 
     fiduciaryModalOverlay.style.display = 'flex';
@@ -377,6 +376,17 @@ function createStatusBadge(status) {
 
 function createFiduciaryRow(fiduciary) {
     const row = document.createElement('tr');
+
+    // Determine if the Deactivate button should be shown
+    const showDeactivate = fiduciary.status === 'ACTIVE' || fiduciary.status === 'PENDING';
+
+    const actionsHtml = `
+        <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editFiduciary('${fiduciary.fiduciary_id}')">Edit</button>
+        ${showDeactivate ?
+            `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateFiduciary('${fiduciary.fiduciary_id}')">Deactivate</button>`
+            : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
+    `;
+
     row.innerHTML = `
         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${fiduciary.name || 'N/A'}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${fiduciary.primary_domain || 'N/A'}</td>
@@ -384,8 +394,7 @@ function createFiduciaryRow(fiduciary) {
         <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.status)}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.domain_validation_status || 'PENDING')}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editFiduciary('${fiduciary.fiduciary_id}')">Edit</button>
-            <button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateFiduciary('${fiduciary.fiduciary_id}')">Deactivate</button>
+            ${actionsHtml}
         </td>
     `;
     return row;
@@ -515,15 +524,38 @@ async function editFiduciary(id) {
     }
 }
 
-function deactivateFiduciary(id) {
+async function deactivateFiduciary(id) {
     if (confirm(`Are you sure you want to DEACTIVATE Fiduciary ID ${id}? This will suspend all consent operations.`)) {
-        alert(`Fiduciary ${id} deactivated (Action logged).`);
-        // In production, this would call a PUT/POST endpoint with _func: deactivate_fiduciary
-        loadFiduciaries();
+        try {
+            const payload = {
+                "_func": "delete_fiduciary",
+                "fiduciary_id": id
+            };
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert(`Fiduciary ID ${id} successfully deactivated.`);
+                loadFiduciaries(); // Reload list to reflect status change
+            } else {
+                const responseData = await response.json();
+                const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
+                alert(`Failed to deactivate Fiduciary ID ${id}: ${errorMsg}`);
+            }
+
+        } catch (error) {
+            console.error("Error during deactivation API call:", error);
+            alert("Network error: Could not communicate with the API during deactivation.");
+        }
     }
 }
-
-
 
 // --- Event Listeners and Initialization ---
 
@@ -596,13 +628,12 @@ fiduciaryForm.addEventListener('submit', async function(event) {
             body: JSON.stringify(payload)
         });
 
-        const responseData = await response.json();
-
-        if (response.ok && responseData.success) {
+        if (response.ok) {
             alert(`Fiduciary ${isEditing ? 'updated' : 'added'} successfully!`);
             closeModal();
             loadFiduciaries(); // Reload list
         } else {
+            const responseData = await response.json();
             const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
             alert(`Failed to ${isEditing ? 'update' : 'add'} Fiduciary: ${errorMsg}`);
         }

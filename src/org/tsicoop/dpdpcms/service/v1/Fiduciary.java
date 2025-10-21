@@ -57,8 +57,6 @@ public class Fiduciary implements Action {
         JSONObject output = null;
         JSONArray outputArray = null;
 
-        // Placeholder for current CMS user ID (from authentication context)
-        UUID currentCmsUserId = UUID.fromString("00000000-0000-0000-0000-000000000001"); // Example Admin User ID
 
         try {
             input = InputProcessor.getInput(req);
@@ -141,7 +139,7 @@ public class Fiduciary implements Action {
                     String dnsTxtToken = "dpdp-verify-" + UUID.randomUUID().toString().substring(0, 8);
 
                     output = saveFiduciaryToDb(name, contactPerson, email, phone, address, primaryDomain, cmsCname, dnsTxtToken,
-                            isSignificant != null ? isSignificant : false, dpoUserId, dpbRegId, "PENDING", currentCmsUserId);
+                            isSignificant != null ? isSignificant : false, dpoUserId, dpbRegId, "PENDING");
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -194,11 +192,11 @@ public class Fiduciary implements Action {
                         return;
                     }
                     output = updateFiduciaryInDb(fiduciaryId, name, contactPerson, email, phone, address, primaryDomain, cmsCname,
-                            isSignificant, dpoUserId, dpbRegId, statusFilter, currentCmsUserId);
+                            isSignificant, dpoUserId, dpbRegId, statusFilter);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
-                case "delete_fiduciary": // Soft delete
+                case "delete_fiduciary":
                     if (fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'delete_fiduciary'.", req.getRequestURI());
                         return;
@@ -207,8 +205,8 @@ public class Fiduciary implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Data Fiduciary with ID '" + fiduciaryId + "' not found.", req.getRequestURI());
                         return;
                     }
-                    deleteFiduciaryFromDb(fiduciaryId, currentCmsUserId);
-                    OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
+                    deleteFiduciaryFromDb(fiduciaryId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, null);
                     break;
 
                 case "validate_fiduciary_domain":
@@ -376,13 +374,14 @@ public class Fiduciary implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, contact_person, email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at FROM fiduciaries WHERE deleted_at IS NULL");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, contact_person, email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at FROM fiduciaries");
         List<Object> params = new ArrayList<>();
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
             sqlBuilder.append(" AND status = ?");
             params.add(statusFilter);
         }
+
         if (search != null && !search.isEmpty()) {
             sqlBuilder.append(" AND (name ILIKE ? OR primary_domain ILIKE ? OR email ILIKE ?)");
             params.add("%" + search + "%");
@@ -435,7 +434,7 @@ public class Fiduciary implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, name, contact_person, email, phone, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at FROM fiduciaries WHERE id = ? AND deleted_at IS NULL";
+        String sql = "SELECT id, name, contact_person, email, phone, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at FROM fiduciaries WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -474,7 +473,7 @@ public class Fiduciary implements Action {
      */
     private JSONObject saveFiduciaryToDb(String name, String contactPerson, String email, String phone, String address,
                                          String primaryDomain, String cmsCname, String dnsTxtToken,
-                                         boolean isSignificant, UUID dpoUserId, String dpbRegId, String status, UUID createdByUserId) throws SQLException {
+                                         boolean isSignificant, UUID dpoUserId, String dpbRegId, String status) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -529,7 +528,7 @@ public class Fiduciary implements Action {
      * @throws SQLException if a database access error occurs.
      */
     private JSONObject updateFiduciaryInDb(UUID fiduciaryId, String name, String contactPerson, String email, String phone, String address,
-                                           String primaryDomain, String cmsCname, Boolean isSignificant, UUID dpoUserId, String dpbRegId, String status, UUID updatedByUserId) throws SQLException {
+                                           String primaryDomain, String cmsCname, Boolean isSignificant, UUID dpoUserId, String dpbRegId, String status) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
@@ -549,8 +548,9 @@ public class Fiduciary implements Action {
         if (dpbRegId != null) { sqlBuilder.append(", dpb_registration_id = ?"); params.add(dpbRegId); }
         if (status != null && !status.isEmpty()) { sqlBuilder.append(", status = ?"); params.add(status); }
 
-        sqlBuilder.append(" WHERE id = ? AND deleted_at IS NULL");
+        sqlBuilder.append(" WHERE id = ?");
         params.add(fiduciaryId);
+        //System.out.println(sqlBuilder.toString());
 
         try {
             conn = pool.getConnection();
@@ -596,16 +596,15 @@ public class Fiduciary implements Action {
      * Deletes a fiduciary from the database (soft delete).
      * @throws SQLException if a database access error occurs.
      */
-    private void deleteFiduciaryFromDb(UUID fiduciaryId, UUID deletedByUserId) throws SQLException {
+    private void deleteFiduciaryFromDb(UUID fiduciaryId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE fiduciaries SET deleted_at = NOW(), deleted_by_user_id = ?, status = 'INACTIVE' WHERE id = ? AND deleted_at IS NULL";
+        String sql = "UPDATE fiduciaries SET status = 'INACTIVE' WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, deletedByUserId);
-            pstmt.setObject(2, fiduciaryId);
+            pstmt.setObject(1, fiduciaryId);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Deleting fiduciary failed, fiduciary not found or already deleted.");
