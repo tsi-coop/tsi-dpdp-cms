@@ -15,10 +15,7 @@
     "email": {
       "type": "string"
     },
-    "status": {
-      "type": "string"
-    },
-    "dpo_user_id": {
+    "phone": {
       "type": "string"
     }
   },
@@ -27,6 +24,6 @@
     "fiduciary_id",
     "name",
     "email",
-    "status"
+    "phone"
   ]
 }

@@ -243,6 +243,9 @@
     <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New Data Fiduciary</h2>
     <form id="fiduciary-form" class="space-y-4">
 
+      <!-- Hidden Field to store Fiduciary ID during edit -->
+      <input type="hidden" id="fiduciary-id-hidden" name="fiduciaryId" value="">
+
       <!-- Section: General Details -->
       <div>
         <label for="fiduciary-name" class="block text-sm font-medium text-gray-700">Fiduciary Legal Name</label>
@@ -264,22 +267,22 @@
       <!-- Section: Domain Details (Crucial for Validation) -->
       <div>
         <label for="fiduciary-domain" class="block text-sm font-medium text-gray-700">Primary Domain (e.g., example.com)</label>
-        <input type="text" id="fiduciary-domain" name="primaryDomain" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <input type="text" id="fiduciary-domain" name="primary_domain" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
         <p class="mt-1 text-xs text-gray-500">Used for CNAME generation and ownership validation.</p>
       </div>
 
       <div>
         <label for="fiduciary-cname" class="block text-sm font-medium text-gray-700">CMS Deployment CNAME (e.g., consent.example.com)</label>
-        <input type="text" id="fiduciary-cname" name="cmsCname" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <input type="text" id="fiduciary-cname" name="cms_cname" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
         <p class="mt-1 text-xs text-red-500 hidden" id="cname-warning">Warning: This CNAME must be correctly configured in the Fiduciary's DNS pointing back to the CMS.</p>
       </div>
 
       <!-- Section: Admin Association -->
-      <div>
+      <!--<div>
         <label for="fiduciary-dpo" class="block text-sm font-medium text-gray-700">Associated DPO/Admin User ID (CMS User)</label>
         <input type="text" id="fiduciary-dpo" name="dpoUserId" placeholder="UUID of assigned CMS user" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
         <p class="mt-1 text-xs text-gray-500">Links a CMS user for managing this Fiduciary.</p>
-      </div>
+      </div> -->
 
       <div id="validation-section" class="border border-yellow-300 bg-yellow-50 p-3 rounded-md hidden">
         <h4 class="font-semibold text-orange-600 mb-2">DNS Verification Required</h4>
@@ -298,34 +301,51 @@
 </div>
 
 <script>
-const API_URL_LIST = ENV_SERVER_URL+'/api/v1/admin/fiduciary';
-const API_URL_CREATE = ENV_SERVER_URL+'/api/v1/admin/fiduciary';
+const API_URL = ENV_SERVER_URL+'/api/v1/admin/fiduciary';
 const AUTH_TOKEN = localStorage.getItem('authToken');
 //console.log(AUTH_TOKEN);
 
 // --- DOM Elements ---
-const sidebar = document.getElementById('sidebar');
-const menuToggle = document.getElementById('menu-toggle');
-const backdrop = document.getElementById('sidebar-backdrop');
-const fiduciaryModalOverlay = document.getElementById('fiduciary-modal-overlay');
-const addFiduciaryBtn = document.getElementById('add-fiduciary-btn');
-const closeModalBtn = document.getElementById('close-modal-btn');
-const fiduciaryForm = document.getElementById('fiduciary-form');
-const tableBody = document.getElementById('fiduciary-table-body');
-const countSpan = document.getElementById('fiduciary-count');
-const errorMessageP = document.getElementById('fiduciary-error-message');
+let sidebar;
+let menuToggle;
+let backdrop;
+let fiduciaryModalOverlay;
+let addFiduciaryBtn;
+let closeModalBtn;
+let fiduciaryForm;
+let tableBody;
+let countSpan;
+let errorMessageP;
 
-
-// --- Helper Functions ---
+// --- Form Fields for Edit/Add ---
+let fiduciaryIdHidden;
+let fiduciaryNameInput;
+let primaryDomainInput;
+let cmsCnameInput;
+let contactEmailInput;
+let contactPhoneInput;
 
 function toggleMenu() {
     sidebar.classList.toggle('open');
     backdrop.classList.toggle('hidden');
 }
 
-function showModal(title) {
+function showModal(title, isEdit = false) {
     document.getElementById('modal-title').textContent = title;
     fiduciaryForm.reset();
+    fiduciaryIdHidden.value = ''; // Clear hidden ID by default
+
+    if (isEdit) {
+         document.getElementById('save-fiduciary-btn').textContent = 'Update Fiduciary';
+         // Optional: Disable domain fields during edit if primary domain is immutable
+         //primaryDomainInput.disabled = true;
+         //cmsCnameInput.disabled = true;
+    } else {
+         document.getElementById('save-fiduciary-btn').textContent = 'Save Fiduciary';
+         //primaryDomainInput.disabled = false;
+         //cmsCnameInput.disabled = false;
+    }
+
     fiduciaryModalOverlay.style.display = 'flex';
 }
 
@@ -364,8 +384,8 @@ function createFiduciaryRow(fiduciary) {
         <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.status)}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.domain_validation_status || 'PENDING')}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editFiduciary('${fiduciary.id}')">Edit</button>
-            <button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateFiduciary('${fiduciary.id}')">Deactivate</button>
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editFiduciary('${fiduciary.fiduciary_id}')">Edit</button>
+            <button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateFiduciary('${fiduciary.fiduciary_id}')">Deactivate</button>
         </td>
     `;
     return row;
@@ -388,7 +408,7 @@ async function loadFiduciaries() {
             "limit": 50
         };
 
-        const response = await fetch(API_URL_LIST, {
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -431,28 +451,143 @@ async function loadFiduciaries() {
     }
 }
 
-// Handles the Add New Fiduciary form submission
+
+// Function to fetch a single Fiduciary record
+async function fetchFiduciaryDetails(fiduciaryId) {
+    try {
+        const payload = {
+            "_func": "get_fiduciary",
+            "fiduciary_id": fiduciaryId
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AUTH_TOKEN}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch details for ${fiduciaryId}. Status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+
+        if (responseData.name) {
+            return responseData;
+        } else {
+            throw new Error(responseData.message || 'Fiduciary details not found.');
+        }
+    } catch (error) {
+        console.error("Error fetching Fiduciary details:", error);
+        alert(`Failed to load details for editing: ${error.message}`);
+        return null;
+    }
+}
+
+// Placeholder functions (for demo only)
+async function editFiduciary(id) {
+     // 1. Show modal in loading state
+     showModal('Edit Data Fiduciary', true);
+
+    // 2. Fetch specific fiduciary data
+    const fiduciary = await fetchFiduciaryDetails(id);
+
+    if (fiduciary) {
+        // 3. Populate form fields
+        fiduciaryIdHidden.value = fiduciary.fiduciary_id;
+        fiduciaryNameInput.value = fiduciary.name || '';
+        primaryDomainInput.value = fiduciary.primary_domain || '';
+        cmsCnameInput.value = fiduciary.cms_cname || '';
+        contactEmailInput.value = fiduciary.email || '';
+        contactPhoneInput.value = fiduciary.phone || '';
+        //statusSelect.value = fiduciary.status || 'ACTIVE'; // Fallback to ACTIVE
+
+        // Keep domain fields disabled during edit
+        primaryDomainInput.disabled = true;
+        cmsCnameInput.disabled = true;
+
+    } else {
+        // If fetch failed, close the modal
+        closeModal();
+    }
+}
+
+function deactivateFiduciary(id) {
+    if (confirm(`Are you sure you want to DEACTIVATE Fiduciary ID ${id}? This will suspend all consent operations.`)) {
+        alert(`Fiduciary ${id} deactivated (Action logged).`);
+        // In production, this would call a PUT/POST endpoint with _func: deactivate_fiduciary
+        loadFiduciaries();
+    }
+}
+
+
+
+// --- Event Listeners and Initialization ---
+
+ // --- Variable Assignments ---
+sidebar = document.getElementById('sidebar');
+menuToggle = document.getElementById('menu-toggle');
+backdrop = document.getElementById('sidebar-backdrop');
+fiduciaryModalOverlay = document.getElementById('fiduciary-modal-overlay');
+addFiduciaryBtn = document.getElementById('add-fiduciary-btn');
+closeModalBtn = document.getElementById('close-modal-btn');
+closeModalBtn = document.getElementById('close-modal-btn');
+fiduciaryForm = document.getElementById('fiduciary-form');
+tableBody = document.getElementById('fiduciary-table-body');
+countSpan = document.getElementById('fiduciary-count');
+errorMessageP = document.getElementById('fiduciary-error-message');
+
+// Form Fields for Edit/Add
+fiduciaryIdHidden = document.getElementById('fiduciary-id-hidden');
+fiduciaryNameInput = document.getElementById('fiduciary-name');
+primaryDomainInput = document.getElementById('fiduciary-domain');
+cmsCnameInput = document.getElementById('fiduciary-cname');
+contactEmailInput = document.getElementById('fiduciary-email');
+contactPhoneInput = document.getElementById('fiduciary-phone');
+
+
+// --- Event Listener Attachments (Moved inside DOMContentLoaded) ---
+menuToggle.addEventListener('click', toggleMenu);
+backdrop.addEventListener('click', toggleMenu);
+addFiduciaryBtn.addEventListener('click', () => showModal('Add New Data Fiduciary'));
+closeModalBtn.addEventListener('click', closeModal);
+
+// --- Initialization Call ---
+loadFiduciaries();
+
+ // Handles the Add/Edit Fiduciary form submission
 fiduciaryForm.addEventListener('submit', async function(event) {
     event.preventDefault();
 
     const formData = new FormData(fiduciaryForm);
     const data = Object.fromEntries(formData.entries());
 
+    const isEditing = !!data.fiduciaryId;
+    const func = isEditing ? "update_fiduciary" : "create_fiduciary";
+
     const payload = {
-        "_func": "create_fiduciary",
-        "fiduciary_name": data.name,
+        "_func": func,
+        "fiduciary_id": data.fiduciaryId,
+        "name": data.name,
+        "email": data.email,
+        "phone": data.phone,
         "primary_domain": data.primary_domain,
-        "cms_cname": data.cms_cname,
-        "contact_email": data.email,
-        "status": data.status // ACTIVE or INACTIVE
+        "cms_cname": data.cms_cname
     };
 
+    // Clean up payload if creating (remove ID)
+    if (!isEditing) {
+        delete payload.fiduciary_id;
+    }
+
     try {
-        // --- MOCK: Show loading state in modal ---
-        document.getElementById('save-fiduciary-btn').textContent = 'Saving...';
+        document.getElementById('save-fiduciary-btn').textContent = isEditing ? 'Updating...' : 'Saving...';
         document.getElementById('save-fiduciary-btn').disabled = true;
 
-        const response = await fetch(API_URL_CREATE, {
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -464,45 +599,22 @@ fiduciaryForm.addEventListener('submit', async function(event) {
         const responseData = await response.json();
 
         if (response.ok && responseData.success) {
-            alert("Fiduciary added successfully! Domain validation TXT record generated.");
+            alert(`Fiduciary ${isEditing ? 'updated' : 'added'} successfully!`);
             closeModal();
             loadFiduciaries(); // Reload list
         } else {
             const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
-            alert(`Failed to add Fiduciary: ${errorMsg}`);
+            alert(`Failed to ${isEditing ? 'update' : 'add'} Fiduciary: ${errorMsg}`);
         }
 
     } catch (error) {
-        console.error("Error creating Fiduciary:", error);
+        console.error(`Error ${isEditing ? 'updating' : 'creating'} Fiduciary:`, error);
         alert("Network error: Could not connect to API.");
     } finally {
-        document.getElementById('save-fiduciary-btn').textContent = 'Save Fiduciary';
+        document.getElementById('save-fiduciary-btn').textContent = isEditing ? 'Update Fiduciary' : 'Save Fiduciary';
         document.getElementById('save-fiduciary-btn').disabled = false;
     }
 });
-
-// Placeholder functions (for demo only)
-function editFiduciary(id) {
-    alert(`Editing Fiduciary ID: ${id}. This would load data into the modal.`);
-    showModal('Edit Data Fiduciary');
-}
-
-function deactivateFiduciary(id) {
-    if (confirm(`Are you sure you want to DEACTIVATE Fiduciary ID ${id}? This will suspend all consent operations.`)) {
-        alert(`Fiduciary ${id} deactivated (Action logged).`);
-        // In production, this would call a PUT/POST endpoint with _func: deactivate_fiduciary
-        loadFiduciaries();
-    }
-}
-
-// --- Event Listeners and Initialization ---
-
-menuToggle.addEventListener('click', toggleMenu);
-backdrop.addEventListener('click', toggleMenu);
-addFiduciaryBtn.addEventListener('click', () => showModal('Add New Data Fiduciary'));
-closeModalBtn.addEventListener('click', closeModal);
-
-document.addEventListener('DOMContentLoaded', loadFiduciaries);
 
 </script>
 </body>

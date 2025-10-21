@@ -36,14 +36,9 @@
   "required": [
     "_func",
     "name",
-    "contact_person",
     "email",
     "phone",
-    "address",
     "primary_domain",
-    "cms_cname",
-    "is_significant_data_fiduciary",
-    "dpo_user_id",
-    "dpb_registration_id"
+    "cms_cname"
   ]
 }
