@@ -201,6 +201,7 @@
 
   <!-- Processors List Card -->
   <div class="card">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Registered Data Processors</h2>
     <div class="flex justify-between items-center mb-4">
       <input type="text" id="search-input" placeholder="Search by Name or DPA Ref..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
       <span id="processor-count" class="text-sm text-gray-500">Loading...</span>
@@ -259,25 +260,30 @@
         </div>
       </div>
 
-      <!-- Section 2: Processing Scope -->
+      <!-- Section: Contact Details -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="processor-email" class="block text-sm font-medium text-gray-700">Contact Email</label>
+          <input type="email" id="processor-email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        <div>
+          <label for="processor-phone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
+          <input type="text" id="processor-phone" name="phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+      </div>
+
+      <!-- Section 3: Processing Scope -->
       <div>
         <label for="processing-purpose" class="block text-sm font-medium text-gray-700">Processing Purpose (e.g., Marketing, Analytics, Credit-Decisioning)</label>
         <input type="text" id="processing-purpose" name="processing_purpose" required placeholder="e.g., WEBSITE_ANALYTICS, LEAD_SCORING" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         <p class="mt-1 text-xs text-gray-500">List purposes separated by commas (Internal IDs/Codes preferred).</p>
       </div>
 
-      <!-- Section 3: DPA Details -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Section 4: DPA Details -->
+      <div>
         <div>
           <label for="dpa-reference" class="block text-sm font-medium text-gray-700">DPA Reference / Contract ID</label>
           <input type="text" id="dpa-reference" name="dpa_reference" required placeholder="e.g., DPA-SC-001-2025" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-        </div>
-        <div>
-          <label for="processor-status" class="block text-sm font-medium text-gray-700">Initial Status</label>
-          <select id="processor-status" name="status" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-          </select>
         </div>
       </div>
 
@@ -291,13 +297,14 @@
 
 <script>
     // --- Configuration ---
-    const API_URL_PROCESSOR = ENV_SERVER_URL + '/api/v1/admin/processor';
-    const API_URL_FIDUCIARY = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
+    // Assuming API structure based on FiduciaryService and convention
+    const API_URL_PROCESSORS = ENV_SERVER_URL + '/api/v1/admin/processor';
+    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary'; // To populate dropdown
     const AUTH_TOKEN = localStorage.getItem('authToken');
 
     // --- Global DOM Element Variables ---
     let sidebar, menuToggle, backdrop, processorModalOverlay, addProcessorBtn, closeModalBtn, processorForm, tableBody, countSpan, errorMessageP, searchInput;
-    let processorIdHidden, processorNameInput, fiduciarySelect, processingPurposeInput, dpaReferenceInput, processorStatusSelect;
+    let processorIdHidden, processorNameInput, fiduciarySelect, processorEmailInput, processorPhoneInput, processingPurposeInput, dpaReferenceInput;
 
     let FiduciaryList = []; // Cache Fiduciary names for display
 
@@ -314,6 +321,11 @@
         processorIdHidden.value = '';
 
         document.getElementById('save-processor-btn').textContent = isEdit ? 'Update Processor' : 'Save Processor';
+
+        // Ensure inputs are enabled for creation, or potentially disabled/locked for editing sensitive fields
+        processorNameInput.disabled = false;
+        fiduciarySelect.disabled = false;
+
 
         processorModalOverlay.style.display = 'flex';
     }
@@ -342,12 +354,13 @@
 
     function createProcessorRow(processor) {
         const row = document.createElement('tr');
+        // Note: processor.processor_id is used for actions, processor.fiduciary_id is used for lookup
         const showDeactivate = processor.status === 'ACTIVE' || processor.status === 'PENDING';
 
         const actionsHtml = `
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editProcessor('${processor.processor_id}')">Edit</button>
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editProcessor('${processor.processor_id}', '${processor.fiduciary_id}')">Edit</button>
             ${showDeactivate ?
-                `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateProcessor('${processor.processor_id}')">Deactivate</button>`
+                `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateProcessor('${processor.processor_id}', '${processor.fiduciary_id}')">Deactivate</button>`
                 : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
         `;
 
@@ -376,13 +389,18 @@
             "page": 1,
             "limit": 50
             };
-            const response = await fetch(API_URL_FIDUCIARY, {
+            const response = await fetch(API_URL_FIDUCIARIES_LIST, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list for dropdown.");
+            if (!response.ok) {
+                 // Even if list fails, we want to try loading processors later
+                 console.error("Failed to fetch Fiduciaries list for dropdown. Status:", response.status);
+                 return [];
+            }
+
 
             const responseData = await response.json();
             FiduciaryList = responseData; // Assuming backend returns array of Fiduciaries
@@ -394,9 +412,10 @@
                 option.textContent = f.name;
                 fiduciarySelect.appendChild(option);
             });
+            return responseData;
         } catch (error) {
             console.error("Error fetching Fiduciaries for dropdown:", error);
-            // Alerting here might be too intrusive, log it.
+            return [];
         }
     }
 
@@ -407,19 +426,28 @@
         errorMessageP.classList.add('hidden');
 
         // Ensure Fiduciary list is loaded first for display names
-        if (FiduciaryList.length === 0) await fetchFiduciariesForDropdown();
+        if (FiduciaryList.length === 0) {
+            const fids = await fetchFiduciariesForDropdown();
+            if (fids.length === 0) {
+                 tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">
+                    Cannot load processors: No Data Fiduciaries found or failed API call.
+                 </td></tr>`;
+                 countSpan.textContent = '0 Total';
+                 return;
+            }
+        }
 
         try {
             const listPayload = {
                 "_func": "list_processors",
-                "fiduciary_id":"",
-                "status": "",
+                "fiduciary_id": "",
                 "search": searchTerm,
+                "status": "",
                 "page": 1,
                 "limit": 50
             };
 
-            const response = await fetch(API_URL_PROCESSOR, {
+            const response = await fetch(API_URL_PROCESSORS, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -460,11 +488,15 @@
     }
 
     // 3. Fetch Single Processor Details
-    async function fetchProcessorDetails(processorId) {
+    async function fetchProcessorDetails(processorId, fiduciaryId) {
         try {
-            const payload = {"_func": "get_processor", "processor_id": processorId};
+            const payload = {
+                "_func": "get_processor",
+                "processor_id": processorId,
+                "fiduciary_id": fiduciaryId // Include Fiduciary ID in the payload
+            };
 
-            const response = await fetch(API_URL_PROCESSOR, {
+            const response = await fetch(API_URL_PROCESSORS, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
@@ -487,19 +519,21 @@
     }
 
     // 4. Handle Edit
-    async function editProcessor(id) {
+    async function editProcessor(processorId, fiduciaryId) {
         showModal('Edit Data Processor', true);
-        const processor = await fetchProcessorDetails(id);
+        const processor = await fetchProcessorDetails(processorId, fiduciaryId);
 
         if (processor) {
             processorIdHidden.value = processor.processor_id;
             processorNameInput.value = processor.name || '';
             fiduciarySelect.value = processor.fiduciary_id || '';
-            processingPurposeInput.value = processor.processing_purpose || '';
+            processorEmailInput.value = processor.email || '';
+            processorPhoneInput.value = processor.phone || '';
+            processingPurposeInput.value = processor.processing_purposes.join(',') || '';
             dpaReferenceInput.value = processor.dpa_reference || '';
             processorStatusSelect.value = processor.status || 'ACTIVE';
 
-            // Cannot change associated fiduciary or name in this quick edit flow
+            // Lock fields that should not be changed easily
             processorNameInput.disabled = true;
             fiduciarySelect.disabled = true;
         } else {
@@ -508,19 +542,19 @@
     }
 
     // 5. Handle Deactivate
-    async function deactivateProcessor(id) {
-        if (confirm(`Are you sure you want to DEACTIVATE Processor ID ${id}? This will suspend all data processing for this entity.`)) {
+    async function deactivateProcessor(processorId, fiduciaryId) {
+        if (confirm(`Are you sure you want to DEACTIVATE Processor ID ${processorId}? This will suspend all data processing for this entity.`)) {
             try {
-                const payload = { "_func": "delete_processor", "processor_id": id };
+                const payload = { "_func": "delete_processor", "processor_id": processorId, "fiduciary_id": fiduciaryId};
 
-                const response = await fetch(API_URL_PROCESSOR, {
+                const response = await fetch(API_URL_PROCESSORS, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                     body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
-                    alert(`Processor ID ${id} successfully deactivated.`);
+                    alert(`Processor ID ${processorId} successfully deactivated.`);
                     loadProcessors();
                 } else {
                     const responseData = await response.json();
@@ -535,7 +569,9 @@
         }
     }
 
+
     // --- Event Listeners and Initialization ---
+
     // --- Variable Assignments ---
     sidebar = document.getElementById('sidebar');
     menuToggle = document.getElementById('menu-toggle');
@@ -553,9 +589,10 @@
     processorIdHidden = document.getElementById('processor-id-hidden');
     processorNameInput = document.getElementById('processor-name');
     fiduciarySelect = document.getElementById('fiduciary-select');
+    processorEmailInput = document.getElementById('processor-email');
+    processorPhoneInput = document.getElementById('processor-phone');
     processingPurposeInput = document.getElementById('processing-purpose');
     dpaReferenceInput = document.getElementById('dpa-reference');
-    processorStatusSelect = document.getElementById('processor-status');
 
     // --- Event Listener Attachments ---
     menuToggle.addEventListener('click', toggleMenu);
@@ -591,31 +628,26 @@
             "processor_id": data.processorId,
             "fiduciary_id": data.fiduciary_id,
             "name": data.name,
-            "processing_purpose": data.processing_purpose,
-            "dpa_reference": data.dpa_reference,
-            "status": data.status
+            "email": data.email,
+            "phone": data.phone,
+            "processing_purposes": data.processing_purpose.split(','),
+            "dpa_reference": data.dpa_reference
         };
 
         // Clean up payload if creating (remove ID)
         if (!isEditing) {
             delete payload.processor_id;
-            // Ensure Fiduciary ID is sent as a UUID, not empty string
             if (!payload.fiduciary_id) {
                 alert("Please select an Associated Data Fiduciary.");
                 return;
             }
-        } else {
-             // For update, only allow changes to purposes, DPA, and status in this simple flow
-             delete payload.fiduciary_id;
-             delete payload.name;
         }
-
 
         try {
             document.getElementById('save-processor-btn').textContent = isEditing ? 'Updating...' : 'Saving...';
             document.getElementById('save-processor-btn').disabled = true;
 
-            const response = await fetch(API_URL_PROCESSOR, {
+            const response = await fetch(API_URL_PROCESSORS, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

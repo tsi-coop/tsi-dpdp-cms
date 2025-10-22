@@ -57,13 +57,8 @@
     "_func",
     "fiduciary_id",
     "name",
-    "contact_person",
     "email",
     "phone",
-    "address",
-    "jurisdiction",
-    "processing_purposes",
-    "data_categories_processed",
-    "status"
+    "processing_purposes"
   ]
 }

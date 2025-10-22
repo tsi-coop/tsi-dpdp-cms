@@ -18,8 +18,14 @@
     "email": {
       "type": "string"
     },
-    "status": {
+    "dpa_reference": {
       "type": "string"
+    },
+    "processing_purposes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [
@@ -28,6 +34,7 @@
     "fiduciary_id",
     "name",
     "email",
-    "status"
+    "processing_purposes",
+    "dpa_reference"
   ]
 }

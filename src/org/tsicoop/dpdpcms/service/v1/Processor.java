@@ -57,6 +57,7 @@ public class Processor implements Action {
         JSONObject input = null;
         JSONObject output = null;
         JSONArray outputArray = null;
+        JSONArray processingPurposesJson = null;
 
         // Placeholder for current CMS user ID (from authentication context)
         UUID currentCmsUserId = UUID.fromString("00000000-0000-0000-0000-000000000001"); // Example Admin User ID
@@ -93,7 +94,6 @@ public class Processor implements Action {
                 }
             }
 
-
             switch (func.toLowerCase()) {
                 case "list_processors":
                     String statusFilter = (String) input.get("status");
@@ -122,19 +122,12 @@ public class Processor implements Action {
 
                 case "create_processor":
                     String name = (String) input.get("name");
-                    String contactPerson = (String) input.get("contact_person");
                     String email = (String) input.get("email");
                     String phone = (String) input.get("phone");
-                    String address = (String) input.get("address");
-                    String jurisdiction = (String) input.get("jurisdiction");
                     String dpaReference = (String) input.get("dpa_reference");
-                    String dpaEffectiveDateStr = (String) input.get("dpa_effective_date");
-                    String dpaExpiryDateStr = (String) input.get("dpa_expiry_date");
-                    JSONArray processingPurposesJson = (JSONArray) input.get("processing_purposes");
-                    JSONArray dataCategoriesProcessedJson = (JSONArray) input.get("data_categories_processed");
-                    String securityMeasures = (String) input.get("security_measures_description");
+                    processingPurposesJson = (JSONArray) input.get("processing_purposes");
 
-                    if (fiduciaryId == null || name == null || name.isEmpty() || processingPurposesJson == null || processingPurposesJson.isEmpty() || dataCategoriesProcessedJson == null || dataCategoriesProcessedJson.isEmpty()) {
+                    if (fiduciaryId == null || name == null || name.isEmpty() || processingPurposesJson == null || processingPurposesJson.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (fiduciary_id, name, processing_purposes, data_categories_processed) for 'create_processor'.", req.getRequestURI());
                         return;
                     }
@@ -147,12 +140,7 @@ public class Processor implements Action {
                         return;
                     }
 
-                    Timestamp dpaEffectiveDate = (dpaEffectiveDateStr != null && !dpaEffectiveDateStr.isEmpty()) ? Timestamp.from(Instant.parse(dpaEffectiveDateStr)) : null;
-                    Timestamp dpaExpiryDate = (dpaExpiryDateStr != null && !dpaExpiryDateStr.isEmpty()) ? Timestamp.from(Instant.parse(dpaExpiryDateStr)) : null;
-
-                    output = saveProcessorToDb(fiduciaryId, name, contactPerson, email, phone, address, jurisdiction, dpaReference,
-                            dpaEffectiveDate, dpaExpiryDate, processingPurposesJson, dataCategoriesProcessedJson,
-                            securityMeasures, "ACTIVE", currentCmsUserId);
+                    output = saveProcessorToDb(fiduciaryId, name, email, phone, dpaReference, processingPurposesJson);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -167,22 +155,13 @@ public class Processor implements Action {
                     }
 
                     name = (String) input.get("name");
-                    contactPerson = (String) input.get("contact_person");
                     email = (String) input.get("email");
                     phone = (String) input.get("phone");
-                    address = (String) input.get("address");
-                    jurisdiction = (String) input.get("jurisdiction");
                     dpaReference = (String) input.get("dpa_reference");
-                    dpaEffectiveDateStr = (String) input.get("dpa_effective_date");
-                    dpaExpiryDateStr = (String) input.get("dpa_expiry_date");
                     processingPurposesJson = (JSONArray) input.get("processing_purposes");
-                    dataCategoriesProcessedJson = (JSONArray) input.get("data_categories_processed");
-                    securityMeasures = (String) input.get("security_measures_description");
-                    statusFilter = (String) input.get("status");
 
-                    if (name == null && contactPerson == null && email == null && phone == null && address == null &&
-                            jurisdiction == null && dpaReference == null && dpaEffectiveDateStr == null && dpaExpiryDateStr == null &&
-                            processingPurposesJson == null && dataCategoriesProcessedJson == null && securityMeasures == null && statusFilter == null) {
+                    if (name == null && email == null && phone == null && dpaReference == null &&
+                            processingPurposesJson == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "No fields provided for update for 'update_processor'.", req.getRequestURI());
                         return;
                     }
@@ -192,12 +171,7 @@ public class Processor implements Action {
                         return;
                     }
 
-                    dpaEffectiveDate = (dpaEffectiveDateStr != null && !dpaEffectiveDateStr.isEmpty()) ? Timestamp.from(Instant.parse(dpaEffectiveDateStr)) : null;
-                    dpaExpiryDate = (dpaExpiryDateStr != null && !dpaExpiryDateStr.isEmpty()) ? Timestamp.from(Instant.parse(dpaExpiryDateStr)) : null;
-
-                    output = updateProcessorInDb(processorId, fiduciaryId, name, contactPerson, email, phone, address, jurisdiction, dpaReference,
-                            dpaEffectiveDate, dpaExpiryDate, processingPurposesJson, dataCategoriesProcessedJson,
-                            securityMeasures, statusFilter, currentCmsUserId);
+                    output = updateProcessorInDb(processorId, fiduciaryId, name, email, phone, dpaReference, processingPurposesJson);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
@@ -211,7 +185,7 @@ public class Processor implements Action {
                         return;
                     }
                     deleteProcessorFromDb(processorId, currentCmsUserId);
-                    OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, null);
                     break;
 
                 default:
@@ -260,7 +234,7 @@ public class Processor implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM fiduciaries WHERE id = ? AND deleted_at IS NULL";
+        String sql = "SELECT COUNT(*) FROM fiduciaries WHERE id = ? AND status = 'ACTIVE'";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -295,7 +269,6 @@ public class Processor implements Action {
             sqlBuilder.append(" AND id != ?");
             params.add(excludeProcessorId);
         }
-        sqlBuilder.append(" AND deleted_at IS NULL"); // Only consider non-deleted processors
 
         try {
             conn = pool.getConnection();
@@ -322,7 +295,7 @@ public class Processor implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, last_updated_at FROM processors WHERE status IS NOT NULL");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, name, email, phone, dpa_reference, processing_purposes, status, created_at, last_updated_at FROM processors WHERE status IS NOT NULL");
         List<Object> params = new ArrayList<>();
 
         if (fiduciaryId != null && !fiduciaryId.toString().isEmpty()) {
@@ -357,17 +330,10 @@ public class Processor implements Action {
                 processor.put("processor_id", rs.getString("id"));
                 processor.put("fiduciary_id", rs.getString("fiduciary_id"));
                 processor.put("name", rs.getString("name"));
-                processor.put("contact_person", rs.getString("contact_person"));
                 processor.put("email", rs.getString("email"));
                 processor.put("phone", rs.getString("phone"));
-                processor.put("address", rs.getString("address"));
-                processor.put("jurisdiction", rs.getString("jurisdiction"));
                 processor.put("dpa_reference", rs.getString("dpa_reference"));
-                processor.put("dpa_effective_date", rs.getDate("dpa_effective_date") != null ? rs.getDate("dpa_effective_date").toLocalDate().toString() : null);
-                processor.put("dpa_expiry_date", rs.getDate("dpa_expiry_date") != null ? rs.getDate("dpa_expiry_date").toLocalDate().toString() : null);
                 processor.put("processing_purposes", new JSONParser().parse(rs.getString("processing_purposes")));
-                processor.put("data_categories_processed", new JSONParser().parse(rs.getString("data_categories_processed")));
-                processor.put("security_measures_description", rs.getString("security_measures_description"));
                 processor.put("status", rs.getString("status"));
                 processor.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 processor.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
@@ -391,7 +357,7 @@ public class Processor implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, last_updated_at FROM processors WHERE id = ? AND fiduciary_id = ? AND deleted_at IS NULL";
+        String sql = "SELECT id, fiduciary_id, name, email, phone, dpa_reference, processing_purposes, status, created_at, last_updated_at FROM processors WHERE id = ? AND fiduciary_id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -403,17 +369,10 @@ public class Processor implements Action {
                 processor.put("processor_id", rs.getString("id"));
                 processor.put("fiduciary_id", rs.getString("fiduciary_id"));
                 processor.put("name", rs.getString("name"));
-                processor.put("contact_person", rs.getString("contact_person"));
                 processor.put("email", rs.getString("email"));
                 processor.put("phone", rs.getString("phone"));
-                processor.put("address", rs.getString("address"));
-                processor.put("jurisdiction", rs.getString("jurisdiction"));
                 processor.put("dpa_reference", rs.getString("dpa_reference"));
-                processor.put("dpa_effective_date", rs.getDate("dpa_effective_date") != null ? rs.getDate("dpa_effective_date").toLocalDate().toString() : null);
-                processor.put("dpa_expiry_date", rs.getDate("dpa_expiry_date") != null ? rs.getDate("dpa_expiry_date").toLocalDate().toString() : null);
                 processor.put("processing_purposes", new JSONParser().parse(rs.getString("processing_purposes")));
-                processor.put("data_categories_processed", new JSONParser().parse(rs.getString("data_categories_processed")));
-                processor.put("security_measures_description", rs.getString("security_measures_description"));
                 processor.put("status", rs.getString("status"));
                 processor.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 processor.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
@@ -432,34 +391,25 @@ public class Processor implements Action {
      * @return JSONObject containing the new processor's details.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject saveProcessorToDb(UUID fiduciaryId, String name, String contactPerson, String email, String phone, String address,
-                                         String jurisdiction, String dpaReference, Timestamp dpaEffectiveDate, Timestamp dpaExpiryDate,
-                                         JSONArray processingPurposes, JSONArray dataCategoriesProcessed, String securityMeasures,
-                                         String status, UUID createdByUserId) throws SQLException {
+    private JSONObject saveProcessorToDb(UUID fiduciaryId, String name, String email, String phone, String dpaReference,
+                                         JSONArray processingPurposes) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "INSERT INTO processors (id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, NOW(), NOW()) RETURNING id";
+        String sql = "INSERT INTO processors (id, fiduciary_id, name, email, phone, dpa_reference, processing_purposes, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?::jsonb,?,NOW(),NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             pstmt.setObject(1, fiduciaryId);
             pstmt.setString(2, name);
-            pstmt.setString(3, contactPerson);
-            pstmt.setString(4, email);
-            pstmt.setString(5, phone);
-            pstmt.setString(6, address);
-            pstmt.setString(7, jurisdiction);
-            pstmt.setString(8, dpaReference);
-            pstmt.setTimestamp(9, dpaEffectiveDate);
-            pstmt.setTimestamp(10, dpaExpiryDate);
-            pstmt.setString(11, processingPurposes.toJSONString());
-            pstmt.setString(12, dataCategoriesProcessed.toJSONString());
-            pstmt.setString(13, securityMeasures);
-            pstmt.setString(14, status);
+            pstmt.setString(3, email);
+            pstmt.setString(4, phone);
+            pstmt.setString(5, dpaReference);
+            pstmt.setString(6, processingPurposes.toJSONString());
+            pstmt.setString(7, "ACTIVE");
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -487,10 +437,7 @@ public class Processor implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject updateProcessorInDb(UUID processorId, UUID fiduciaryId, String name, String contactPerson, String email, String phone, String address,
-                                           String jurisdiction, String dpaReference, Timestamp dpaEffectiveDate, Timestamp dpaExpiryDate,
-                                           JSONArray processingPurposes, JSONArray dataCategoriesProcessed, String securityMeasures,
-                                           String status, UUID updatedByUserId) throws SQLException {
+    private JSONObject updateProcessorInDb(UUID processorId, UUID fiduciaryId, String name, String email, String phone,String dpaReference, JSONArray processingPurposes) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
@@ -499,20 +446,11 @@ public class Processor implements Action {
         List<Object> params = new ArrayList<>();
 
         if (name != null && !name.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(name); }
-        if (contactPerson != null) { sqlBuilder.append(", contact_person = ?"); params.add(contactPerson); }
         if (email != null && !email.isEmpty()) { sqlBuilder.append(", email = ?"); params.add(email); }
         if (phone != null) { sqlBuilder.append(", phone = ?"); params.add(phone); }
-        if (address != null) { sqlBuilder.append(", address = ?"); params.add(address); }
-        if (jurisdiction != null && !jurisdiction.isEmpty()) { sqlBuilder.append(", jurisdiction = ?"); params.add(jurisdiction); }
         if (dpaReference != null) { sqlBuilder.append(", dpa_reference = ?"); params.add(dpaReference); }
-        if (dpaEffectiveDate != null) { sqlBuilder.append(", dpa_effective_date = ?"); params.add(dpaEffectiveDate); }
-        if (dpaExpiryDate != null) { sqlBuilder.append(", dpa_expiry_date = ?"); params.add(dpaExpiryDate); }
         if (processingPurposes != null) { sqlBuilder.append(", processing_purposes = ?::jsonb"); params.add(processingPurposes.toJSONString()); }
-        if (dataCategoriesProcessed != null) { sqlBuilder.append(", data_categories_processed = ?::jsonb"); params.add(dataCategoriesProcessed.toJSONString()); }
-        if (securityMeasures != null) { sqlBuilder.append(", security_measures_description = ?"); params.add(securityMeasures); }
-        if (status != null && !status.isEmpty()) { sqlBuilder.append(", status = ?"); params.add(status); }
-
-        sqlBuilder.append(" WHERE id = ? AND fiduciary_id = ? AND deleted_at IS NULL");
+        sqlBuilder.append(" WHERE id = ? AND fiduciary_id = ?");
         params.add(processorId);
         params.add(fiduciaryId);
 
@@ -541,12 +479,11 @@ public class Processor implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE processors SET deleted_at = NOW(), deleted_by_user_id = ?, status = 'INACTIVE' WHERE id = ? AND deleted_at IS NULL";
+        String sql = "UPDATE processors SET status = 'INACTIVE' WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, deletedByUserId);
-            pstmt.setObject(2, processorId);
+            pstmt.setObject(1, processorId);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Deleting processor failed, processor not found or already deleted.");

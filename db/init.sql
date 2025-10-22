@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS users (
     role_id UUID NOT NULL, -- FIX: Added role_id directly
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_login_at TIMESTAMP WITH TIME ZONE,
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP WITH TIME ZONE,
+    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
     CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id) -- FIX: Added FK to roles
 );
 
@@ -61,8 +60,7 @@ CREATE TABLE IF NOT EXISTS fiduciaries (
     dpb_registration_id VARCHAR(100) UNIQUE,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP WITH TIME ZONE
+    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 --
@@ -73,21 +71,13 @@ CREATE TABLE IF NOT EXISTS processors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
     name VARCHAR(255) NOT NULL,
-    contact_person VARCHAR(255),
     email VARCHAR(255),
     phone VARCHAR(50),
-    address TEXT,
-    jurisdiction VARCHAR(50),
     dpa_reference VARCHAR(255) UNIQUE,
-    dpa_effective_date DATE,
-    dpa_expiry_date DATE,
     processing_purposes JSONB NOT NULL DEFAULT '[]'::jsonb,
-    data_categories_processed JSONB NOT NULL DEFAULT '[]'::jsonb,
-    security_measures_description TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 --
