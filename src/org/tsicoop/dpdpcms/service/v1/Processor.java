@@ -98,11 +98,7 @@ public class Processor implements Action {
                 case "list_processors":
                     String statusFilter = (String) input.get("status");
                     String search = (String) input.get("search");
-                    // fiduciaryId is required for listing processors
-                    if (fiduciaryId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_processors'.", req.getRequestURI());
-                        return;
-                    }
+
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
 
@@ -326,16 +322,19 @@ public class Processor implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, last_updated_at FROM processors WHERE fiduciary_id = ? AND deleted_at IS NULL");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, name, contact_person, email, phone, address, jurisdiction, dpa_reference, dpa_effective_date, dpa_expiry_date, processing_purposes, data_categories_processed, security_measures_description, status, created_at, last_updated_at FROM processors WHERE status IS NOT NULL");
         List<Object> params = new ArrayList<>();
-        params.add(fiduciaryId);
 
+        if (fiduciaryId != null && !fiduciaryId.toString().isEmpty()) {
+            sqlBuilder.append(" AND fiduciary_id = ?");
+            params.add(fiduciaryId);
+        }
         if (statusFilter != null && !statusFilter.isEmpty()) {
             sqlBuilder.append(" AND status = ?");
             params.add(statusFilter);
         }
         if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (name ILIKE ? OR email ILIKE ? OR dpa_reference ILIKE ?)");
+            sqlBuilder.append(" AND (name LIKE ? OR email LIKE ? OR dpa_reference LIKE ?)");
             params.add("%" + search + "%");
             params.add("%" + search + "%");
             params.add("%" + search + "%");

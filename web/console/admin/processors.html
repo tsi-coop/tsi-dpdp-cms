@@ -7,6 +7,7 @@
   <title>TSI DPDP CMS - Data Processors Management</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../env.js"></script>
   <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -122,7 +123,7 @@
             background: white;
             padding: 30px;
             border-radius: var(--radius);
-            max-width: 700px; /* Wider for DPA fields */
+            max-width: 700px;
             width: 95%;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             position: relative;
@@ -144,7 +145,7 @@
   <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
   </button>
-  <span class="text-xl font-bold primary-text">CMS Processors</span>
+  <span class="text-xl font-bold primary-text">Processors</span>
   <div class="text-sm text-gray-500">Admin User</div>
 </div>
 
@@ -161,16 +162,16 @@
       <a href="fiduciaries.html" class="nav-link">
         Fiduciaries
       </a>
-      <a class="nav-link active">
+      <a href="#" class="nav-link active">
         Data Processors
       </a>
       <a href="users.html" class="nav-link">
         CMS Users
       </a>
       <a href="lifecycle.html" class="nav-link">
-        Lifecycle
+        System Purge
       </a>
-      <a href="#" class="nav-link">
+      <a href="apikeys.html" class="nav-link">
         API Keys
       </a>
     </nav>
@@ -192,17 +193,17 @@
 <!-- Main Content Area -->
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-semibold text-gray-800">Manage Data Processors</h1>
+    <h1 class="text-xl font-semibold text-gray-800">Data Processors Management</h1>
     <button id="add-processor-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
       + Add New Processor
     </button>
   </div>
 
-  <!-- Data Processors List Card -->
-  <div class="card mb-8">
+  <!-- Processors List Card -->
+  <div class="card">
     <div class="flex justify-between items-center mb-4">
-      <input type="text" placeholder="Search Processors or Purpose..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
-      <span class="text-sm text-gray-500">Showing 1 - 8 of 25 Processors</span>
+      <input type="text" id="search-input" placeholder="Search by Name or DPA Ref..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+      <span id="processor-count" class="text-sm text-gray-500">Loading...</span>
     </div>
 
     <div class="overflow-x-auto">
@@ -211,46 +212,26 @@
         <tr class="table-header">
           <th class="px-4 py-3 text-sm">Processor Name</th>
           <th class="px-4 py-3 text-sm">Associated Fiduciary</th>
-          <th class="px-4 py-3 text-sm">Primary Purpose(s)</th>
-          <th class="px-4 py-3 text-sm">DPA Status</th>
+          <th class="px-4 py-3 text-sm">Processing Purpose</th>
+          <th class="px-4 py-3 text-sm">DPA Reference</th>
           <th class="px-4 py-3 text-sm">Status</th>
           <th class="px-4 py-3 text-sm">Actions</th>
         </tr>
         </thead>
-        <tbody id="processor-list-body" class="bg-white divide-y divide-gray-200">
-        <!-- Sample Data Row 1 (Active, Validated) -->
+        <tbody id="processor-table-body" class="bg-white divide-y divide-gray-200">
+        <!-- Data will be dynamically inserted here -->
         <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">AnalyticsPro Cloud</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Alpha Solutions Pvt. Ltd.</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Website Analytics, Reporting</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">SIGNED</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">View DPA</button>
-            <button class="text-red-600 hover:text-red-900 font-medium text-sm">Deactivate</button>
-          </td>
-        </tr>
-        <!-- Sample Data Row 2 (Inactive, Invalid Key) -->
-        <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">SMS Gateway Inc.</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Beta Tech Corp</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Notification Delivery</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">EXPIRED</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">INACTIVE</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
-            <button class="text-green-600 hover:text-green-900 font-medium text-sm">Reactivate</button>
+          <td colspan="6" class="p-4 text-center text-gray-500">
+            Loading Data Processor data...
           </td>
         </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="mt-4 flex justify-between items-center text-sm">
-      <button class="text-gray-600 hover:primary-text">Previous</button>
-      <span class="text-gray-600">Page 1 of 3</span>
-      <button class="text-gray-600 hover:primary-text">Next</button>
-    </div>
+    <p id="processor-error-message" class="mt-4 text-sm text-red-600 hidden">
+      Failed to load data. Please check the API connection and token.
+    </p>
   </div>
 </main>
 
@@ -260,63 +241,44 @@
     <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New Data Processor</h2>
     <form id="processor-form" class="space-y-4">
 
+      <!-- Hidden Field to store Processor ID during edit -->
+      <input type="hidden" id="processor-id-hidden" name="processorId" value="">
+
       <!-- Section 1: Association & Name -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="processor-name" class="block text-sm font-medium text-gray-700">Processor Legal Name</label>
-          <input type="text" id="processor-name" name="name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-        </div>
-        <div>
-          <label for="fiduciary-association" class="block text-sm font-medium text-gray-700">Associated Data Fiduciary</label>
-          <select id="fiduciary-association" name="fiduciaryId" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-            <option value="" disabled selected>Select Fiduciary...</option>
-            <!-- Options loaded from CMS DB -->
-            <option value="alpha">Alpha Solutions Pvt. Ltd.</option>
-            <option value="beta">Beta Tech Corp</option>
+          <label for="fiduciary-select" class="block text-sm font-medium text-gray-700">Associated Data Fiduciary</label>
+          <select id="fiduciary-select" name="fiduciary_id" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+            <!-- Options populated dynamically -->
+            <option value="">-- Select Fiduciary --</option>
           </select>
         </div>
+        <div>
+          <label for="processor-name" class="block text-sm font-medium text-gray-700">Processor Legal Name</label>
+          <input type="text" id="processor-name" name="name" required placeholder="e.g., AnalyticsPro Inc." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        </div>
       </div>
 
-      <!-- Section 2: Processing Scope & Categories -->
+      <!-- Section 2: Processing Scope -->
       <div>
-        <label for="processing-scope" class="block text-sm font-medium text-gray-700">Primary Processing Purpose(s)</label>
-        <input type="text" id="processing-scope" name="scope" required placeholder="e.g., Marketing Analytics, Cloud Storage, Customer Support" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-        <p class="mt-1 text-xs text-gray-500">Define the exact service this processor provides.</p>
-      </div>
-
-      <div>
-        <label for="data-categories" class="block text-sm font-medium text-gray-700">Data Categories Processed</label>
-        <textarea id="data-categories" name="dataCategories" required rows="2" placeholder="e.g., email_address, browsing_history, contact_information" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
-        <p class="mt-1 text-xs text-gray-500">Reference IDs from the Fiduciary's consent policy.</p>
+        <label for="processing-purpose" class="block text-sm font-medium text-gray-700">Processing Purpose (e.g., Marketing, Analytics, Credit-Decisioning)</label>
+        <input type="text" id="processing-purpose" name="processing_purpose" required placeholder="e.g., WEBSITE_ANALYTICS, LEAD_SCORING" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+        <p class="mt-1 text-xs text-gray-500">List purposes separated by commas (Internal IDs/Codes preferred).</p>
       </div>
 
       <!-- Section 3: DPA Details -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border border-blue-200 p-3 rounded-md bg-blue-50">
-        <div class="md:col-span-3"><h4 class="font-semibold text-blue-800">Data Processing Agreement (DPA) Details</h4></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="dpa-reference" class="block text-sm font-medium text-gray-700">DPA Reference / ID</label>
-          <input type="text" id="dpa-reference" name="dpaReference" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-        </div>
-        <div>
-          <label for="dpa-effective-date" class="block text-sm font-medium text-gray-700">Effective Date</label>
-          <input type="date" id="dpa-effective-date" name="dpaEffectiveDate" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <label for="dpa-reference" class="block text-sm font-medium text-gray-700">DPA Reference / Contract ID</label>
+          <input type="text" id="dpa-reference" name="dpa_reference" required placeholder="e.g., DPA-SC-001-2025" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         </div>
         <div>
-          <label for="dpa-expiry-date" class="block text-sm font-medium text-gray-700">Expiry Date (Optional)</label>
-          <input type="date" id="dpa-expiry-date" name="dpaExpiryDate" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <label for="processor-status" class="block text-sm font-medium text-gray-700">Initial Status</label>
+          <select id="processor-status" name="status" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+          </select>
         </div>
-        <div class="md:col-span-3">
-          <label for="dpa-url" class="block text-sm font-medium text-gray-700">DPA Document URL/Link</label>
-          <input type="url" id="dpa-url" name="dpaUrl" placeholder="https://..." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-          <p class="mt-1 text-xs text-gray-500">Link to the signed, secure DPA document (external storage).</p>
-        </div>
-      </div>
-
-      <!-- Section 4: Operational Details -->
-      <div>
-        <label for="processor-jurisdiction" class="block text-sm font-medium text-gray-700">Processor Jurisdiction</label>
-        <input type="text" id="processor-jurisdiction" name="jurisdiction" placeholder="e.g., India, US, EU" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-        <p class="mt-1 text-xs text-gray-500">Primary location of the data processing infrastructure.</p>
       </div>
 
       <div class="modal-footer">
@@ -328,76 +290,365 @@
 </div>
 
 <script>
-        // --- Sidebar Logic ---
-        const sidebar = document.getElementById('sidebar');
-        const menuToggle = document.getElementById('menu-toggle');
-        const backdrop = document.getElementById('sidebar-backdrop');
+    // --- Configuration ---
+    const API_URL_PROCESSOR = ENV_SERVER_URL + '/api/v1/admin/processor';
+    const API_URL_FIDUCIARY = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
 
-        function toggleMenu() {
-            sidebar.classList.toggle('open');
-            backdrop.classList.toggle('hidden');
+    // --- Global DOM Element Variables ---
+    let sidebar, menuToggle, backdrop, processorModalOverlay, addProcessorBtn, closeModalBtn, processorForm, tableBody, countSpan, errorMessageP, searchInput;
+    let processorIdHidden, processorNameInput, fiduciarySelect, processingPurposeInput, dpaReferenceInput, processorStatusSelect;
+
+    let FiduciaryList = []; // Cache Fiduciary names for display
+
+    // --- Helper Functions ---
+
+    function toggleMenu() {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('hidden');
+    }
+
+    function showModal(title, isEdit = false) {
+        document.getElementById('modal-title').textContent = title;
+        processorForm.reset();
+        processorIdHidden.value = '';
+
+        document.getElementById('save-processor-btn').textContent = isEdit ? 'Update Processor' : 'Save Processor';
+
+        processorModalOverlay.style.display = 'flex';
+    }
+
+    function closeModal() {
+        processorModalOverlay.style.display = 'none';
+    }
+
+    function createStatusBadge(status) {
+        let colorClass = '';
+        switch (status) {
+            case 'ACTIVE': colorClass = 'bg-green-100 text-green-800'; break;
+            case 'PENDING': colorClass = 'bg-yellow-100 text-yellow-800'; break;
+            case 'INACTIVE':
+            case 'REVOKED': colorClass = 'bg-red-100 text-red-800'; break;
+            default: colorClass = 'bg-gray-100 text-gray-800';
         }
+        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status}</span>`;
+    }
 
-        menuToggle.addEventListener('click', toggleMenu);
-        backdrop.addEventListener('click', toggleMenu);
+    // Function to get Fiduciary Name from ID (for display purposes)
+    function getFiduciaryName(id) {
+        const fiduciary = FiduciaryList.find(f => f.fiduciary_id === id);
+        return fiduciary ? fiduciary.name : 'Unknown Fiduciary';
+    }
 
-        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth < 1024) {
-                    toggleMenu();
-                }
+    function createProcessorRow(processor) {
+        const row = document.createElement('tr');
+        const showDeactivate = processor.status === 'ACTIVE' || processor.status === 'PENDING';
+
+        const actionsHtml = `
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editProcessor('${processor.processor_id}')">Edit</button>
+            ${showDeactivate ?
+                `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateProcessor('${processor.processor_id}')">Deactivate</button>`
+                : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
+        `;
+
+        row.innerHTML = `
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${processor.name || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(processor.fiduciary_id)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${processor.processing_purpose || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${processor.dpa_reference || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(processor.status)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+                ${actionsHtml}
+            </td>
+        `;
+        return row;
+    }
+
+    // --- Core Logic ---
+
+    // 1. Fetch Fiduciaries for Dropdown Population and Name Lookup
+    async function fetchFiduciariesForDropdown() {
+        try {
+            const payload = {
+            "_func": "list_fiduciaries",
+            "status": "",
+            "search": "",
+            "page": 1,
+            "limit": 50
+            };
+            const response = await fetch(API_URL_FIDUCIARY, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
             });
-        });
 
-        // --- Processor Management Logic ---
+            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list for dropdown.");
 
-        const modalOverlay = document.getElementById('processor-modal-overlay');
-        const addProcessorBtn = document.getElementById('add-processor-btn');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const processorForm = document.getElementById('processor-form');
+            const responseData = await response.json();
+            FiduciaryList = responseData; // Assuming backend returns array of Fiduciaries
 
-        // Helper function to show modal
-        addProcessorBtn.addEventListener('click', () => {
-            document.getElementById('modal-title').textContent = "Add New Data Processor";
-            processorForm.reset();
-            modalOverlay.style.display = 'flex';
-        });
+            fiduciarySelect.innerHTML = '<option value="">-- Select Fiduciary --</option>';
+            FiduciaryList.forEach(f => {
+                const option = document.createElement('option');
+                option.value = f.fiduciary_id;
+                option.textContent = f.name;
+                fiduciarySelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Error fetching Fiduciaries for dropdown:", error);
+            // Alerting here might be too intrusive, log it.
+        }
+    }
 
-        // Helper function to close modal
-        closeModalBtn.addEventListener('click', (e) => {
-             e.preventDefault();
-             modalOverlay.style.display = 'none';
-        });
 
-        // Handle Form Submission (Save Data Processor)
-        processorForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
+    // 2. Load Processors List
+    async function loadProcessors(searchTerm = "") {
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading Data Processor data...</td></tr>`;
+        errorMessageP.classList.add('hidden');
 
-            const formData = new FormData(processorForm);
-            const data = Object.fromEntries(formData.entries());
+        // Ensure Fiduciary list is loaded first for display names
+        if (FiduciaryList.length === 0) await fetchFiduciariesForDropdown();
 
-            // 1. Placeholder for API Call to SAVE Data Processor details
-            console.log("Submitting Data Processor Data:", data);
+        try {
+            const listPayload = {
+                "_func": "list_processors",
+                "fiduciary_id":"",
+                "status": "",
+                "search": searchTerm,
+                "page": 1,
+                "limit": 50
+            };
 
-            // In a real application, this would call: POST /api/processors
+            const response = await fetch(API_URL_PROCESSOR, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify(listPayload)
+            });
 
+            if (!response.ok) throw new Error(`API returned status ${response.status}`);
+
+            const responseData = await response.json();
+
+            // Assuming responseData structure is: [{...}, {...}]
+            if (Array.isArray(responseData)) {
+                const processors = responseData;
+                tableBody.innerHTML = '';
+
+                if (processors.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No Data Processors found matching criteria.</td></tr>`;
+                } else {
+                    processors.forEach(processor => {
+                        tableBody.appendChild(createProcessorRow(processor));
+                    });
+                    countSpan.textContent = `Showing 1 - ${processors.length} of ${processors.length} Total`;
+                }
+            } else {
+                throw new Error(responseData.message || 'API returned unexpected structure.');
+            }
+
+        } catch (error) {
+            console.error("Error loading Processors:", error);
+            tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">
+                Error connecting to the CMS API. Ensure the service is running and the token is valid.
+            </td></tr>`;
+            errorMessageP.classList.remove('hidden');
+            countSpan.textContent = '0 Total';
+        }
+    }
+
+    // 3. Fetch Single Processor Details
+    async function fetchProcessorDetails(processorId) {
+        try {
+            const payload = {"_func": "get_processor", "processor_id": processorId};
+
+            const response = await fetch(API_URL_PROCESSOR, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`Failed to fetch details for ${processorId}. Status: ${response.status}`);
+
+            const responseData = await response.json();
+
+            if (responseData.name) {
+                return responseData;
+            } else {
+                throw new Error(responseData.message || 'Processor details not found.');
+            }
+        } catch (error) {
+            console.error("Error fetching Processor details:", error);
+            alert(`Failed to load details for editing: ${error.message}`);
+            return null;
+        }
+    }
+
+    // 4. Handle Edit
+    async function editProcessor(id) {
+        showModal('Edit Data Processor', true);
+        const processor = await fetchProcessorDetails(id);
+
+        if (processor) {
+            processorIdHidden.value = processor.processor_id;
+            processorNameInput.value = processor.name || '';
+            fiduciarySelect.value = processor.fiduciary_id || '';
+            processingPurposeInput.value = processor.processing_purpose || '';
+            dpaReferenceInput.value = processor.dpa_reference || '';
+            processorStatusSelect.value = processor.status || 'ACTIVE';
+
+            // Cannot change associated fiduciary or name in this quick edit flow
+            processorNameInput.disabled = true;
+            fiduciarySelect.disabled = true;
+        } else {
+            closeModal();
+        }
+    }
+
+    // 5. Handle Deactivate
+    async function deactivateProcessor(id) {
+        if (confirm(`Are you sure you want to DEACTIVATE Processor ID ${id}? This will suspend all data processing for this entity.`)) {
             try {
-                // Mock API call to simulate successful creation
+                const payload = { "_func": "delete_processor", "processor_id": id };
 
-                // --- MOCK SUCCESS SCENARIO ---
-                alert(`Processor '${data.name}' successfully registered and linked to Fiduciary ${data.fiduciaryId}.`);
-                modalOverlay.style.display = 'none';
+                const response = await fetch(API_URL_PROCESSOR, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify(payload)
+                });
 
-                // 2. Refresh list or add the new processor to the table (omitted for simplicity)
+                if (response.ok) {
+                    alert(`Processor ID ${id} successfully deactivated.`);
+                    loadProcessors();
+                } else {
+                    const responseData = await response.json();
+                    const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
+                    alert(`Failed to deactivate Processor ID ${id}: ${errorMsg}`);
+                }
 
             } catch (error) {
-                console.error("Processor creation failed:", error);
-                alert("Failed to create Processor. Check console for details.");
+                console.error("Error during deactivation API call:", error);
+                alert("Network error: Could not communicate with the API during deactivation.");
             }
-        });
+        }
+    }
 
-    </script>
+    // --- Event Listeners and Initialization ---
+    // --- Variable Assignments ---
+    sidebar = document.getElementById('sidebar');
+    menuToggle = document.getElementById('menu-toggle');
+    backdrop = document.getElementById('sidebar-backdrop');
+    processorModalOverlay = document.getElementById('processor-modal-overlay');
+    addProcessorBtn = document.getElementById('add-processor-btn');
+    closeModalBtn = document.getElementById('close-modal-btn');
+    processorForm = document.getElementById('processor-form');
+    tableBody = document.getElementById('processor-table-body');
+    countSpan = document.getElementById('processor-count');
+    errorMessageP = document.getElementById('processor-error-message');
+    searchInput = document.getElementById('search-input');
 
+    // Form Fields for Edit/Add
+    processorIdHidden = document.getElementById('processor-id-hidden');
+    processorNameInput = document.getElementById('processor-name');
+    fiduciarySelect = document.getElementById('fiduciary-select');
+    processingPurposeInput = document.getElementById('processing-purpose');
+    dpaReferenceInput = document.getElementById('dpa-reference');
+    processorStatusSelect = document.getElementById('processor-status');
+
+    // --- Event Listener Attachments ---
+    menuToggle.addEventListener('click', toggleMenu);
+    backdrop.addEventListener('click', toggleMenu);
+    addProcessorBtn.addEventListener('click', () => showModal('Add New Data Processor'));
+    closeModalBtn.addEventListener('click', closeModal);
+
+    // --- Search Functionality ---
+    searchInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const searchTerm = searchInput.value.trim();
+            loadProcessors(searchTerm);
+        }
+    });
+
+    // --- Initialization Call ---
+    // Load Fiduciaries first, then the main list
+    loadProcessors();
+
+     // 5. Handle Form Submission
+    processorForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(processorForm);
+        const data = Object.fromEntries(formData.entries());
+
+        const isEditing = !!data.processorId;
+        const func = isEditing ? "update_processor" : "create_processor";
+
+        const payload = {
+            "_func": func,
+            "processor_id": data.processorId,
+            "fiduciary_id": data.fiduciary_id,
+            "name": data.name,
+            "processing_purpose": data.processing_purpose,
+            "dpa_reference": data.dpa_reference,
+            "status": data.status
+        };
+
+        // Clean up payload if creating (remove ID)
+        if (!isEditing) {
+            delete payload.processor_id;
+            // Ensure Fiduciary ID is sent as a UUID, not empty string
+            if (!payload.fiduciary_id) {
+                alert("Please select an Associated Data Fiduciary.");
+                return;
+            }
+        } else {
+             // For update, only allow changes to purposes, DPA, and status in this simple flow
+             delete payload.fiduciary_id;
+             delete payload.name;
+        }
+
+
+        try {
+            document.getElementById('save-processor-btn').textContent = isEditing ? 'Updating...' : 'Saving...';
+            document.getElementById('save-processor-btn').disabled = true;
+
+            const response = await fetch(API_URL_PROCESSOR, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert(`Processor ${isEditing ? 'updated' : 'added'} successfully!`);
+                closeModal();
+                loadProcessors();
+            } else {
+                const responseData = await response.json();
+                const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
+                alert(`Failed to ${isEditing ? 'update' : 'add'} Processor: ${errorMsg}`);
+            }
+
+        } catch (error) {
+            console.error(`Error ${isEditing ? 'updating' : 'creating'} Processor:`, error);
+            alert("Network error: Could not connect to API.");
+        } finally {
+            document.getElementById('save-processor-btn').textContent = isEditing ? 'Update Processor' : 'Save Processor';
+            document.getElementById('save-processor-btn').disabled = false;
+        }
+    });
+
+    // Expose functions globally so they can be called by inline onclick attributes
+    window.editProcessor = editProcessor;
+    window.deactivateProcessor = deactivateProcessor;
+    window.toggleMenu = toggleMenu; // Mobile menu
+
+</script>
 </body>
 
 </html>
