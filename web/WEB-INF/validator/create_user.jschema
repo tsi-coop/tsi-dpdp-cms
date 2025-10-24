@@ -15,7 +15,7 @@
     "password": {
       "type": "string"
     },
-    "role_id": {
+    "role": {
       "type": "string"
     }
   },
@@ -24,6 +24,6 @@
     "username",
     "email",
     "password",
-    "role_id"
+    "role"
   ]
 }

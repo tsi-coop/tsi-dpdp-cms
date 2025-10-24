@@ -1,7 +1,7 @@
 {
   "_func": "create_user",
-  "username": "new.cms.user",
-  "email": "new.user@tsicoop.org",
+  "username": "new.cms.user2",
+  "email": "new.user2@tsicoop.org",
   "password": "SecureP@ssw0rd1",
-  "role_id": "34397d2a-690f-431c-a5d2-99e5cf365278"
+  "role": "OPERATOR"
 }

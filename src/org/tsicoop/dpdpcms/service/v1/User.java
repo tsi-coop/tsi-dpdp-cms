@@ -79,16 +79,7 @@ public class User implements Action {
                 }
             }
 
-            UUID roleId = null;
-            String roleIdStr = (String) input.get("role_id");
-            if (roleIdStr != null && !roleIdStr.isEmpty()) { // Check for null before isEmpty()
-                try {
-                    roleId = UUID.fromString(roleIdStr);
-                } catch (IllegalArgumentException e) {
-                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid 'role_id' format.", req.getRequestURI());
-                    return;
-                }
-            }
+            String role = (String) input.get("role");
 
             switch (func.toLowerCase()) {
                 // --- User Authentication ---
@@ -174,14 +165,11 @@ public class User implements Action {
                     String username = (String) input.get("username");
                     String email = (String) input.get("email");
                     String password = (String) input.get("password");
-                    String userRoleIdStr = (String) input.get("role_id"); // Required for new user
 
-                    if (username == null || username.isEmpty() || email == null || email.isEmpty() || password == null || password.isEmpty() || userRoleIdStr == null || userRoleIdStr.isEmpty()) {
+                    if (username == null || username.isEmpty() || email == null || email.isEmpty() || password == null || password.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (username, email, password, role_id) for 'create_user'.", req.getRequestURI());
                         return;
                     }
-                    UUID userRoleId = UUID.fromString(userRoleIdStr);
-
                     // For create, password and confirmPassword are the same as password input
                     String validationError = validateUserInput(username, email, password, password);
                     if (validationError != null) {
@@ -193,13 +181,9 @@ public class User implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_CONFLICT, "Conflict", "Username or Email already exists.", req.getRequestURI());
                         return;
                     }
-                    if (!roleExists(userRoleId)) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Provided role_id does not exist.", req.getRequestURI());
-                        return;
-                    }
 
                     String hashedPassword = passwordHasher.hashPassword(password);
-                    output = saveUserToDb(username, email, hashedPassword, userRoleId, "ACTIVE"); // Default status to ACTIVE
+                    output = saveUserToDb(username, email, hashedPassword, role, "ACTIVE"); // Default status to ACTIVE
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -216,14 +200,13 @@ public class User implements Action {
                     username = (String) input.get("username");
                     email = (String) input.get("email");
                     password = (String) input.get("password");
-                    userRoleIdStr = (String) input.get("role_id");
                     userStatusFilter = (String) input.get("status"); // 'status' is the field name in JSON
 
                     // Check if at least one field for update is provided
                     if ((username == null || username.isEmpty()) &&
                             (email == null || email.isEmpty()) &&
                             (password == null || password.isEmpty()) &&
-                            (userRoleIdStr == null || userRoleIdStr.isEmpty()) &&
+                            (role == null || role.isEmpty()) &&
                             (userStatusFilter == null || userStatusFilter.isEmpty())) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "No fields provided for update for 'update_user'.", req.getRequestURI());
                         return;
@@ -247,13 +230,7 @@ public class User implements Action {
                         }
                     }
 
-                    userRoleId = (userRoleIdStr != null && !userRoleIdStr.isEmpty()) ? UUID.fromString(userRoleIdStr) : null;
-                    if (userRoleId != null && !roleExists(userRoleId)) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Provided role_id for update does not exist.", req.getRequestURI());
-                        return;
-                    }
-
-                    output = updateUserInDb(userId, username, email, (password != null && !password.isEmpty()) ? passwordHasher.hashPassword(password) : null, userRoleId, userStatusFilter);
+                    output = updateUserInDb(userId, username, email, (password != null && !password.isEmpty()) ? passwordHasher.hashPassword(password) : null, role, userStatusFilter);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
@@ -268,136 +245,6 @@ public class User implements Action {
                     }
                     deleteUserFromDb(userId);
                     OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
-                    break;
-
-                // --- Role Management ---
-                case "list_roles":
-                    String roleSearch = (String) input.get("search");
-                    int rolePage = (input.get("page") instanceof Long) ? ((Long) input.get("page")).intValue() : 1;
-                    int roleLimit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
-                    outputArray = listRolesFromDb(roleSearch, rolePage, roleLimit);
-                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
-                    break;
-
-                case "get_role":
-                    if (roleId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'role_id' is required for 'get_role' function.", req.getRequestURI());
-                        return;
-                    }
-                    Optional<JSONObject> roleOptional = getRoleByIdFromDb(roleId);
-                    if (roleOptional.isPresent()) {
-                        output = roleOptional.get();
-                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
-                    } else {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Role with ID '" + roleId + "' not found.", req.getRequestURI());
-                    }
-                    break;
-
-                case "create_role":
-                    String roleName = (String)input.get("name");
-                    String roleDescription = (String) input.get("description");
-                    JSONArray permissionsJson = (JSONArray) input.get("permissions"); // Array of {"resource": "...", "action": "..."}
-
-                    if (roleName == null || roleName.isEmpty() || permissionsJson == null || permissionsJson.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (name, permissions) for 'create_role'.", req.getRequestURI());
-                        return;
-                    }
-                    if (isRoleNamePresent(roleName, null)) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_CONFLICT, "Conflict", "Role name '" + roleName + "' already exists.", req.getRequestURI());
-                        return;
-                    }
-
-                    List<JSONObject> permissions = new ArrayList<>();
-                    for (Object obj : permissionsJson) {
-                        if (obj instanceof JSONObject) {
-                            permissions.add((JSONObject) obj);
-                        } else {
-                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid permissions format. Expected array of JSON objects.", req.getRequestURI());
-                            return;
-                        }
-                    }
-
-                    output = saveRoleToDb(roleName, roleDescription, permissions);
-                    OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
-                    break;
-
-                case "update_role":
-                    if (roleId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'role_id' is required for 'update_role' function.", req.getRequestURI());
-                        return;
-                    }
-                    Optional<JSONObject> existingRole = getRoleByIdFromDb(roleId);
-                    if (existingRole.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Role with ID '" + roleId + "' not found.", req.getRequestURI());
-                        return;
-                    }
-                    /*
-                    // Uncomment if 'is_system_role' check is needed and column exists
-                    if (existingRole.containsKey("is_system_role") && (Boolean) existingRole.get("is_system_role")) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "System roles cannot be updated.", req.getRequestURI());
-                        return;
-                    }
-                    */
-
-                    roleName = (String) input.get("name");
-                    roleDescription = (String) input.get("description");
-                    permissionsJson = (JSONArray) input.get("permissions"); // Optional for update
-
-                    if ((roleName == null || roleName.isEmpty()) && (roleDescription == null || roleDescription.isEmpty()) && permissionsJson == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "No fields provided for update for 'update_role'.", req.getRequestURI());
-                        return;
-                    }
-
-                    if (roleName != null && !roleName.isEmpty() && isRoleNamePresent(roleName, roleId)) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_CONFLICT, "Conflict", "Role name '" + roleName + "' conflicts with an existing role.", req.getRequestURI());
-                        return;
-                    }
-
-                    permissions = null;
-                    if (permissionsJson != null) {
-                        permissions = new ArrayList<>();
-                        for (Object obj : permissionsJson) {
-                            if (obj instanceof JSONObject) {
-                                permissions.add((JSONObject) obj);
-                            } else {
-                                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid permissions format. Expected array of JSON objects.", req.getRequestURI());
-                                return;
-                            }
-                        }
-                    }
-
-                    output = updateRoleInDb(roleId, roleName, roleDescription, permissions);
-                    OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
-                    break;
-
-                case "delete_role":
-                    if (roleId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'role_id' is required for 'delete_role' function.", req.getRequestURI());
-                        return;
-                    }
-                    existingRole = getRoleByIdFromDb(roleId);
-                    if (existingRole.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Role with ID '" + roleId + "' not found.", req.getRequestURI());
-                        return;
-                    }
-                    /*
-                    // Uncomment if 'is_system_role' check is needed and column exists
-                    if (existingRole.containsKey("is_system_role") && (Boolean) existingRole.get("is_system_role")) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "System roles cannot be deleted.", req.getRequestURI());
-                        return;
-                    }
-                    */
-                    if (isRoleAssignedToUsers(roleId)) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_CONFLICT, "Conflict", "Role is currently assigned to one or more users and cannot be deleted.", req.getRequestURI());
-                        return;
-                    }
-
-                    deleteRoleFromDb(roleId);
-                    OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
-                    break;
-
-                default:
-                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
                     break;
             }
 
@@ -431,7 +278,7 @@ public class User implements Action {
         JSONObject result = new JSONObject();
 
         // Query by username or email
-        String sql = "SELECT u.id AS user_id, u.username, u.email, u.password_hash, u.status, u.mfa_enabled, r.name AS role_name, r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE (u.username = ? OR u.email = ?) AND u.deleted_at IS NULL";
+        String sql = "SELECT id AS user_id, username, email, password_hash, status, mfa_enabled, role FROM users WHERE (username = ? OR email = ?)";
 
         try {
             conn = pool.getConnection();
@@ -447,8 +294,7 @@ public class User implements Action {
                 String storedHashedPassword = rs.getString("password_hash");
                 String status = rs.getString("status");
                 boolean mfaEnabled = rs.getBoolean("mfa_enabled");
-                String roleName = rs.getString("role_name");
-                String permissionsJson = rs.getString("permissions"); // Permissions from roles table (JSONB)
+                String roleName = rs.getString("role");
 
                 if (!"ACTIVE".equalsIgnoreCase(status)) {
                     result.put("error", true);
@@ -477,12 +323,6 @@ public class User implements Action {
                         claims.put("username", username);
                         claims.put("email", email);
                         claims.put("role", roleName);
-                        try {
-                            claims.put("permissions", new JSONParser().parse(permissionsJson)); // Parse permissions JSONB
-                        } catch (ParseException e) {
-                            System.err.println("Failed to parse permissions JSON for user " + userId + ": " + e.getMessage());
-                            claims.put("permissions", new JSONArray()); // Default to empty array
-                        }
 
                         String generatedToken = JWTUtil.generateToken(email,username,roleName);
 
@@ -590,9 +430,6 @@ public class User implements Action {
         }
     }
 
-
-
-
     @Override
     public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
         if (!"POST".equalsIgnoreCase(method)) {
@@ -659,7 +496,7 @@ public class User implements Action {
         sqlBuilder.append(")"); // Close the OR group
 
         if (excludeUserId != null) {
-            sqlBuilder.append(" AND id != ?"); // Use 'user_id' as primary key name for users table
+            sqlBuilder.append(" AND id != ?");
             params.add(excludeUserId);
         }
 
@@ -669,26 +506,6 @@ public class User implements Action {
             for (int i = 0; i < params.size(); i++) {
                 pstmt.setObject(i + 1, params.get(i));
             }
-            rs = pstmt.executeQuery();
-            return rs.next() && rs.getInt(1) > 0;
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-    }
-
-    /**
-     * Helper to check if a role exists by ID.
-     */
-    private boolean roleExists(UUID roleId) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM roles WHERE id = ?";
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, roleId);
             rs = pstmt.executeQuery();
             return rs.next() && rs.getInt(1) > 0;
         } finally {
@@ -762,7 +579,7 @@ public class User implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT u.id, u.username, u.email, u.password_hash, u.status, u.last_login_at, u.created_at, u.last_updated_at, r.id, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?";
+        String sql = "SELECT id, username, email, password_hash, status, last_login_at, created_at, last_updated_at, role FROM users WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -775,7 +592,7 @@ public class User implements Action {
                 user.put("email", rs.getString("email"));
                 // user.put("password_hash", rs.getString("password_hash")); // Do NOT expose password hash via API
                 user.put("status", rs.getString("status"));
-                user.put("role_name", rs.getString("role_name"));
+                user.put("role_name", rs.getString("role"));
                 user.put("last_login_at", rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toInstant().toString() : null);
                 user.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 user.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString()); // Corrected column name
@@ -792,14 +609,14 @@ public class User implements Action {
      * @return JSONObject containing the new user's details.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject saveUserToDb(String username, String email, String hashedPassword, UUID roleId, String status) throws SQLException {
+    private JSONObject saveUserToDb(String username, String email, String hashedPassword, String role, String status) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         // Use RETURNING user_id to get the generated UUID
-        String sql = "INSERT INTO users (id, username, email, password_hash, role_id, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
+        String sql = "INSERT INTO users (id, username, email, password_hash, role, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -808,7 +625,7 @@ public class User implements Action {
             pstmt.setString(1, username);
             pstmt.setString(2, email);
             pstmt.setString(3, hashedPassword);
-            pstmt.setObject(4, roleId);
+            pstmt.setString(4, role);
             pstmt.setString(5, status);
 
             int affectedRows = pstmt.executeUpdate();
@@ -823,7 +640,7 @@ public class User implements Action {
                 output.put("username", username);
                 output.put("email", email);
                 output.put("status", status);
-                output.put("role_id", roleId.toString());
+                output.put("role", role);
                 output.put("message", "User created successfully.");
             } else {
                 throw new SQLException("Creating user failed, no ID obtained.");
@@ -839,7 +656,7 @@ public class User implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject updateUserInDb(UUID userId, String username, String email, String hashedPassword, UUID roleId, String status) throws SQLException {
+    private JSONObject updateUserInDb(UUID userId, String username, String email, String hashedPassword, String role, String status) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
@@ -850,7 +667,7 @@ public class User implements Action {
         if (username != null && !username.isEmpty()) { sqlBuilder.append(", username = ?"); params.add(username); }
         if (email != null && !email.isEmpty()) { sqlBuilder.append(", email = ?"); params.add(email); }
         if (hashedPassword != null && !hashedPassword.isEmpty()) { sqlBuilder.append(", password_hash = ?"); params.add(hashedPassword); }
-        if (roleId != null) { sqlBuilder.append(", role_id = ?"); params.add(roleId); }
+        if (role != null) { sqlBuilder.append(", role = ?"); params.add(role); }
         if (status != null && !status.isEmpty()) { sqlBuilder.append(", status = ?"); params.add(status); }
 
         sqlBuilder.append(" WHERE id = ?");
@@ -893,295 +710,6 @@ public class User implements Action {
             }
         } finally {
             pool.cleanup(null, pstmt, conn);
-        }
-    }
-
-    // --- Helper Methods for Role Management ---
-
-    /**
-     * Checks if a role name already exists (for uniqueness).
-     * @param roleName The role name to check.
-     * @param excludeRoleId Optional UUID to exclude from the check (for update operations).
-     * @return true if a conflict is found, false otherwise.
-     * @throws SQLException if a database access error occurs.
-     */
-    private boolean isRoleNamePresent(String roleName, UUID excludeRoleId) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-
-        StringBuilder sqlBuilder = new StringBuilder("SELECT COUNT(*) FROM roles WHERE name = ?");
-        List<Object> params = new ArrayList<>();
-        params.add(roleName);
-
-        if (excludeRoleId != null) {
-            sqlBuilder.append(" AND id != ?");
-            params.add(excludeRoleId);
-        }
-
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sqlBuilder.toString());
-            for (int i = 0; i < params.size(); i++) {
-                pstmt.setObject(i + 1, params.get(i));
-            }
-            rs = pstmt.executeQuery();
-            return rs.next() && rs.getInt(1) > 0;
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-    }
-
-    /**
-     * Checks if a role is currently assigned to any users.
-     * @param roleId The UUID of the role to check.
-     * @return true if the role is assigned to users, false otherwise.
-     * @throws SQLException if a database access error occurs.
-     */
-    private boolean isRoleAssignedToUsers(UUID roleId) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM users WHERE role_id = ?"; // Assuming users.role_id
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, roleId);
-            rs = pstmt.executeQuery();
-            return rs.next() && rs.getInt(1) > 0;
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-    }
-
-    /**
-     * Retrieves a list of roles from the database with optional filtering and pagination.
-     * @return JSONArray of role JSONObjects.
-     * @throws SQLException if a database access error occurs.
-     */
-    private JSONArray listRolesFromDb(String search, int page, int limit) throws SQLException {
-        JSONArray rolesArray = new JSONArray();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, description, created_at, last_updated_at FROM roles WHERE 1=1"); // Corrected column name
-        List<Object> params = new ArrayList<>();
-
-        if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (name ILIKE ? OR description ILIKE ?)");
-            params.add("%" + search + "%");
-            params.add("%" + search + "%");
-        }
-
-        sqlBuilder.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
-        params.add(limit);
-        params.add((page - 1) * limit);
-
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sqlBuilder.toString());
-            for (int i = 0; i < params.size(); i++) {
-                pstmt.setObject(i + 1, params.get(i));
-            }
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                JSONObject role = new JSONObject();
-                role.put("role_id", rs.getString("id"));
-                role.put("name", rs.getString("name"));
-                role.put("description", rs.getString("description"));
-                role.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
-                role.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString()); // Corrected column name
-                rolesArray.add(role);
-            }
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-        return rolesArray;
-    }
-
-    /**
-     * Retrieves a single role by ID from the database, including its permissions.
-     * @param roleId The UUID of the role.
-     * @return An Optional containing the role JSONObject if found, otherwise empty.
-     * @throws SQLException if a database access error occurs.
-     */
-    private Optional<JSONObject> getRoleByIdFromDb(UUID roleId) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmtRole = null;
-        ResultSet rsRole = null;
-        PoolDB pool = new PoolDB();
-
-        // Permissions are directly in the roles table as JSONB in init.sql
-        String sqlRole = "SELECT id AS id, name, description, permissions, created_at, last_updated_at FROM roles WHERE id = ? AND deleted_at IS NULL";
-
-        try {
-            conn = pool.getConnection();
-            pstmtRole = conn.prepareStatement(sqlRole);
-            pstmtRole.setObject(1, roleId);
-            rsRole = pstmtRole.executeQuery();
-
-            if (rsRole.next()) {
-                JSONObject role = new JSONObject();
-                role.put("role_id", rsRole.getString("id"));
-                role.put("name", rsRole.getString("name"));
-                role.put("description", rsRole.getString("description"));
-                role.put("created_at", rsRole.getTimestamp("created_at").toInstant().toString());
-                role.put("last_updated_at", rsRole.getTimestamp("last_updated_at").toInstant().toString());
-
-                // Get permissions for this role from JSONB column
-                try {
-                    role.put("permissions", new JSONParser().parse(rsRole.getString("permissions")));
-                } catch (ParseException e) {
-                    System.err.println("Failed to parse permissions JSON for role " + roleId + ": " + e.getMessage());
-                    role.put("permissions", new JSONArray()); // Default to empty array
-                }
-                return Optional.of(role);
-            }
-        } finally {
-            pool.cleanup(rsRole, pstmtRole, conn);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Saves a new role and its permissions to the database.
-     * @param name The name of the role.
-     * @param description The description of the role.
-     * @param permissions List of permission JSONObjects (resource, action).
-     * @return JSONObject containing the new role's details.
-     * @throws SQLException if a database access error occurs.
-     */
-    private JSONObject saveRoleToDb(String name, String description, List<JSONObject> permissions) throws SQLException {
-        JSONObject output = new JSONObject();
-        Connection conn = null;
-        PreparedStatement pstmtRole = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-
-        // Permissions are JSONB in roles table
-        String insertRoleSql = "INSERT INTO roles (id, name, description, permissions, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?::jsonb, NOW(), NOW()) RETURNING id";
-
-        try {
-            conn = pool.getConnection();
-            pstmtRole = conn.prepareStatement(insertRoleSql, Statement.RETURN_GENERATED_KEYS);
-            pstmtRole.setString(1, name);
-            pstmtRole.setString(2, description);
-            pstmtRole.setString(3, convertListToJsonString(permissions)); // Convert List<JSONObject> to JSONArray string
-
-            int affectedRows = pstmtRole.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Creating role failed, no rows affected.");
-            }
-
-            rs = pstmtRole.getGeneratedKeys();
-            if (rs.next()) {
-                String newRoleId = rs.getString(1);
-                output.put("role_id", newRoleId);
-                output.put("name", name);
-                output.put("description", description);
-                output.put("permissions", permissions); // Return the permissions list
-                output.put("message", "Role created successfully.");
-            } else {
-                throw new SQLException("Creating role failed, no ID obtained.");
-            }
-
-        } finally {
-            pool.cleanup(rs, pstmtRole, conn);
-        }
-        return new JSONObject() {{ put("success", true); put("data", output); }};
-    }
-
-    public static String convertListToJsonString(List<JSONObject> jsonObjectList) {
-        JSONObject perm = null;
-        JSONArray perms = new JSONArray();
-        Iterator it = jsonObjectList.iterator();
-        while(it.hasNext()){
-            perm = (JSONObject) it.next();
-            perms.add(perm);
-        }
-        return perms.toString();
-    }
-
-    /**
-     * Updates an existing role and its permissions in the database.
-     * @return JSONObject indicating success.
-     * @throws SQLException if a database access error occurs.
-     */
-    private JSONObject updateRoleInDb(UUID roleId, String name, String description, List<JSONObject> permissions) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmtRole = null;
-        PoolDB pool = new PoolDB();
-
-        StringBuilder sqlBuilder = new StringBuilder("UPDATE roles SET last_updated_at = NOW()");
-        List<Object> params = new ArrayList<>();
-
-        if (name != null && !name.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(name); }
-        if (description != null && !description.isEmpty()) { sqlBuilder.append(", description = ?"); params.add(description); }
-        //if (permissions != null) { sqlBuilder.append(", permissions = ?::jsonb"); params.add(new JSONArray(permissions).toJSONString()); } // Update JSONB column
-
-        sqlBuilder.append(" WHERE id = ? AND deleted_at IS NULL"); // Use 'id' as PK for roles and check deleted_at
-        params.add(roleId);
-
-        try {
-            conn = pool.getConnection();
-            pstmtRole = conn.prepareStatement(sqlBuilder.toString());
-            for (int i = 0; i < params.size(); i++) {
-                pstmtRole.setObject(i + 1, params.get(i));
-            }
-            int affectedRows = pstmtRole.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Updating role failed, role not found or no changes made to role details.");
-            }
-
-        } finally {
-            pool.cleanup(null, pstmtRole, conn);
-        }
-        return new JSONObject() {{ put("success", true); put("message", "Role updated successfully."); }};
-    }
-    /**
-     * Deletes a role from the database, including its permissions, in a transaction.
-     * @param roleId The UUID of the role to delete.
-     * @throws SQLException if a database access error occurs.
-     */
-    private void deleteRoleFromDb(UUID roleId) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmtDeletePermissions = null;
-        PreparedStatement pstmtDeleteRole = null;
-        PoolDB pool = new PoolDB();
-
-        String deleteRoleSql = "DELETE FROM roles WHERE id = ?";
-
-        try {
-            conn = pool.getConnection();
-            conn.setAutoCommit(false); // Start transaction
-
-            // Then delete the role itself
-            pstmtDeleteRole = conn.prepareStatement(deleteRoleSql);
-            pstmtDeleteRole.setObject(1, roleId);
-            int affectedRows = pstmtDeleteRole.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Deleting role failed, role not found.");
-            }
-
-            conn.commit(); // Commit transaction
-
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            throw e;
-        } finally {
-            pool.cleanup(null, pstmtDeletePermissions, null);
-            pool.cleanup(null, pstmtDeleteRole, conn);
         }
     }
 }

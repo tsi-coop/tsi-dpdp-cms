@@ -18,7 +18,7 @@
     "password": {
       "type": "string"
     },
-    "role_id": {
+    "role": {
       "type": "string"
     },
     "status": {

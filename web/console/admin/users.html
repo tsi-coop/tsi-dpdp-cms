@@ -4,9 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TSI DPDP CMS - User Management</title>
+  <title>TSI DPDP CMS - CMS User Management</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../env.js"></script>
   <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -122,7 +123,7 @@
             background: white;
             padding: 30px;
             border-radius: var(--radius);
-            max-width: 500px;
+            max-width: 600px;
             width: 95%;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             position: relative;
@@ -155,7 +156,7 @@
       <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
     </div>
     <nav class="flex flex-col space-y-1 mt-4 px-3">
-      <a href="admin_dashboard.html" class="nav-link">
+      <a href="dashboard.html" class="nav-link">
         Dashboard
       </a>
       <a href="fiduciaries.html" class="nav-link">
@@ -170,13 +171,13 @@
       <a href="lifecycle.html" class="nav-link">
         Lifecycle
       </a>
-      <a href="#" class="nav-link">
+      <a href="apikeys.html" class="nav-link">
         API Keys
       </a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
-    <a href="config.html" class="nav-link">
+    <a href="system_config.html" class="nav-link">
       System Config
     </a>
     <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
@@ -192,219 +193,458 @@
 <!-- Main Content Area -->
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-semibold text-gray-800">Manage CMS Users</h1>
+    <h1 class="text-xl font-semibold text-gray-800">CMS User Management</h1>
     <button id="add-user-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
       + Add New CMS User
     </button>
   </div>
 
-  <!-- CMS Users List Card -->
-  <div class="card mb-8">
-    <div class="flex justify-between items-center mb-4">
-      <input type="text" placeholder="Search User Name or Role..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
-      <span class="text-sm text-gray-500">Showing 1 - 10 of 18 Users</span>
+  <!-- User List Card -->
+  <div class="card">
+     <div class="flex justify-between items-center mb-4">
+      <input type="text" id="search-input" placeholder="Search by Name or Email..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+      <span id="user-count" class="text-sm text-gray-500">Loading...</span>
     </div>
 
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead>
         <tr class="table-header">
-          <th class="px-4 py-3 text-sm">User Name</th>
+          <th class="px-4 py-3 text-sm">Full Name</th>
           <th class="px-4 py-3 text-sm">Email</th>
-          <th class="px-4 py-3 text-sm">Roles</th>
-          <th class="px-4 py-3 text-sm">MFA Status</th>
+          <th class="px-4 py-3 text-sm">Role</th>
           <th class="px-4 py-3 text-sm">Status</th>
+          <th class="px-4 py-3 text-sm">MFA Status</th>
           <th class="px-4 py-3 text-sm">Actions</th>
         </tr>
         </thead>
-        <tbody id="user-list-body" class="bg-white divide-y divide-gray-200">
-        <!-- Sample Data Row 1 (Admin) -->
+        <tbody id="user-table-body" class="bg-white divide-y divide-gray-200">
+        <!-- Data will be dynamically inserted here -->
         <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Jane Doe (Admin)</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">jane.doe@tsicoop.com</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">Admin, Auditor</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="text-green-600 font-medium">Enabled</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">ACTIVE</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
-            <button class="text-red-600 hover:text-red-900 font-medium text-sm">Deactivate</button>
-          </td>
-        </tr>
-        <!-- Sample Data Row 2 (DPO) -->
-        <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">John Smith</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">john.smith@tsicoop.com</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">DPO, Operator</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="text-red-600 font-medium">Pending Setup</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm"><span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">PENDING</span></td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2">Edit</button>
-            <button class="text-green-600 hover:text-green-900 font-medium text-sm">Reset MFA</button>
+          <td colspan="6" class="p-4 text-center text-gray-500">
+            Loading CMS User data...
           </td>
         </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="mt-4 flex justify-between items-center text-sm">
-      <button class="text-gray-600 hover:primary-text">Previous</button>
-      <span class="text-gray-600">Page 1 of 2</span>
-      <button class="text-gray-600 hover:primary-text">Next</button>
-    </div>
+    <p id="user-error-message" class="mt-4 text-sm text-red-600 hidden">
+      Failed to load data. Please check the API connection and token.
+    </p>
   </div>
 </main>
 
-<!-- Modal for Adding New CMS User -->
+<!-- Modal for Adding/Editing CMS User -->
 <div id="user-modal-overlay" class="modal-overlay">
   <div class="modal-content">
     <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New CMS User</h2>
     <form id="user-form" class="space-y-4">
 
-      <!-- Section 1: User Identity -->
-      <div>
-        <label for="user-name" class="block text-sm font-medium text-gray-700">Full Name</label>
-        <input type="text" id="user-name" name="name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-      </div>
+      <!-- Hidden Field to store User ID during edit -->
+      <input type="hidden" id="user-id-hidden" name="userId" value="">
 
+      <!-- Section 1: User Identity -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="user-email" class="block text-sm font-medium text-gray-700">Email (Username)</label>
-          <input type="email" id="user-email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <label for="user-full-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+          <input type="text" id="user-full-name" name="name" required placeholder="e.g., Jane Doe" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         </div>
         <div>
-          <label for="user-phone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
-          <input type="text" id="user-phone" name="phone" placeholder="(Optional)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <label for="user-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+          <input type="email" id="user-email" name="email" required placeholder="user@tsicoop.com" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         </div>
       </div>
 
-      <!-- Section 2: Role Assignment -->
-      <div class="border border-indigo-200 p-3 rounded-md bg-indigo-50">
-        <h4 class="font-semibold text-indigo-800 mb-2">Role Assignment</h4>
-        <p class="text-xs text-gray-600 mb-3">Assign one or more roles to define user permissions.</p>
-
-        <div class="space-y-2">
-          <!-- Role Checkboxes -->
-          <label class="flex items-center space-x-2 text-sm">
-            <input type="checkbox" name="role" value="ADMIN" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-            <span class="font-medium">Administrator</span> (Full control over system settings & users)
-          </label>
-          <label class="flex items-center space-x-2 text-sm">
-            <input type="checkbox" name="role" value="DPO" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-            <span class="font-medium">DPO (Data Protection Officer)</span> (Policy, Grievance, Purge oversight)
-          </label>
-          <label class="flex items-center space-x-2 text-sm">
-            <input type="checkbox" name="role" value="AUDITOR" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-            <span class="font-medium">Auditor</span> (Read-only access to logs and reports)
-          </label>
-          <label class="flex items-center space-x-2 text-sm">
-            <input type="checkbox" name="role" value="OPERATOR" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-            <span class="font-medium">Operator</span> (Data entry, routine tasks, and processing)
-          </label>
+      <!-- Section 2: Security and Roles -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="user-role-select" class="block text-sm font-medium text-gray-700">CMS Role</label>
+          <select id="user-role-select" name="role" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+            <option value="ADMIN">Administrator</option>
+            <option value="DPO">Data Protection Officer (DPO)</option>
+            <option value="AUDITOR">Auditor</option>
+            <option value="OPERATOR">Operator</option>
+          </select>
+        </div>
+        <div>
+          <label for="user-password" class="block text-sm font-medium text-gray-700">Initial Password (Min 12 Chars)</label>
+          <input type="password" id="user-password" name="password" minlength="12" placeholder="Secure Password" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <p class="mt-1 text-xs text-gray-500" id="password-note">Leave blank if editing user; Password is required for creation.</p>
         </div>
       </div>
 
-      <!-- Section 3: Initial Password & MFA -->
-      <div class="border border-gray-300 p-3 rounded-md">
-        <label for="initial-password" class="block text-sm font-medium text-gray-700">Initial Password (Required)</label>
-        <input type="password" id="initial-password" name="initialPassword" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-        <p class="mt-1 text-xs text-red-600">User will be forced to reset password and set up MFA on first login.</p>
+      <!-- Section 3: Status -->
+      <div>
+        <label for="user-status-select" class="block text-sm font-medium text-gray-700">Account Status</label>
+        <select id="user-status-select" name="status" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+          <option value="PENDING_MFA">PENDING MFA SETUP</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500">MFA setup is required for DPO/Admin roles on first login.</p>
       </div>
+
 
       <div class="modal-footer">
         <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
-        <button type="submit" id="save-user-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Create User Account</button>
+        <button type="submit" id="save-user-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save CMS User</button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-        // --- Sidebar Logic ---
-        const sidebar = document.getElementById('sidebar');
-        const menuToggle = document.getElementById('menu-toggle');
-        const backdrop = document.getElementById('sidebar-backdrop');
+    // --- Configuration ---
+    const API_URL_USERS = ENV_SERVER_URL+'/api/v1/admin/user';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
 
-        function toggleMenu() {
-            sidebar.classList.toggle('open');
-            backdrop.classList.toggle('hidden');
+    // --- Global DOM Element Variables ---
+    let sidebar, menuToggle, backdrop, userModalOverlay, addUserBtn, closeModalBtn, userForm, tableBody, countSpan, errorMessageP, searchInput;
+    let userIdHidden, userFullNameInput, userEmailInput, userRoleSelect, userPasswordInput, userStatusSelect;
+
+    // --- Helper Functions ---
+
+    function toggleMenu() {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('hidden');
+    }
+
+    function showModal(title, isEdit = false) {
+        document.getElementById('modal-title').textContent = title;
+        userForm.reset();
+        userIdHidden.value = '';
+
+        document.getElementById('save-user-btn').textContent = isEdit ? 'Update User' : 'Save CMS User';
+
+        // Hide password field note during edit
+        document.getElementById('password-note').style.display = isEdit ? 'block' : 'none';
+
+        // Disable email/name fields during edit for simpler payload
+        userEmailInput.disabled = isEdit;
+        userFullNameInput.disabled = isEdit;
+
+        // Clear password on edit unless user is actively setting a new one
+        userPasswordInput.value = '';
+        userPasswordInput.placeholder = isEdit ? 'Leave blank to keep current password' : 'Secure Password';
+
+        userModalOverlay.style.display = 'flex';
+    }
+
+    function closeModal() {
+        userModalOverlay.style.display = 'none';
+    }
+
+    function createStatusBadge(status) {
+        let colorClass = '';
+        switch (status) {
+            case 'ACTIVE': colorClass = 'bg-green-100 text-green-800'; break;
+            case 'INACTIVE': colorClass = 'bg-red-100 text-red-800'; break;
+            case 'PENDING_MFA': colorClass = 'bg-yellow-100 text-yellow-800'; break;
+            default: colorClass = 'bg-gray-100 text-gray-800';
         }
+        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status}</span>`;
+    }
 
-        menuToggle.addEventListener('click', toggleMenu);
-        backdrop.addEventListener('click', toggleMenu);
+    function createMfaBadge(status) {
+        let colorClass = '';
+        let text = '';
+        switch (status) {
+            case 'ENROLLED':
+                colorClass = 'bg-green-100 text-green-800';
+                text = 'Enrolled';
+                break;
+            case 'PENDING':
+                colorClass = 'bg-yellow-100 text-yellow-800';
+                text = 'Pending';
+                break;
+            case 'DISABLED':
+                colorClass = 'bg-red-100 text-red-800';
+                text = 'Disabled';
+                break;
+            default:
+                colorClass = 'bg-gray-100 text-gray-800';
+                text = 'N/A';
+        }
+        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${text}</span>`;
+    }
 
-        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth < 1024) {
-                    toggleMenu();
-                }
+
+    function createUserRow(user) {
+        const row = document.createElement('tr');
+
+        const showDeactivate = user.status === 'ACTIVE' || user.status === 'PENDING_MFA';
+
+        const actionsHtml = `
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editUser('${user.id}')">Edit</button>
+            ${showDeactivate ?
+                `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateUser('${user.id}')">Deactivate</button>`
+                : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
+        `;
+
+        row.innerHTML = `
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${user.name || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${user.email || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${user.role || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(user.status)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">${createMfaBadge(user.mfa_status || 'N/A')}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+                ${actionsHtml}
+            </td>
+        `;
+        return row;
+    }
+
+
+    // --- Core Logic ---
+
+    async function loadUsers(searchTerm = "") {
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading CMS User data...</td></tr>`;
+        errorMessageP.classList.add('hidden');
+
+        try {
+            const listPayload = {
+                "_func": "list_users",
+                "search": searchTerm,
+                "page": 1,
+                "limit": 50
+            };
+
+            const response = await fetch(API_URL_USERS, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify(listPayload)
             });
-        });
 
-        // --- User Management Logic ---
-
-        const modalOverlay = document.getElementById('user-modal-overlay');
-        const addUserBtn = document.getElementById('add-user-btn');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const userForm = document.getElementById('user-form');
-
-        // Helper function to show modal
-        addUserBtn.addEventListener('click', () => {
-            document.getElementById('modal-title').textContent = "Add New CMS User";
-            userForm.reset();
-            modalOverlay.style.display = 'flex';
-        });
-
-        // Helper function to close modal
-        closeModalBtn.addEventListener('click', (e) => {
-             e.preventDefault();
-             modalOverlay.style.display = 'none';
-        });
-
-        // Handle Form Submission (Save CMS User)
-        userForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-
-            const formData = new FormData(userForm);
-            const data = {};
-
-            // Collect roles separately
-            const roles = [];
-            formData.forEach((value, key) => {
-                if (key === 'role') {
-                    roles.push(value);
-                } else {
-                    data[key] = value;
-                }
-            });
-            data.roles = roles;
-
-            if (data.roles.length === 0) {
-                 alert("Please assign at least one role to the new user.");
-                 return;
+            if (!response.ok) {
+                throw new Error(`API returned status ${response.status}`);
             }
 
-            // 1. Placeholder for API Call to SAVE CMS User details
-            console.log("Submitting CMS User Data:", data);
+            const responseData = await response.json();
 
-            // In a real application, this would call: POST /api/v1/users/register
+            // Assuming responseData structure is: [{...}, {...}] or { success: true, data: [...] }
+            const users = responseData.data || responseData;
 
+            if (Array.isArray(users)) {
+                tableBody.innerHTML = '';
+
+                if (users.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No CMS Users found matching criteria.</td></tr>`;
+                } else {
+                    users.forEach(user => {
+                        tableBody.appendChild(createUserRow(user));
+                    });
+                    countSpan.textContent = `Showing 1 - ${users.length} of ${users.length} Total`;
+                }
+            } else {
+                throw new Error(responseData.message || 'API returned unexpected structure.');
+            }
+
+        } catch (error) {
+            console.error("Error loading CMS Users:", error);
+            tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">
+                Error connecting to the CMS API. Ensure the service is running and the token is valid.
+            </td></tr>`;
+            errorMessageP.classList.remove('hidden');
+            countSpan.textContent = '0 Total';
+        }
+    }
+
+    async function fetchUserDetails(userId) {
+        try {
+            const payload = { "_func": "get_user", "user_id": userId };
+
+            const response = await fetch(API_URL_USERS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`Failed to fetch details for user ${userId}. Status: ${response.status}`);
+
+            const responseData = await response.json();
+
+            if (responseData.id) {
+                return responseData;
+            } else {
+                throw new Error(responseData.message || 'User details not found.');
+            }
+        } catch (error) {
+            console.error("Error fetching User details:", error);
+            alert(`Failed to load details for editing: ${error.message}`);
+            return null;
+        }
+    }
+
+    async function editUser(id) {
+        showModal('Edit CMS User', true);
+        const user = await fetchUserDetails(id);
+
+        if (user) {
+            userIdHidden.value = user.id;
+            userFullNameInput.value = user.name || '';
+            userEmailInput.value = user.email || '';
+            userRoleSelect.value = user.role || 'OPERATOR';
+            userStatusSelect.value = user.status || 'ACTIVE';
+
+            // Password field is cleared and has placeholder logic in showModal
+        } else {
+            closeModal();
+        }
+    }
+
+    // Handle Deactivate
+    async function deactivateUser(id) {
+        if (confirm(`Are you sure you want to DEACTIVATE CMS User ID ${id}? This will immediately suspend all login access.`)) {
             try {
-                // Mock API call to simulate successful creation
+                const payload = { "_func": "deactivate_user", "user_id": id, "status": "INACTIVE" };
 
-                // --- MOCK SUCCESS SCENARIO ---
-                alert(`User '${data.name}' created successfully with roles: ${data.roles.join(', ')}. They must set up MFA on first login.`);
-                modalOverlay.style.display = 'none';
+                const response = await fetch(API_URL_USERS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify(payload)
+                });
 
-                // 2. Refresh list or add the new user to the table (omitted for simplicity)
+                if (response.ok) {
+                    alert(`CMS User ID ${id} successfully deactivated.`);
+                    loadUsers();
+                } else {
+                    const responseData = await response.json();
+                    const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
+                    alert(`Failed to deactivate User ID ${id}: ${errorMsg}`);
+                }
 
             } catch (error) {
-                console.error("User creation failed:", error);
-                alert("Failed to create user. Check console for details.");
+                console.error("Error during deactivation API call:", error);
+                alert("Network error: Could not communicate with the API during deactivation.");
             }
-        });
+        }
+    }
 
-    </script>
 
+    // --- Event Listeners and Initialization ---
+
+    // --- Variable Assignments ---
+    sidebar = document.getElementById('sidebar');
+    menuToggle = document.getElementById('menu-toggle');
+    backdrop = document.getElementById('sidebar-backdrop');
+    userModalOverlay = document.getElementById('user-modal-overlay');
+    addUserBtn = document.getElementById('add-user-btn');
+    closeModalBtn = document.getElementById('close-modal-btn');
+    userForm = document.getElementById('user-form');
+    tableBody = document.getElementById('user-table-body');
+    countSpan = document.getElementById('user-count');
+    errorMessageP = document.getElementById('user-error-message');
+    searchInput = document.getElementById('search-input');
+
+    // Form Fields for Edit/Add
+    userIdHidden = document.getElementById('user-id-hidden');
+    userFullNameInput = document.getElementById('user-full-name');
+    userEmailInput = document.getElementById('user-email');
+    userRoleSelect = document.getElementById('user-role-select');
+    userPasswordInput = document.getElementById('user-password');
+    userStatusSelect = document.getElementById('user-status-select');
+
+
+    // --- Event Listener Attachments ---
+    menuToggle.addEventListener('click', toggleMenu);
+    backdrop.addEventListener('click', toggleMenu);
+    addUserBtn.addEventListener('click', () => showModal('Add New CMS User'));
+    closeModalBtn.addEventListener('click', closeModal);
+
+    // --- Search Functionality ---
+    searchInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const searchTerm = searchInput.value.trim();
+            loadUsers(searchTerm);
+        }
+    });
+
+    // --- Initialization Call ---
+    loadUsers();
+
+     userForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(userForm);
+        const data = Object.fromEntries(formData.entries());
+
+        const isEditing = !!data.userId;
+        const func = isEditing ? "update_user" : "create_user";
+
+        const payload = {
+            "_func": func,
+            "user_id": data.userId,
+            "name": data.name,
+            "email": data.email,
+            "role": data.role,
+            "status": data.status
+        };
+
+        // Handle password only if provided, and only for creation/reset on edit
+        if (data.password && data.password.length >= 12) {
+             payload.password = data.password;
+        } else if (!isEditing) {
+            // Password required for creation
+            alert("Password is required and must be at least 12 characters long for new users.");
+            return;
+        }
+
+        // Clean up payload for update
+        if (isEditing) {
+            delete payload.email; // Email is immutable/read-only on update
+            delete payload.name; // Name is immutable/read-only on update
+            if (!payload.password) {
+                 // Do not send password field if it was left blank during edit
+                 delete payload.password;
+            }
+        } else {
+            delete payload.user_id; // Remove ID for creation
+        }
+
+
+        try {
+            document.getElementById('save-user-btn').textContent = isEditing ? 'Updating...' : 'Saving...';
+            document.getElementById('save-user-btn').disabled = true;
+
+            const response = await fetch(API_URL_USERS, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert(`User ${isEditing ? 'updated' : 'added'} successfully!`);
+                closeModal();
+                loadUsers();
+            } else {
+                const responseData = await response.json();
+                const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
+                alert(`Failed to ${isEditing ? 'update' : 'add'} User: ${errorMsg}`);
+            }
+
+        } catch (error) {
+            console.error(`Error ${isEditing ? 'updating' : 'creating'} User:`, error);
+            alert("Network error: Could not connect to API.");
+        } finally {
+            document.getElementById('save-user-btn').textContent = isEditing ? 'Update User' : 'Save CMS User';
+            document.getElementById('save-user-btn').disabled = false;
+        }
+    });
+
+    // Expose functions globally so they can be called by inline onclick attributes
+    window.editUser = editUser;
+    window.deactivateUser = deactivateUser;
+    window.toggleMenu = toggleMenu; // Mobile menu
+
+</script>
 </body>
 
 </html>

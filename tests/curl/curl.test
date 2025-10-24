@@ -5,24 +5,14 @@ TSI DPDP CMS - v0.1
 curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\reset_password.json http://localhost:8080/api/v1/admin/user
 # Login
 curl -X POST -H "Content-Type: application/json" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\login.json http://localhost:8080/api/v1/admin/user
-# List Roles
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_roles.json http://localhost:8080/api/v1/admin/user
-# Create Role
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_role.json http://localhost:8080/api/v1/admin/user
-# Get Role
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_role.json http://localhost:8080/api/v1/admin/user
-# Update Role
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_role.json http://localhost:8080/api/v1/admin/user
-# Delete Role
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\delete_role.json http://localhost:8080/api/v1/admin/user
 # List Users
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\list_users.json http://localhost:8080/api/v1/admin/user
 # Get User
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\get_user.json http://localhost:8080/api/v1/admin/user
 # Create User
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_user.json http://localhost:8080/api/v1/admin/user
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQURNSU4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYxMjg4Njk3LCJleHAiOjE3NjIxNTI2OTd9.0XDZ2P2qKJpZOWVrZbqU-dgr8i8W0SxRy_ukXHEp9dk" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\create_user.json http://localhost:8080/api/v1/admin/user
 # Update User
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_user.json http://localhost:8080/api/v1/admin/user
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQURNSU4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzYxMjg5NzIxLCJleHAiOjE3NjIxNTM3MjF9.wYwdOjT377-df08cufzH0GLCP9Csjie8J5XDVEs7BHg" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\update_user.json http://localhost:8080/api/v1/admin/user
 # Delete User
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQWRtaW4iLCJuYW1lIjoic3VwZXJhZG1pbiIsInN1YiI6ImFkbWluQHRzaWNvb3Aub3JnIiwiaWF0IjoxNzU5NTk1MTU2LCJleHAiOjE3NjA0NTkxNTZ9.VJJ7TK_qCZtAZxrxXQnzjVRFrbswe_4SOqYAo7efx0c" -d @C:\work\tsi-dpdp-cms\tests\curl\admin\delete_user.json http://localhost:8080/api/v1/admin/user
 
