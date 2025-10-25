@@ -210,11 +210,10 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead>
         <tr class="table-header">
-          <th class="px-4 py-3 text-sm">Full Name</th>
+          <th class="px-4 py-3 text-sm">Name</th>
           <th class="px-4 py-3 text-sm">Email</th>
           <th class="px-4 py-3 text-sm">Role</th>
           <th class="px-4 py-3 text-sm">Status</th>
-          <th class="px-4 py-3 text-sm">MFA Status</th>
           <th class="px-4 py-3 text-sm">Actions</th>
         </tr>
         </thead>
@@ -376,18 +375,17 @@
         const showDeactivate = user.status === 'ACTIVE' || user.status === 'PENDING_MFA';
 
         const actionsHtml = `
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editUser('${user.id}')">Edit</button>
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editUser('${user.user_id}')">Edit</button>
             ${showDeactivate ?
-                `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateUser('${user.id}')">Deactivate</button>`
+                `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateUser('${user.user_id}')">Deactivate</button>`
                 : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
         `;
 
         row.innerHTML = `
-            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${user.name || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${user.username || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${user.email || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${user.role || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(user.status)}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm">${createMfaBadge(user.mfa_status || 'N/A')}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">
                 ${actionsHtml}
             </td>
@@ -467,7 +465,7 @@
 
             const responseData = await response.json();
 
-            if (responseData.id) {
+            if (responseData.user_id) {
                 return responseData;
             } else {
                 throw new Error(responseData.message || 'User details not found.');
@@ -484,10 +482,10 @@
         const user = await fetchUserDetails(id);
 
         if (user) {
-            userIdHidden.value = user.id;
+            userIdHidden.value = user.user_id;
             userFullNameInput.value = user.name || '';
             userEmailInput.value = user.email || '';
-            userRoleSelect.value = user.role || 'OPERATOR';
+            userRoleSelect.value = user.role_name || 'OPERATOR';
             userStatusSelect.value = user.status || 'ACTIVE';
 
             // Password field is cleared and has placeholder logic in showModal
@@ -579,7 +577,7 @@
         const payload = {
             "_func": func,
             "user_id": data.userId,
-            "name": data.name,
+            "username": data.name,
             "email": data.email,
             "role": data.role,
             "status": data.status
@@ -626,7 +624,7 @@
                 loadUsers();
             } else {
                 const responseData = await response.json();
-                const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
+                const errorMsg = responseData.message;
                 alert(`Failed to ${isEditing ? 'update' : 'add'} User: ${errorMsg}`);
             }
 

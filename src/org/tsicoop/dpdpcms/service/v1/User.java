@@ -450,7 +450,7 @@ public class User implements Action {
      * @return null if valid, otherwise an error message.
      */
     private String validateUserInput(String username, String email, String password, String confirmPassword) {
-        if (username != null && (username.length() < 3 || username.length() > 50)) {
+        if (username != null && (username.length() < 1 || username.length() > 50)) {
             return "Username must be between 3 and 50 characters.";
         }
         if (email != null && !EMAIL_PATTERN.matcher(email).matches()) {
@@ -525,20 +525,20 @@ public class User implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT u.id, u.username, u.email, u.status, u.last_login_at, u.created_at, u.last_updated_at, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE 1=1");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, username, email, status, last_login_at, created_at, last_updated_at, role FROM users WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
-            sqlBuilder.append(" AND u.status = ?");
+            sqlBuilder.append(" AND status = ?");
             params.add(statusFilter);
         }
         if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (u.username ILIKE ? OR u.email ILIKE ?)");
+            sqlBuilder.append(" AND (username LIKE ? OR email LIKE ?)");
             params.add("%" + search + "%");
             params.add("%" + search + "%");
         }
 
-        sqlBuilder.append(" ORDER BY u.created_at DESC LIMIT ? OFFSET ?");
+        sqlBuilder.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
 
@@ -556,7 +556,7 @@ public class User implements Action {
                 user.put("username", rs.getString("username"));
                 user.put("email", rs.getString("email"));
                 user.put("status", rs.getString("status"));
-                user.put("role", rs.getString("role_name")); // Single role name
+                user.put("role", rs.getString("role")); // Single role name
                 user.put("last_login_at", rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toInstant().toString() : null);
                 user.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 user.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString()); // Corrected column name
