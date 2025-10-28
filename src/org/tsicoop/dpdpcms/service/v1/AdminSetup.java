@@ -89,40 +89,23 @@ public class AdminSetup implements Action {
 
         try {
             conn = pool.getConnection();
-            conn.setAutoCommit(false); // Start transaction
 
             // 1. CHECK FOR EXISTING ADMIN USERS
             if (isAdminUserExists(conn)) {
-                conn.rollback();
-                return new JSONObject() {{ put("error", "System is already configured. Cannot run initial setup."); }};
+                  return new JSONObject() {{ put("error", "System is already configured. Cannot run initial setup."); }};
             }
 
-            // 2. GET ADMIN ROLE ID (Assumes role table is populated)
-            UUID adminRoleId = getRoleIdByName(conn, SUPER_ADMIN_ROLE_NAME);
-            if (adminRoleId == null) {
-                conn.rollback();
-                return new JSONObject() {{ put("error", "Required ADMIN role not found. System tables incomplete."); }};
-            }
-
-            // 3. HASH PASSWORD
+           // 2. HASH PASSWORD
             String hashedPassword = hashPassword(password);
 
-            // 4. CREATE USER AND ASSIGN ROLE (in a single transaction)
+            // 3. CREATE USER AND ASSIGN ROLE (in a single transaction)
             UUID newUserId = createUser(conn, email, name, hashedPassword);
-            assignRoleToUser(conn, newUserId, adminRoleId);
-
-            conn.commit(); // Commit transaction
-
-            // *Optional: Log successful setup to AuditLogService (if available)*
-            // auditLogService.logEvent(newUserId, "SYSTEM_SETUP_COMPLETE", "System", null, "Initial Super Admin created.", "SUCCESS", "AdminSetupService");
 
             return new JSONObject() {{ put("user_id", newUserId.toString()); put("role", SUPER_ADMIN_ROLE_NAME); }};
 
         } catch (SQLException e) {
-            if (conn != null) conn.rollback();
             throw e; // Re-throw SQL exception for generic handler
         } finally {
-            if (conn != null) conn.setAutoCommit(true);
             pool.cleanup(null, null, conn);
         }
     }
@@ -131,12 +114,9 @@ public class AdminSetup implements Action {
      * Checks if any user is currently assigned the Super Admin role.
      */
     private boolean isAdminUserExists(Connection conn) throws SQLException {
-        String sql = "SELECT COUNT(ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = ? AND u.deleted_at IS NULL";
-        // Note: Joining user table 'u' is needed to ensure the user is not soft-deleted. Assuming the join works.
-        // Simplified query assuming user_roles is definitive:
-        String simplifiedSql = "SELECT COUNT(ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = ?";
+        String sql = "SELECT COUNT(*) FROM users where role=?";
 
-        try (PreparedStatement pstmt = conn.prepareStatement(simplifiedSql)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, SUPER_ADMIN_ROLE_NAME);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -148,32 +128,17 @@ public class AdminSetup implements Action {
     }
 
     /**
-     * Retrieves the ID of a role by its name.
-     */
-    private UUID getRoleIdByName(Connection conn, String roleName) throws SQLException {
-        String sql = "SELECT id FROM roles WHERE name = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, roleName);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return (UUID) rs.getObject(1);
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
      * Inserts the new user into the 'users' table.
      */
     private UUID createUser(Connection conn, String email, String name, String hashedPassword) throws SQLException {
-        String sql = "INSERT INTO users (id, username, email, name, password_hash, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, 'ACTIVE', NOW(), NOW()) RETURNING id";
+        String sql = "INSERT INTO users (id, username, email, name, password_hash, status, created_at, last_updated_at,role) VALUES (uuid_generate_v4(), ?, ?, ?, ?, 'ACTIVE', NOW(), NOW(),?) RETURNING id";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, email); // Use email as username for initial setup
             pstmt.setString(2, email);
             pstmt.setString(3, name);
             pstmt.setString(4, hashedPassword);
+            pstmt.setString(5, SUPER_ADMIN_ROLE_NAME);
 
             if (pstmt.executeUpdate() == 0) {
                 throw new SQLException("Creating user failed, no rows affected.");
@@ -185,26 +150,6 @@ public class AdminSetup implements Action {
                 } else {
                     throw new SQLException("Creating user failed, no ID obtained.");
                 }
-            }
-        }
-    }
-
-    /**
-     * Assigns the given role ID to the new user.
-     */
-    private void assignRoleToUser(Connection conn, UUID userId, UUID roleId) throws SQLException {
-        String sql = "INSERT INTO user_roles (user_id, role_id, assigned_at, assigned_by_user_id) VALUES (?, ?, NOW(), ?)";
-
-        // In initial setup, assigned_by_user_id is the new user themselves or a placeholder
-        UUID systemSetupUserId = userId; // Assign the role by the user being created (self-assignment in setup)
-
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setObject(1, userId);
-            pstmt.setObject(2, roleId);
-            pstmt.setObject(3, systemSetupUserId);
-
-            if (pstmt.executeUpdate() == 0) {
-                throw new SQLException("Assigning role failed, no rows affected.");
             }
         }
     }

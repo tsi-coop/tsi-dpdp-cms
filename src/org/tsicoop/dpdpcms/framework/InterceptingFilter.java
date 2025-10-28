@@ -18,6 +18,8 @@ public class InterceptingFilter implements Filter {
     private static final String URL_DELIMITER = "/";
     private static final String ADMIN_URI_PATH = "admin";
     private static final String CLIENT_URI_PATH = "client";
+
+    private static final String BOOTSTRAP_URI_PATH = "bootstrap";
     private static final String API_PREFIX = "/api/v1/"; // Assuming API paths are /api/v1/user, /api/v1/policy etc.
 
     // Whitelist of _func values allowed for client API calls
@@ -95,6 +97,11 @@ public class InterceptingFilter implements Filter {
                 }
             } else if (CLIENT_URI_PATH.equalsIgnoreCase(pathSegments[0])) {
                 apiCategory = CLIENT_URI_PATH;
+                if (pathSegments.length >= 2) {
+                    serviceName = pathSegments[1]; // e.g., /api/v1/client/consent -> serviceName "consent"
+                }
+            } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(pathSegments[0])) {
+                apiCategory = BOOTSTRAP_URI_PATH;
                 if (pathSegments.length >= 2) {
                     serviceName = pathSegments[1]; // e.g., /api/v1/client/consent -> serviceName "consent"
                 }
@@ -176,6 +183,8 @@ public class InterceptingFilter implements Filter {
             } else if (CLIENT_URI_PATH.equalsIgnoreCase(apiCategory)) {
                 authenticated = InputProcessor.processClientHeader(req, res);
                 //authenticated = true; // go easy for now
+            } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(apiCategory)) {
+                authenticated = true; // go easy for now
             } else {
                 // If no category specified, or unknown category, deny by default
                 errorMessage = "API category not specified or recognized. Access denied.";

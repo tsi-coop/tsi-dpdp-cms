@@ -1,0 +1,40 @@
+services:
+  # PostgreSQL Database Service
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: tsi_dpdp_cms_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Java Jetty Web Application Service
+  jetty_app:
+    build: . # Build the image from the Dockerfile in the current directory
+    container_name: tsi_dpdp_cms_jetty
+    ports:
+      - "8080:8080" # Map host port 8080 to container port 8080 (Jetty's default)
+    environment:
+      # Database
+      POSTGRES_HOST: "jdbc:postgresql://postgres_db:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWD: ${POSTGRES_PASSWD}
+      TSI_DPDP_CMS_ENV: ${TSI_DPDP_CMS_ENV}
+    # START FIX: depends_on key is now correctly aligned with environment, ports, etc.
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    # END FIX
+volumes:
+  postgres_data:
