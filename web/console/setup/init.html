@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Initial System Setup</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../env.js"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .hover\:bg-primary-dark:hover { background-color: #004d4a; }
+
+        .card-login {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 90%;
+            max-width: 450px;
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen p-4">
+
+<div class="card-login">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold primary-text">System Setup</h1>
+        <p class="text-sm text-gray-500 mt-2">
+            Create the initial Super Administrator account.
+        </p>
+    </div>
+
+    <form id="setup-form" class="space-y-4">
+
+        <p id="setup-message" class="text-sm font-medium hidden" role="alert"></p>
+
+        <!-- Email -->
+        <div>
+            <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+            <input type="email" id="email" name="email" required placeholder="admin@example.com"
+                   class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <!-- Full Name -->
+        <div>
+            <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
+            <input type="text" id="name" name="name" required placeholder="System Administrator"
+                   class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <!-- Password -->
+        <div>
+            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+            <input type="password" id="password" name="password" required minlength="12" placeholder="Minimum 12 Characters"
+                   class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <p class="mt-1 text-xs text-gray-500">
+                Use a unique, strong password (min 12 characters).
+            </p>
+        </div>
+
+        <!-- Password Confirmation -->
+        <div>
+            <label for="password-confirm" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+            <input type="password" id="password-confirm" name="password_confirm" required minlength="12" placeholder="Repeat Password"
+                   class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="setup-btn"
+                class="w-full primary-bg text-white px-4 py-2 mt-4 rounded-md font-semibold hover:bg-primary-dark transition duration-150">
+            Finalize Setup & Create Admin
+        </button>
+    </form>
+
+    <div class="mt-6 text-center">
+        <a href="admin_login.html" class="text-sm primary-text hover:underline" id="login-link" style="display:none;">
+            Go to Login Page
+        </a>
+    </div>
+</div>
+
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_SETUP_URL = 'http://localhost:8080/api/v1/admin/setup';
+            const LOGIN_PAGE_URL = '../admin/index.html';
+
+            const form = document.getElementById('setup-form');
+            const messageArea = document.getElementById('setup-message');
+            const loginLink = document.getElementById('login-link');
+            const setupBtn = document.getElementById('setup-btn');
+
+            const emailInput = document.getElementById('email');
+            const nameInput = document.getElementById('name');
+            const passwordInput = document.getElementById('password');
+            const passwordConfirmInput = document.getElementById('password-confirm');
+
+            function displayMessage(text, isError) {
+                messageArea.textContent = text;
+                messageArea.classList.remove('hidden', 'text-red-500', 'text-green-500');
+                messageArea.classList.add(isError ? 'text-red-500' : 'text-green-500');
+            }
+
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                // Reset state
+                messageArea.classList.add('hidden');
+                setupBtn.disabled = true;
+                setupBtn.textContent = 'Processing Setup...';
+                loginLink.style.display = 'none';
+
+                const email = emailInput.value.trim();
+                const name = nameInput.value.trim();
+                const password = passwordInput.value;
+                const passwordConfirm = passwordConfirmInput.value;
+
+                // Client-side Validation Checks
+                if (password.length < 12) {
+                    displayMessage("Error: Password must be at least 12 characters long.", true);
+                    setupBtn.disabled = false;
+                    setupBtn.textContent = 'Finalize Setup & Create Admin';
+                    return;
+                }
+                if (password !== passwordConfirm) {
+                    displayMessage("Error: Passwords do not match.", true);
+                    setupBtn.disabled = false;
+                    setupBtn.textContent = 'Finalize Setup & Create Admin';
+                    return;
+                }
+
+                try {
+                    // 1. Prepare Payload
+                    const payload = {
+                        "_func": "initial_setup",
+                        "email": email,
+                        "name": name,
+                        "password": password
+                    };
+
+                    // 2. Perform API Setup Call
+                    const response = await fetch(API_SETUP_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    // We must always read the response body to handle API-level errors
+                    const responseData = await response.json();
+
+                    if (response.ok && responseData.success === true) {
+                        // --- SUCCESS ---
+                        displayMessage("Setup complete! Super Administrator account created successfully.", false);
+                        setupBtn.textContent = 'Setup Complete';
+
+                        // Show login link after successful setup
+                        loginLink.style.display = 'block';
+
+                    } else {
+                        // --- FAILURE ---
+                        let errorText = "Setup failed. This usually means the system is already configured.";
+                        if (responseData.error && responseData.error.message) {
+                            errorText = responseData.error.message;
+                        } else if (response.status !== 200) {
+                            errorText = `Setup failed (Status: ${response.status}). The server likely rejected the request.`;
+                        }
+
+                        displayMessage(errorText, true);
+                        setupBtn.textContent = 'Setup Failed - Retry';
+                    }
+
+                } catch (error) {
+                    // Handle network error
+                    displayMessage('Cannot connect to the setup server. Check if the backend is running.', true);
+                    setupBtn.textContent = 'Connection Error - Retry';
+                } finally {
+                    setupBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+
+</body>
+
+</html>

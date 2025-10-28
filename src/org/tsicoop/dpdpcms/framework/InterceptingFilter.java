@@ -221,7 +221,7 @@ public class InterceptingFilter implements Filter {
         System.out.println("Loaded TSI Schema Validator");
         System.out.println("TSI DPDP CMS Service started in " + System.getenv("TSI_DPDP_CMS_ENV") + " environment");
 
-        // Initialize JWT and API Key validators here if they need global setup
+        // Initialize JWT and API Key validators here if they need global 5
         // JwtValidator.init(SystemConfig.getAppConfig().getProperty("jwt.secret"));
         // ApiKeyValidator.init(SystemConfig.getPoolDB()); // Or pass connection pool
     }

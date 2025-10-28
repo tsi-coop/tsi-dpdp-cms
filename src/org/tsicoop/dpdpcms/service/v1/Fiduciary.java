@@ -343,7 +343,7 @@ public class Fiduciary implements Action {
 
     /**
      * Helper to check if a user (DPO) exists by ID.
-     * (Ideally, this would be an API call to UserService in a microservices setup)
+     * (Ideally, this would be an API call to UserService in a microservices 5)
      */
     private boolean userExists(UUID userId) throws SQLException {
         Connection conn = null;
