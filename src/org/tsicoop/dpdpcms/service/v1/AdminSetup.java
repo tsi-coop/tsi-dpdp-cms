@@ -1,9 +1,6 @@
 package org.tsicoop.dpdpcms.service.v1;
 
-import org.tsicoop.dpdpcms.framework.Action;
-import org.tsicoop.dpdpcms.framework.InputProcessor;
-import org.tsicoop.dpdpcms.framework.OutputProcessor;
-import org.tsicoop.dpdpcms.framework.PoolDB;
+import org.tsicoop.dpdpcms.framework.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONObject;
@@ -23,10 +20,6 @@ public class AdminSetup implements Action {
 
     // --- Mock Hashing Utility ---
     // In a production environment, use a secure library like Spring Security's BCrypt
-    private String hashPassword(String password) {
-        // Placeholder: Use a mock hash for demonstration purposes
-        return "MOCK_HASH_" + password.substring(0, Math.min(password.length(), 8)) + "_" + UUID.randomUUID().toString().substring(0, 8);
-    }
 
     @Override
     public void post(HttpServletRequest req, HttpServletResponse res) {
@@ -96,7 +89,7 @@ public class AdminSetup implements Action {
             }
 
            // 2. HASH PASSWORD
-            String hashedPassword = hashPassword(password);
+            String hashedPassword = new PasswordHasher().hashPassword(password);
 
             // 3. CREATE USER AND ASSIGN ROLE (in a single transaction)
             UUID newUserId = createUser(conn, email, name, hashedPassword);
@@ -131,14 +124,13 @@ public class AdminSetup implements Action {
      * Inserts the new user into the 'users' table.
      */
     private UUID createUser(Connection conn, String email, String name, String hashedPassword) throws SQLException {
-        String sql = "INSERT INTO users (id, username, email, name, password_hash, status, created_at, last_updated_at,role) VALUES (uuid_generate_v4(), ?, ?, ?, ?, 'ACTIVE', NOW(), NOW(),?) RETURNING id";
+        String sql = "INSERT INTO users (id, username, email, password_hash, status, created_at, last_updated_at,role) VALUES (uuid_generate_v4(), ?, ?, ?, 'ACTIVE', NOW(), NOW(),?) RETURNING id";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            pstmt.setString(1, email); // Use email as username for initial setup
+            pstmt.setString(1, name); // Use email as username for initial setup
             pstmt.setString(2, email);
-            pstmt.setString(3, name);
-            pstmt.setString(4, hashedPassword);
-            pstmt.setString(5, SUPER_ADMIN_ROLE_NAME);
+            pstmt.setString(3, hashedPassword);
+            pstmt.setString(4, SUPER_ADMIN_ROLE_NAME);
 
             if (pstmt.executeUpdate() == 0) {
                 throw new SQLException("Creating user failed, no rows affected.");
