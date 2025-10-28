@@ -144,7 +144,7 @@
     </a> -->
     <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
       <span>Admin User</span>
-      <span class="text-xs font-semibold text-red-500">Logout</span>
+      <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
     </div>
   </div>
 </div>
@@ -332,6 +332,11 @@
                 auditActivityBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600">Failed to load recent audit logs.</td></tr>`;
                 auditErrorMessageP.classList.remove('hidden');
             }
+        }
+
+        function handleLogout() {
+          localStorage.removeItem('authToken');
+          window.location.href = "../index.html";
         }
 
 
