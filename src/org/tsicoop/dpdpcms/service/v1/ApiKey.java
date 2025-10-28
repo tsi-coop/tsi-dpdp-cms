@@ -127,12 +127,7 @@ public class ApiKey implements Action {
                     String ownerTypeFilter = (String) input.get("owner_type");
                     String search = (String) input.get("search");
 
-                    if (fiduciaryId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required to list keys.", req.getRequestURI());
-                        return;
-                    }
-
-                    outputArray = listApiKeysFromDb(fiduciaryId, statusFilter, ownerTypeFilter, search);
+                    outputArray = listApiKeysFromDb("", statusFilter, ownerTypeFilter, search);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -370,7 +365,7 @@ public class ApiKey implements Action {
     /**
      * Retrieves a list of API keys for a specific Fiduciary, with filtering.
      */
-    private JSONArray listApiKeysFromDb(UUID fiduciaryId, String statusFilter, String ownerTypeFilter, String search) throws SQLException {
+    private JSONArray listApiKeysFromDb(String fiduciaryId, String statusFilter, String ownerTypeFilter, String search) throws SQLException {
         JSONArray keysArray = new JSONArray();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -378,10 +373,13 @@ public class ApiKey implements Action {
         PoolDB pool = new PoolDB();
 
         // Select metadata columns (excluding the hash)
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, processor_id, owner_type, description, status, permissions, created_at, expires_at, last_used_at FROM api_keys WHERE fiduciary_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, processor_id, owner_type, description, status, permissions, created_at, expires_at, last_used_at FROM api_keys WHERE status is not null");
         List<Object> params = new ArrayList<>();
-        params.add(fiduciaryId);
 
+        if (fiduciaryId != null && !fiduciaryId.isEmpty()) {
+            sqlBuilder.append(" AND fiduciary_id = ?");
+            params.add(fiduciaryId);
+        }
         if (statusFilter != null && !statusFilter.isEmpty()) {
             sqlBuilder.append(" AND status = ?");
             params.add(statusFilter.toUpperCase());
@@ -391,7 +389,7 @@ public class ApiKey implements Action {
             params.add(ownerTypeFilter.toUpperCase());
         }
         if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (description ILIKE ? OR owner_type ILIKE ?)");
+            sqlBuilder.append(" AND (description LIKE ? OR owner_type LIKE ?)");
             params.add("%" + search + "%");
             params.add("%" + search + "%");
         }
