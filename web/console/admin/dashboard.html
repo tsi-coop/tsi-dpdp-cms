@@ -143,7 +143,7 @@
       System Config
     </a> -->
     <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
-      <span>Admin User</span>
+      <span id="username">Admin User</span>
       <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
     </div>
   </div>
@@ -220,6 +220,7 @@
         // --- Configuration ---
         const API_URL_DASHBOARD = 'http://localhost:8080/api/v1/admin/admindash';
         const AUTH_TOKEN = localStorage.getItem('authToken');
+        const USER_NAME = localStorage.getItem('username');
 
         // --- DOM Element References ---
         let sidebar, menuToggle, backdrop;
@@ -336,6 +337,7 @@
 
         function handleLogout() {
           localStorage.removeItem('authToken');
+          localStorage.removeItem('username');
           window.location.href = "../index.html";
         }
 
@@ -358,6 +360,8 @@
             auditActivityBody = document.getElementById('audit-activity-body');
             auditErrorMessageP = document.getElementById('audit-error-message');
 
+            // User name
+            document.getElementById('username').textContent = USER_NAME;
 
             // --- Event Listener Attachments ---
             menuToggle.addEventListener('click', toggleMenu);

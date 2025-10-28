@@ -181,7 +181,7 @@
       System Config
     </a>-->
     <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
-      <span>Admin User</span>
+      <span id="username">Admin User</span>
       <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
     </div>
   </div>
@@ -297,6 +297,9 @@
     // --- Configuration ---
     const API_URL_USERS = ENV_SERVER_URL+'/api/v1/admin/user';
     const AUTH_TOKEN = localStorage.getItem('authToken');
+    const USER_NAME = localStorage.getItem('username');
+    // set user name
+    document.getElementById('username').textContent = USER_NAME;
 
     // --- Global DOM Element Variables ---
     let sidebar, menuToggle, backdrop, userModalOverlay, addUserBtn, closeModalBtn, userForm, tableBody, countSpan, errorMessageP, searchInput;
@@ -524,6 +527,7 @@
 
     function handleLogout() {
         localStorage.removeItem('authToken');
+        localStorage.removeItem('username');
         window.location.href = "../index.html";
     }
 

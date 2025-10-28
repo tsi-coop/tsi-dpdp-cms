@@ -196,6 +196,7 @@ async function handleLogin(event) {
 
                 // CRITICAL STEP: Store Authentication Token (e.g., JWT) here
                 localStorage.setItem('authToken', responseData.token);
+                localStorage.setItem('username', responseData.username);
 
                 // Redirect the user to the admin dashboard
                 messageArea.textContent = "Login successful. Redirecting...";
