@@ -7,6 +7,7 @@
   <title>TSI DPDP CMS - Admin Dashboard</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../env.js"></script>
   <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -36,17 +37,16 @@
             background-color: #f8fafc;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
             padding-top: 20px;
-            /* Make sidebar fixed and visible only on large screens */
             position: fixed;
             height: 100vh;
             overflow-y: auto;
             z-index: 50;
             transition: transform 0.3s ease-in-out;
-            transform: translateX(-250px); /* Hidden by default on mobile */
+            transform: translateX(-250px);
         }
 
         .sidebar.open {
-            transform: translateX(0); /* Visible state for mobile */
+            transform: translateX(0);
         }
 
         .nav-link {
@@ -55,12 +55,12 @@
             padding: 10px 20px;
             margin: 5px 0;
             border-radius: 6px;
-            color: #4a5568; /* Gray-700 */
+            color: #4a5568;
             transition: background-color 0.2s ease, color 0.2s ease;
         }
 
         .nav-link:hover, .nav-link.active {
-            background-color: #e5f5f4; /* Light teal background */
+            background-color: #e5f5f4;
             color: var(--tsi-primary);
             font-weight: 600;
         }
@@ -71,25 +71,6 @@
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
             padding: 20px;
             border: 1px solid #e2e8f0;
-        }
-
-        .metric-value {
-            font-size: 2.25rem;
-            line-height: 2.5rem;
-            font-weight: 700;
-        }
-
-        .alert-critical {
-            background-color: #fee2e2; /* Red-100 */
-            border-color: #f87171; /* Red-400 */
-            color: #b91c1c; /* Red-700 */
-        }
-
-        .table-header {
-            background-color: #f1f5f9; /* Gray-100 */
-            font-weight: 600;
-            color: #4a5568;
-            text-align: left;
         }
 
         /* --- Mobile Toggle Button --- */
@@ -107,17 +88,16 @@
 
         @media (min-width: 1024px) {
             .sidebar {
-                transform: translateX(0); /* Always visible on desktop */
+                transform: translateX(0);
             }
             .mobile-header {
                 display: none;
             }
             body {
-                padding-left: 250px; /* Offset main content by sidebar width */
+                padding-left: 250px;
             }
         }
     </style>
-  <!-- Icons (Lucide) - REMOVED ICON SCRIPT BLOCK -->
 </head>
 
 <body class="flex lg:p-0">
@@ -127,8 +107,8 @@
   <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
   </button>
-  <span class="text-xl font-bold primary-text">CMS Dashboard</span>
-  <div class="text-sm text-gray-500">Admin User</div>
+  <span class="text-xl font-bold primary-text">Admin</span>
+  <div class="text-sm text-gray-500">CMS Admin</div>
 </div>
 
 <!-- Sidebar Navigation -->
@@ -150,18 +130,18 @@
       <a href="users.html" class="nav-link">
         CMS Users
       </a>
-      <a href="lifecycle.html" class="nav-link">
-        Lifecycle
-      </a>
+      <!-- <a href="lifecycle_management.html" class="nav-link">
+        System Purge
+      </a> -->
       <a href="apikeys.html" class="nav-link">
         API Keys
       </a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
-    <a href="config.html" class="nav-link">
+    <!-- <a href="system_config.html" class="nav-link">
       System Config
-    </a>
+    </a> -->
     <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
       <span>Admin User</span>
       <span class="text-xs font-semibold text-red-500">Logout</span>
@@ -174,149 +154,222 @@
 
 <!-- Main Content Area -->
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
-  <h1 class="text-3xl font-semibold text-gray-800 mb-6 hidden lg:block">System Administration Dashboard</h1>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-xl font-semibold text-gray-800">Admin Dashboard</h1>
+  </div>
 
-  <!-- 1. CORE OPERATIONAL METRICS (Simplified) -->
-  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Widget 1: Total Fiduciaries -->
-    <div class="card col-span-1 md:col-span-1">
-      <h3 class="text-lg font-semibold mb-2 accent-text">
-        Total Fiduciaries
-      </h3>
-      <p class="metric-value text-gray-800">12</p>
-      <p class="text-sm text-gray-500 mt-2">10 Active, 2 Pending Validation.</p>
+  <!-- Metric Widgets Section -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+    <!-- Widget 1: Active Fiduciaries -->
+    <div id="metric-fiduciaries" class="card p-5 border-l-4 border-green-500 hover:shadow-md transition duration-200 cursor-pointer">
+      <p class="text-sm font-medium text-gray-500">Active Fiduciaries</p>
+      <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-fiduciaries-value">--</p>
+      <p class="text-xs text-gray-400 mt-2">Entities currently collecting consent.</p>
     </div>
 
     <!-- Widget 2: Data Processors -->
-    <div class="card">
-      <h3 class="text-lg font-semibold mb-2 accent-text">Active Data Processors</h3>
-      <p class="metric-value text-gray-800">25</p>
-      <p class="text-sm text-gray-500 mt-2">Configured across all Fiduciaries.</p>
+    <div id="metric-processors" class="card p-5 border-l-4 border-indigo-500 hover:shadow-md transition duration-200 cursor-pointer">
+      <p class="text-sm font-medium text-gray-500">Active Data Processors</p>
+      <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-processors-value">--</p>
+      <p class="text-xs text-gray-400 mt-2">Third-parties integrated for processing.</p>
     </div>
 
-    <!-- Widget 3: CMS Users -->
-    <div class="card">
-      <h3 class="text-lg font-semibold mb-2 accent-text">CMS Internal Users</h3>
-      <p class="metric-value text-gray-800">18</p>
-      <p class="text-sm text-gray-500 mt-2">Total registered user accounts.</p>
+    <!-- Widget 3: Pending Grievances -->
+    <div id="metric-grievances" class="card p-5 border-l-4 border-yellow-500 hover:shadow-md transition duration-200 cursor-pointer">
+      <p class="text-sm font-medium text-gray-500">Pending Grievances</p>
+      <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-grievances-value">--</p>
+      <p class="text-xs text-gray-400 mt-2">DP requests needing resolution (SLA check).</p>
     </div>
 
-    <!-- Widget 4: Critical Security Alerts -->
-    <div class="card alert-critical">
-      <h3 class="text-lg font-semibold mb-2 text-red-700">
-        Key Management Alerts
-      </h3>
-      <p class="metric-value text-red-700">1</p>
-      <p class="text-sm mt-2">1 API Key expired 2 days ago.</p>
+    <!-- Widget 4: Purge Compliance Health -->
+    <div id="metric-purge" class="card p-5 border-l-4 border-red-500 hover:shadow-md transition duration-200 cursor-pointer">
+      <p class="text-sm font-medium text-gray-500">Purge Operations Failed</p>
+      <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-purge-value">--</p>
+      <p class="text-xs text-gray-400 mt-2">Critical purge failures (Check Audit Log).</p>
     </div>
   </div>
 
-  <!-- 2. PENDING ACTIONS & VALIDATION (Simplified) -->
+  <!-- Recent Activity / Audit Log Snapshot -->
   <div class="card mb-8">
-    <h2 class="text-xl font-semibold text-gray-700 mb-4">Pending System Actions</h2>
-
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Recent Audit Activity</h2>
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead>
         <tr class="table-header">
-          <th class="px-4 py-2 text-sm">Entity</th>
-          <th class="px-4 py-2 text-sm">Target ID</th>
-          <th class="px-4 py-2 text-sm">Action Required</th>
-          <th class="px-4 py-2 text-sm">Status</th>
-          <th class="px-4 py-2 text-sm">Action</th>
+          <th class="px-4 py-3 text-sm">Timestamp</th>
+          <th class="px-4 py-3 text-sm">Actor</th>
+          <th class="px-4 py-3 text-sm">Action Type</th>
+          <th class="px-4 py-3 text-sm">Entity ID</th>
+          <th class="px-4 py-3 text-sm">Status</th>
         </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-        <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">Fiduciary</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">Alpha Solutions</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-blue-600 font-medium">Domain Validation</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm bg-yellow-100 text-yellow-800 rounded-full">PENDING ACTION</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium">Validate</button>
-          </td>
-        </tr>
-        <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">API Key</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">Key ID: 1A2B-3C4D</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600 font-medium">Revocation Review</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm bg-red-100 text-red-800 rounded-full">EXPIRED</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm">
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium">Manage Key</button>
-          </td>
-        </tr>
+        <tbody id="audit-activity-body" class="bg-white divide-y divide-gray-200">
+        <tr><td colspan="5" class="p-4 text-center text-gray-500">Loading recent activity...</td></tr>
         </tbody>
       </table>
     </div>
-  </div>
-
-  <!-- 3. CONFIGURATION AND AUDIT SHORTCUTS -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-    <!-- Audit & Purge Snapshot -->
-    <div class="card">
-      <h2 class="text-xl font-semibold text-gray-700 mb-4">Audit & Purge Snapshot</h2>
-      <div class="space-y-3">
-        <p class="text-sm">
-          <span class="font-medium text-gray-700">Audit Log Records (Last 24h):</span> <span class="primary-text">12,500</span>
-        </p>
-        <p class="text-sm">
-          <span class="font-medium text-gray-700">Pending System Purges:</span> <span class="primary-text">43 Scheduled Jobs</span>
-        </p>
-        <p class="text-sm">
-          <span class="font-medium text-gray-700">DPB Service Status:</span> <span class="text-green-600 font-bold">ACTIVE</span>
-        </p>
-      </div>
-      <div class="mt-4 pt-4 border-t">
-        <button class="bg-gray-200 text-gray-700 p-2 rounded-md text-sm hover:bg-gray-300 mr-3">View Full Audit Log</button>
-        <button class="bg-gray-200 text-gray-700 p-2 rounded-md text-sm hover:bg-gray-300">Manage System Purge</button>
-      </div>
-    </div>
-
-    <!-- Configuration Management -->
-    <div class="card">
-      <h2 class="text-xl font-semibold text-gray-700 mb-4">Configuration Management</h2>
-      <div class="space-y-3">
-        <p class="text-sm">
-          <span class="font-medium text-gray-700">Active Policy Versions:</span> <span class="primary-text">3 Unique Policies</span>
-        </p>
-        <p class="text-sm">
-          <span class="font-medium text-gray-700">Default Consent Expiry:</span> <span class="primary-text">365 Days</span>
-        </p>
-        <p class="text-sm">
-          <span class="font-medium text-gray-700">CMS Admins with MFA Enabled:</span> <span class="primary-text">100%</span>
-        </p>
-      </div>
-      <div class="mt-4 pt-4 border-t">
-        <button class="bg-gray-200 text-gray-700 p-2 rounded-md text-sm hover:bg-gray-300 mr-3">Manage Config</button>
-        <button class="bg-gray-200 text-gray-700 p-2 rounded-md text-sm hover:bg-gray-300">Manage API Keys</button>
-      </div>
-    </div>
+    <p id="audit-error-message" class="mt-4 text-sm text-red-600 hidden">
+      Failed to load audit activity.
+    </p>
   </div>
 
 </main>
 
 <script>
-        const sidebar = document.getElementById('sidebar');
-        const menuToggle = document.getElementById('menu-toggle');
-        const backdrop = document.getElementById('sidebar-backdrop');
+        // --- Configuration ---
+        const API_URL_DASHBOARD = 'http://localhost:8080/api/v1/admin/admindash';
+        const AUTH_TOKEN = localStorage.getItem('authToken');
 
+        // --- DOM Element References ---
+        let sidebar, menuToggle, backdrop;
+        let metricFiduciaries, metricProcessors, metricGrievances, metricPurge;
+        let auditActivityBody, auditErrorMessageP;
+
+        // --- Utility Functions ---
         function toggleMenu() {
             sidebar.classList.toggle('open');
             backdrop.classList.toggle('hidden');
         }
 
-        menuToggle.addEventListener('click', toggleMenu);
-        backdrop.addEventListener('click', toggleMenu);
+        // --- Data Loading Functions ---
 
-        // Close menu when a navigation link is clicked on mobile
-        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth < 1024) {
-                    toggleMenu();
+        async function loadDashboardMetrics() {
+            // Initializing with placeholders
+            document.getElementById('metric-fiduciaries-value').textContent = '...';
+            document.getElementById('metric-processors-value').textContent = '...';
+            document.getElementById('metric-grievances-value').textContent = '...';
+            document.getElementById('metric-purge-value').textContent = '...';
+
+            try {
+                const payload = { "_func": "get_admin_metrics" };
+
+                const response = await fetch(API_URL_DASHBOARD, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API returned status ${response.status}`);
                 }
-            });
+
+                const data = await response.json();
+
+                // Assuming successful data structure: { success: true, metrics: { active_fiduciaries: 5, active_processors: 10, pending_grievances: 3, failed_purges: 0 } }
+                if (data.success && data.metrics) {
+                    const metrics = data.metrics;
+                    document.getElementById('metric-fiduciaries-value').textContent = metrics.active_fiduciaries !== undefined ? metrics.active_fiduciaries : 'N/A';
+                    document.getElementById('metric-processors-value').textContent = metrics.active_processors !== undefined ? metrics.active_processors : 'N/A';
+                    document.getElementById('metric-grievances-value').textContent = metrics.pending_grievances !== undefined ? metrics.pending_grievances : 'N/A';
+                    document.getElementById('metric-purge-value').textContent = metrics.failed_purges !== undefined ? metrics.failed_purges : 'N/A';
+                } else {
+                    throw new Error(data.message || 'Metrics data missing.');
+                }
+            } catch (error) {
+                console.error("Error loading dashboard metrics:", error);
+                document.getElementById('metric-fiduciaries-value').textContent = 'FAIL';
+                document.getElementById('metric-processors-value').textContent = 'FAIL';
+                document.getElementById('metric-grievances-value').textContent = 'FAIL';
+                document.getElementById('metric-purge-value').textContent = 'FAIL';
+            }
+        }
+
+        async function loadRecentAuditActivity() {
+            auditActivityBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Fetching recent audit logs...</td></tr>`;
+            auditErrorMessageP.classList.add('hidden');
+
+            try {
+                const payload = {
+                    "_func": "list_recent_audit_logs",
+                    "limit": 10 // Get last 10 activities
+                };
+
+                const response = await fetch(API_URL_DASHBOARD, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API returned status ${response.status}`);
+                }
+
+                const responseData = await response.json();
+                const activities = responseData.data || responseData;
+
+                if (Array.isArray(activities)) {
+                    auditActivityBody.innerHTML = '';
+
+                    if (activities.length === 0) {
+                         auditActivityBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">No recent activity found.</td></tr>`;
+                    } else {
+                        activities.forEach(activity => {
+                            const row = document.createElement('tr');
+                            const statusColor = activity.status === 'SUCCESS' ? 'text-green-600' : 'text-red-600';
+
+                            row.innerHTML = `
+                                <td class="px-4 py-2 text-sm text-gray-600">${new Date(activity.timestamp).toLocaleString()}</td>
+                                <td class="px-4 py-2 text-sm text-gray-600">${activity.actor_user_id || 'SYSTEM'}</td>
+                                <td class="px-4 py-2 text-sm text-gray-900">${activity.action_type || 'N/A'}</td>
+                                <td class="px-4 py-2 text-sm text-gray-600">${activity.entity_type || 'N/A'} (...${(activity.entity_id || '0000').slice(-4)})</td>
+                                <td class="px-4 py-2 text-sm font-medium ${statusColor}">${activity.status || 'FAIL'}</td>
+                            `;
+                            auditActivityBody.appendChild(row);
+                        });
+                    }
+                } else {
+                    throw new Error(responseData.message || 'Audit data missing or malformed.');
+                }
+            } catch (error) {
+                console.error("Error loading audit activity:", error);
+                auditActivityBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600">Failed to load recent audit logs.</td></tr>`;
+                auditErrorMessageP.classList.remove('hidden');
+            }
+        }
+
+
+        // --- Initialization ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Variable Assignments ---
+            sidebar = document.getElementById('sidebar');
+            menuToggle = document.getElementById('menu-toggle');
+            backdrop = document.getElementById('sidebar-backdrop');
+
+            // Metrics
+            metricFiduciaries = document.getElementById('metric-fiduciaries');
+            metricProcessors = document.getElementById('metric-processors');
+            metricGrievances = document.getElementById('metric-grievances');
+            metricPurge = document.getElementById('metric-purge');
+
+            // Audit Section
+            auditActivityBody = document.getElementById('audit-activity-body');
+            auditErrorMessageP = document.getElementById('audit-error-message');
+
+
+            // --- Event Listener Attachments ---
+            menuToggle.addEventListener('click', toggleMenu);
+            backdrop.addEventListener('click', toggleMenu);
+
+            // Add navigation links to metric cards for quick access
+            metricFiduciaries.addEventListener('click', () => window.location.href = 'fiduciaries_management.html');
+            metricProcessors.addEventListener('click', () => window.location.href = 'processors_management.html');
+            // Placeholder: Grievance/Purge dashboard links when ready
+
+            // --- Initialization Calls ---
+            loadDashboardMetrics();
+            loadRecentAuditActivity();
         });
+
+        // Expose functions globally for simplicity (used by inline JS and external code)
+        window.toggleMenu = toggleMenu;
 
     </script>
 
