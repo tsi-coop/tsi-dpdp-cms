@@ -8,25 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 SET TIMEZONE TO 'Asia/Kolkata'; -- Or 'UTC' if your application primarily uses UTC internally
 
 --
--- 1. Table: users (Must be created after roles, before fiduciaries, processors, etc.)
--- CMS internal users: DPOs, Admins, Auditors, Operators
---
-CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255), -- Can be NULL initially for first-time setup
-    mfa_secret VARCHAR(255), -- For TOTP
-    mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, PENDING_MFA_SETUP
-    role VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_login_at TIMESTAMP WITH TIME ZONE,
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
---
--- 2. Table: fiduciaries (Can be created now, references users)
+-- 1. Table: fiduciaries (Can be created now, references users)
 -- Manages registered Data Fiduciary profiles.
 --
 CREATE TABLE IF NOT EXISTS fiduciaries (
@@ -41,10 +23,27 @@ CREATE TABLE IF NOT EXISTS fiduciaries (
     dns_txt_record_token VARCHAR(255) UNIQUE,
     domain_validation_status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- PENDING, VALIDATED, FAILED
     is_significant_data_fiduciary BOOLEAN NOT NULL DEFAULT FALSE,
-    dpo_user_id UUID REFERENCES users(id), -- FK to users(id)
-    dpb_registration_id VARCHAR(100) UNIQUE,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+--
+-- 2. Table: users (Must be created after roles, before fiduciaries, processors, etc.)
+-- CMS internal users: DPOs, Admins, Auditors, Operators
+--
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255), -- Can be NULL initially for first-time setup
+    mfa_secret VARCHAR(255), -- For TOTP
+    mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, PENDING_MFA_SETUP
+    role VARCHAR(20) NOT NULL,
+    fiduciary_id UUID REFERENCES fiduciaries(id),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_login_at TIMESTAMP WITH TIME ZONE,
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 

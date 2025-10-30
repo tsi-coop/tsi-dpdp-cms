@@ -3,5 +3,6 @@
   "username": "new.cms.user2",
   "email": "new.user2@tsicoop.org",
   "password": "SecureP@ssw0rd1",
-  "role": "OPERATOR"
+  "role": "OPERATOR",
+  "fiduciary_id": ""
 }

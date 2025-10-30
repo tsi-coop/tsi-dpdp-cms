@@ -17,6 +17,9 @@
     },
     "role": {
       "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
     }
   },
   "required": [

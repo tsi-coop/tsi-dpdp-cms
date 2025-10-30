@@ -213,6 +213,7 @@
           <th class="px-4 py-3 text-sm">Name</th>
           <th class="px-4 py-3 text-sm">Email</th>
           <th class="px-4 py-3 text-sm">Role</th>
+          <th class="px-4 py-3 text-sm">Associated Fiduciary</th>
           <th class="px-4 py-3 text-sm">Status</th>
           <th class="px-4 py-3 text-sm">Actions</th>
         </tr>
@@ -260,10 +261,9 @@
         <div>
           <label for="user-role-select" class="block text-sm font-medium text-gray-700">CMS Role</label>
           <select id="user-role-select" name="role" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-            <option value="ADMIN">Administrator</option>
             <option value="DPO">Data Protection Officer (DPO)</option>
-            <option value="AUDITOR">Auditor</option>
             <option value="OPERATOR">Operator</option>
+            <option value="AUDITOR">Auditor</option>
           </select>
         </div>
         <div>
@@ -273,13 +273,24 @@
         </div>
       </div>
 
-      <!-- Section 3: Status -->
+      <!-- Section 3: Fiduciary Association (NEW FIELD) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="fiduciary-select" class="block text-sm font-medium text-gray-700">Associated Data Fiduciary (Optional)</label>
+          <select id="fiduciary-select" name="fiduciary_id" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+            <option value="">-- No Fiduciary Assigned (Global) --</option>
+            <!-- Options populated dynamically by JS -->
+          </select>
+          <p class="mt-1 text-xs text-gray-500">Links user access/scope to a specific Fiduciary (e.g., DPOs, Operators).</p>
+        </div>
+      </div>
+
+      <!-- Section 4: Status -->
       <div>
         <label for="user-status-select" class="block text-sm font-medium text-gray-700">Account Status</label>
         <select id="user-status-select" name="status" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
           <option value="ACTIVE">ACTIVE</option>
           <option value="INACTIVE">INACTIVE</option>
-          <option value="PENDING_MFA">PENDING MFA SETUP</option>
         </select>
         <p class="mt-1 text-xs text-gray-500">MFA setup is required for DPO/Admin roles on first login.</p>
       </div>
@@ -296,6 +307,7 @@
 <script>
     // --- Configuration ---
     const API_URL_USERS = ENV_SERVER_URL+'/api/v1/admin/user';
+    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL+'/api/v1/admin/fiduciary';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
     // set user name
@@ -303,7 +315,8 @@
 
     // --- Global DOM Element Variables ---
     let sidebar, menuToggle, backdrop, userModalOverlay, addUserBtn, closeModalBtn, userForm, tableBody, countSpan, errorMessageP, searchInput;
-    let userIdHidden, userFullNameInput, userEmailInput, userRoleSelect, userPasswordInput, userStatusSelect;
+    let userIdHidden, userFullNameInput, userEmailInput, userRoleSelect, userPasswordInput, userStatusSelect,fiduciarySelect;
+    let FiduciaryList = {};
 
     // --- Helper Functions ---
 
@@ -330,11 +343,21 @@
         userPasswordInput.value = '';
         userPasswordInput.placeholder = isEdit ? 'Leave blank to keep current password' : 'Secure Password';
 
+        // Reset Fiduciary dropdown to default
+        fiduciarySelect.disabled = isEdit; // Prevent changing fiduciary association on edit
+        fiduciarySelect.value = '';
+
         userModalOverlay.style.display = 'flex';
     }
 
     function closeModal() {
         userModalOverlay.style.display = 'none';
+    }
+
+    function getFiduciaryName(id) {
+        if (!id) return 'Global Access';
+        const fiduciary = FiduciaryList[id];
+        return fiduciary ? fiduciary.name : `Fiduciary ID: ${id}`;
     }
 
     function createStatusBadge(status) {
@@ -388,6 +411,7 @@
             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${user.username || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${user.email || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${user.role || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(user.fiduciary_id)}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(user.status)}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">
                 ${actionsHtml}
@@ -398,6 +422,41 @@
 
 
     // --- Core Logic ---
+
+    // Fetch Fiduciaries and populate cache and dropdown
+    async function fetchFiduciariesForDropdown() {
+        try {
+            const payload = {
+            "_func": "list_fiduciaries",
+            "status": "",
+            "search": "",
+            "page": 1,
+            "limit": 50
+            };
+            const response = await fetch(API_URL_FIDUCIARIES_LIST, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list for dropdown.");
+
+            const responseData = await response.json();
+            const fiduciaries = responseData.data || responseData;
+
+            fiduciarySelect.innerHTML = '<option value="">-- No Fiduciary Assigned (Global) --</option>';
+            fiduciaries.forEach(f => {
+                const option = document.createElement('option');
+                option.value = f.fiduciary_id;
+                option.textContent = f.name;
+                fiduciarySelect.appendChild(option);
+                // Cache the fiduciary for lookup in the main table
+                FiduciaryList[f.fiduciary_id] = f;
+            });
+        } catch (error) {
+            console.error("Error fetching Fiduciaries for dropdown:", error);
+        }
+    }
 
     async function loadUsers(searchTerm = "") {
         tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading CMS User data...</td></tr>`;
@@ -486,10 +545,11 @@
 
         if (user) {
             userIdHidden.value = user.user_id;
-            userFullNameInput.value = user.name || '';
+            userFullNameInput.value = user.username || '';
             userEmailInput.value = user.email || '';
             userRoleSelect.value = user.role_name || 'OPERATOR';
             userStatusSelect.value = user.status || 'ACTIVE';
+            fiduciarySelect.value = user.fiduciary_id || '';
 
             // Password field is cleared and has placeholder logic in showModal
         } else {
@@ -553,6 +613,7 @@
     userRoleSelect = document.getElementById('user-role-select');
     userPasswordInput = document.getElementById('user-password');
     userStatusSelect = document.getElementById('user-status-select');
+    fiduciarySelect = document.getElementById('fiduciary-select');
 
 
     // --- Event Listener Attachments ---
@@ -571,6 +632,7 @@
     });
 
     // --- Initialization Call ---
+    fetchFiduciariesForDropdown();
     loadUsers();
 
      userForm.addEventListener('submit', async function(event) {
@@ -588,6 +650,7 @@
             "username": data.name,
             "email": data.email,
             "role": data.role,
+            "fiduciary_id":data.fiduciary_id,
             "status": data.status
         };
 
@@ -603,7 +666,6 @@
         // Clean up payload for update
         if (isEditing) {
             delete payload.email; // Email is immutable/read-only on update
-            delete payload.name; // Name is immutable/read-only on update
             if (!payload.password) {
                  // Do not send password field if it was left blank during edit
                  delete payload.password;

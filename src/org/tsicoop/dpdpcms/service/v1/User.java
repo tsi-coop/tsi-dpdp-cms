@@ -166,6 +166,16 @@ public class User implements Action {
                     String email = (String) input.get("email");
                     String password = (String) input.get("password");
 
+                    UUID fiduciaryId = null;
+                    String fiduciaryIdStr = (String) input.get("fiduciary_id");
+                    if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) { // Check for null before isEmpty()
+                        try {
+                            fiduciaryId = UUID.fromString(fiduciaryIdStr);
+                        } catch (IllegalArgumentException e) {
+                            fiduciaryId = null;
+                        }
+                    }
+
                     if (username == null || username.isEmpty() || email == null || email.isEmpty() || password == null || password.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (username, email, password, role_id) for 'create_user'.", req.getRequestURI());
                         return;
@@ -183,7 +193,7 @@ public class User implements Action {
                     }
 
                     String hashedPassword = passwordHasher.hashPassword(password);
-                    output = saveUserToDb(username, email, hashedPassword, role, "ACTIVE"); // Default status to ACTIVE
+                    output = saveUserToDb(username, email, hashedPassword, role, "ACTIVE", fiduciaryId); // Default status to ACTIVE
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -278,7 +288,7 @@ public class User implements Action {
         JSONObject result = new JSONObject();
 
         // Query by username or email
-        String sql = "SELECT id AS user_id, username, email, password_hash, status, mfa_enabled, role FROM users WHERE (username = ? OR email = ?)";
+        String sql = "SELECT id AS user_id, username, email, password_hash, status, mfa_enabled, role, fiduciary_id FROM users WHERE (username = ? OR email = ?)";
 
         try {
             conn = pool.getConnection();
@@ -295,6 +305,8 @@ public class User implements Action {
                 String status = rs.getString("status");
                 boolean mfaEnabled = rs.getBoolean("mfa_enabled");
                 String roleName = rs.getString("role");
+                String fiduciaryId = rs.getString("fiduciary_id");
+                if(fiduciaryId == null) fiduciaryId = "";
 
                 if (!"ACTIVE".equalsIgnoreCase(status)) {
                     result.put("error", true);
@@ -326,7 +338,6 @@ public class User implements Action {
 
                         String generatedToken = JWTUtil.generateToken(email,username,roleName);
 
-
                         result.put("success", true);
                         result.put("message", "Login successful.");
                         result.put("user_id", userId);
@@ -334,7 +345,7 @@ public class User implements Action {
                         result.put("email", email);
                         result.put("role", roleName);
                         result.put("token", generatedToken);
-                        result.put("mfa_required", false);
+                        result.put("fiduciary_id", fiduciaryId);
                     }
                 } else {
                     result.put("error", true);
@@ -525,7 +536,7 @@ public class User implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, username, email, status, last_login_at, created_at, last_updated_at, role FROM users WHERE 1=1");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, username, email, status, fiduciary_id, last_login_at, created_at, last_updated_at, role FROM users WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
@@ -556,6 +567,7 @@ public class User implements Action {
                 user.put("username", rs.getString("username"));
                 user.put("email", rs.getString("email"));
                 user.put("status", rs.getString("status"));
+                user.put("fiduciary_id", rs.getString("fiduciary_id"));
                 user.put("role", rs.getString("role")); // Single role name
                 user.put("last_login_at", rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toInstant().toString() : null);
                 user.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
@@ -579,7 +591,7 @@ public class User implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, username, email, password_hash, status, last_login_at, created_at, last_updated_at, role FROM users WHERE id = ?";
+        String sql = "SELECT id, username, email, password_hash, status, fiduciary_id, last_login_at, created_at, last_updated_at, role FROM users WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -592,6 +604,7 @@ public class User implements Action {
                 user.put("email", rs.getString("email"));
                 // user.put("password_hash", rs.getString("password_hash")); // Do NOT expose password hash via API
                 user.put("status", rs.getString("status"));
+                user.put("fiduciary_id", rs.getString("fiduciary_id"));
                 user.put("role_name", rs.getString("role"));
                 user.put("last_login_at", rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toInstant().toString() : null);
                 user.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
@@ -609,14 +622,14 @@ public class User implements Action {
      * @return JSONObject containing the new user's details.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject saveUserToDb(String username, String email, String hashedPassword, String role, String status) throws SQLException {
+    private JSONObject saveUserToDb(String username, String email, String hashedPassword, String role, String status, UUID fiduciaryId) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         // Use RETURNING user_id to get the generated UUID
-        String sql = "INSERT INTO users (id, username, email, password_hash, role, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
+        String sql = "INSERT INTO users (id, username, email, password_hash, role, status, fiduciary_id, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?,NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -627,6 +640,7 @@ public class User implements Action {
             pstmt.setString(3, hashedPassword);
             pstmt.setString(4, role);
             pstmt.setString(5, status);
+            pstmt.setObject(6, fiduciaryId);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
