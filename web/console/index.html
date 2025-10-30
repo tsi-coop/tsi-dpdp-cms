@@ -146,12 +146,15 @@ async function handleLogin(event) {
     //console.log(ENV_SERVER_URL);
     // Configuration Constants
     const API_LOGIN_URL = ENV_SERVER_URL+'/api/v1/admin/user';
-    const DASHBOARD_URL = 'admin/dashboard.html';
+    const ADMIN_DASHBOARD_URL = 'admin/dashboard.html';
+    const DPO_DASHBOARD_URL = 'dpo/dashboard.html';
 
     event.preventDefault();
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const messageArea = document.getElementById('login-message');
+
+    let role = '';
 
     // Clear previous state
     messageArea.textContent = '';
@@ -197,10 +200,17 @@ async function handleLogin(event) {
                 // CRITICAL STEP: Store Authentication Token (e.g., JWT) here
                 localStorage.setItem('authToken', responseData.token);
                 localStorage.setItem('username', responseData.username);
+                localStorage.setItem('role', responseData.role);
+                localStorage.setItem('fiduciary_id', responseData.fiduciary_id);
 
                 // Redirect the user to the admin dashboard
                 messageArea.textContent = "Login successful. Redirecting...";
-                window.location.href = DASHBOARD_URL;
+                role = responseData.role;
+                if(role === 'ADMIN'){
+                    window.location.href = ADMIN_DASHBOARD_URL;
+                }else if(role === 'DPO'){
+                    window.location.href = DPO_DASHBOARD_URL;
+                }
 
             } else {
                 // --- FAILURE: HTTP status is non-2xx OR HTTP status is 2xx but success=false ---
