@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Grievance Management</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../env.js"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 800px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            max-height: 90vh; /* Allow scrolling */
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .log-entry {
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+    <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <span class="text-xl font-bold primary-text">Grievances</span>
+    <div class="text-sm text-gray-500">DPO User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="#" class="nav-link">
+                Dashboard
+            </a>
+
+            <!-- Compliance Menus -->
+            <a href="policies.html" class="nav-link">
+                Policies
+            </a>
+            <a href="principals.html" class="nav-link">
+                Principals
+            </a>
+            <a href="grievances.html" class="nav-link active">
+                Grievances
+            </a>
+            <a href="reports_compliance.html" class="nav-link">
+                Reports & Audit
+            </a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <a href="system_config.html" class="nav-link">
+            System Config
+        </a>
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        </div>
+    </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-xl font-semibold text-gray-800">Grievance Management Console</h1>
+    </div>
+
+    <!-- Grievance List Card -->
+    <div class="card">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Pending Requests & Grievances</h2>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+            <div class="flex gap-3">
+                <input type="text" id="search-input" placeholder="Search by ID or Subject..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-xs">
+                <select id="status-filter" class="p-2 border border-gray-300 rounded-md text-sm">
+                    <option value="NEW">Status: NEW</option>
+                    <option value="IN_PROGRESS">Status: IN PROGRESS</option>
+                    <option value="PENDING_DPO">Status: PENDING DPO REVIEW</option>
+                    <option value="ALL">Status: ALL OPEN</option>
+                </select>
+                <select id="type-filter" class="p-2 border border-gray-300 rounded-md text-sm">
+                    <option value="">Type: All</option>
+                    <option value="ERASURE_REQUEST">Erasure Request</option>
+                    <option value="DATA_ACCESS_REQUEST">Data Access Request</option>
+                    <option value="GENERAL_COMPLAINT">General Complaint</option>
+                </select>
+            </div>
+            <span id="grievance-count" class="text-sm text-gray-500">Loading...</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                <tr class="table-header">
+                    <th class="px-4 py-3 text-sm">ID</th>
+                    <th class="px-4 py-3 text-sm">Type</th>
+                    <th class="px-4 py-3 text-sm">Subject</th>
+                    <th class="px-4 py-3 text-sm">Submitted</th>
+                    <th class="px-4 py-3 text-sm">Assigned To</th>
+                    <th class="px-4 py-3 text-sm">Status</th>
+                    <th class="px-4 py-3 text-sm">Deadline</th>
+                    <th class="px-4 py-3 text-sm">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="grievance-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- Data will be dynamically inserted here -->
+                <tr>
+                    <td colspan="8" class="p-4 text-center text-gray-500">
+                        Loading Grievance data...
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p id="grievance-error-message" class="mt-4 text-sm text-red-600 hidden">
+            Failed to load data. Please check the API connection and token.
+        </p>
+    </div>
+</main>
+
+<!-- Modal for Grievance Detail and Resolution -->
+<div id="grievance-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Grievance Details: <span id="modal-grievance-id" class="text-gray-600"></span></h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm mb-4">
+            <div class="space-y-1">
+                <p><strong>Type:</strong> <span id="detail-type"></span></p>
+                <p><strong>Submitted By:</strong> <span id="detail-user-id"></span></p>
+                <p><strong>Submitted On:</strong> <span id="detail-date"></span></p>
+                <p><strong>Assigned DPO:</strong> <span id="detail-assigned"></span></p>
+            </div>
+            <div class="space-y-1">
+                <p><strong>Current Status:</strong> <span id="detail-status" class="font-bold"></span></p>
+                <p><strong>Deadline:</strong> <span id="detail-deadline" class="font-bold text-red-500"></span></p>
+                <p><strong>Fiduciary:</strong> <span id="detail-fiduciary"></span></p>
+            </div>
+        </div>
+
+        <h3 class="font-semibold text-lg mt-4 border-b pb-1">Description:</h3>
+        <p id="detail-description" class="p-2 bg-gray-50 rounded-md text-gray-700"></p>
+
+        <h3 class="font-semibold text-lg mt-4 border-b pb-1">Resolution & Communication Log:</h3>
+        <div id="communication-log" class="policy-detail-card h-40 overflow-y-auto text-xs space-y-2">
+            <!-- Communication log entries go here -->
+        </div>
+
+        <h3 class="font-semibold text-lg mt-4 border-b pb-1">Update Status:</h3>
+        <form id="resolution-form" class="mt-3 space-y-3">
+            <div>
+                <label for="new-status" class="block text-sm font-medium text-gray-700">Change Status To</label>
+                <select id="new-status" name="new_status" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="PENDING_DPO">Pending DPO Approval</option>
+                    <option value="RESOLVED">Resolved (Final)</option>
+                    <option value="ESCALATED">Escalated</option>
+                </select>
+            </div>
+            <div>
+                <label for="resolution-details" class="block text-sm font-medium text-gray-700">Resolution Notes</label>
+                <textarea id="resolution-details" name="resolution_details" rows="3" required placeholder="Document steps taken or internal notes..." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="close-modal-btn-inner" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close</button>
+                <button type="submit" id="update-status-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Update Grievance Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const API_URL_GRIEVANCE = ENV_SERVER_URL + '/api/v1/grievance'; // Endpoint for Grievance CRUD
+    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const USER_NAME = localStorage.getItem('username');
+    document.getElementById('username').textContent = USER_NAME || 'DPO User';
+
+    // --- Global DOM Element Variables ---
+    let sidebar, menuToggle, backdrop, grievanceModalOverlay, tableBody, countSpan, errorMessageP, searchInput, statusFilter, typeFilter;
+    let modalGrievanceId, detailType, detailUserId, detailDate, detailAssigned, detailStatus, detailDeadline, detailFiduciary, detailDescription, communicationLog;
+    let resolutionForm, newStatusSelect, resolutionDetailsInput;
+    let FiduciaryList = {}; // Cache Fiduciary names
+
+    // --- Helper Functions ---
+
+    function toggleMenu() {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('hidden');
+    }
+
+    function closeModal() {
+        grievanceModalOverlay.style.display = 'none';
+        loadGrievances(); // Reload list after resolution attempt
+    }
+
+    function getFiduciaryName(id) {
+        if (!id) return 'N/A';
+        const fiduciary = FiduciaryList[id];
+        return fiduciary ? fiduciary.name : `Fiduciary ID: ${id}`;
+    }
+
+    function createStatusBadge(status) {
+        let colorClass = '';
+        switch (status) {
+            case 'NEW': colorClass = 'bg-blue-100 text-blue-800'; break;
+            case 'IN_PROGRESS': colorClass = 'bg-yellow-100 text-yellow-800'; break;
+            case 'RESOLVED': colorClass = 'bg-green-100 text-green-800'; break;
+            case 'OVERDUE':
+            case 'ESCALATED': colorClass = 'bg-red-100 text-red-800'; break;
+            default: colorClass = 'bg-gray-100 text-gray-800';
+        }
+        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status.replace(/_/g, ' ')}</span>`;
+    }
+
+    function calculateDeadlineDisplay(deadline) {
+        if (!deadline) return 'N/A';
+        const now = new Date();
+        const due = new Date(deadline);
+        const diffTime = due.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) return `<span class="text-red-600 font-bold">${Math.abs(diffDays)} Days Overdue</span>`;
+        if (diffDays <= 5) return `<span class="text-orange-600 font-bold">${diffDays} Days Left</span>`;
+        return `${diffDays} Days Left`;
+    }
+
+    function createGrievanceRow(grievance) {
+        const row = document.createElement('tr');
+
+        const isOverdue = new Date(grievance.due_date) < new Date() && grievance.status !== 'RESOLVED' && grievance.status !== 'CLOSED';
+        const status = isOverdue ? 'OVERDUE' : grievance.status;
+
+        row.innerHTML = `
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${grievance.id || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${grievance.type.replace(/_/g, ' ')}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${grievance.subject || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${new Date(grievance.submission_timestamp).toLocaleDateString()}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${grievance.assigned_to_name || 'Unassigned'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(status)}</td>
+            <td class="px-4 py-3 text-sm font-semibold">${calculateDeadlineDisplay(grievance.due_date)}</td>
+            <td class="px-4 py-3 text-sm">
+                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.id}')">View/Manage</button>
+            </td>
+        `;
+        return row;
+    }
+
+    // --- Core Logic ---
+
+    // Fetch Fiduciaries and populate cache
+    async function fetchFiduciaries() {
+        try {
+            const payload = {"_func": "list_fiduciaries"};
+            const response = await fetch(API_URL_FIDUCIARIES_LIST, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const responseData = await response.json();
+                const fiduciaries = responseData.data || responseData;
+                FiduciaryList = {};
+                fiduciaries.forEach(f => {
+                    FiduciaryList[f.fiduciary_id] = f;
+                });
+            }
+        } catch (error) {
+            console.error("Warning: Failed to fetch Fiduciaries for naming in Grievance List.", error);
+        }
+    }
+
+
+    async function loadGrievances(searchTerm = "") {
+        tableBody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-500">Loading Grievance data...</td></tr>`;
+        errorMessageP.classList.add('hidden');
+
+        if (Object.keys(FiduciaryList).length === 0) {
+            await fetchFiduciaries();
+        }
+
+        try {
+            const listPayload = {
+                "_func": "list_grievances",
+                "search": searchTerm,
+                "status_filter": statusFilter.value,
+                "type_filter": typeFilter.value,
+                "sort_by": "SUBMISSION_DATE_DESC",
+                "page": 1,
+                "limit": 50
+            };
+
+            const response = await fetch(API_URL_GRIEVANCE, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify(listPayload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API returned status ${response.status}`);
+            }
+
+            const responseData = await response.json();
+            const grievances = responseData.data || responseData;
+
+            if (Array.isArray(grievances)) {
+                tableBody.innerHTML = '';
+
+                if (grievances.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-500">No grievances found matching criteria.</td></tr>`;
+                } else {
+                    grievances.forEach(g => {
+                        tableBody.appendChild(createGrievanceRow(g));
+                    });
+                    countSpan.textContent = `Showing 1 - ${grievances.length} of ${grievances.length} Total`;
+                }
+            } else {
+                throw new Error(responseData.message || 'API returned unexpected structure.');
+            }
+
+        } catch (error) {
+            console.error("Error loading Grievances:", error);
+            tableBody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-red-600">
+                Error connecting to the Grievance API.
+            </td></tr>`;
+            errorMessageP.classList.remove('hidden');
+            countSpan.textContent = '0 Total';
+        }
+    }
+
+    // Function to fetch a single Grievance record
+    async function fetchGrievanceDetails(grievanceId) {
+        try {
+            const payload = { "_func": "get_grievance_details", "grievance_id": grievanceId };
+
+            const response = await fetch(API_URL_GRIEVANCE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`Failed to fetch details for grievance ${grievanceId}. Status: ${response.status}`);
+
+            const responseData = await response.json();
+
+            if (responseData.id) {
+                return responseData;
+            } else {
+                throw new Error(responseData.message || 'Grievance details not found.');
+            }
+        } catch (error) {
+            console.error("Error fetching Grievance details:", error);
+            alert(`Failed to load grievance details: ${error.message}`);
+            return null;
+        }
+    }
+
+    // Function to populate and show modal
+    async function viewGrievance(id) {
+        const grievance = await fetchGrievanceDetails(id);
+        if (!grievance) return;
+
+        grievanceModalOverlay.style.display = 'flex';
+
+        // Populate modal details
+        document.getElementById('modal-grievance-id').textContent = grievance.id;
+        document.getElementById('detail-type').textContent = grievance.type.replace(/_/g, ' ');
+        document.getElementById('detail-user-id').textContent = grievance.user_id;
+        document.getElementById('detail-date').textContent = new Date(grievance.submission_timestamp).toLocaleString();
+        document.getElementById('detail-assigned').textContent = grievance.assigned_to_name || 'Unassigned';
+        document.getElementById('detail-status').innerHTML = createStatusBadge(grievance.status);
+        document.getElementById('detail-deadline').textContent = new Date(grievance.due_date).toLocaleDateString();
+        document.getElementById('detail-fiduciary').textContent = getFiduciaryName(grievance.fiduciary_id);
+        document.getElementById('detail-description').textContent = grievance.description;
+
+        // Resolution Form Setup
+        resolutionForm.setAttribute('data-grievance-id', grievance.id);
+        newStatusSelect.value = grievance.status; // Set current status
+
+        // Populate Communication Log
+        communicationLog.innerHTML = '';
+        if (grievance.communication_log && grievance.communication_log.length > 0) {
+            grievance.communication_log.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry text-xs';
+                logEntry.innerHTML = `
+                    <p class="font-semibold">${log.sender} (${log.channel}) @ ${new Date(log.ts).toLocaleString()}:</p>
+                    <p class="ml-2 text-gray-700">${log.message}</p>
+                `;
+                communicationLog.appendChild(logEntry);
+            });
+        } else {
+            communicationLog.innerHTML = '<p class="text-gray-500">No communication log entries.</p>';
+        }
+    }
+
+    // Handle Status Update Submission
+    resolutionForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const grievanceId = resolutionForm.getAttribute('data-grievance-id');
+        const newStatus = newStatusSelect.value;
+        const resolutionNotes = resolutionDetailsInput.value;
+
+        if (!grievanceId || !newStatus || !resolutionNotes) {
+            alert("Please fill out all resolution fields.");
+            return;
+        }
+
+        try {
+            document.getElementById('update-status-btn').textContent = 'Updating...';
+            document.getElementById('update-status-btn').disabled = true;
+
+            const payload = {
+                "_func": "update_grievance_status",
+                "grievance_id": grievanceId,
+                "new_status": newStatus,
+                "resolution_notes": resolutionNotes,
+                "updated_by_user_id": 'current_cms_user_id' // Should be obtained from JWT/session
+            };
+
+            const response = await fetch(API_URL_GRIEVANCE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert(`Grievance ${grievanceId} updated to ${newStatus} successfully.`);
+                closeModal();
+            } else {
+                const errorMsg = (await response.json()).message || `Status: ${response.status}`;
+                alert(`Failed to update status: ${errorMsg}`);
+            }
+        } catch (error) {
+            console.error(`Error updating grievance status:`, error);
+            alert("Network error: Could not connect to API.");
+        } finally {
+            document.getElementById('update-status-btn').textContent = 'Update Grievance Status';
+            document.getElementById('update-status-btn').disabled = false;
+        }
+    });
+
+
+    // --- Event Listeners and Initialization ---
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // --- Variable Assignments ---
+        sidebar = document.getElementById('sidebar');
+        menuToggle = document.getElementById('menu-toggle');
+        backdrop = document.getElementById('sidebar-backdrop');
+        tableBody = document.getElementById('grievance-table-body');
+        countSpan = document.getElementById('grievance-count');
+        errorMessageP = document.getElementById('grievance-error-message');
+        searchInput = document.getElementById('search-input');
+        statusFilter = document.getElementById('status-filter');
+        typeFilter = document.getElementById('type-filter');
+
+        grievanceModalOverlay = document.getElementById('grievance-modal-overlay');
+        communicationLog = document.getElementById('communication-log');
+        resolutionForm = document.getElementById('resolution-form');
+        newStatusSelect = document.getElementById('new-status');
+        resolutionDetailsInput = document.getElementById('resolution-details');
+
+        // Detail Spans
+        modalGrievanceId = document.getElementById('modal-grievance-id');
+        detailType = document.getElementById('detail-type');
+        detailUserId = document.getElementById('detail-user-id');
+        detailDate = document.getElementById('detail-date');
+        detailAssigned = document.getElementById('detail-assigned');
+        detailStatus = document.getElementById('detail-status');
+        detailDeadline = document.getElementById('detail-deadline');
+        detailFiduciary = document.getElementById('detail-fiduciary');
+        detailDescription = document.getElementById('detail-description');
+
+
+        // --- Fetch Fiduciaries and Load Grievances ---
+        await fetchFiduciaries();
+        loadGrievances();
+
+        // --- Event Listener Attachments ---
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+
+        // Filters
+        statusFilter.addEventListener('change', () => loadGrievances(searchInput.value.trim()));
+        typeFilter.addEventListener('change', () => loadGrievances(searchInput.value.trim()));
+
+        // Search
+        searchInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                loadGrievances(searchInput.value.trim());
+            }
+        });
+
+        // Modal Close
+        document.getElementById('close-modal-btn-inner').addEventListener('click', closeModal);
+    });
+
+    // Expose functions globally so they can be called by inline onclick attributes
+    window.viewGrievance = viewGrievance;
+    window.handleLogout = handleLogout;
+    window.toggleMenu = toggleMenu;
+</script>
+</body>
+
+</html>

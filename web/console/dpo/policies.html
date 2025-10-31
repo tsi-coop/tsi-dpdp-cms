@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Policy Management</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../env.js"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 800px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+    <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <span class="text-xl font-bold primary-text">Policies</span>
+    <div class="text-sm text-gray-500">DPO User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="#" class="nav-link">
+                Dashboard
+            </a>
+            <!-- Compliance Menus -->
+            <a href="policies.html" class="nav-link active">
+                Policies
+            </a>
+            <a href="principals.html" class="nav-link">
+                Principals
+            </a>
+            <a href="grievances.html" class="nav-link">
+                Grievances
+            </a>
+            <a href="reports_compliance.html" class="nav-link">
+                Reports & Audit
+            </a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <a href="system_config.html" class="nav-link">
+            System Config
+        </a>
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        </div>
+    </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-xl font-semibold text-gray-800">Policies</h1>
+        <button id="add-policy-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
+            + Create New Policy
+        </button>
+    </div>
+
+    <!-- Policy List Card -->
+    <div class="card">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Policy Versions Overview</h2>
+        <div class="flex justify-between items-center mb-4">
+            <input type="text" id="search-input" placeholder="Search by Policy ID or Content..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
+            <span id="policy-count" class="text-sm text-gray-500">Loading...</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                <tr class="table-header">
+                    <th class="px-4 py-3 text-sm">Policy ID</th>
+                    <th class="px-4 py-3 text-sm">Version</th>
+                    <th class="px-4 py-3 text-sm">Fiduciary</th>
+                    <th class="px-4 py-3 text-sm">Jurisdiction</th>
+                    <th class="px-4 py-3 text-sm">Status</th>
+                    <th class="px-4 py-3 text-sm">Effective Date</th>
+                    <th class="px-4 py-3 text-sm">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="policy-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- Data will be dynamically inserted here -->
+                <tr>
+                    <td colspan="7" class="p-4 text-center text-gray-500">
+                        Loading Policy data...
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p id="policy-error-message" class="mt-4 text-sm text-red-600 hidden">
+            Failed to load data. Please check the API connection and token.
+        </p>
+    </div>
+</main>
+
+<!-- Modal for Creating/Viewing/Publishing Policy -->
+<div id="policy-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Create New Policy Version</h2>
+        <form id="policy-form" class="space-y-4">
+
+            <!-- Hidden Field to store Policy ID/Version (for editing existing drafts) -->
+            <input type="hidden" id="policy-id-hidden" name="policyId" value="">
+            <input type="hidden" id="policy-version-hidden" name="version" value="">
+
+            <!-- Section 1: Metadata & Association -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="policy-fiduciary-select" class="block text-sm font-medium text-gray-700">Associate Fiduciary</label>
+                    <select id="policy-fiduciary-select" name="fiduciary_id" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="">-- Select Fiduciary --</option>
+                        <!-- Options populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label for="policy-id-input" class="block text-sm font-medium text-gray-700">Policy ID (Unique Key)</label>
+                    <input type="text" id="policy-id-input" name="policy_id" required placeholder="e.g., WEB_PRIVACY_V1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div>
+                    <label for="policy-jurisdiction-select" class="block text-sm font-medium text-gray-700">Jurisdiction</label>
+                    <select id="policy-jurisdiction-select" name="jurisdiction" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="IN">India (DPDP Act)</option>
+                        <option value="EU">EU (GDPR)</option>
+                        <option value="GLOBAL">Global Default</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 2: Policy Content (Simplified JSON/Text Input) -->
+            <div>
+                <label for="policy-content-input" class="block text-sm font-medium text-gray-700">Policy Content (Full Multilingual JSON)</label>
+                <textarea id="policy-content-input" name="policy_content" rows="15" required placeholder='Paste the complete, valid multilingual policy JSON here...' class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-xs"></textarea>
+                <p class="mt-1 text-xs text-red-500">Policy must be valid JSON and contain all required language fields.</p>
+            </div>
+
+
+            <div class="modal-footer">
+                <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+                <button type="button" id="publish-policy-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 hidden">Publish Active</button>
+                <button type="submit" id="save-policy-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Draft</button>
+            </div>
+        </form>
+        <div id="policy-view-details" class="mt-4 hidden p-4 border rounded-md bg-gray-50">
+            <h3 class="font-semibold text-gray-800 mb-2">Policy Details:</h3>
+            <pre id="policy-json-output" class="text-xs font-mono whitespace-pre-wrap"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const API_URL_POLICY = ENV_SERVER_URL + '/api/v1/admin/policy';
+    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const USER_NAME = localStorage.getItem('username');
+    document.getElementById('username').textContent = USER_NAME || 'DPO User';
+
+    // --- Global DOM Element Variables ---
+    let sidebar, menuToggle, backdrop, policyModalOverlay, addPolicyBtn, closeModalBtn, policyForm, tableBody, countSpan, errorMessageP, searchInput;
+    let policyIdHidden, policyVersionHidden, policyIdInput, policyJurisdictionSelect, policyContentInput, policyFiduciarySelect;
+    let savePolicyBtn, publishPolicyBtn;
+    let policyViewDetails, policyJsonOutput;
+
+    let FiduciaryList = {}; // Cache Fiduciary list for lookup
+
+    // --- Helper Functions ---
+
+    function toggleMenu() {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('hidden');
+    }
+
+    function closeModal() {
+        policyModalOverlay.style.display = 'none';
+        loadPolicies(); // Reload list after closing modal
+    }
+
+    function getFiduciaryName(id) {
+        if (!id) return 'N/A';
+        const fiduciary = FiduciaryList[id];
+        return fiduciary ? fiduciary.name : `Fiduciary ID: ${id}`;
+    }
+
+    function createStatusBadge(status) {
+        let colorClass = '';
+        switch (status) {
+            case 'ACTIVE': colorClass = 'bg-green-100 text-green-800'; break;
+            case 'DRAFT': colorClass = 'bg-yellow-100 text-yellow-800'; break;
+            case 'ARCHIVED': colorClass = 'bg-gray-100 text-gray-800'; break;
+            default: colorClass = 'bg-red-100 text-red-800';
+        }
+        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status}</span>`;
+    }
+
+    function createPolicyRow(policy) {
+        const row = document.createElement('tr');
+
+        const isDraft = policy.status === 'DRAFT';
+        const isLatest = policy.status === 'ACTIVE' || isDraft;
+
+        const actionsHtml = `
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="viewPolicy('${policy.policy_id}', '${policy.version}', '${policy.fiduciary_id}')">View</button>
+
+            ${isDraft ?
+                `<button class="text-orange-600 hover:text-orange-800 font-medium text-sm mr-2" onclick="editPolicy('${policy.policy_id}', '${policy.version}', '${policy.fiduciary_id}')">Edit Draft</button>`
+                : ''}
+
+            ${isDraft ?
+                `<button class="text-green-600 hover:text-green-800 font-medium text-sm" onclick="publishPolicy('${policy.policy_id}', '${policy.version}', '${policy.fiduciary_id}')">Publish</button>`
+                : ''}
+
+            ${policy.status === 'ACTIVE' ?
+                `<button class="text-red-600 hover:text-red-800 font-medium text-sm" onclick="deactivatePolicy('${policy.policy_id}', '${policy.version}', '${policy.fiduciary_id}')">Deactivate</button>`
+                : ''}
+        `;
+
+        row.innerHTML = `
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${policy.policy_id || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${policy.version || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(policy.fiduciary_id)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${policy.jurisdiction || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(policy.status)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">${new Date(policy.effective_date).toLocaleDateString()}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+                ${actionsHtml}
+            </td>
+        `;
+        return row;
+    }
+
+
+    // --- Core Logic ---
+
+    // Fetch Fiduciaries and populate cache and dropdown
+    async function fetchFiduciariesForDropdown() {
+        try {
+            const payload = {"_func": "list_fiduciaries"};
+            const response = await fetch(API_URL_FIDUCIARIES_LIST, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list for dropdown.");
+
+            const responseData = await response.json();
+            const fiduciaries = responseData.data || responseData;
+
+            // Clear and populate cache
+            FiduciaryList = {};
+            policyFiduciarySelect.innerHTML = '<option value="">-- Select Fiduciary --</option>';
+
+            fiduciaries.forEach(f => {
+                const option = document.createElement('option');
+                option.value = f.fiduciary_id;
+                option.textContent = f.name;
+                policyFiduciarySelect.appendChild(option);
+                // Cache the fiduciary for lookup
+                FiduciaryList[f.fiduciary_id] = f;
+            });
+        } catch (error) {
+            console.error("Error fetching Fiduciaries for policy creation:", error);
+        }
+    }
+
+
+    async function loadPolicies(searchTerm = "") {
+        tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Loading Policy data...</td></tr>`;
+        errorMessageP.classList.add('hidden');
+
+        if (Object.keys(FiduciaryList).length === 0) {
+            await fetchFiduciariesForDropdown();
+        }
+
+
+        try {
+            const listPayload = {
+                "_func": "list_policies",
+                "search": searchTerm,
+                "status_filter": "ALL",
+                "page": 1,
+                "limit": 50
+            };
+
+            const response = await fetch(API_URL_POLICY, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify(listPayload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API returned status ${response.status}`);
+            }
+
+            const responseData = await response.json();
+
+            const policies = responseData.data || responseData;
+
+            if (Array.isArray(policies)) {
+                tableBody.innerHTML = '';
+
+                if (policies.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No policies found matching criteria.</td></tr>`;
+                } else {
+                    policies.forEach(policy => {
+                        tableBody.appendChild(createPolicyRow(policy));
+                    });
+                    countSpan.textContent = `Showing 1 - ${policies.length} of ${policies.length} Total`;
+                }
+            } else {
+                throw new Error(responseData.message || 'API returned unexpected structure.');
+            }
+
+        } catch (error) {
+            console.error("Error loading Policies:", error);
+            tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-600">
+                Error connecting to the Policy API. Ensure the service is running and the token is valid.
+            </td></tr>`;
+            errorMessageP.classList.remove('hidden');
+            countSpan.textContent = '0 Total';
+        }
+    }
+
+    async function fetchPolicyDetails(policyId, version, fiduciaryId) {
+        try {
+            const payload = {
+                "_func": "get_policy",
+                "policy_id": policyId,
+                "version": version,
+                "fiduciary_id": fiduciaryId
+            };
+
+            const response = await fetch(API_URL_POLICY, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`Failed to fetch details for policy ${policyId}/${version}. Status: ${response.status}`);
+
+            const responseData = await response.json();
+
+            if (responseData.policy_id) {
+                return responseData;
+            } else {
+                throw new Error(responseData.message || 'Policy details not found.');
+            }
+        } catch (error) {
+            console.error("Error fetching Policy details:", error);
+            alert(`Failed to load details: ${error.message}`);
+            return null;
+        }
+    }
+
+
+    // --- ACTION HANDLERS ---
+
+    // 1. View Policy Details (Read-Only)
+    async function viewPolicy(policyId, version, fiduciaryId) {
+        showModal('Policy Details (Read-Only)', false);
+
+        // Hide form fields and buttons, show read-only section
+        policyForm.style.display = 'none';
+        policyViewDetails.classList.remove('hidden');
+        policyJsonOutput.textContent = 'Loading policy content...';
+
+        const policy = await fetchPolicyDetails(policyId, version, fiduciaryId);
+
+        if (policy) {
+            try {
+                // Prettify JSON output for display
+                policyJsonOutput.textContent = JSON.stringify(policy.policy_content, null, 2);
+            } catch (e) {
+                policyJsonOutput.textContent = "Error displaying JSON content.";
+            }
+        } else {
+            policyJsonOutput.textContent = "Could not load policy details.";
+        }
+    }
+
+    // 2. Edit Policy (Opens modal with existing data)
+    async function editPolicy(policyId, version, fiduciaryId) {
+        showModal('Edit Policy Draft', false);
+
+        policyForm.style.display = 'block';
+        policyViewDetails.classList.add('hidden');
+        document.getElementById('save-policy-btn').textContent = 'Update Draft';
+        document.getElementById('publish-policy-btn').classList.add('hidden'); // Ensure publish button is hidden during edit
+
+        const policy = await fetchPolicyDetails(policyId, version, fiduciaryId);
+
+        if (policy) {
+            // Populate form fields
+            policyIdHidden.value = policy.policy_id;
+            policyVersionHidden.value = policy.version;
+            policyFiduciarySelect.value = policy.fiduciary_id;
+            policyJurisdictionSelect.value = policy.jurisdiction;
+
+            // Lock immutable fields
+            policyIdInput.disabled = true;
+            policyFiduciarySelect.disabled = true;
+
+            // Paste content (use the existing content data)
+            policyContentInput.value = JSON.stringify(policy.policy_content, null, 2);
+        } else {
+            closeModal();
+        }
+    }
+
+    // 3. Publish Policy (Status Update)
+    async function publishPolicy(policyId, version, fiduciaryId) {
+        if (!confirm(`Are you sure you want to PUBLISH Policy ID ${policyId} (Version ${version})? This will immediately make it the ACTIVE policy for the associated Fiduciary and supersede the previous active version.`)) {
+            return;
+        }
+
+        try {
+            const payload = {
+                "_func": "publish_policy",
+                "policy_id": policyId,
+                "version": version,
+                "fiduciary_id": fiduciaryId,
+                "new_status": "ACTIVE",
+                "effective_date": new Date().toISOString()
+            };
+
+            const response = await fetch(API_URL_POLICY, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert(`Policy ${policyId} (v${version}) successfully PUBLISHED.`);
+                loadPolicies();
+            } else {
+                const errorMsg = (await response.json()).message || `Status: ${response.status}`;
+                alert(`Failed to publish policy: ${errorMsg}`);
+            }
+        } catch (error) {
+            console.error("Error during publish API call:", error);
+            alert("Network error: Could not communicate with the API.");
+        }
+    }
+
+    // 4. Deactivate Policy (Status Update)
+    async function deactivatePolicy(policyId, version, fiduciaryId) {
+        if (!confirm(`WARNING: Are you sure you want to DEACTIVATE Policy ID ${policyId} (Version ${version})? This should only be done if an urgent new policy is replacing it or there is a compliance issue.`)) {
+            return;
+        }
+
+        try {
+            const payload = {
+                "_func": "update_policy_status",
+                "policy_id": policyId,
+                "version": version,
+                "fiduciary_id": fiduciaryId,
+                "new_status": "ARCHIVED", // Set to ARCHIVED/INACTIVE
+            };
+
+            const response = await fetch(API_URL_POLICY, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert(`Policy ${policyId} (v${version}) successfully DEACTIVATED.`);
+                loadPolicies();
+            } else {
+                const errorMsg = (await response.json()).message || `Status: ${response.status}`;
+                alert(`Failed to deactivate policy: ${errorMsg}`);
+            }
+        } catch (error) {
+            console.error("Error during deactivation API call:", error);
+            alert("Network error: Could not communicate with the API.");
+        }
+    }
+
+
+    // --- Form Submission: Save Draft/Create Policy ---
+    policyForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(policyForm);
+        const policyId = formData.get('policy_id').trim();
+        const fiduciaryId = formData.get('fiduciary_id');
+        const isEditing = !!policyVersionHidden.value; // Editing if version is present
+        const func = isEditing ? "update_policy_draft" : "create_policy_draft";
+
+        // Validate JSON content client-side
+        let policyContentJson;
+        try {
+            policyContentJson = JSON.parse(policyContentInput.value);
+            if (!policyContentJson.languages || !policyContentJson.languages.en) {
+                 throw new Error("Missing 'languages' or 'en' key.");
+            }
+        } catch (e) {
+            alert("Error: Policy Content must be valid JSON and contain a 'languages' object (check console for syntax errors).");
+            return;
+        }
+
+        const payload = {
+            "_func": func,
+            "policy_id": policyId,
+            "fiduciary_id": fiduciaryId,
+            "policy_content": policyContentJson,
+            "jurisdiction": formData.get('jurisdiction'),
+            // Only required for update
+            "version": isEditing ? policyVersionHidden.value : undefined
+        };
+
+        try {
+            document.getElementById('save-policy-btn').textContent = isEditing ? 'Updating...' : 'Creating...';
+            document.getElementById('save-policy-btn').disabled = true;
+
+            const response = await fetch(API_URL_POLICY, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            const responseData = await response.json();
+
+            if (response.ok && responseData.success) {
+                alert(`Policy ${isEditing ? 'Draft Updated' : 'Created'} successfully! Version: ${responseData.version || 'New'}`);
+                closeModal();
+            } else {
+                const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
+                alert(`Failed to save policy: ${errorMsg}`);
+            }
+
+        } catch (error) {
+            console.error(`Error saving policy:`, error);
+            alert("Network error: Could not connect to API.");
+        } finally {
+            document.getElementById('save-policy-btn').textContent = isEditing ? 'Update Draft' : 'Save Draft';
+            document.getElementById('save-policy-btn').disabled = false;
+        }
+    });
+
+
+    // --- Event Listeners and Initialization ---
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // --- Variable Assignments ---
+        sidebar = document.getElementById('sidebar');
+        menuToggle = document.getElementById('menu-toggle');
+        backdrop = document.getElementById('sidebar-backdrop');
+        policyModalOverlay = document.getElementById('policy-modal-overlay');
+        addPolicyBtn = document.getElementById('add-policy-btn');
+        closeModalBtn = document.getElementById('close-modal-btn');
+        policyForm = document.getElementById('policy-form');
+        tableBody = document.getElementById('policy-table-body');
+        countSpan = document.getElementById('policy-count');
+        errorMessageP = document.getElementById('policy-error-message');
+        searchInput = document.getElementById('search-input');
+
+        policyIdHidden = document.getElementById('policy-id-hidden');
+        policyVersionHidden = document.getElementById('policy-version-hidden');
+        policyIdInput = document.getElementById('policy-id-input');
+        policyJurisdictionSelect = document.getElementById('policy-jurisdiction-select');
+        policyContentInput = document.getElementById('policy-content-input');
+        policyFiduciarySelect = document.getElementById('policy-fiduciary-select');
+        savePolicyBtn = document.getElementById('save-policy-btn');
+        publishPolicyBtn = document.getElementById('publish-policy-btn');
+        policyViewDetails = document.getElementById('policy-view-details');
+        policyJsonOutput = document.getElementById('policy-json-output');
+
+
+        // --- Fetch Fiduciaries and Load Policies ---
+        await fetchFiduciariesForDropdown();
+        loadPolicies();
+
+        // --- Event Listener Attachments ---
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+        addPolicyBtn.addEventListener('click', () => {
+            showModal('Create New Policy Version');
+            // Show form and hide view panel for creation
+            policyForm.style.display = 'block';
+            policyViewDetails.classList.add('hidden');
+            policyIdInput.disabled = false;
+            policyFiduciarySelect.disabled = false;
+        });
+        closeModalBtn.addEventListener('click', closeModal);
+
+        // Expose functions globally so they can be called by inline onclick attributes
+        window.viewPolicy = viewPolicy;
+        window.editPolicy = editPolicy;
+        window.publishPolicy = publishPolicy;
+        window.deactivatePolicy = deactivatePolicy;
+        window.toggleMenu = toggleMenu;
+    });
+
+</script>
+</body>
+
+</html>

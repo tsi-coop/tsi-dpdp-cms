@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Reports & Audit</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../env.js"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+    <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <span class="text-xl font-bold primary-text">Reports</span>
+    <div class="text-sm text-gray-500">DPO User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="#" class="nav-link">
+                Dashboard
+            </a>
+
+            <!-- Compliance Menus -->
+            <a href="policies.html" class="nav-link">
+                Policies
+            </a>
+            <a href="principals.html" class="nav-link">
+                Principals
+            </a>
+            <a href="grievances.html" class="nav-link">
+                Grievances
+            </a>
+            <a href="reports_compliance.html" class="nav-link active">
+                Reports & Audit
+            </a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <a href="system_config.html" class="nav-link">
+            System Config
+        </a>
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        </div>
+    </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-xl font-semibold text-gray-800">Compliance Reporting & Audit Management</h1>
+    </div>
+
+    <!-- Report Generation Section -->
+    <div class="card mb-8">
+        <h2 class="text-xl font-semibold primary-text mb-4">Generate Regulatory Reports</h2>
+        <form id="report-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="report-type" class="block text-sm font-medium text-gray-700">Report Type</label>
+                    <select id="report-type" name="report_type" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="BREACH_NOTIFICATION">Breach Notification (Urgent)</option>
+                        <option value="QUARTERLY_COMPLIANCE">Quarterly Compliance Summary</option>
+                        <option value="ANNUAL_AUDIT_SUMMARY">Annual Audit Summary</option>
+                        <option value="ALL_CONSENT_HISTORY_EXPORT">Raw Consent Data Export</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="fiduciary-select" class="block text-sm font-medium text-gray-700">Select Fiduciary</label>
+                    <select id="fiduciary-select" name="fiduciary_id" required class class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <!-- Options populated dynamically -->
+                        <option value="">-- Select Fiduciary --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="date-range" class="block text-sm font-medium text-gray-700">Reporting Period (Optional)</label>
+                    <input type="text" id="date-range" name="date_range" placeholder="e.g., 2025-01-01 to 2025-03-31" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button type="submit" id="generate-report-btn" class="primary-bg text-white px-6 py-2 rounded-md font-medium hover:bg-opacity-90 transition duration-150">
+                    Generate Report Draft
+                </button>
+            </div>
+            <p id="report-message" class="mt-3 text-sm font-medium hidden"></p>
+        </form>
+    </div>
+
+    <!-- Report Submission History Section -->
+    <div class="card">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Submission History to Data Protection Board (DPB)</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                <tr class="table-header">
+                    <th class="px-4 py-3 text-sm">Submission ID</th>
+                    <th class="px-4 py-3 text-sm">Report Type</th>
+                    <th class="px-4 py-3 text-sm">Fiduciary</th>
+                    <th class="px-4 py-3 text-sm">Submitted By</th>
+                    <th class="px-4 py-3 text-sm">Date Sent</th>
+                    <th class="px-4 py-3 text-sm">Status (DPB)</th>
+                    <th class="px-4 py-3 text-sm">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="submission-history-body" class="bg-white divide-y divide-gray-200">
+                <!-- Data will be dynamically inserted here -->
+                <tr>
+                    <td colspan="7" class="p-4 text-center text-gray-500">
+                        Loading submission history...
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p id="history-error-message" class="mt-4 text-sm text-red-600 hidden">
+            Failed to load submission history.
+        </p>
+    </div>
+</main>
+
+<!-- Modal for Report Review and Submission -->
+<div id="report-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <h2 id="modal-report-title" class="text-2xl font-semibold primary-text mb-4">Review and Submit Report</h2>
+
+        <div class="space-y-4 text-sm">
+            <p><strong>Report ID:</strong> <span id="modal-report-id"></span></p>
+            <p><strong>Fiduciary:</strong> <span id="modal-report-fiduciary"></span></p>
+            <p><strong>Type:</strong> <span id="modal-report-type"></span></p>
+
+            <h3 class="font-semibold text-lg mt-4 border-b pb-1">Report Data Payload (JSON):</h3>
+            <div class="p-2 bg-gray-100 rounded-md max-h-60 overflow-y-auto">
+                <pre id="report-json-output" class="text-xs font-mono whitespace-pre-wrap text-gray-800">Loading data...</pre>
+            </div>
+
+            <p class="text-sm font-semibold text-red-600 mt-4">DPB Submission Warning:</p>
+            <p class="text-xs text-red-500">Submitting this report will use the secure Two-Way SSL channel to the Data Protection Board. Ensure the content is accurate and authorized.</p>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" id="close-report-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+            <button type="button" id="submit-dpb-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Submit to DPB</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const API_URL_REPORTS = ENV_SERVER_URL + '/api/v1/admin/reports';
+    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const USER_NAME = localStorage.getItem('username');
+    document.getElementById('username').textContent = USER_NAME || 'DPO User';
+
+    // --- Global DOM Element Variables ---
+    let sidebar, menuToggle, backdrop, submissionHistoryBody, historyErrorMessageP;
+    let reportModalOverlay, modalReportTitle, modalReportId, modalReportFiduciary, modalReportType, reportJsonOutput;
+    let reportForm, reportTypeSelect, fiduciarySelect, dateRangeInput, generateReportBtn, reportMessage;
+    let submitDpbBtn;
+
+    let FiduciaryList = {}; // Cache Fiduciary names (ID -> Name)
+    let currentReportDraft = null; // Stores the currently generated report draft JSON
+
+    // --- Helper Functions ---
+
+    function toggleMenu() {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('hidden');
+    }
+
+    function closeModal() {
+        reportModalOverlay.style.display = 'none';
+        currentReportDraft = null;
+    }
+
+    function createStatusBadge(status) {
+        let colorClass = '';
+        switch (status) {
+            case 'SUBMITTED': colorClass = 'bg-green-100 text-green-800'; break;
+            case 'DRAFT': colorClass = 'bg-yellow-100 text-yellow-800'; break;
+            case 'FAILED': colorClass = 'bg-red-100 text-red-800'; break;
+            default: colorClass = 'bg-gray-100 text-gray-800';
+        }
+        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status.replace(/_/g, ' ')}</span>`;
+    }
+
+    function getFiduciaryName(id) {
+        if (!id) return 'N/A';
+        const fiduciary = FiduciaryList[id];
+        return fiduciary ? fiduciary.name : `Fiduciary ID: ${id}`;
+    }
+
+    function createHistoryRow(submission) {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${submission.submission_id.slice(0, 8) + '...'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${submission.report_type.replace(/_/g, ' ')}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${getFiduciaryName(submission.fiduciary_id)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${submission.submitted_by_name || 'DPO'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${new Date(submission.date_sent).toLocaleString()}</td>
+            <td class="px-4 py-3 text-sm">${createStatusBadge(submission.status)}</td>
+            <td class="px-4 py-3 text-sm">
+                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="viewReportDetails('${submission.submission_id}')">View Payload</button>
+            </td>
+        `;
+        return row;
+    }
+
+    // --- Core Logic ---
+
+    async function fetchFiduciariesForDropdown() {
+        try {
+            const payload = {"_func": "list_fiduciaries"};
+            const response = await fetch(API_URL_FIDUCIARIES_LIST, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list for dropdown.");
+
+            const responseData = await response.json();
+            const fiduciaries = responseData.data || responseData;
+
+            FiduciaryList = {};
+            fiduciarySelect.innerHTML = '<option value="">-- Select Fiduciary --</option>';
+
+            fiduciaries.forEach(f => {
+                const option = document.createElement('option');
+                option.value = f.fiduciary_id;
+                option.textContent = f.name;
+                fiduciarySelect.appendChild(option);
+                FiduciaryList[f.fiduciary_id] = f;
+            });
+        } catch (error) {
+            console.error("Error fetching Fiduciaries for reports:", error);
+        }
+    }
+
+    async function loadSubmissionHistory() {
+        submissionHistoryBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Loading submission history...</td></tr>`;
+        historyErrorMessageP.classList.add('hidden');
+
+        try {
+            const listPayload = { "_func": "list_submissions", "limit": 20 };
+
+            const response = await fetch(API_URL_REPORTS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(listPayload)
+            });
+
+            if (!response.ok) throw new Error(`API returned status ${response.status}`);
+
+            const responseData = await response.json();
+            const submissions = responseData.data || responseData;
+
+            if (Array.isArray(submissions)) {
+                submissionHistoryBody.innerHTML = '';
+
+                if (submissions.length === 0) {
+                    submissionHistoryBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No submission history found.</td></tr>`;
+                } else {
+                    submissions.forEach(submission => {
+                        submissionHistoryBody.appendChild(createHistoryRow(submission));
+                    });
+                }
+            } else {
+                throw new Error(responseData.message || 'API returned unexpected structure.');
+            }
+        } catch (error) {
+            console.error("Error loading submission history:", error);
+            historyErrorMessageP.textContent = `Error: Could not retrieve submission history. ${error.message}`;
+            historyErrorMessageP.classList.remove('hidden');
+        }
+    }
+
+    // --- ACTION HANDLERS ---
+
+    // 1. Handle Report Generation (Form Submission)
+    reportForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(reportForm);
+        const reportType = formData.get('report_type');
+        const fiduciaryId = formData.get('fiduciary_id');
+        const dateRange = formData.get('date_range');
+
+        if (!fiduciaryId) {
+            alert("Please select a Data Fiduciary.");
+            return;
+        }
+
+        reportMessage.classList.add('hidden');
+        generateReportBtn.textContent = 'Generating...';
+        generateReportBtn.disabled = true;
+
+        try {
+            const payload = {
+                "_func": "generate_report",
+                "report_type": reportType,
+                "fiduciary_id": fiduciaryId,
+                "period": dateRange
+            };
+
+            const response = await fetch(API_URL_REPORTS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`API returned status ${response.status}`);
+
+            const responseData = await response.json();
+
+            if (responseData.success && responseData.data) {
+                // Store the draft payload for review/submission
+                currentReportDraft = responseData.data;
+
+                // Show modal for review
+                document.getElementById('modal-report-id').textContent = 'DRAFT';
+                document.getElementById('modal-report-fiduciary').textContent = getFiduciaryName(fiduciaryId);
+                document.getElementById('modal-report-type').textContent = reportType.replace(/_/g, ' ');
+                reportJsonOutput.textContent = JSON.stringify(currentReportDraft, null, 2);
+
+                reportModalOverlay.style.display = 'flex';
+                reportMessage.textContent = `Draft generated successfully for ${reportType}.`;
+                reportMessage.classList.remove('hidden');
+            } else {
+                throw new Error(responseData.message || 'Generation failed.');
+            }
+        } catch (error) {
+            reportMessage.textContent = `Error generating report: ${error.message}`;
+            reportMessage.classList.remove('hidden');
+            reportMessage.classList.add('text-red-600');
+        } finally {
+            generateReportBtn.textContent = 'Generate Report Draft';
+            generateReportBtn.disabled = false;
+        }
+    });
+
+    // 2. View Submission Details (Click from History Table)
+    async function viewReportDetails(submissionId) {
+        // Fetch full submission payload (including data_payload)
+        try {
+             const payload = { "_func": "get_submission_details", "submission_id": submissionId };
+
+             const response = await fetch(API_URL_REPORTS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`Failed to fetch details for submission ${submissionId}`);
+
+            const submission = (await response.json()).data;
+
+            // Populate modal with historical data
+            document.getElementById('modal-report-id').textContent = submission.submission_id;
+            document.getElementById('modal-report-fiduciary').textContent = getFiduciaryName(submission.fiduciary_id);
+            document.getElementById('modal-report-type').textContent = submission.report_type.replace(/_/g, ' ');
+            reportJsonOutput.textContent = JSON.stringify(submission.data_payload, null, 2); // Show the submitted payload
+
+            // Disable submit button if viewing history
+            submitDpbBtn.style.display = 'none';
+
+            reportModalOverlay.style.display = 'flex';
+        } catch (error) {
+            alert(`Failed to load historical submission details: ${error.message}`);
+        }
+    }
+
+    // 3. Handle Submission to DPB (Click from Modal)
+    submitDpbBtn.addEventListener('click', async function() {
+        if (!currentReportDraft) {
+            alert("Error: No valid report draft is loaded for submission.");
+            return;
+        }
+        if (!confirm("CONFIRM: Are you sure you want to securely submit this report to the Data Protection Board? This action is final.")) {
+            return;
+        }
+
+        submitDpbBtn.textContent = 'Submitting...';
+        submitDpbBtn.disabled = true;
+
+        try {
+            const payload = {
+                "_func": "submit_report_to_dpb",
+                "report_data": currentReportDraft,
+                "report_type": reportTypeSelect.value,
+                "fiduciary_id": fiduciarySelect.value
+                // The DPB service will use the Mutual TLS cert configured in system_config.
+            };
+
+            const response = await fetch(API_URL_REPORTS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("SUCCESS! Report submitted to DPB successfully.");
+                closeModal();
+            } else {
+                const errorMsg = (await response.json()).message || `Status: ${response.status}`;
+                alert(`DPB Submission FAILED: ${errorMsg}. Check system logs.`);
+            }
+
+        } catch (error) {
+            alert(`Network error during DPB submission.`);
+        } finally {
+            submitDpbBtn.textContent = 'Submit to DPB';
+            submitDpbBtn.disabled = false;
+        }
+    });
+
+    // --- Initialization ---
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // --- Variable Assignments ---
+        sidebar = document.getElementById('sidebar');
+        menuToggle = document.getElementById('menu-toggle');
+        backdrop = document.getElementById('sidebar-backdrop');
+        submissionHistoryBody = document.getElementById('submission-history-body');
+        historyErrorMessageP = document.getElementById('history-error-message');
+
+        reportForm = document.getElementById('report-form');
+        reportTypeSelect = document.getElementById('report-type');
+        fiduciarySelect = document.getElementById('fiduciary-select');
+        dateRangeInput = document.getElementById('date-range');
+        generateReportBtn = document.getElementById('generate-report-btn');
+        reportMessage = document.getElementById('report-message');
+
+        reportModalOverlay = document.getElementById('report-modal-overlay');
+        modalReportTitle = document.getElementById('modal-report-title');
+        reportJsonOutput = document.getElementById('report-json-output');
+        submitDpbBtn = document.getElementById('submit-dpb-btn');
+
+        // --- Fetch Fiduciaries and Load History ---
+        await fetchFiduciariesForDropdown();
+        loadSubmissionHistory();
+
+        // --- Event Listener Attachments ---
+        menuToggle.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+        document.getElementById('close-report-modal-btn').addEventListener('click', closeModal);
+
+        // Expose functions globally so they can be called by inline onclick attributes
+        window.viewReportDetails = viewReportDetails;
+        window.handleLogout = handleLogout;
+        window.toggleMenu = toggleMenu;
+    });
+
+</script>
+</body>
+
+</html>

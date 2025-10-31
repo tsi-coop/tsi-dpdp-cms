@@ -30,12 +30,6 @@
   },
   "required": [
     "_func",
-    "fiduciary_id",
-    "status",
-    "type",
-    "assigned_dpo_user_id",
-    "search",
-    "page",
     "limit"
   ]
 }
