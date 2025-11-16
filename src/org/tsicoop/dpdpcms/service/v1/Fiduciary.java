@@ -374,7 +374,7 @@ public class Fiduciary implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, contact_person, email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at FROM fiduciaries WHERE status is not null");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, contact_person, email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at FROM fiduciaries WHERE status is not null");
         List<Object> params = new ArrayList<>();
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
@@ -413,8 +413,6 @@ public class Fiduciary implements Action {
                 fiduciary.put("cms_cname", rs.getString("cms_cname"));
                 fiduciary.put("domain_validation_status", rs.getString("domain_validation_status"));
                 fiduciary.put("is_significant_data_fiduciary", rs.getBoolean("is_significant_data_fiduciary"));
-                fiduciary.put("dpo_user_id", rs.getString("dpo_user_id"));
-                fiduciary.put("dpb_registration_id", rs.getString("dpb_registration_id"));
                 fiduciary.put("status", rs.getString("status"));
                 fiduciary.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 fiduciary.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
