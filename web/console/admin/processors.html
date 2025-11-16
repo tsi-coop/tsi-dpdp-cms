@@ -431,8 +431,8 @@
         if (FiduciaryList.length === 0) {
             const fids = await fetchFiduciariesForDropdown();
             if (fids.length === 0) {
-                 tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">
-                    Cannot load processors: No Data Fiduciaries found or failed API call.
+                 tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">
+                    No Data Fiduciaries found.
                  </td></tr>`;
                  countSpan.textContent = '0 Total';
                  return;
