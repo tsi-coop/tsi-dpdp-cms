@@ -326,7 +326,6 @@ public class Fiduciary implements Action {
             sqlBuilder.append(" AND id != ?");
             params.add(excludeFiduciaryId);
         }
-        sqlBuilder.append(" AND deleted_at IS NULL"); // Only consider non-deleted fiduciaries
 
         try {
             conn = pool.getConnection();
@@ -434,7 +433,7 @@ public class Fiduciary implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, name, contact_person, email, phone, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at FROM fiduciaries WHERE id = ?";
+        String sql = "SELECT id, name, contact_person, email, phone, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at FROM fiduciaries WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -453,8 +452,6 @@ public class Fiduciary implements Action {
                 fiduciary.put("dns_txt_record_token", rs.getString("dns_txt_record_token"));
                 fiduciary.put("domain_validation_status", rs.getString("domain_validation_status"));
                 fiduciary.put("is_significant_data_fiduciary", rs.getBoolean("is_significant_data_fiduciary"));
-                fiduciary.put("dpo_user_id", rs.getString("dpo_user_id"));
-                fiduciary.put("dpb_registration_id", rs.getString("dpb_registration_id"));
                 fiduciary.put("status", rs.getString("status"));
                 fiduciary.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 fiduciary.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
@@ -479,7 +476,7 @@ public class Fiduciary implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "INSERT INTO fiduciaries (id, name, contact_person, email, phone, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, dpo_user_id, dpb_registration_id, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
+        String sql = "INSERT INTO fiduciaries (id, name, contact_person, email, phone, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -494,9 +491,7 @@ public class Fiduciary implements Action {
             pstmt.setString(8, dnsTxtToken);
             pstmt.setString(9, "PENDING"); // Initial validation status
             pstmt.setBoolean(10, isSignificant);
-            pstmt.setObject(11, dpoUserId);
-            pstmt.setString(12, dpbRegId);
-            pstmt.setString(13, status);
+            pstmt.setString(11, status);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
