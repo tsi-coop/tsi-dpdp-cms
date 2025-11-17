@@ -139,7 +139,7 @@ public class Fiduciary implements Action {
                     String dnsTxtToken = "dpdp-verify-" + UUID.randomUUID().toString().substring(0, 8);
 
                     output = saveFiduciaryToDb(name, contactPerson, email, phone, address, primaryDomain, cmsCname, dnsTxtToken,
-                            isSignificant != null ? isSignificant : false, dpoUserId, dpbRegId, "PENDING");
+                            isSignificant != null ? isSignificant : false, dpoUserId, dpbRegId, "ACTIVE"); // Make it active for now
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
