@@ -211,7 +211,6 @@
                 <tr class="table-header">
                     <th class="px-4 py-3 text-sm">Policy ID</th>
                     <th class="px-4 py-3 text-sm">Version</th>
-                    <th class="px-4 py-3 text-sm">Fiduciary</th>
                     <th class="px-4 py-3 text-sm">Jurisdiction</th>
                     <th class="px-4 py-3 text-sm">Status</th>
                     <th class="px-4 py-3 text-sm">Effective Date</th>
@@ -247,13 +246,12 @@
 
             <!-- Section 1: Metadata & Association -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+                <!--<div>
                     <label for="policy-fiduciary-select" class="block text-sm font-medium text-gray-700">Associate Fiduciary</label>
                     <select id="policy-fiduciary-select" name="fiduciary_id" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                         <option value="">-- Select Fiduciary --</option>
-                        <!-- Options populated dynamically -->
                     </select>
-                </div>
+                </div> -->
                 <div>
                     <label for="policy-id-input" class="block text-sm font-medium text-gray-700">Policy ID (Unique Key)</label>
                     <input type="text" id="policy-id-input" name="policy_id" required placeholder="e.g., WEB_PRIVACY_V1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
@@ -291,8 +289,7 @@
 
 <script>
     // --- Configuration ---
-    const API_URL_POLICY = ENV_SERVER_URL + '/api/v1/admin/policy';
-    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
+    const API_URL_POLICY = ENV_SERVER_URL + '/api/v1/policy';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';
@@ -310,6 +307,26 @@
     function toggleMenu() {
         sidebar.classList.toggle('open');
         backdrop.classList.toggle('hidden');
+    }
+
+        // Function definition for showModal - FIX
+    function showModal(title, isEdit = false) {
+        document.getElementById('modal-title').textContent = title;
+        policyForm.reset();
+
+        // Reset hidden fields and views
+        document.getElementById('policy-id-hidden').value = '';
+        document.getElementById('policy-version-hidden').value = '';
+        document.getElementById('policy-view-details').classList.add('hidden');
+        document.getElementById('policy-form').style.display = 'block';
+
+        // Set buttons based on action
+        document.getElementById('save-policy-btn').textContent = isEdit ? 'Update Draft' : 'Save Draft';
+        document.getElementById('publish-policy-btn').classList.add('hidden'); // Hide Publish by default
+
+        // Enable fields by default
+        document.getElementById('policy-id-input').disabled = false;
+        policyModalOverlay.style.display = 'flex';
     }
 
     function closeModal() {
@@ -359,7 +376,6 @@
         row.innerHTML = `
             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${policy.policy_id || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${policy.version || 'N/A'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(policy.fiduciary_id)}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${policy.jurisdiction || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(policy.status)}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${new Date(policy.effective_date).toLocaleDateString()}</td>
@@ -504,7 +520,6 @@
 
             // Lock immutable fields
             policyIdInput.disabled = true;
-            policyFiduciarySelect.disabled = true;
 
             // Paste content (use the existing content data)
             policyContentInput.value = JSON.stringify(policy.policy_content, null, 2);
@@ -621,7 +636,6 @@
         policyForm.style.display = 'block';
         policyViewDetails.classList.add('hidden');
         policyIdInput.disabled = false;
-        policyFiduciarySelect.disabled = false;
     });
     closeModalBtn.addEventListener('click', closeModal);
 
@@ -638,19 +652,19 @@
 
         const formData = new FormData(policyForm);
         const policyId = formData.get('policy_id').trim();
-        const fiduciaryId = formData.get('fiduciary_id');
+        const fiduciaryId = localStorage.getItem('fiduciary_id');
         const isEditing = !!policyVersionHidden.value; // Editing if version is present
-        const func = isEditing ? "update_policy_draft" : "create_policy_draft";
+        const func = isEditing ? "update_policy" : "create_policy";
 
         // Validate JSON content client-side
         let policyContentJson;
         try {
             policyContentJson = JSON.parse(policyContentInput.value);
-            if (!policyContentJson.languages || !policyContentJson.languages.en) {
-                 throw new Error("Missing 'languages' or 'en' key.");
+            if (!policyContentJson.en) {
+                 throw new Error("Missing 'en' key.");
             }
         } catch (e) {
-            alert("Error: Policy Content must be valid JSON and contain a 'languages' object (check console for syntax errors).");
+            alert("Error: Policy Content must be valid JSON and contain a 'en' object (check console for syntax errors).");
             return;
         }
 

@@ -71,6 +71,7 @@ public class Policy implements Action {
             // Extract common parameters
             String policyIdStr = (String) input.get("policy_id");
             String versionStr = (String) input.get("version");
+            if(versionStr == null) versionStr = "";
             String jurisdiction = (String) input.get("jurisdiction");
             UUID fiduciaryId = null;
             String fiduciaryIdStr = (String) input.get("fiduciary_id");
@@ -135,18 +136,18 @@ public class Policy implements Action {
                     JSONObject policyContent = (JSONObject) input.get("policy_content");
                     String effectiveDateStr = (String) input.get("effective_date");
 
-                    if (policyIdStr == null || policyIdStr.isEmpty() || versionStr == null || versionStr.isEmpty() || fiduciaryId == null || jurisdiction == null || jurisdiction.isEmpty() || policyContent == null || effectiveDateStr == null || effectiveDateStr.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (policy_id, version, fiduciary_id, jurisdiction, policy_content, effective_date) for 'create_policy'.", req.getRequestURI());
+                    if (policyIdStr == null || policyIdStr.isEmpty() || fiduciaryId == null || jurisdiction == null || jurisdiction.isEmpty() || policyContent == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (policy_id, fiduciary_id, jurisdiction, policy_content) for 'create_policy'.", req.getRequestURI());
                         return;
                     }
-                    if (!POLICY_ID_PATTERN.matcher(policyIdStr).matches()) {
+                   /* if (!POLICY_ID_PATTERN.matcher(policyIdStr).matches()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid policy_id format.", req.getRequestURI());
                         return;
                     }
                     if (!VERSION_PATTERN.matcher(versionStr).matches()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid version format (e.g., 1.0, 1.0.1).", req.getRequestURI());
                         return;
-                    }
+                    }*/
                     Timestamp effectiveDate = Timestamp.from(Instant.now());
 
                     if (policyExists(policyIdStr, versionStr)) {

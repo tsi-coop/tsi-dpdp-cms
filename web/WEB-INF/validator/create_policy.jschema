@@ -9,9 +9,6 @@
     "policy_id": {
       "type": "string"
     },
-    "version": {
-      "type": "string"
-    },
     "fiduciary_id": {
       "type": "string"
     },
@@ -75,9 +72,7 @@
   "required": [
     "_func",
     "policy_id",
-    "version",
     "fiduciary_id",
-    "effective_date",
     "jurisdiction",
     "policy_content"
   ]
