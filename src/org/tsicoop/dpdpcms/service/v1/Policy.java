@@ -320,7 +320,7 @@ public class Policy implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM fiduciaries WHERE id = ? AND deleted_at IS NULL";
+        String sql = "SELECT COUNT(*) FROM fiduciaries WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -344,7 +344,7 @@ public class Policy implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, created_at, last_updated_at FROM consent_policies WHERE deleted_at IS NULL");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, created_at, last_updated_at FROM consent_policies WHERE status is not null");
         List<Object> params = new ArrayList<>();
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
@@ -401,7 +401,7 @@ public class Policy implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at FROM consent_policies WHERE id = ? AND version = ? AND deleted_at IS NULL";
+        String sql = "SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at FROM consent_policies WHERE id = ? AND version = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -439,7 +439,7 @@ public class Policy implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at FROM consent_policies WHERE fiduciary_id = ? AND jurisdiction = ? AND status = 'ACTIVE' AND effective_date <= NOW() AND deleted_at IS NULL ORDER BY effective_date DESC LIMIT 1";
+        String sql = "SELECT id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at FROM consent_policies WHERE fiduciary_id = ? AND jurisdiction = ? AND status = 'ACTIVE' AND effective_date <= NOW() ORDER BY effective_date DESC LIMIT 1";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -600,7 +600,7 @@ public class Policy implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE consent_policies SET deleted_at = NOW() WHERE id = ? AND version = ? AND status != 'ACTIVE'"; // Cannot delete active
+        String sql = "UPDATE consent_policies SET status = 'DELETED' WHERE id = ? AND version = ? AND status != 'ACTIVE'"; // Cannot delete active
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);

@@ -372,54 +372,16 @@
 
 
     // --- Core Logic ---
-
-    // Fetch Fiduciaries and populate cache and dropdown
-    async function fetchFiduciariesForDropdown() {
-        try {
-            const payload = {"_func": "list_fiduciaries"};
-            const response = await fetch(API_URL_FIDUCIARIES_LIST, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list for dropdown.");
-
-            const responseData = await response.json();
-            const fiduciaries = responseData.data || responseData;
-
-            // Clear and populate cache
-            FiduciaryList = {};
-            policyFiduciarySelect.innerHTML = '<option value="">-- Select Fiduciary --</option>';
-
-            fiduciaries.forEach(f => {
-                const option = document.createElement('option');
-                option.value = f.fiduciary_id;
-                option.textContent = f.name;
-                policyFiduciarySelect.appendChild(option);
-                // Cache the fiduciary for lookup
-                FiduciaryList[f.fiduciary_id] = f;
-            });
-        } catch (error) {
-            console.error("Error fetching Fiduciaries for policy creation:", error);
-        }
-    }
-
-
     async function loadPolicies(searchTerm = "") {
         tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Loading Policy data...</td></tr>`;
         errorMessageP.classList.add('hidden');
-
-        if (Object.keys(FiduciaryList).length === 0) {
-            await fetchFiduciariesForDropdown();
-        }
-
 
         try {
             const listPayload = {
                 "_func": "list_policies",
                 "search": searchTerm,
-                "status_filter": "ALL",
+                "status": "",
+                "fiduciary_id_filter":localStorage.getItem("fiduciary_id"),
                 "page": 1,
                 "limit": 50
             };
@@ -496,7 +458,6 @@
             return null;
         }
     }
-
 
     // --- ACTION HANDLERS ---
 
@@ -649,7 +610,6 @@
 
 
     // --- Fetch Fiduciaries and Load Policies ---
-    fetchFiduciariesForDropdown();
     loadPolicies();
 
     // --- Event Listener Attachments ---
