@@ -622,6 +622,56 @@
     }
 
 
+     // --- Event Listeners and Initialization ---
+             // --- Variable Assignments ---
+    sidebar = document.getElementById('sidebar');
+    menuToggle = document.getElementById('menu-toggle');
+    backdrop = document.getElementById('sidebar-backdrop');
+    policyModalOverlay = document.getElementById('policy-modal-overlay');
+    addPolicyBtn = document.getElementById('add-policy-btn');
+    closeModalBtn = document.getElementById('close-modal-btn');
+    policyForm = document.getElementById('policy-form');
+    tableBody = document.getElementById('policy-table-body');
+    countSpan = document.getElementById('policy-count');
+    errorMessageP = document.getElementById('policy-error-message');
+    searchInput = document.getElementById('search-input');
+
+    policyIdHidden = document.getElementById('policy-id-hidden');
+    policyVersionHidden = document.getElementById('policy-version-hidden');
+    policyIdInput = document.getElementById('policy-id-input');
+    policyJurisdictionSelect = document.getElementById('policy-jurisdiction-select');
+    policyContentInput = document.getElementById('policy-content-input');
+    policyFiduciarySelect = document.getElementById('policy-fiduciary-select');
+    savePolicyBtn = document.getElementById('save-policy-btn');
+    publishPolicyBtn = document.getElementById('publish-policy-btn');
+    policyViewDetails = document.getElementById('policy-view-details');
+    policyJsonOutput = document.getElementById('policy-json-output');
+
+
+    // --- Fetch Fiduciaries and Load Policies ---
+    fetchFiduciariesForDropdown();
+    loadPolicies();
+
+    // --- Event Listener Attachments ---
+    menuToggle.addEventListener('click', toggleMenu);
+    backdrop.addEventListener('click', toggleMenu);
+    addPolicyBtn.addEventListener('click', () => {
+        showModal('Create New Policy Version');
+        // Show form and hide view panel for creation
+        policyForm.style.display = 'block';
+        policyViewDetails.classList.add('hidden');
+        policyIdInput.disabled = false;
+        policyFiduciarySelect.disabled = false;
+    });
+    closeModalBtn.addEventListener('click', closeModal);
+
+    // Expose functions globally so they can be called by inline onclick attributes
+    window.viewPolicy = viewPolicy;
+    window.editPolicy = editPolicy;
+    window.publishPolicy = publishPolicy;
+    window.deactivatePolicy = deactivatePolicy;
+    window.toggleMenu = toggleMenu;
+
     // --- Form Submission: Save Draft/Create Policy ---
     policyForm.addEventListener('submit', async function(event) {
         event.preventDefault();
@@ -681,60 +731,6 @@
             document.getElementById('save-policy-btn').textContent = isEditing ? 'Update Draft' : 'Save Draft';
             document.getElementById('save-policy-btn').disabled = false;
         }
-    });
-
-
-    // --- Event Listeners and Initialization ---
-
-    document.addEventListener('DOMContentLoaded', async () => {
-        // --- Variable Assignments ---
-        sidebar = document.getElementById('sidebar');
-        menuToggle = document.getElementById('menu-toggle');
-        backdrop = document.getElementById('sidebar-backdrop');
-        policyModalOverlay = document.getElementById('policy-modal-overlay');
-        addPolicyBtn = document.getElementById('add-policy-btn');
-        closeModalBtn = document.getElementById('close-modal-btn');
-        policyForm = document.getElementById('policy-form');
-        tableBody = document.getElementById('policy-table-body');
-        countSpan = document.getElementById('policy-count');
-        errorMessageP = document.getElementById('policy-error-message');
-        searchInput = document.getElementById('search-input');
-
-        policyIdHidden = document.getElementById('policy-id-hidden');
-        policyVersionHidden = document.getElementById('policy-version-hidden');
-        policyIdInput = document.getElementById('policy-id-input');
-        policyJurisdictionSelect = document.getElementById('policy-jurisdiction-select');
-        policyContentInput = document.getElementById('policy-content-input');
-        policyFiduciarySelect = document.getElementById('policy-fiduciary-select');
-        savePolicyBtn = document.getElementById('save-policy-btn');
-        publishPolicyBtn = document.getElementById('publish-policy-btn');
-        policyViewDetails = document.getElementById('policy-view-details');
-        policyJsonOutput = document.getElementById('policy-json-output');
-
-
-        // --- Fetch Fiduciaries and Load Policies ---
-        await fetchFiduciariesForDropdown();
-        loadPolicies();
-
-        // --- Event Listener Attachments ---
-        menuToggle.addEventListener('click', toggleMenu);
-        backdrop.addEventListener('click', toggleMenu);
-        addPolicyBtn.addEventListener('click', () => {
-            showModal('Create New Policy Version');
-            // Show form and hide view panel for creation
-            policyForm.style.display = 'block';
-            policyViewDetails.classList.add('hidden');
-            policyIdInput.disabled = false;
-            policyFiduciarySelect.disabled = false;
-        });
-        closeModalBtn.addEventListener('click', closeModal);
-
-        // Expose functions globally so they can be called by inline onclick attributes
-        window.viewPolicy = viewPolicy;
-        window.editPolicy = editPolicy;
-        window.publishPolicy = publishPolicy;
-        window.deactivatePolicy = deactivatePolicy;
-        window.toggleMenu = toggleMenu;
     });
 
 </script>

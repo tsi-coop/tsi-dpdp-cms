@@ -288,7 +288,7 @@ public class User implements Action {
         JSONObject result = new JSONObject();
 
         // Query by username or email
-        String sql = "SELECT id AS user_id, username, email, password_hash, status, mfa_enabled, role, fiduciary_id FROM users WHERE (username = ? OR email = ?)";
+        String sql = "SELECT u.id, u.username, u.email, u.password_hash, u.status, u.mfa_enabled, u.role, u.fiduciary_id, f.name FROM users u, fiduciaries f WHERE (u.username = ? OR u.email = ?)";
 
         try {
             conn = pool.getConnection();
@@ -298,7 +298,7 @@ public class User implements Action {
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                String userId = rs.getString("user_id");
+                String userId = rs.getString("id");
                 String username = rs.getString("username");
                 String email = rs.getString("email");
                 String storedHashedPassword = rs.getString("password_hash");
@@ -307,6 +307,8 @@ public class User implements Action {
                 String roleName = rs.getString("role");
                 String fiduciaryId = rs.getString("fiduciary_id");
                 if(fiduciaryId == null) fiduciaryId = "";
+                String fiduciaryName = rs.getString("name");
+                if(fiduciaryName == null) fiduciaryName = "";
 
                 if (!"ACTIVE".equalsIgnoreCase(status)) {
                     result.put("error", true);
@@ -346,6 +348,7 @@ public class User implements Action {
                         result.put("role", roleName);
                         result.put("token", generatedToken);
                         result.put("fiduciary_id", fiduciaryId);
+                        result.put("fiduciary_name", fiduciaryName);
                     }
                 } else {
                     result.put("error", true);

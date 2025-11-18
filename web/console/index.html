@@ -202,7 +202,8 @@ async function handleLogin(event) {
                 localStorage.setItem('username', responseData.username);
                 localStorage.setItem('role', responseData.role);
                 localStorage.setItem('fiduciary_id', responseData.fiduciary_id);
-
+                localStorage.setItem('fiduciary_name', responseData.fiduciary_name);
+                console.log(responseData.fiduciary_name);
                 // Redirect the user to the admin dashboard
                 messageArea.textContent = "Login successful. Redirecting...";
                 role = responseData.role;
