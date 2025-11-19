@@ -56,10 +56,8 @@ public class Policy implements Action {
         JSONObject output = null;
         JSONArray outputArray = null;
 
-        // Placeholder for current user ID (in a real system, this would come from authentication context)
-        UUID currentUserId = UUID.fromString("00000000-0000-0000-0000-000000000001"); // Example Admin User ID
-
         try {
+            req.setCharacterEncoding("UTF-8");
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
 
@@ -105,8 +103,8 @@ public class Policy implements Action {
                     break;
 
                 case "get_policy":
-                    if (policyIdStr == null || policyIdStr.isEmpty() || versionStr == null || versionStr.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' and 'version' are required for 'get_policy'.", req.getRequestURI());
+                    if (policyIdStr == null || policyIdStr.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' is required for 'get_policy'.", req.getRequestURI());
                         return;
                     }
                     Optional<JSONObject> policyOptional = getPolicyFromDb(policyIdStr, versionStr);
@@ -159,7 +157,7 @@ public class Policy implements Action {
                         return;
                     }
 
-                    output = savePolicyToDb(policyIdStr, versionStr, fiduciaryId, effectiveDate, jurisdiction, policyContent, "DRAFT", currentUserId);
+                    output = savePolicyToDb(policyIdStr, versionStr, fiduciaryId, effectiveDate, jurisdiction, policyContent, "DRAFT");
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -199,7 +197,7 @@ public class Policy implements Action {
 
                     Timestamp updatedEffectiveDate = (effectiveDateStr != null && !effectiveDateStr.isEmpty()) ? Timestamp.from(Instant.parse(effectiveDateStr)) : null;
 
-                    output = updatePolicyInDb(policyIdStr, versionStr, fiduciaryId, updatedEffectiveDate, jurisdiction, policyContent, currentUserId);
+                    output = updatePolicyInDb(policyIdStr, versionStr, fiduciaryId, updatedEffectiveDate, jurisdiction, policyContent);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
@@ -227,7 +225,7 @@ public class Policy implements Action {
                     UUID policyFidId = UUID.fromString((String)existingPolicy.get().get("fiduciary_id"));
                     String policyJurisdiction = (String)existingPolicy.get().get("jurisdiction");
 
-                    publishPolicyInDb(policyIdStr, versionStr, policyFidId, policyJurisdiction, currentUserId);
+                    publishPolicyInDb(policyIdStr, versionStr, policyFidId, policyJurisdiction);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Policy published successfully."); }});
                     break;
 
@@ -247,7 +245,7 @@ public class Policy implements Action {
                         return;
                     }
 
-                    deletePolicyFromDb(policyIdStr, versionStr, currentUserId);
+                    deletePolicyFromDb(policyIdStr, versionStr);
                     OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
                     break;
 
@@ -473,7 +471,7 @@ public class Policy implements Action {
      * @return JSONObject containing the new policy's details.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject savePolicyToDb(String policyId, String version, UUID fiduciaryId, Timestamp effectiveDate, String jurisdiction, JSONObject policyContent, String status, UUID createdByUserId) throws SQLException {
+    private JSONObject savePolicyToDb(String policyId, String version, UUID fiduciaryId, Timestamp effectiveDate, String jurisdiction, JSONObject policyContent, String status) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -510,7 +508,7 @@ public class Policy implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject updatePolicyInDb(String policyId, String version, UUID fiduciaryId, Timestamp effectiveDate, String jurisdiction, JSONObject policyContent, UUID updatedByUserId) throws SQLException {
+    private JSONObject updatePolicyInDb(String policyId, String version, UUID fiduciaryId, Timestamp effectiveDate, String jurisdiction, JSONObject policyContent) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
@@ -548,7 +546,7 @@ public class Policy implements Action {
      * This operation is transactional.
      * @throws SQLException if a database access error occurs.
      */
-    private void publishPolicyInDb(String policyId, String version, UUID fiduciaryId, String jurisdiction, UUID publishedByUserId) throws SQLException {
+    private void publishPolicyInDb(String policyId, String version, UUID fiduciaryId, String jurisdiction) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtDeactivate = null;
         PreparedStatement pstmtActivate = null;
@@ -597,7 +595,7 @@ public class Policy implements Action {
      * Deletes a policy version from the database (soft delete).
      * @throws SQLException if a database access error occurs.
      */
-    private void deletePolicyFromDb(String policyId, String version, UUID deletedByUserId) throws SQLException {
+    private void deletePolicyFromDb(String policyId, String version) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();

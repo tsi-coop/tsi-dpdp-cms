@@ -8,14 +8,10 @@
     },
     "policy_id": {
       "type": "string"
-    },
-    "version": {
-      "type": "string"
     }
   },
   "required": [
     "_func",
-    "policy_id",
-    "version"
+    "policy_id"
   ]
 }

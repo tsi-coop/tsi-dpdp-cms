@@ -78,8 +78,7 @@ CREATE TABLE IF NOT EXISTS consent_policies (
     policy_content JSONB NOT NULL, -- Full multilingual JSON policy
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (id, version),
-    UNIQUE (fiduciary_id, jurisdiction, status) -- Ensures only one active policy per fiduciary/jurisdiction at a time
+    PRIMARY KEY (id, version)
 );
 
 --

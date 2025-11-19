@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -127,6 +126,20 @@
             width: 95%;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             position: relative;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: #4a5568;
+            background: none;
+            border: none;
+            cursor: pointer;
+            line-height: 1;
         }
 
         .modal-footer {
@@ -237,6 +250,10 @@
 <!-- Modal for Creating/Viewing/Publishing Policy -->
 <div id="policy-modal-overlay" class="modal-overlay">
     <div class="modal-content">
+         <button type="button" class="modal-close-btn" onclick="closeModal()">
+            &times;
+        </button>
+
         <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Create New Policy Version</h2>
         <form id="policy-form" class="space-y-4">
 
@@ -358,23 +375,23 @@
         const isLatest = policy.status === 'ACTIVE' || isDraft;
 
         const actionsHtml = `
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="viewPolicy('${policy.policy_id}', '${policy.version}', '${policy.fiduciary_id}')">View</button>
+            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="viewPolicy('${policy.id}', '${policy.fiduciary_id}')">View</button>
 
             ${isDraft ?
-                `<button class="text-orange-600 hover:text-orange-800 font-medium text-sm mr-2" onclick="editPolicy('${policy.policy_id}', '${policy.version}', '${policy.fiduciary_id}')">Edit Draft</button>`
+                `<button class="text-orange-600 hover:text-orange-800 font-medium text-sm mr-2" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}')">Edit Draft</button>`
                 : ''}
 
             ${isDraft ?
-                `<button class="text-green-600 hover:text-green-800 font-medium text-sm" onclick="publishPolicy('${policy.policy_id}', '${policy.version}', '${policy.fiduciary_id}')">Publish</button>`
+                `<button class="text-green-600 hover:text-green-800 font-medium text-sm" onclick="publishPolicy('${policy.id}', '${policy.fiduciary_id}')">Publish</button>`
                 : ''}
 
             ${policy.status === 'ACTIVE' ?
-                `<button class="text-red-600 hover:text-red-800 font-medium text-sm" onclick="deactivatePolicy('${policy.policy_id}', '${policy.version}', '${policy.fiduciary_id}')">Deactivate</button>`
+                `<button class="text-red-600 hover:text-red-800 font-medium text-sm" onclick="deactivatePolicy('${policy.id}', '${policy.fiduciary_id}')">Deactivate</button>`
                 : ''}
         `;
 
         row.innerHTML = `
-            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${policy.policy_id || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${policy.id || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${policy.version || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${policy.jurisdiction || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(policy.status)}</td>
@@ -444,12 +461,11 @@
         }
     }
 
-    async function fetchPolicyDetails(policyId, version, fiduciaryId) {
+    async function fetchPolicyDetails(policyId, fiduciaryId) {
         try {
             const payload = {
                 "_func": "get_policy",
                 "policy_id": policyId,
-                "version": version,
                 "fiduciary_id": fiduciaryId
             };
 
@@ -458,10 +474,11 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
-
+            console.log(response);
             if (!response.ok) throw new Error(`Failed to fetch details for policy ${policyId}/${version}. Status: ${response.status}`);
-
+            console.log('debug2..');
             const responseData = await response.json();
+            console.log(JSON.stringify(responseData));
 
             if (responseData.policy_id) {
                 return responseData;
@@ -478,7 +495,7 @@
     // --- ACTION HANDLERS ---
 
     // 1. View Policy Details (Read-Only)
-    async function viewPolicy(policyId, version, fiduciaryId) {
+    async function viewPolicy(policyId, fiduciaryId) {
         showModal('Policy Details (Read-Only)', false);
 
         // Hide form fields and buttons, show read-only section
@@ -486,7 +503,7 @@
         policyViewDetails.classList.remove('hidden');
         policyJsonOutput.textContent = 'Loading policy content...';
 
-        const policy = await fetchPolicyDetails(policyId, version, fiduciaryId);
+        const policy = await fetchPolicyDetails(policyId, fiduciaryId);
 
         if (policy) {
             try {
@@ -501,7 +518,7 @@
     }
 
     // 2. Edit Policy (Opens modal with existing data)
-    async function editPolicy(policyId, version, fiduciaryId) {
+    async function editPolicy(policyId, fiduciaryId) {
         showModal('Edit Policy Draft', false);
 
         policyForm.style.display = 'block';
@@ -509,12 +526,11 @@
         document.getElementById('save-policy-btn').textContent = 'Update Draft';
         document.getElementById('publish-policy-btn').classList.add('hidden'); // Ensure publish button is hidden during edit
 
-        const policy = await fetchPolicyDetails(policyId, version, fiduciaryId);
+        const policy = await fetchPolicyDetails(policyId, fiduciaryId);
 
         if (policy) {
             // Populate form fields
-            policyIdHidden.value = policy.policy_id;
-            policyVersionHidden.value = policy.version;
+            policyIdHidden.value = policy.id;
             policyFiduciarySelect.value = policy.fiduciary_id;
             policyJurisdictionSelect.value = policy.jurisdiction;
 
@@ -529,7 +545,7 @@
     }
 
     // 3. Publish Policy (Status Update)
-    async function publishPolicy(policyId, version, fiduciaryId) {
+    async function publishPolicy(policyId, fiduciaryId) {
         if (!confirm(`Are you sure you want to PUBLISH Policy ID ${policyId} (Version ${version})? This will immediately make it the ACTIVE policy for the associated Fiduciary and supersede the previous active version.`)) {
             return;
         }
@@ -538,7 +554,6 @@
             const payload = {
                 "_func": "publish_policy",
                 "policy_id": policyId,
-                "version": version,
                 "fiduciary_id": fiduciaryId,
                 "new_status": "ACTIVE",
                 "effective_date": new Date().toISOString()
@@ -564,7 +579,7 @@
     }
 
     // 4. Deactivate Policy (Status Update)
-    async function deactivatePolicy(policyId, version, fiduciaryId) {
+    async function deactivatePolicy(policyId, fiduciaryId) {
         if (!confirm(`WARNING: Are you sure you want to DEACTIVATE Policy ID ${policyId} (Version ${version})? This should only be done if an urgent new policy is replacing it or there is a compliance issue.`)) {
             return;
         }
@@ -573,7 +588,6 @@
             const payload = {
                 "_func": "update_policy_status",
                 "policy_id": policyId,
-                "version": version,
                 "fiduciary_id": fiduciaryId,
                 "new_status": "ARCHIVED", // Set to ARCHIVED/INACTIVE
             };
