@@ -162,8 +162,8 @@ public class Policy implements Action {
                     break;
 
                 case "update_policy":
-                    if (policyIdStr == null || policyIdStr.isEmpty() || versionStr == null || versionStr.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' and 'version' are required for 'update_policy'.", req.getRequestURI());
+                    if (policyIdStr == null || policyIdStr.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' is required for 'update_policy'.", req.getRequestURI());
                         return;
                     }
                     Optional<JSONObject> existingPolicy = getPolicyFromDb(policyIdStr, versionStr);
@@ -178,11 +178,10 @@ public class Policy implements Action {
                     }
 
                     policyContent = (JSONObject) input.get("policy_content");
-                    effectiveDateStr = (String) input.get("effective_date");
                     jurisdiction = (String) input.get("jurisdiction"); // Jurisdiction can also be updated for draft
                     fiduciaryIdStr = (String) input.get("fiduciary_id"); // Fiduciary can also be updated for draft
 
-                    if (policyContent == null && effectiveDateStr == null && jurisdiction == null && fiduciaryIdStr == null) {
+                    if (policyContent == null && fiduciaryIdStr == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "No fields provided for update for 'update_policy'.", req.getRequestURI());
                         return;
                     }
@@ -195,9 +194,7 @@ public class Policy implements Action {
                         }
                     }
 
-                    Timestamp updatedEffectiveDate = (effectiveDateStr != null && !effectiveDateStr.isEmpty()) ? Timestamp.from(Instant.parse(effectiveDateStr)) : null;
-
-                    output = updatePolicyInDb(policyIdStr, versionStr, fiduciaryId, updatedEffectiveDate, jurisdiction, policyContent);
+                    output = updatePolicyInDb(policyIdStr, fiduciaryId, policyContent);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
@@ -508,7 +505,7 @@ public class Policy implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject updatePolicyInDb(String policyId, String version, UUID fiduciaryId, Timestamp effectiveDate, String jurisdiction, JSONObject policyContent) throws SQLException {
+    private JSONObject updatePolicyInDb(String policyId, UUID fiduciaryId, JSONObject policyContent) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
@@ -516,13 +513,11 @@ public class Policy implements Action {
         StringBuilder sqlBuilder = new StringBuilder("UPDATE consent_policies SET last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
         if (fiduciaryId != null) { sqlBuilder.append(", fiduciary_id = ?"); params.add(fiduciaryId); }
-        if (effectiveDate != null) { sqlBuilder.append(", effective_date = ?"); params.add(effectiveDate); }
-        if (jurisdiction != null && !jurisdiction.isEmpty()) { sqlBuilder.append(", jurisdiction = ?"); params.add(jurisdiction); }
         if (policyContent != null) { sqlBuilder.append(", policy_content = ?::jsonb"); params.add(policyContent.toJSONString()); }
 
         sqlBuilder.append(" WHERE id = ? AND version = ? AND status = 'DRAFT'");
         params.add(policyId);
-        params.add(version);
+        params.add("");
 
         try {
             conn = pool.getConnection();

@@ -474,11 +474,8 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
-            console.log(response);
             if (!response.ok) throw new Error(`Failed to fetch details for policy ${policyId}/${version}. Status: ${response.status}`);
-            console.log('debug2..');
             const responseData = await response.json();
-            console.log(JSON.stringify(responseData));
 
             if (responseData.policy_id) {
                 return responseData;
@@ -530,11 +527,11 @@
 
         if (policy) {
             // Populate form fields
-            policyIdHidden.value = policy.id;
-            policyFiduciarySelect.value = policy.fiduciary_id;
+            policyIdHidden.value = policyId;
             policyJurisdictionSelect.value = policy.jurisdiction;
 
             // Lock immutable fields
+            policyIdInput.value = policyId;
             policyIdInput.disabled = true;
 
             // Paste content (use the existing content data)
@@ -665,9 +662,9 @@
         event.preventDefault();
 
         const formData = new FormData(policyForm);
-        const policyId = formData.get('policy_id').trim();
+        const policyId = formData.get('policy_id') ?formData.get('policy_id').trim() : policyIdHidden.value;
         const fiduciaryId = localStorage.getItem('fiduciary_id');
-        const isEditing = !!policyVersionHidden.value; // Editing if version is present
+        const isEditing = !!policyIdHidden.value; // Editing if version is present
         const func = isEditing ? "update_policy" : "create_policy";
 
         // Validate JSON content client-side
@@ -705,7 +702,7 @@
             const responseData = await response.json();
 
             if (response.ok && responseData.success) {
-                alert(`Policy ${isEditing ? 'Draft Updated' : 'Created'} successfully! Version: ${responseData.version || 'New'}`);
+                alert(`Policy ${isEditing ? 'Draft Updated' : 'Created'} successfully!`);
                 closeModal();
             } else {
                 const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
