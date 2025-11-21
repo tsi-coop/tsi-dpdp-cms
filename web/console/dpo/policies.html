@@ -543,7 +543,7 @@
 
     // 3. Publish Policy (Status Update)
     async function publishPolicy(policyId, fiduciaryId) {
-        if (!confirm(`Are you sure you want to PUBLISH Policy ID ${policyId} (Version ${version})? This will immediately make it the ACTIVE policy for the associated Fiduciary and supersede the previous active version.`)) {
+        if (!confirm(`Are you sure you want to PUBLISH Policy ID ${policyId}? This will immediately make it the ACTIVE policy for the associated Fiduciary and supersede the previous active version.`)) {
             return;
         }
 
@@ -563,7 +563,7 @@
             });
 
             if (response.ok) {
-                alert(`Policy ${policyId} (v${version}) successfully PUBLISHED.`);
+                alert(`Policy ${policyId} successfully PUBLISHED.`);
                 loadPolicies();
             } else {
                 const errorMsg = (await response.json()).message || `Status: ${response.status}`;
@@ -577,16 +577,15 @@
 
     // 4. Deactivate Policy (Status Update)
     async function deactivatePolicy(policyId, fiduciaryId) {
-        if (!confirm(`WARNING: Are you sure you want to DEACTIVATE Policy ID ${policyId} (Version ${version})? This should only be done if an urgent new policy is replacing it or there is a compliance issue.`)) {
+        if (!confirm(`WARNING: Are you sure you want to DEACTIVATE Policy ID ${policyId}? This should only be done if an urgent new policy is replacing it or there is a compliance issue.`)) {
             return;
         }
 
         try {
             const payload = {
-                "_func": "update_policy_status",
+                "_func": "delete_policy",
                 "policy_id": policyId,
-                "fiduciary_id": fiduciaryId,
-                "new_status": "ARCHIVED", // Set to ARCHIVED/INACTIVE
+                "fiduciary_id": fiduciaryId
             };
 
             const response = await fetch(API_URL_POLICY, {
@@ -596,7 +595,7 @@
             });
 
             if (response.ok) {
-                alert(`Policy ${policyId} (v${version}) successfully DEACTIVATED.`);
+                alert(`Policy ${policyId} successfully DEACTIVATED.`);
                 loadPolicies();
             } else {
                 const errorMsg = (await response.json()).message || `Status: ${response.status}`;
@@ -607,7 +606,6 @@
             alert("Network error: Could not communicate with the API.");
         }
     }
-
 
      // --- Event Listeners and Initialization ---
              // --- Variable Assignments ---

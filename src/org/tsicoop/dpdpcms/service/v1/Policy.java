@@ -199,13 +199,13 @@ public class Policy implements Action {
                     break;
 
                 case "publish_policy":
-                    if (policyIdStr == null || policyIdStr.isEmpty() || versionStr == null || versionStr.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' and 'version' are required for 'publish_policy'.", req.getRequestURI());
+                    if (policyIdStr == null || policyIdStr.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' is required for 'publish_policy'.", req.getRequestURI());
                         return;
                     }
                     existingPolicy = getPolicyFromDb(policyIdStr, versionStr);
                     if (existingPolicy.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Policy with ID '" + policyIdStr + "' and version '" + versionStr + "' not found.", req.getRequestURI());
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Policy with ID '" + policyIdStr + "' not found.", req.getRequestURI());
                         return;
                     }
                     currentStatus = (String) existingPolicy.get().get("status");
@@ -227,25 +227,18 @@ public class Policy implements Action {
                     break;
 
                 case "delete_policy": // Soft delete
-                    if (policyIdStr == null || policyIdStr.isEmpty() || versionStr == null || versionStr.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' and 'version' are required for 'delete_policy'.", req.getRequestURI());
+                    if (policyIdStr == null || policyIdStr.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' is required for 'delete_policy'.", req.getRequestURI());
                         return;
                     }
                     existingPolicy = getPolicyFromDb(policyIdStr, versionStr);
                     if (existingPolicy.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Policy with ID '" + policyIdStr + "' and version '" + versionStr + "' not found.", req.getRequestURI());
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Policy with ID '" + policyIdStr + "' not found.", req.getRequestURI());
                         return;
                     }
-                    currentStatus = (String) existingPolicy.get().get("status");
-                    if ("ACTIVE".equalsIgnoreCase(currentStatus)) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Cannot delete an ACTIVE policy. Please archive it first.", req.getRequestURI());
-                        return;
-                    }
-
                     deletePolicyFromDb(policyIdStr, versionStr);
                     OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
                     break;
-
                 default:
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
                     break;
@@ -594,15 +587,14 @@ public class Policy implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE consent_policies SET status = 'DELETED' WHERE id = ? AND version = ? AND status != 'ACTIVE'"; // Cannot delete active
+        String sql = "UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, policyId);
-            pstmt.setString(2, version);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
-                throw new SQLException("Deleting policy failed, policy not found or is ACTIVE.");
+                throw new SQLException("Deleting policy failed, policy not found.");
             }
         } finally {
             pool.cleanup(null, pstmt, conn);
