@@ -373,7 +373,7 @@ public class ApiKey implements Action {
         PoolDB pool = new PoolDB();
 
         // Select metadata columns (excluding the hash)
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, processor_id, owner_type, description, status, permissions, created_at, expires_at, last_used_at FROM api_keys WHERE status is not null");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT ak.id, ak.fiduciary_id, ak.processor_id, ak.owner_type, ak.description, ak.status, ak.permissions, ak.created_at, ak.expires_at, ak.last_used_at, p.name FROM api_keys ak, processors p WHERE ak.processor_id=p.id");
         List<Object> params = new ArrayList<>();
 
         if (fiduciaryId != null && !fiduciaryId.isEmpty()) {
@@ -409,11 +409,10 @@ public class ApiKey implements Action {
                 key.put("key_id", rs.getString("id"));
                 key.put("fiduciary_id", rs.getString("fiduciary_id"));
                 key.put("processor_id", rs.getString("processor_id"));
+                key.put("processor_name", rs.getString("name"));
                 key.put("owner_type", rs.getString("owner_type"));
                 key.put("description", rs.getString("description"));
                 key.put("status", rs.getString("status"));
-                // Note: Permissions JSONB is retrieved but needs to be parsed in a utility class
-                // key.put("permissions", new JSONParser().parse(rs.getString("permissions")));
                 key.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 key.put("expires_at", rs.getTimestamp("expires_at") != null ? rs.getTimestamp("expires_at").toInstant().toString() : null);
                 key.put("last_used_at", rs.getTimestamp("last_used_at") != null ? rs.getTimestamp("last_used_at").toInstant().toString() : null);
