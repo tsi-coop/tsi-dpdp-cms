@@ -1,9 +1,8 @@
 {
   "_func": "record_consent",
   "user_id": "data_principal_xyz789",
-  "fiduciary_id": "ea30beff-ab1b-4c26-9dea-b0316103f6a7",
-  "policy_id": "new_app_privacy_policy2",
-  "policy_version": "1.0",
+  "policy_id": "p4",
+  "policy_version": "",
   "timestamp": "2025-05-30T10:00:00Z",
   "jurisdiction": "IN",
   "language_selected": "en",

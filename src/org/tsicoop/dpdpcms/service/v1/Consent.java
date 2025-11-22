@@ -65,6 +65,8 @@ public class Consent implements Action {
         try {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
+            String apiKey = req.getHeader("X-API-Key");
+            String apiSecret = req.getHeader("X-API-Secret");
 
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
@@ -74,7 +76,7 @@ public class Consent implements Action {
             // Extract common parameters for consent record operations
             String userId = (String) input.get("user_id"); // Data Principal's ID
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = (String) input.get("fiduciary_id");
+            String fiduciaryIdStr = getFiduciaryId(UUID.fromString(apiKey),apiSecret);
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 try {
                     fiduciaryId = UUID.fromString(fiduciaryIdStr);
@@ -98,11 +100,10 @@ public class Consent implements Action {
                     JSONArray dataPointConsents = (JSONArray) input.get("data_point_consents");
 
                     // Basic validation
-                    if (userId == null || userId.isEmpty() || fiduciaryId == null || policyId == null || policyId.isEmpty() ||
-                            policyVersion == null || policyVersion.isEmpty() || timestampStr == null || timestampStr.isEmpty() ||
-                            jurisdiction == null || jurisdiction.isEmpty() || languageSelected == null || languageSelected.isEmpty() ||
-                            consentStatusGeneral == null || consentStatusGeneral.isEmpty() || consentMechanism == null || consentMechanism.isEmpty() ||
-                            dataPointConsents == null) {
+                    if (userId == null || userId.isEmpty()
+                            || fiduciaryId == null
+                            || policyId == null || policyId.isEmpty()
+                            || dataPointConsents == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields for 'record_consent'.", req.getRequestURI());
                         return;
                     }
@@ -207,12 +208,37 @@ public class Consent implements Action {
      * Checks if a specific policy version exists for a fiduciary.
      * (Ideally, this would be an API call to PolicyService in a microservices 5)
      */
+    private String getFiduciaryId(UUID apiKey, String apiSecret) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        String fiduciaryId = null;
+        String sql = "SELECT fiduciary_id FROM api_keys WHERE id = ? AND key_value=?";
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, apiKey);
+            pstmt.setString(2, "HASHED_"+apiSecret);
+            rs = pstmt.executeQuery();
+            if(rs.next())
+                fiduciaryId = rs.getString("fiduciary_id");
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return fiduciaryId;
+    }
+
+    /**
+     * Checks if a specific policy version exists for a fiduciary.
+     * (Ideally, this would be an API call to PolicyService in a microservices 5)
+     */
     private boolean policyExists(String policyId, String version, UUID fiduciaryId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL";
+        String sql = "SELECT COUNT(*) FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ? AND status = 'ACTIVE'";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);

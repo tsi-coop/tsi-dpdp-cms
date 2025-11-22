@@ -91,7 +91,7 @@ public class InputProcessor {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, UUID.fromString(apiKey));
-            pstmt.setString(2, apiSecret);
+            pstmt.setString(2, "HASHED_"+apiSecret);
             rs = pstmt.executeQuery();
             if(rs.next()){
                 String status = rs.getString("status");

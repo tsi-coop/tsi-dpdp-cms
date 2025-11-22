@@ -69,12 +69,7 @@
   "required": [
     "_func",
     "user_id",
-    "fiduciary_id",
     "policy_id",
-    "policy_version",
-    "timestamp",
-    "jurisdiction",
-    "language_selected",
     "data_point_consents"
   ]
 }
