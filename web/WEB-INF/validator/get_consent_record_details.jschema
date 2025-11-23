@@ -6,22 +6,16 @@
     "_func": {
       "type": "string"
     },
-    "user_id": {
+    "record_id": {
       "type": "string"
     },
     "fiduciary_id": {
       "type": "string"
-    },
-    "page": {
-      "type": "number"
-    },
-    "limit": {
-      "type": "number"
     }
   },
   "required": [
     "_func",
-    "user_id",
+    "record_id",
     "fiduciary_id"
   ]
 }

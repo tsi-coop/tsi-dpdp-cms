@@ -136,9 +136,9 @@ curl -X POST -H "Content-Type: application/json" -H "X-API-Key:a0741371-ee86-4ed
 # Record Consent
 curl -X POST -H "Content-Type: application/json" -H "X-API-Key:a0741371-ee86-4ede-95a6-77f2006b1d4b" -H "X-API-Secret:e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" -d @C:\work\tsi-dpdp-cms\tests\curl\client\record_consent.json http://localhost:8080/api/v1/client/consent
 # Get Active Consent
-curl -X POST -H "X-API-Key:a0741371-ee86-4ede-95a6-77f2006b1d4b" -H "X-API-Secret:e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" -d @C:\work\tsi-dpdp-cms\tests\curl\client\get_active_consent.json http://localhost:8080/api/v1/client/consent
+curl -X POST -H "Content-Type: application/json" -H "X-API-Key:a0741371-ee86-4ede-95a6-77f2006b1d4b" -H "X-API-Secret:e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" -d @C:\work\tsi-dpdp-cms\tests\curl\client\get_active_consent.json http://localhost:8080/api/v1/client/consent
 # Link User
-curl -X POST -H "Content-Type: application/json" -H "X-API-Key:a0741371-ee86-4ede-95a6-77f2006b1d4b" -H "X-API-Secret:e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" -d @C:\work\tsi-dpdp-cms\tests\curl\client\link_user.json http://localhost:8080/api/v1/client/consent
+curl -X POST -H "Content-Type: application/json" -H "Content-Type: application/json" -H "X-API-Key:a0741371-ee86-4ede-95a6-77f2006b1d4b" -H "X-API-Secret:e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" -d @C:\work\tsi-dpdp-cms\tests\curl\client\link_user.json http://localhost:8080/api/v1/client/consent
 
 ##Client - Grievance
 # Submit Grievance

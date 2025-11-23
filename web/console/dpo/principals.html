@@ -348,8 +348,8 @@
         try {
             const payload = {
                 "_func": "list_consent_history",
-                "principal_identifier": principalIdentifier,
-                "fiduciary_id": "current_fiduciary_id" // Assuming current CMS user's fiduciary context
+                "user_id": principalIdentifier,
+                "fiduciary_id": localStorage.getItem("fiduciary_id")
             };
 
             const response = await fetch(API_URL_CONSENT, {
@@ -395,7 +395,8 @@
         try {
             const payload = {
                 "_func": "get_consent_record_details",
-                "record_id": recordId
+                "record_id": recordId,
+                "fiduciary_id":localStorage.getItem("fiduciary_id")
             };
 
             const response = await fetch(API_URL_CONSENT, {
@@ -404,7 +405,7 @@
                 body: JSON.stringify(payload)
             });
 
-            const record = (await response.json()).data || (await response.json());
+            const record = await response.json();
 
             if (response.ok && record) {
                 // Populate Modal Headers
@@ -423,14 +424,15 @@
                 const preferences = record.data_point_consents; // Assuming this is the JSONB object
 
                 for (const purposeId in preferences) {
-                    const status = preferences[purposeId];
+                    const purpose = preferences[purposeId].purpose_agreed_to;
+                    const status = preferences[purposeId].consent_granted;
                     const statusBadge = status === true
                         ? `<span class="text-green-600 font-medium">GRANTED</span>`
                         : `<span class="text-red-600 font-medium">DENIED</span>`;
 
                     detailsHtml += `
                         <div class="policy-detail-item">
-                            <p class="text-gray-800 font-medium">${purposeId.replace(/_/g, ' ')}:</p>
+                            <p class="text-gray-800 font-medium">${purpose}:</p>
                             <p class="ml-4">${statusBadge}</p>
                         </div>
                     `;
@@ -508,7 +510,6 @@
     window.viewConsentRecord = viewConsentRecord;
     window.initiateErasurePurge = initiateErasurePurge;
     window.toggleMenu = toggleMenu;
-    window.handleLogout = handleLogout; // Assuming handleLogout is defined elsewhere
 </script>
 </body>
 

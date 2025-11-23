@@ -76,7 +76,7 @@ public class Consent implements Action {
             // Extract common parameters for consent record operations
             String userId = (String) input.get("user_id"); // Data Principal's ID
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = getFiduciaryId(UUID.fromString(apiKey),apiSecret);
+            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):getFiduciaryId(UUID.fromString(apiKey),apiSecret);
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 try {
                     fiduciaryId = UUID.fromString(fiduciaryIdStr);
@@ -129,6 +129,17 @@ public class Consent implements Action {
                     Optional<JSONObject> activeConsentOptional = getActiveConsentFromDb(userId, fiduciaryId);
                     if (activeConsentOptional.isPresent()) {
                         output = activeConsentOptional.get();
+                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
+                    } else {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "No active consent found for User ID '" + userId + "' and Fiduciary ID '" + fiduciaryId + "'.", req.getRequestURI());
+                    }
+                    break;
+
+                case "get_consent_record_details":
+                    String recordId = (String) input.get("record_id");
+                    Optional<JSONObject> consentOptional = getConsentFromDb(UUID.fromString(recordId));
+                    if (consentOptional.isPresent()) {
+                        output = consentOptional.get();
                         OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     } else {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "No active consent found for User ID '" + userId + "' and Fiduciary ID '" + fiduciaryId + "'.", req.getRequestURI());
@@ -378,6 +389,49 @@ public class Consent implements Action {
         }
         return Optional.empty();
     }
+
+    /**
+     * Retrieves the active consent record for a given user and fiduciary.
+     * @return An Optional containing the consent record JSONObject if found, otherwise empty.
+     * @throws SQLException if a database access error occurs.
+     */
+    private Optional<JSONObject> getConsentFromDb(UUID recordId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        String sql = "SELECT id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent FROM consent_records WHERE id = ?";
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, recordId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                JSONObject consent = new JSONObject();
+                consent.put("id", rs.getString("id"));
+                consent.put("user_id", rs.getString("user_id"));
+                consent.put("fiduciary_id", rs.getString("fiduciary_id"));
+                consent.put("policy_id", rs.getString("policy_id"));
+                consent.put("policy_version", rs.getString("policy_version"));
+                consent.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
+                consent.put("jurisdiction", rs.getString("jurisdiction"));
+                consent.put("language_selected", rs.getString("language_selected"));
+                consent.put("consent_status_general", rs.getString("consent_status_general"));
+                consent.put("consent_mechanism", rs.getString("consent_mechanism"));
+                consent.put("ip_address", rs.getString("ip_address")); // INET is read as String
+                consent.put("user_agent", rs.getString("user_agent"));
+                consent.put("data_point_consents", new JSONParser().parse(rs.getString("data_point_consents"))); // Parse JSONB
+                consent.put("is_active_consent", rs.getBoolean("is_active_consent"));
+                return Optional.of(consent);
+            }
+        } catch (ParseException e) {
+            throw new SQLException("Failed to parse data_point_consents JSON from DB: " + e.getMessage(), e);
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return Optional.empty();
+    }
+
 
     /**
      * Retrieves a list of consent records for a given user and fiduciary (history).
