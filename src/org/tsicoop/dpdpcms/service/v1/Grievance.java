@@ -252,7 +252,7 @@ public class Grievance implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM fiduciaries WHERE id = ? AND deleted_at IS NULL";
+        String sql = "SELECT COUNT(*) FROM fiduciaries WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
