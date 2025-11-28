@@ -169,7 +169,7 @@
             <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
-            <a href="#" class="nav-link">
+            <a href="dashboard.html" class="nav-link">
                 Dashboard
             </a>
             <!-- Compliance Menus -->
@@ -605,6 +605,12 @@
             console.error("Error during deactivation API call:", error);
             alert("Network error: Could not communicate with the API.");
         }
+    }
+
+     function handleLogout() {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('username');
+      window.location.href = "../index.html";
     }
 
      // --- Event Listeners and Initialization ---
