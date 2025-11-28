@@ -210,13 +210,6 @@
                     </select>
                 </div>
                 <div>
-                    <label for="fiduciary-select" class="block text-sm font-medium text-gray-700">Select Fiduciary</label>
-                    <select id="fiduciary-select" name="fiduciary_id" required class class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                        <!-- Options populated dynamically -->
-                        <option value="">-- Select Fiduciary --</option>
-                    </select>
-                </div>
-                <div>
                     <label for="date-range" class="block text-sm font-medium text-gray-700">Reporting Period (Optional)</label>
                     <input type="text" id="date-range" name="date_range" placeholder="e.g., 2025-01-01 to 2025-03-31" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
@@ -251,7 +244,7 @@
                 <!-- Data will be dynamically inserted here -->
                 <tr>
                     <td colspan="7" class="p-4 text-center text-gray-500">
-                        Loading submission history...
+                        No submissions found...
                     </td>
                 </tr>
                 </tbody>
@@ -385,6 +378,9 @@
     }
 
     async function loadSubmissionHistory() {
+        submissionHistoryBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No submissions found...</td></tr>`;
+        historyErrorMessageP.classList.add('hidden');
+        /*
         submissionHistoryBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Loading submission history...</td></tr>`;
         historyErrorMessageP.classList.add('hidden');
 
@@ -416,10 +412,10 @@
                 throw new Error(responseData.message || 'API returned unexpected structure.');
             }
         } catch (error) {
-            console.error("Error loading submission history:", error);
+            //console.error("Error loading submission history:", error);
             historyErrorMessageP.textContent = `Error: Could not retrieve submission history. ${error.message}`;
             historyErrorMessageP.classList.remove('hidden');
-        }
+        }*/
     }
 
     // --- ACTION HANDLERS ---
