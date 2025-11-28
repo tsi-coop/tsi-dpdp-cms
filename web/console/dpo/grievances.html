@@ -370,7 +370,7 @@
         const status = isOverdue ? 'OVERDUE' : grievance.status;
 
         row.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${grievance.id || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${grievance.grievance_id || 'N/A'}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${grievance.type.replace(/_/g, ' ')}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${grievance.subject || 'N/A'}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${new Date(grievance.submission_timestamp).toLocaleDateString()}</td>
@@ -378,7 +378,7 @@
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(status)}</td>
             <td class="px-4 py-3 text-sm font-semibold">${calculateDeadlineDisplay(grievance.due_date)}</td>
             <td class="px-4 py-3 text-sm">
-                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.id}')">View/Manage</button>
+                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.grievance_id}')">View/Manage</button>
             </td>
         `;
         return row;
@@ -414,10 +414,6 @@
         tableBody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-500">Loading Grievance data...</td></tr>`;
         errorMessageP.classList.add('hidden');
 
-        if (Object.keys(FiduciaryList).length === 0) {
-            await fetchFiduciaries();
-        }
-
         try {
             const listPayload = {
                 "_func": "list_grievances",
@@ -425,6 +421,7 @@
                 "status_filter": statusFilter.value,
                 "type_filter": typeFilter.value,
                 "sort_by": "SUBMISSION_DATE_DESC",
+                "fiduciary_id":localStorage.getItem("fiduciary_id"),
                 "page": 1,
                 "limit": 50
             };
@@ -473,7 +470,7 @@
     // Function to fetch a single Grievance record
     async function fetchGrievanceDetails(grievanceId) {
         try {
-            const payload = { "_func": "get_grievance_details", "grievance_id": grievanceId };
+            const payload = { "_func": "get_grievance", "grievance_id": grievanceId };
 
             const response = await fetch(API_URL_GRIEVANCE, {
                 method: 'POST',
@@ -485,7 +482,7 @@
 
             const responseData = await response.json();
 
-            if (responseData.id) {
+            if (responseData.grievance_id) {
                 return responseData;
             } else {
                 throw new Error(responseData.message || 'Grievance details not found.');
@@ -516,7 +513,7 @@
         document.getElementById('detail-description').textContent = grievance.description;
 
         // Resolution Form Setup
-        resolutionForm.setAttribute('data-grievance-id', grievance.id);
+        resolutionForm.setAttribute('data-grievance-id', grievance.grievance_id);
         newStatusSelect.value = grievance.status; // Set current status
 
         // Populate Communication Log
@@ -535,6 +532,62 @@
             communicationLog.innerHTML = '<p class="text-gray-500">No communication log entries.</p>';
         }
     }
+
+
+
+    // --- Event Listeners and Initialization ---
+
+
+    // --- Variable Assignments ---
+    sidebar = document.getElementById('sidebar');
+    menuToggle = document.getElementById('menu-toggle');
+    backdrop = document.getElementById('sidebar-backdrop');
+    tableBody = document.getElementById('grievance-table-body');
+    countSpan = document.getElementById('grievance-count');
+    errorMessageP = document.getElementById('grievance-error-message');
+    searchInput = document.getElementById('search-input');
+    statusFilter = document.getElementById('status-filter');
+    typeFilter = document.getElementById('type-filter');
+
+    grievanceModalOverlay = document.getElementById('grievance-modal-overlay');
+    communicationLog = document.getElementById('communication-log');
+    resolutionForm = document.getElementById('resolution-form');
+    newStatusSelect = document.getElementById('new-status');
+    resolutionDetailsInput = document.getElementById('resolution-details');
+
+    // Detail Spans
+    modalGrievanceId = document.getElementById('modal-grievance-id');
+    detailType = document.getElementById('detail-type');
+    detailUserId = document.getElementById('detail-user-id');
+    detailDate = document.getElementById('detail-date');
+    detailAssigned = document.getElementById('detail-assigned');
+    detailStatus = document.getElementById('detail-status');
+    detailDeadline = document.getElementById('detail-deadline');
+    detailFiduciary = document.getElementById('detail-fiduciary');
+    detailDescription = document.getElementById('detail-description');
+
+
+    // --- Fetch Fiduciaries and Load Grievances ---
+    loadGrievances();
+
+    // --- Event Listener Attachments ---
+    menuToggle.addEventListener('click', toggleMenu);
+    backdrop.addEventListener('click', toggleMenu);
+
+    // Filters
+    statusFilter.addEventListener('change', () => loadGrievances(searchInput.value.trim()));
+    typeFilter.addEventListener('change', () => loadGrievances(searchInput.value.trim()));
+
+    // Search
+    searchInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            loadGrievances(searchInput.value.trim());
+        }
+    });
+
+    // Modal Close
+    document.getElementById('close-modal-btn-inner').addEventListener('click', closeModal);
 
     // Handle Status Update Submission
     resolutionForm.addEventListener('submit', async function(event) {
@@ -556,9 +609,8 @@
             const payload = {
                 "_func": "update_grievance_status",
                 "grievance_id": grievanceId,
-                "new_status": newStatus,
-                "resolution_notes": resolutionNotes,
-                "updated_by_user_id": 'current_cms_user_id' // Should be obtained from JWT/session
+                "status": newStatus,
+                "resolution_details": resolutionNotes
             };
 
             const response = await fetch(API_URL_GRIEVANCE, {
@@ -584,65 +636,8 @@
     });
 
 
-    // --- Event Listeners and Initialization ---
-
-    document.addEventListener('DOMContentLoaded', async () => {
-        // --- Variable Assignments ---
-        sidebar = document.getElementById('sidebar');
-        menuToggle = document.getElementById('menu-toggle');
-        backdrop = document.getElementById('sidebar-backdrop');
-        tableBody = document.getElementById('grievance-table-body');
-        countSpan = document.getElementById('grievance-count');
-        errorMessageP = document.getElementById('grievance-error-message');
-        searchInput = document.getElementById('search-input');
-        statusFilter = document.getElementById('status-filter');
-        typeFilter = document.getElementById('type-filter');
-
-        grievanceModalOverlay = document.getElementById('grievance-modal-overlay');
-        communicationLog = document.getElementById('communication-log');
-        resolutionForm = document.getElementById('resolution-form');
-        newStatusSelect = document.getElementById('new-status');
-        resolutionDetailsInput = document.getElementById('resolution-details');
-
-        // Detail Spans
-        modalGrievanceId = document.getElementById('modal-grievance-id');
-        detailType = document.getElementById('detail-type');
-        detailUserId = document.getElementById('detail-user-id');
-        detailDate = document.getElementById('detail-date');
-        detailAssigned = document.getElementById('detail-assigned');
-        detailStatus = document.getElementById('detail-status');
-        detailDeadline = document.getElementById('detail-deadline');
-        detailFiduciary = document.getElementById('detail-fiduciary');
-        detailDescription = document.getElementById('detail-description');
-
-
-        // --- Fetch Fiduciaries and Load Grievances ---
-        await fetchFiduciaries();
-        loadGrievances();
-
-        // --- Event Listener Attachments ---
-        menuToggle.addEventListener('click', toggleMenu);
-        backdrop.addEventListener('click', toggleMenu);
-
-        // Filters
-        statusFilter.addEventListener('change', () => loadGrievances(searchInput.value.trim()));
-        typeFilter.addEventListener('change', () => loadGrievances(searchInput.value.trim()));
-
-        // Search
-        searchInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                loadGrievances(searchInput.value.trim());
-            }
-        });
-
-        // Modal Close
-        document.getElementById('close-modal-btn-inner').addEventListener('click', closeModal);
-    });
-
     // Expose functions globally so they can be called by inline onclick attributes
     window.viewGrievance = viewGrievance;
-    window.handleLogout = handleLogout;
     window.toggleMenu = toggleMenu;
 </script>
 </body>
