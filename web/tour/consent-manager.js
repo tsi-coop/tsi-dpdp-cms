@@ -10,6 +10,7 @@ const API_KEY = `${config.tsi_dpdp_cms_apikey}`;
 const API_SECRET = `${config.tsi_dpdp_cms_apisecret}`;
 const POLICY_ID = `${config.tsi_dpdp_cms_policyid}`;
 const POLICY_API_ENDPOINT = `${API_BASE_URL}`+'/api/v1/client/policy';
+const CONSENT_API_ENDPOINT = `${API_BASE_URL}`+'/api/v1/client/consent';
 
 let currentPolicy = null; // Stores the fetched policy JSON
 let currentLanguageContent = null; // Stores content for the detected language
@@ -177,8 +178,8 @@ async function saveConsentState(preferences, mechanism) {
 async function invokeBackendConsentAPI(preferences, mechanism) {
     // This user ID should come from your actual user authentication system
     // For a non-logged-in user, you might use a cookie ID or generate a temporary one.
-    const userId = localStorage.getItem('tsi_coop_user_id') || `anon_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    localStorage.setItem('tsi_coop_user_id', userId); // Persist anon ID if generated
+    const userId = localStorage.getItem('tsi_dpdp_cms_anon_id') || `anon_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    localStorage.setItem('tsi_dpdp_cms_anon_id', userId); // Persist anon ID if generated
 
     const consentPayload = {
         _func:'record_consent',
@@ -203,12 +204,12 @@ async function invokeBackendConsentAPI(preferences, mechanism) {
     };
     console.log(consentPayload);
     try {
-        const response = await fetch(`http://localhost:8080/api/v1/client/consent`, {
+        const response = await fetch(CONSENT_API_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // Add API Key or Authorization header if your backend requires it
-                // 'X-API-KEY': 'YOUR_TSI_API_KEY'
+                'X-API-Key': API_KEY,
+                'X-API-Secret': API_SECRET
             },
             body: JSON.stringify(consentPayload)
         });
@@ -395,7 +396,7 @@ function displayCurrentPreferencesAsJson() {
 
 // --- New Function: Validate Add Post Access ---
 function validateAddPostAccess() {
-     const principalId = localStorage.getItem('tsi_coop_principal_id');
+     const principalId = localStorage.getItem('tsi_dpdp_cms_principal_id');
      console.log(principalId);
     // --- New check: If no anonymous ID, display a message and stop ---
     if (principalId === null) {
@@ -461,7 +462,7 @@ function validateAddPostAccess() {
 
 // --- New Function: Validate ProviderZone Access ---
 function validateProviderZoneAccess() {
-         const principalId = localStorage.getItem('tsi_coop_principal_id');
+         const principalId = localStorage.getItem('tsi_dpdp_cms_principal_id');
          console.log(principalId);
         // --- New check: If no anonymous ID, display a message and stop ---
         if (principalId === null) {
@@ -527,7 +528,7 @@ function validateProviderZoneAccess() {
 
 // --- Link Principal Function ---
 async function initiateLinkPrincipalFlow() {
-     const principalId = localStorage.getItem('tsi_coop_principal_id');
+     const principalId = localStorage.getItem('tsi_dpdp_cms_principal_id');
      console.log(principalId);
     // --- New check: If no anonymous ID, display a message and stop ---
     if (!principalId === false) {
@@ -545,7 +546,7 @@ async function initiateLinkPrincipalFlow() {
     }
     // --- End new check ---
 
-    const anonymousUserId = localStorage.getItem('tsi_coop_user_id');
+    const anonymousUserId = localStorage.getItem('tsi_dpdp_cms_anon_id');
     //console.log(anonymousUserId);
     // --- New check: If no anonymous ID, display a message and stop ---
     if (!anonymousUserId || anonymousUserId.startsWith('anon_') === false) { // Assuming anon IDs start with 'anon_'
@@ -598,13 +599,33 @@ async function initiateLinkPrincipalFlow() {
             submitButton.textContent = 'Linking...';
 
             try {
-                // --- Mock API Call ---
-                const mockPrincipalId = await mockLinkPrincipalApiCall(anonymousUserId, name, email);
-                // --- End Mock API Call ---
+
+                 // Construct payload matching link_user.json structure
+                const payload = {
+                    "_func": "link_user",
+                    "anonymous_user_id": localStorage.getItem('tsi_dpdp_cms_anon_id'),
+                    "authenticated_user_id": email
+                };
+
+                console.log("Sending Link User Payload:", payload);
+
+
+                // Using the /consent endpoint as specified in the user request for linking
+                const response = await fetch(`${API_BASE_URL}/api/v1/client/consent`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': API_KEY,
+                        'X-API-Secret': API_SECRET
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`Link user failed: ${response.status}`);
 
                 // Store the principal-id in local storage
-                localStorage.setItem('tsi_coop_principal_id', mockPrincipalId);
-                console.log(`Principal ID stored: ${mockPrincipalId}`);
+                localStorage.setItem('tsi_dpdp_cms_principal_id', email);
+                console.log(`Principal ID stored: ${email}`);
 
                 // Update the modal to display the entire localStorage content
                 const currentLocalStorageContent = {};
@@ -615,7 +636,7 @@ async function initiateLinkPrincipalFlow() {
 
                 const displayHtml = `
                     <h2 style="color: #28a745;">Account Linked Successfully!</h2>
-                    <p style="font-size: 1em; text-align: center;">Your anonymous ID has been linked to your Data Principal ID: <strong>${mockPrincipalId}</strong></p>
+                    <p style="font-size: 1em; text-align: center;">Your anonymous ID has been linked to your Data Principal ID: <strong>${email}</strong></p>
                     <p style="font-size: 0.9em; text-align: center; margin-top: 20px;">Current Local Storage Content:</p>
                     <pre style="white-space: pre-wrap; word-wrap: break-word; text-align: left; background-color: #f0f0f0; padding: 10px; border-radius: 4px;">${JSON.stringify(currentLocalStorageContent, null, 2)}</pre>
                     <div style="text-align: center; margin-top: 20px;">
