@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en"> <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSI DPDP CMS - Consent Collection - Tour</title>
@@ -168,6 +169,50 @@
         .category .details strong {
             color: #555;
         }
+          /* Modal Styles for Credential Input & Linking */
+        .credentials-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* Highest z-index to appear on top */
+        }
+        .credentials-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 400px;
+            text-align: left;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .credentials-content input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0 20px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .credentials-content button {
+            background-color: #006A67;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        .credentials-content button:hover {
+            background-color: #0056b3;
+        }
+        .credentials-content h2 {
+            margin-top: 0;
+            color: #006A67;
+        }
     </style>
 </head>
 <body>
@@ -300,8 +345,6 @@
 
 <p><strong>Thank you for taking the tour!</strong></p>
 
-
-
 <div id="cookie-consent-banner" class="cookie-banner">
 </div>
 
@@ -313,41 +356,81 @@
     </div>
 </div>
 
+<!-- Credentials Modal (Initial Setup) -->
+<div id="credentials-modal" class="credentials-modal" style="display: none;">
+    <div class="credentials-content">
+        <h2>Configure Credentials & Policy</h2>
+        <p style="font-size: 0.9em; color: #666;">Please enter your API credentials & Policy Id to connect to the TSI DPDP CMS backend.</p>
+
+        <label for="api-key" style="display:block; margin-top:10px; font-weight:bold;">X-API-Key</label>
+        <input type="text" id="api-key" placeholder="Enter API Key">
+
+        <label for="api-secret" style="display:block; margin-top:10px; font-weight:bold;">X-API-Secret</label>
+        <input type="text" id="api-secret" placeholder="Enter API Secret (Raw Key)">
+
+        <label for="policy-id" style="display:block; margin-top:10px; font-weight:bold;">Policy Id</label>
+        <input type="text" id="policy-id" placeholder="Enter Policy Id">
+
+        <button id="save-credentials-btn">Start Tour</button>
+    </div>
+</div>
 <a href="#" id="open-cookie-settings" class="cookie-settings-link">Privacy Choices</a>
-
-<script type="text/plain" data-consent-category="purpose_website_analytics" src="https://www.googletagmanager.com/gtag/js?id=G-YOURANALYTICSID"></script>
-<script type="text/plain" data-consent-category="purpose_website_analytics">
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-YOURANALYTICSID');
-        console.log('Google Analytics for TSI Digital Hub activated!');
-    </script>
-
-<script type="text/plain" data-consent-category="purpose_engagement_tracking">
-        console.log('TSI Coop Engagement Tracking script activated!');
-        // Example: Third-party CRM pixel or custom engagement tracker
-        // initTSIEngagementTracker();
-    </script>
-
-<script>
-        console.log('Essential website script for TSI Coop loaded.');
-        // Example: Authentication flow, core site functionalities
-
-    </script>
 
 <script type="application/json" id="config-data">
     {
-        "tsi_dpdp_cms_apikey": "a0741371-ee86-4ede-95a6-77f2006b1d4b",
-        "tsi_dpdp_cms_apisecret": "e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4",
-        "tsi_dpdp_cms_policyid": "p4",
         "tsi_dpdp_cms_localstoragekey": "tsi_dpdp_cms_key",
         "tsi_dpdp_cms_apibaseurl": "http://localhost:8080",
         "tsi_dpdp_cms_consentexpiry": 365
     }
 </script>
 
-<script src="consent-manager.js"> </script>
+<script>
+ async function checkCredentials() {
+    const key = config.tsi_dpdp_cms_apikey;
+    const secret = config.tsi_dpdp_cms_apisecret;
 
+    // Check if both keys exist. If not, show the modal.
+    if (!key || !secret) {
+        credentialsModal.style.display = 'flex';
+    } else {
+        // Credentials exist, proceed to initialize the app
+        console.log("Credentials found. Initializing...");
+        initConsentManager();
+    }
+ }
+
+
+
+// --- Configuration & Globals ---
+const config = JSON.parse(document.getElementById('config-data').textContent);
+
+// --- DOM Elements ---
+const credentialsModal = document.getElementById('credentials-modal');
+const apiKeyInput = document.getElementById('api-key');
+const apiSecretInput = document.getElementById('api-secret');
+const policyIdInput = document.getElementById('policy-id');
+const saveCredentialsBtn = document.getElementById('save-credentials-btn');
+
+// Start by checking for API credentials
+document.addEventListener('DOMContentLoaded', checkCredentials);
+
+saveCredentialsBtn.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        const secret = apiSecretInput.value.trim();
+        const policyId = policyIdInput.value.trim();
+
+        if (key && secret) {
+            config.tsi_dpdp_cms_apikey = key;
+            config.tsi_dpdp_cms_apisecret = secret;
+            config.tsi_dpdp_cms_policyid = policyId;
+            credentialsModal.style.display = 'none';
+            alert("Credentials Saved! Starting tour...");
+            initConsentManager();
+        } else {
+            alert("Please enter both API Key, Secret and Policy Id to proceed.");
+        }
+ });
+</script>
+<script src="consent-manager.js"> </script>
 </body>
 </html>

@@ -1,17 +1,17 @@
 // consent-manager.js
 
 // --- Configuration & Constants ---
-const configEl = document.getElementById("config-data");
-const config = JSON.parse(configEl.textContent);
+//const configEl = document.getElementById("config-data");
+//const config = JSON.parse(configEl.textContent);
 const CONSENT_LOCAL_STORAGE_KEY = `${config.tsi_dpdp_cms_localstoragekey}`;
 const CONSENT_EXPIRY_DAYS = `${config.tsi_dpdp_cms_consentexpiry}`;
 const API_BASE_URL = `${config.tsi_dpdp_cms_apibaseurl}`;
-const API_KEY = `${config.tsi_dpdp_cms_apikey}`;
-const API_SECRET = `${config.tsi_dpdp_cms_apisecret}`;
-const POLICY_ID = `${config.tsi_dpdp_cms_policyid}`;
 const POLICY_API_ENDPOINT = `${API_BASE_URL}`+'/api/v1/client/policy';
 const CONSENT_API_ENDPOINT = `${API_BASE_URL}`+'/api/v1/client/consent';
 
+let API_KEY = null;
+let API_SECRET = null;
+let POLICY_ID = null;
 let currentPolicy = null; // Stores the fetched policy JSON
 let currentLanguageContent = null; // Stores content for the detected language
 let consentCategoriesConfig = {}; // Map of purpose_id to its policy config (name, desc, mandatory etc.)
@@ -72,22 +72,7 @@ function getPreferredLanguage() {
  * @returns {Promise<Object>} The policy JSON.
  */
 async function fetchConsentPolicy() {
-    /*
-    try {
-        const response = await fetch(POLICY_API_ENDPOINT);
-        console.log(response);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch policy: ${response.statusText}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Error fetching consent policy:", error);
-        // Fallback: Use a very basic, hardcoded policy or show an error
-        return null; // Handle this gracefully in initConsentManager
-    }
-    */
-
-    // Request payload matches curl example
+      // Request payload matches curl example
     const payload = {
         "_func": "get_policy",
         "policy_id": POLICY_ID
@@ -779,8 +764,12 @@ if (linkPrincipalLink) {
     });
 }
 
-// --- Initialization ---
+ // --- Initialization ---
 async function initConsentManager() {
+    API_KEY = `${config.tsi_dpdp_cms_apikey}`;
+    API_SECRET = `${config.tsi_dpdp_cms_apisecret}`;
+    POLICY_ID = `${config.tsi_dpdp_cms_policyid}`;
+
     currentPolicy = await fetchConsentPolicy();
     if (!currentPolicy) {
         console.error("Consent Manager cannot initialize: Policy not loaded.");
@@ -821,4 +810,4 @@ async function initConsentManager() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', initConsentManager);
+//document.addEventListener('DOMContentLoaded', initConsentManager);
