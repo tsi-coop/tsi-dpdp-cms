@@ -4,8 +4,12 @@
 const configEl = document.getElementById("config-data");
 const config = JSON.parse(configEl.textContent);
 const CONSENT_LOCAL_STORAGE_KEY = `${config.tsi_dpdp_cms_localstoragekey}`;
-const CONSENT_EXPIRY_DAYS = `${config.tsi_dpdp_cms_consentexpiry}`; // Consent expires after 1 year
-const POLICY_API_ENDPOINT = "http://localhost:8080/tour/policy_v1.json";
+const CONSENT_EXPIRY_DAYS = `${config.tsi_dpdp_cms_consentexpiry}`;
+const API_BASE_URL = `${config.tsi_dpdp_cms_apibaseurl}`;
+const API_KEY = `${config.tsi_dpdp_cms_apikey}`;
+const API_SECRET = `${config.tsi_dpdp_cms_apisecret}`;
+const POLICY_ID = `${config.tsi_dpdp_cms_policyid}`;
+const POLICY_API_ENDPOINT = `${API_BASE_URL}`+'/api/v1/client/policy';
 
 let currentPolicy = null; // Stores the fetched policy JSON
 let currentLanguageContent = null; // Stores content for the detected language
@@ -67,6 +71,7 @@ function getPreferredLanguage() {
  * @returns {Promise<Object>} The policy JSON.
  */
 async function fetchConsentPolicy() {
+    /*
     try {
         const response = await fetch(POLICY_API_ENDPOINT);
         console.log(response);
@@ -78,6 +83,38 @@ async function fetchConsentPolicy() {
         console.error("Error fetching consent policy:", error);
         // Fallback: Use a very basic, hardcoded policy or show an error
         return null; // Handle this gracefully in initConsentManager
+    }
+    */
+
+    // Request payload matches curl example
+    const payload = {
+        "_func": "get_policy",
+        "policy_id": POLICY_ID
+    };
+
+    try {
+        const response = await fetch(`${POLICY_API_ENDPOINT}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': API_KEY,
+                'X-API-Secret': API_SECRET
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`Policy fetch failed: ${response.status} - ${err}`);
+        }
+        const data = await response.json();
+        // Assume data structure matches your Policy JSON format.
+        // If backend wraps it in {data: ...}, use data.data
+        return data.data || data;
+    } catch (error) {
+        console.error("Error fetching policy:", error);
+        alert("Failed to fetch policy. Please check your API credentials or backend status.");
+        return null;
     }
 }
 
