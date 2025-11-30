@@ -460,7 +460,7 @@ public class Consent implements Action {
      * Checks if a specific policy version exists for a fiduciary.
      * (Ideally, this would be an API call to PolicyService in a microservices 5)
      */
-    private String getFiduciaryId(UUID apiKey, String apiSecret) throws SQLException {
+    public String getFiduciaryId(UUID apiKey, String apiSecret) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;

@@ -210,7 +210,7 @@
         // --- Configuration & API Endpoints ---
         const API_BASE_URL = 'http://localhost:8080/api/v1';
         const API_CONSENT = `${API_BASE_URL}/client/consent`;
-        const API_GRIEVANCE = `${API_BASE_URL}/grievances`;
+        const API_GRIEVANCE = `${API_BASE_URL}/client/grievance`;
         const API_USER_PROFILE = `${API_BASE_URL}/users/profile`;
 
         // Local Storage Keys
@@ -314,9 +314,9 @@
                 if (!response.ok) throw new Error(`Status ${response.status}`);
                 const data = await response.json();
 
-                if (data.success && Array.isArray(data.data)) {
-                    consentHistoryCache = data.data;
-                    return data.data;
+                if (Array.isArray(data) && data.length > 0) {
+                    consentHistoryCache = data;
+                    return data;
                 } else {
                     console.warn("API returned successful status but no data or success=false:", data.message);
                     return [];
@@ -330,7 +330,7 @@
         // --- API 2: Grievance List ---
         async function fetchGrievances(userId) {
             try {
-                const payload = { "_func": "list_user_requests", "user_id": userId, "sort_by": "SUBMISSION_DATE_DESC" };
+                const payload = { "_func": "list_user_grievances", "user_id": userId};
 
                 const response = await fetch(`${API_GRIEVANCE}`, {
                     method: 'POST',
@@ -344,9 +344,9 @@
                 if (!response.ok) throw new Error(`Status ${response.status}`);
                 const data = await response.json();
 
-                if (data.success && Array.isArray(data.data)) {
-                    grievanceCache = data.data;
-                    return data.data;
+                if (Array.isArray(data) && data.length > 0) {
+                    grievanceCache = data;
+                    return data;
                 } else {
                     console.warn("API returned successful status but no grievance data:", data.message);
                     return [];

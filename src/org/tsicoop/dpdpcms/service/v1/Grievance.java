@@ -63,6 +63,8 @@ public class Grievance implements Action {
         try {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
+            String apiKey = req.getHeader("X-API-Key");
+            String apiSecret = req.getHeader("X-API-Secret");
 
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
@@ -83,7 +85,7 @@ public class Grievance implements Action {
 
             String userId = (String) input.get("user_id"); // Data Principal's ID
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = (String) input.get("fiduciary_id");
+            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Consent().getFiduciaryId(UUID.fromString(apiKey),apiSecret);
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 try {
                     fiduciaryId = UUID.fromString(fiduciaryIdStr);
@@ -144,6 +146,17 @@ public class Grievance implements Action {
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
 
                     outputArray = listGrievancesFromDb(fiduciaryId, statusFilter, typeFilter, assignedDpoIdStr, search, page, limit);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    break;
+
+                case "list_user_grievances":
+                    // fiduciaryId is required for listing grievances
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_grievances'.", req.getRequestURI());
+                        return;
+                    }
+
+                    outputArray = listUserGrievancesFromDb(fiduciaryId, userId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -442,6 +455,56 @@ public class Grievance implements Action {
         }
         return grievancesArray;
     }
+
+    /**
+     * Retrieves a list of grievances from the database with optional filtering and pagination.
+     * @return JSONArray of grievance JSONObjects.
+     * @throws SQLException if a database access error occurs.
+     */
+    private JSONArray listUserGrievancesFromDb(UUID fiduciaryId, String userId) throws SQLException {
+        JSONArray grievancesArray = new JSONArray();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, user_id, fiduciary_id, type, subject, submission_timestamp, status, assigned_dpo_user_id, due_date FROM grievances WHERE fiduciary_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(fiduciaryId);
+
+        if (userId != null && !userId.isEmpty()) {
+            sqlBuilder.append(" AND user_id = ?");
+            params.add(userId);
+        }
+
+        //System.out.println(sqlBuilder.toString());
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sqlBuilder.toString());
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                JSONObject grievance = new JSONObject();
+                grievance.put("grievance_id", rs.getString("id"));
+                grievance.put("user_id", rs.getString("user_id"));
+                grievance.put("fiduciary_id", rs.getString("fiduciary_id"));
+                grievance.put("type", rs.getString("type"));
+                grievance.put("subject", rs.getString("subject"));
+                grievance.put("submission_timestamp", rs.getTimestamp("submission_timestamp").toInstant().toString());
+                grievance.put("status", rs.getString("status"));
+                grievance.put("assigned_dpo_user_id", rs.getString("assigned_dpo_user_id"));
+                grievance.put("due_date", rs.getTimestamp("due_date").toInstant().toString());
+                grievancesArray.add(grievance);
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return grievancesArray;
+    }
+
 
     /**
      * Updates the status and resolution details of a grievance.
