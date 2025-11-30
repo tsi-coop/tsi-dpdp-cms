@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSI DPDP CMS - Data Principal Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .header-bg {
+            background-color: var(--tsi-primary);
+        }
+
+        .card {
+            background-color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-radius: var(--radius);
+            border: 1px solid #e2e8f0;
+        }
+
+        .primary-text {
+            color: var(--tsi-primary);
+        }
+
+        .action-button {
+            background-color: var(--tsi-primary);
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: #004F4C;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: #555;
+            background: none;
+            border: none;
+            cursor: pointer;
+            line-height: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Main Dashboard Content -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <h1 class="text-3xl font-bold primary-text mb-6">User Dashboard Mock</h1>
+
+  <!-- Tabbed Interface for Main Content -->
+  <div class="mt-4">
+    <div class="border-b border-gray-200">
+      <nav class="flex space-x-6 -mb-px">
+        <button id="tab-consent" data-tab="consent" class="tab-button primary-text border-b-2 font-semibold border-current pb-2 text-sm transition-colors">
+          Consent History & Manager
+        </button>
+        <button id="tab-grievance" data-tab="grievance" class="tab-button text-gray-500 hover:border-gray-300 border-b-2 border-transparent pb-2 text-sm transition-colors">
+          Grievance & Requests Tracking
+        </button>
+      </nav>
+    </div>
+
+    <div id="dashboard-content" class="pt-6 card p-6">
+      <!-- Content will load here -->
+    </div>
+  </div>
+
+</main>
+
+<!-- Footer (Basic) -->
+<footer class="bg-gray-50 border-t" style="width: 100%;">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-gray-600 text-sm">
+    &copy; 2025 TSI Coop. | <a href="#" class="hover:underline primary-text">Privacy Policy</a>
+  </div>
+</footer>
+
+<!-- Modal for Granular Consent Details -->
+<div id="detail-modal-overlay" class="modal-overlay">
+  <div class="modal-content">
+    <button class="modal-close-btn" onclick="document.getElementById('detail-modal-overlay').style.display='none'">&times;</button>
+    <h2 class="text-xl font-semibold primary-text mb-3">Consent Record Details</h2>
+    <p class="text-sm text-gray-500 mb-4">Record ID: <code id="modal-record-id"></code></p>
+
+    <h3 class="text-lg font-semibold border-b pb-1">Granular Preferences:</h3>
+    <div id="granular-details-body" class="space-y-2 mt-2 text-sm">
+      <!-- Granular Consent Status Loaded Here -->
+    </div>
+
+    <h3 class="text-lg font-semibold border-b pb-1 mt-6">Provenance:</h3>
+    <div id="provenance-details-body" class="space-y-1 mt-2 text-sm text-gray-600">
+      <!-- Provenance Data Loaded Here -->
+    </div>
+
+    <div class="mt-6 text-right">
+      <button class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700" onclick="alert('Purge workflow initiated for this user ID.')">
+        Initiate Erasure
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+        // --- Configuration & Simulation ---
+        const USER_ID_SIMULATED = "DP-7890-TSI";
+        const USER_NAME_SIMULATED = "A. Data Principal";
+        const USER_EMAIL_SIMULATED = "a.principal@example.com";
+        const API_BASE_URL = 'http://localhost:8080/api/v1'; // Assuming base API path
+
+        // --- Simulated Data ---
+        // Reduced the number of purposes in prefs for clean simulation
+        const dummyConsentHistory = [
+            { id: 'REC005', date: '2025-10-25T10:00:00Z', status: 'ACTIVE', mechanism: 'Pref Center Save', policy: 'v1.1', ip: '192.168.1.10', active: true,
+              prefs: { marketing: true, analytics: false, core: true } },
+            { id: 'REC004', date: '2025-09-01T15:30:00Z', status: 'ARCHIVED', mechanism: 'Accept All Banner', policy: 'v1.0', ip: '10.0.0.5', active: false,
+              prefs: { marketing: true, analytics: true, core: true } },
+            { id: 'REC003', date: '2025-01-10T11:00:00Z', status: 'WITHDRAWN', mechanism: 'Erasure Request', policy: 'v1.0', ip: '192.168.1.1', active: false,
+              prefs: { marketing: false, analytics: false, core: true } },
+        ];
+
+        const dummyRequests = [
+            { id: 'GRV002', type: 'Erasure Request', subject: 'Request to delete old account data.', submitted: '2025-11-20T09:00:00Z', status: 'IN_PROGRESS', duedate: '2025-12-20T09:00:00Z' },
+            { id: 'REQ001', type: 'Data Access Request', subject: 'Request for data portability document.', submitted: '2025-11-01T14:00:00Z', status: 'PENDING_DPO_REVIEW', duedate: '2025-11-30T14:00:00Z' },
+        ];
+
+        // --- DOM Elements ---
+        const contentArea = document.getElementById('dashboard-content');
+        const tabButtons = document.querySelectorAll('.tab-button');
+
+        // --- Utility Functions ---
+
+        function formatTimestamp(isoString) {
+            if (!isoString) return 'N/A';
+            return new Date(isoString).toLocaleString();
+        }
+
+        function createStatusBadge(status, colorClass) {
+            return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}">${status.replace(/_/g, ' ')}</span>`;
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'ACTIVE':
+                case 'RESOLVED': return 'bg-green-100 text-green-800';
+                case 'IN_PROGRESS':
+                case 'PENDING_DPO_REVIEW': return 'bg-yellow-100 text-yellow-800';
+                case 'WITHDRAWN':
+                case 'ERASURE_REQUEST': return 'bg-red-100 text-red-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function calculateDaysLeft(deadline) {
+            if (!deadline) return 'N/A';
+            const now = new Date();
+            const due = new Date(deadline);
+            const diffTime = due.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) return `<span class="text-red-600 font-bold">${Math.abs(diffDays)} Days Overdue</span>`;
+            if (diffDays <= 5) return `<span class="text-orange-600 font-bold">${diffDays} Days Left</span>`;
+            return `${diffDays} Days Left`;
+        }
+
+        // --- Dynamic Content Renderers ---
+
+        function renderConsentContent() {
+            const consentRows = dummyConsentHistory.map(record => `
+                <tr>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-mono text-gray-700">...${record.id.slice(-8)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${record.policy} (v${record.policy})</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${formatTimestamp(record.date)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${record.mechanism}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm">
+                        ${createStatusBadge(record.status, getStatusColor(record.status))}
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm">${record.active ? 'Yes' : 'No'}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button class="text-indigo-600 hover:text-indigo-900 text-xs hover:underline" onclick="viewConsentDetails('${record.id}')">View Granular</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            contentArea.innerHTML = `
+                <h2 class="text-xl font-semibold mb-4 primary-text">My Active Consent Status</h2>
+                <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                    <button onclick="alert('Opening Preference Center (Simulated)')" class="action-button px-4 py-2 rounded-md font-medium text-sm">
+                        Review / Modify Consent Preferences
+                    </button>
+                    <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm" onclick="alert('Withdrawal initiated (Simulated)')">
+                        Withdraw All Consent
+                    </button>
+                </div>
+
+                <h3 class="text-lg font-semibold mt-6 mb-3 primary-text">Full Consent History</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Record ID</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy Ref</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mechanism</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active?</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${consentRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderGrievanceContent() {
+            const requestRows = dummyRequests.map(item => `
+                <tr>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.id}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-700">${item.type.replace(/_/g, ' ')}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${formatTimestamp(item.submitted)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${calculateDaysLeft(item.duedate)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm">
+                        ${createStatusBadge(item.status, getStatusColor(item.status))}
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button class="primary-text text-xs hover:underline" onclick="alert('View log for ${item.id} - ${item.subject}')">Track Log</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            contentArea.innerHTML = `
+                <h2 class="text-xl font-semibold mb-4 primary-text">Requests & Grievance Redressal</h2>
+
+                <div class="flex justify-end mb-4 gap-2">
+                    <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-300" onclick="alert('Opening Data Access Request Form')">
+                        Request Data Access
+                    </button>
+                    <button class="action-button px-4 py-2 rounded-md font-medium text-sm" onclick="alert('Opening New Grievance Form')">
+                        Submit New Grievance
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${requestRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // --- Modal Detail Viewer ---
+
+        function viewConsentDetails(recordId) {
+            const record = dummyConsentHistory.find(r => r.id === recordId);
+            if (!record) return alert("Record not found.");
+
+            // Populate modal
+            document.getElementById('modal-record-id').textContent = record.id;
+            document.getElementById('modal-record-status').innerHTML = createStatusBadge(record.status, getStatusColor(record.status));
+
+            // Populate Granular Details
+            let granularHtml = '';
+            for (const key in record.prefs) {
+                if (record.prefs.hasOwnProperty(key)) {
+                    const isGranted = record.prefs[key];
+                    const statusBadge = isGranted
+                        ? `<span class="text-green-600">Granted</span>`
+                        : `<span class="text-red-600">Denied</span>`;
+
+                    granularHtml += `
+                        <div class="policy-detail-item">
+                            <p class="text-gray-800 font-medium">${key.charAt(0).toUpperCase() + key.slice(1)}:</p>
+                            <p class="ml-4">${statusBadge}</p>
+                        </div>
+                    `;
+                }
+            }
+            document.getElementById('granular-details-body').innerHTML = granularHtml;
+
+            // Populate Provenance Details
+            document.getElementById('provenance-details-body').innerHTML = `
+                <p><strong>Policy Version:</strong> ${record.policy} | <strong>Mechanism:</strong> ${record.mechanism}</p>
+                <p><strong>Date Recorded:</strong> ${formatTimestamp(record.date)}</p>
+                <p><strong>IP Address:</strong> ${record.ip || 'Unknown'} </p>
+            `;
+
+            // Show Modal
+            document.getElementById('detail-modal-overlay').style.display = 'flex';
+        }
+
+
+        // --- Tab Control Logic ---
+
+        function setActiveTab(tabId) {
+            document.querySelectorAll('.tab-button').forEach(button => {
+                if (button.dataset.tab === tabId) {
+                    button.classList.add('border-current', 'font-semibold', 'primary-text');
+                    button.classList.remove('text-gray-500', 'border-transparent', 'hover:border-gray-300');
+                } else {
+                    button.classList.remove('border-current', 'font-semibold', 'primary-text');
+                    button.classList.add('text-gray-500', 'border-transparent', 'hover:border-gray-300');
+                }
+            });
+
+            // Render specific content
+            switch (tabId) {
+                case 'consent': renderConsentContent(); break;
+                case 'grievance': renderGrievanceContent(); break;
+            }
+        }
+
+        function handleLogout() {
+            // In a real system, this clears the session on the server
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('username');
+            localStorage.removeItem('user_id_simulated');
+            window.location.href = "login.html";
+        }
+
+
+        // --- Initialization ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Profile Initialization (Simulated) ---
+            const userId = localStorage.getItem('user_id_simulated') || USER_ID_SIMULATED;
+            const userName = localStorage.getItem('username_simulated') || USER_NAME_SIMULATED;
+
+            //document.getElementById('user-display-name').textContent = `Welcome, ${userName.split(' ')[0]}!`;
+
+            // --- Attach Tab Listeners ---
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    setActiveTab(e.target.dataset.tab);
+                });
+            });
+
+            // Load default tab (Consent Manager)
+            setActiveTab('consent');
+        });
+
+        // Expose function globally for inline use
+        window.viewConsentDetails = viewConsentDetails;
+        window.handleLogout = handleLogout;
+        window.setActiveTab = setActiveTab;
+    </script>
+</body>
+</html>

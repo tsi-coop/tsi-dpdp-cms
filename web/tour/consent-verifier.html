@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSI DPDP CMS - Data Processor Mock App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --background: #f4fbf9;
+            --card-bg: #FFFFFF;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .primary-text {
+            color: var(--tsi-primary);
+        }
+
+        .action-button {
+            background-color: var(--tsi-primary);
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: #004F4C;
+        }
+
+        .log-box {
+            background-color: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+<div class="card">
+  <h1 class="text-2xl font-bold primary-text mb-4">Data Processor Service Mock</h1>
+  <p class="text-sm text-gray-600 mb-6">
+    Simulates a Data Processor (DP) checking the Data Fiduciary's (DF) Consent Manager System (CMS)
+    before processing data.
+  </p>
+
+  <!-- Configuration -->
+  <div class="space-y-4 mb-6 p-4 border border-indigo-200 rounded-md bg-indigo-50">
+    <p class="font-semibold text-sm text-indigo-800">Processing Context</p>
+    <div>
+      <label for="user-id" class="block text-xs font-medium text-gray-700">User ID (Data Principal ID)</label>
+      <input type="text" id="user-id" value="data_principal_xyz789" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
+    </div>
+    <div>
+      <label for="purpose-id" class="block text-xs font-medium text-gray-700">Purpose Required</label>
+      <select id="purpose-id" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
+        <option value="purpose_website_analytics">Website Analytics (Optional)</option>
+        <option value="purpose_community_engagement">Community Engagement (Optional)</option>
+        <option value="purpose_account_management">Account Management (Mandatory)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Processing Action -->
+  <button id="process-data-btn" class="action-button px-4 py-2 rounded-md font-medium w-full hover:bg-primary-dark transition duration-150">
+    1. CHECK CONSENT & PROCESS DATA
+  </button>
+
+  <!-- Log Output -->
+  <h2 class="text-lg font-semibold text-gray-700 mt-6 mb-2">Process Log:</h2>
+  <div id="log-output" class="log-box text-gray-800">
+    [Awaiting validation trigger...]
+  </div>
+
+</div>
+
+<script>
+        // --- Configuration ---
+        const API_BASE_URL = 'http://localhost:8080/api/v1';
+        const API_VALIDATE_ENDPOINT = `${API_BASE_URL}/client/consent/validate`;
+
+        // NOTE: In a real Data Processor integration, the API Key and Secret would be
+        // securely loaded from a server-side environment variable or secret manager.
+        const API_KEY = 'a0741371-ee86-4ede-95a6-77f2006b1d4b';
+        const API_SECRET = 'e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4';
+
+        const PROCESSOR_ID = 'processor_analytics_xyz';
+        const FIDUCIARY_ID = 'fiduciary_hub_abc'; // The DF we are contracted with
+
+        // --- DOM Elements ---
+        const userIdInput = document.getElementById('user-id');
+        const purposeIdSelect = document.getElementById('purpose-id');
+        const processButton = document.getElementById('process-data-btn');
+        const logOutput = document.getElementById('log-output');
+
+        // --- Utility Functions ---
+
+        function logMessage(message, isError = false, isSuccess = false) {
+            const entry = document.createElement('div');
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            if (isError) {
+                entry.style.color = '#c0392b'; // Red
+            } else if (isSuccess) {
+                entry.style.color = '#27ae60'; // Green
+            }
+            logOutput.prepend(entry);
+        }
+
+        // --- Core Validation Logic ---
+
+        async function checkConsentAndProcess() {
+            const userId = userIdInput.value.trim();
+            const requiredPurpose = purposeIdSelect.value;
+
+            if (!userId) {
+                logMessage("ERROR: User ID cannot be empty.", true);
+                return;
+            }
+
+            logMessage(`Attempting to validate consent for User: ${userId} and Purpose: ${requiredPurpose}...`);
+            processButton.disabled = true;
+
+            try {
+                const validationPayload = {
+                    "_func": "validate_consent", // Assuming a dedicated validation function on the CMS
+                    "user_id": userId,
+                    "fiduciary_id": FIDUCIARY_ID,
+                    "required_purpose_id": requiredPurpose,
+                    "processor_id": PROCESSOR_ID // Identifying self for logging/RBAC
+                };
+
+                const response = await fetch(API_VALIDATE_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': API_KEY,
+                        'X-API-Secret': API_SECRET
+                    },
+                    body: JSON.stringify(validationPayload)
+                });
+
+                if (response.status === 200) {
+                    const result = await response.json();
+
+                    // CRITICAL CHECK: Check the actual response payload for success/grant status
+                    if (result.success === true && result.consent_granted === true) {
+
+                        logMessage("SUCCESS: Consent is VALID and GRANTED for this purpose.", true);
+
+                        // --- PROCEED WITH DATA PROCESSING ---
+                        await simulateDataProcessing(userId, requiredPurpose);
+
+                    } else if (result.success === true && result.consent_granted === false) {
+
+                        logMessage("ACCESS DENIED: Consent is explicitly DENIED by the Data Principal.", true);
+                        logMessage("Processing halted. Respecting Data Principal preference.", true);
+
+                    } else {
+                         // Catches cases like missing record, inactive policy, or internal failure
+                         logMessage(`VALIDATION FAILED: CMS returned insufficient status. Reason: ${result.message || 'Unknown'}`, true);
+                    }
+
+                } else if (response.status === 401 || response.status === 403) {
+                     logMessage("FATAL ERROR: Authentication or Authorization Failed. Check API Key/Secret.", true);
+                } else {
+                    logMessage(`CMS ERROR: Validation API returned status ${response.status}`, true);
+                }
+
+            } catch (error) {
+                logMessage(`NETWORK ERROR: Could not connect to CMS. Check network.`, true);
+                console.error("Validation API error:", error);
+            } finally {
+                processButton.disabled = false;
+            }
+        }
+
+        function simulateDataProcessing(userId, purpose) {
+            logMessage(`-- Processing data for ${userId} (Purpose: ${purpose})...`, false, true);
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    logMessage("Processing Complete. Data used strictly for consented purpose.", false, true);
+                    resolve();
+                }, 1500); // Simulate network latency and processing time
+            });
+        }
+
+        // --- Event Listener ---
+        processButton.addEventListener('click', checkConsentAndProcess);
+
+    </script>
+</body>
+</html>
