@@ -130,6 +130,15 @@ e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4
 f61bc681-c790-4cdd-b611-47a482c36b7c
 127d8e85-38e6-48df-b57f-d8aa41ce82932f5e0ec90a9b4653a8c26f085d271e80
 
+purpose_website_analytics
+purpose_account_management
+purpose_community_engagement
+purpose_maturity_capability_assessment
+purpose_solution_service_training_showcase
+"[{""data_point_id"": ""purpose_account_management"", ""consent_granted"": true, ""purpose_agreed_to"": ""Account Registration & Management"", ""timestamp_updated"": ""2025-11-29T15:41:39.307Z""}, {""data_point_id"": ""purpose_website_analytics"", ""consent_granted"": false, ""purpose_agreed_to"": ""Website Analytics & Performance"", ""timestamp_updated"": ""2025-11-29T15:41:39.307Z""}, {""data_point_id"": ""purpose_community_engagement"", ""consent_granted"": false, ""purpose_agreed_to"": ""Community Engagement"", ""timestamp_updated"": ""2025-11-29T15:41:39.307Z""}, {""data_point_id"": ""purpose_solution_service_training_showcase"", ""consent_granted"": true, ""purpose_agreed_to"": ""Solutions and Services Showcase"", ""timestamp_updated"": ""2025-11-29T15:41:39.307Z""}, {""data_point_id"": ""purpose_maturity_capability_assessment"", ""consent_granted"": false, ""purpose_agreed_to"": ""Maturity Assessments"", ""timestamp_updated"": ""2025-11-29T15:41:39.307Z""}]"
+
+satish@test.com
+
 ##Client - Consent
 # Get Policy
 curl -X POST -H "Content-Type: application/json" -H "X-API-Key:a0741371-ee86-4ede-95a6-77f2006b1d4b" -H "X-API-Secret:e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" -d @C:\work\tsi-dpdp-cms\tests\curl\client\get_policy.json http://localhost:8080/api/v1/client/policy

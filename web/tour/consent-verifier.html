@@ -71,22 +71,26 @@
   <div class="space-y-4 mb-6 p-4 border border-indigo-200 rounded-md bg-indigo-50">
     <p class="font-semibold text-sm text-indigo-800">Processing Context</p>
     <div>
+      <label for="api-key" class="block text-xs font-medium text-gray-700">API Key</label>
+      <input type="text" id="api-key" value="" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
+    </div>
+    <div>
+      <label for="api-key" class="block text-xs font-medium text-gray-700">API Secret</label>
+      <input type="text" id="api-secret" value="" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
+    </div>
+    <div>
       <label for="user-id" class="block text-xs font-medium text-gray-700">User ID (Data Principal ID)</label>
       <input type="text" id="user-id" value="data_principal_xyz789" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
     </div>
     <div>
-      <label for="purpose-id" class="block text-xs font-medium text-gray-700">Purpose Required</label>
-      <select id="purpose-id" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
-        <option value="purpose_website_analytics">Website Analytics (Optional)</option>
-        <option value="purpose_community_engagement">Community Engagement (Optional)</option>
-        <option value="purpose_account_management">Account Management (Mandatory)</option>
-      </select>
+      <label for="purpose-id" class="block text-xs font-medium text-gray-700">Purpose ID</label>
+      <input type="text" id="purpose-id" value="" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
     </div>
   </div>
 
   <!-- Processing Action -->
   <button id="process-data-btn" class="action-button px-4 py-2 rounded-md font-medium w-full hover:bg-primary-dark transition duration-150">
-    1. CHECK CONSENT & PROCESS DATA
+    CHECK CONSENT & PROCESS DATA
   </button>
 
   <!-- Log Output -->
@@ -99,18 +103,11 @@
 
 <script>
         // --- Configuration ---
-        const API_BASE_URL = 'http://localhost:8080/api/v1';
-        const API_VALIDATE_ENDPOINT = `${API_BASE_URL}/client/consent/validate`;
+        const API_VALIDATE_ENDPOINT = `http://localhost:8080/api/v1/client/consent/validate`;
 
-        // NOTE: In a real Data Processor integration, the API Key and Secret would be
-        // securely loaded from a server-side environment variable or secret manager.
-        const API_KEY = 'a0741371-ee86-4ede-95a6-77f2006b1d4b';
-        const API_SECRET = 'e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4';
-
-        const PROCESSOR_ID = 'processor_analytics_xyz';
-        const FIDUCIARY_ID = 'fiduciary_hub_abc'; // The DF we are contracted with
-
-        // --- DOM Elements ---
+        // --DOM elements ---
+        const apiKeyInput = document.getElementById('api-key');
+        const apiSecretInput = document.getElementById('api-secret');
         const userIdInput = document.getElementById('user-id');
         const purposeIdSelect = document.getElementById('purpose-id');
         const processButton = document.getElementById('process-data-btn');
@@ -134,6 +131,8 @@
         async function checkConsentAndProcess() {
             const userId = userIdInput.value.trim();
             const requiredPurpose = purposeIdSelect.value;
+            const apikey = apiKeyInput.value;
+            const apisecret = apiSecretInput.value;
 
             if (!userId) {
                 logMessage("ERROR: User ID cannot be empty.", true);
@@ -145,19 +144,17 @@
 
             try {
                 const validationPayload = {
-                    "_func": "validate_consent", // Assuming a dedicated validation function on the CMS
+                    "_func": "validate_consent",
                     "user_id": userId,
-                    "fiduciary_id": FIDUCIARY_ID,
-                    "required_purpose_id": requiredPurpose,
-                    "processor_id": PROCESSOR_ID // Identifying self for logging/RBAC
+                    "required_purpose_id": requiredPurpose
                 };
 
                 const response = await fetch(API_VALIDATE_ENDPOINT, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-API-Key': API_KEY,
-                        'X-API-Secret': API_SECRET
+                        'X-API-Key': apikey,
+                        'X-API-Secret': apisecret
                     },
                     body: JSON.stringify(validationPayload)
                 });

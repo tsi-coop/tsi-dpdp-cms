@@ -17,10 +17,7 @@ import java.sql.Statement; // For Statement.RETURN_GENERATED_KEYS
 import java.sql.Timestamp;
 import java.net.InetAddress; // For INET type
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * ConsentRecordService class for managing Data Principal consent records.
@@ -174,6 +171,21 @@ public class Consent implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "User consent records linked successfully."); }});
                     break;
 
+                case "validate_consent":
+                    // --- Extract Validation Parameters from Body ---
+                    userId = (String) input.get("user_id");
+                    String requiredPurposeId = (String) input.get("required_purpose_id");
+
+                    if (userId == null || fiduciaryId == null || requiredPurposeId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id, required_purpose_id).", req.getRequestURI());
+                        break;
+                    }
+
+                    // --- Execute Validation ---
+                    JSONObject result = validateConsent(userId, fiduciaryIdStr, requiredPurposeId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
+                    break;
+
                 default:
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
                     break;
@@ -196,6 +208,100 @@ public class Consent implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred: " + e.getMessage(), req.getRequestURI());
         }
     }
+
+    /**
+     * Implements the core consent validation logic, checking credentials, status, and granular permissions.
+     * * @param userId The Data Principal's ID.
+     * @param fiduciaryId The Data Fiduciary ID owning the record.
+     * @param requiredPurposeId The specific purpose ID being checked.
+     * @return JSONObject containing the validation result (success: boolean, consent_granted: boolean).
+     * @throws SQLException
+     */
+    private JSONObject validateConsent(String userId, String fiduciaryId, String requiredPurposeId) throws SQLException {
+
+        JSONObject result = new JSONObject();
+        result.put("success", false);
+        result.put("consent_granted", false);
+        Connection conn = null;
+        PoolDB pool = new PoolDB();
+
+        try {
+            conn = pool.getConnection();
+
+            // --- STEP 3: RETRIEVE ACTIVE CONSENT RECORD ---
+            String sqlConsent = "SELECT data_point_consents, is_active_consent, created_at FROM consent_records " +
+                    "WHERE user_id = ? AND fiduciary_id = ? " +
+                    "ORDER BY created_at DESC LIMIT 1";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlConsent)) {
+                pstmt.setString(1, userId);
+                pstmt.setObject(2, UUID.fromString(fiduciaryId)); // Cast string to UUID for DB
+
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (!rs.next()) {
+                        result.put("message", "No active consent record found for this principal.");
+                        return result;
+                    }
+
+                    // --- STEP 4: CHECK GRANULAR CONSENT ---
+
+                    boolean active= rs.getBoolean("is_active_consent");
+                    String consentsJson = rs.getString("data_point_consents");
+
+                    if (!active) {
+                        result.put("message", "Consent record exists but is INACTIVE/REVOKED.");
+                        return result;
+                    }
+
+                    // Parse the JSONB data point consents
+                    JSONParser parser = new JSONParser();
+                    JSONArray granularConsents = (JSONArray) parser.parse(consentsJson);
+                    Iterator<JSONObject> it = granularConsents.iterator();
+                    JSONObject consent = null;
+                    Boolean granted = null;
+                    while(it.hasNext()) {
+                        consent = (JSONObject) it.next();
+                        // Check if the specific required purpose ID is present and set to TRUE
+                        String purposeId = (String)consent.get("data_point_id");
+                        if(purposeId.equalsIgnoreCase(requiredPurposeId)) {
+                            granted = (Boolean) consent.get("consent_granted");
+                            if (granted != null && granted) break;
+                        }
+                    }
+
+                    if (granted != null && granted) {
+                        result.put("success", true);
+                        result.put("consent_granted", true);
+                        result.put("message", "Consent granted for purpose: " + requiredPurposeId);
+
+                        // AuditLogService.logEvent(userId, "CONSENT_VALIDATED", "ConsentRecord", rs.getString("id"), "Purpose granted.", "SUCCESS", "ConsentService");
+
+                        return result;
+
+                    } else {
+                        // Denied, or purpose was not listed (which defaults to denied)
+                        result.put("message", "Consent not granted for purpose: " + requiredPurposeId);
+
+                        // AuditLogService.logEvent(userId, "CONSENT_DENIED", "ConsentRecord", rs.getString("id"), "Purpose explicitly denied or missing.", "FAILURE", "ConsentService");
+
+                        return result;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            // Log detailed SQL error internally
+            System.err.println("SQL Error in validateConsent: " + e.getMessage());
+            result.put("message", "Internal error during database lookup.");
+            throw e;
+        } catch (ParseException e) {
+            System.err.println("JSON Parse Error in validateConsent: " + e.getMessage());
+            result.put("message", "Internal error: Failed to parse stored granular consent data.");
+        } finally {
+            pool.cleanup(null,null,conn);
+        }
+        return result;
+    }
+
 
     /**
      * Validates the HTTP method and request content type.

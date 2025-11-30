@@ -30,7 +30,8 @@ public class InterceptingFilter implements Filter {
             "get_active_policy", // For active policy retrieval
             "link_user",
             "submit_grievance", // Allowing grievance submission from client
-            "get_grievance"
+            "get_grievance",
+            "validate_consent"
             // Add other client-facing functions as needed
     ));
 

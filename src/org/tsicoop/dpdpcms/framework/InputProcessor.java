@@ -87,6 +87,7 @@ public class InputProcessor {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         String sql = "SELECT status FROM api_keys WHERE id = ? AND key_value = ?";
+        //System.out.println("API Key:"+apiKey);
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
