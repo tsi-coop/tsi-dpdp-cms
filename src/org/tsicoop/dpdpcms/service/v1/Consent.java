@@ -186,6 +186,21 @@ public class Consent implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
                     break;
 
+                case "withdraw_consent":
+                    // --- Extract Withdrawal Parameters ---
+                    userId = (String) input.get("user_id");
+                    String reason = (String) input.get("reason");
+
+                    if (userId == null || fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
+                        return;
+                    }
+
+                    result = withdrawConsent(userId, fiduciaryIdStr, reason);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
+
+                    break;
+
                 default:
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
                     break;
@@ -301,6 +316,126 @@ public class Consent implements Action {
         }
         return result;
     }
+
+    /**
+     * Implements the core logic for Data Principal withdrawal of consent.
+     * 1. Deactivates the currently active consent record.
+     * 2. Creates a new record with all non-mandatory purposes set to DENIED (false).
+     * 3. Triggers downstream purge instructions.
+     *
+     * @param userId The Data Principal's ID.
+     * @param fiduciaryId The Data Fiduciary ID.
+     * @param reason The reason for withdrawal (optional).
+     * @return JSONObject indicating success.
+     * @throws SQLException
+     */
+    private JSONObject withdrawConsent(String userId, String fiduciaryId, String reason) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+
+        // --- 1. Find the current ACTIVE record and Policy context ---
+        // This query also ensures the user exists and has a record.
+        String sqlSelectActive = "SELECT id, policy_id, policy_version, data_point_consents FROM consent_records " +
+                "WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE LIMIT 1";
+
+        UUID oldRecordId = null;
+        JSONObject currentConsents = null;
+        String policyId = null;
+        String policyVersion = null;
+
+        try {
+            conn = pool.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+
+            // A. Select current active record details
+            pstmt = conn.prepareStatement(sqlSelectActive);
+            pstmt.setString(1, userId);
+            pstmt.setObject(2, UUID.fromString(fiduciaryId));
+            rs = pstmt.executeQuery();
+
+            if (!rs.next()) {
+                conn.rollback();
+                return new JSONObject() {{ put("success", false); put("message", "No active consent record found for withdrawal."); }};
+            }
+
+            oldRecordId = UUID.fromString(rs.getString("id"));
+            policyId = rs.getString("policy_id");
+            policyVersion = rs.getString("policy_version");
+            // Cast JSONB string back to JSONObject
+            currentConsents = (JSONObject) new JSONParser().parse(rs.getString("data_point_consents"));
+
+            // --- 2. Deactivate Old Record ---
+            String sqlDeactivate = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW(), status = 'WITHDRAWN_SUPERSEDED' WHERE id = ?";
+            pstmt.close();
+            pstmt = conn.prepareStatement(sqlDeactivate);
+            pstmt.setObject(1, oldRecordId);
+            pstmt.executeUpdate();
+
+            // --- 3. Determine New (Denied) Consents ---
+            // In a real system, you would look up the full policy definition to find
+            // which purposes are mandatory (and thus cannot be withdrawn).
+            // MOCK: For simplicity, we assume "core" purposes cannot be withdrawn.
+            JSONObject withdrawnConsents = new JSONObject();
+            for (Object keyObj : currentConsents.keySet()) {
+                String purposeId = (String) keyObj;
+                // Keep 'core' purposes granted, set everything else to false
+                boolean isMandatory = purposeId.contains("core");
+                withdrawnConsents.put(purposeId, isMandatory);
+            }
+
+            // --- 4. Insert New WITHDRAWN Record (Immutability/Provenance) ---
+            String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at, status) " +
+                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', 'WITHDRAWN', 'USER_WITHDRAWAL', ?::jsonb, TRUE, NOW(), 'WITHDRAWN') RETURNING id";
+
+            pstmt.close();
+            pstmt = conn.prepareStatement(sqlInsertNew, Statement.RETURN_GENERATED_KEYS);
+            pstmt.setString(1, userId);
+            pstmt.setObject(2, UUID.fromString(fiduciaryId));
+            pstmt.setString(3, policyId);
+            pstmt.setString(4, policyVersion);
+            pstmt.setString(5, withdrawnConsents.toJSONString()); // Store the new DENIED state
+
+            if (pstmt.executeUpdate() == 0) {
+                throw new SQLException("Creating withdrawal record failed.");
+            }
+
+            UUID newRecordId = null;
+            try (ResultSet newRs = pstmt.getGeneratedKeys()) {
+                if (newRs.next()) {
+                    newRecordId = (UUID) newRs.getObject(1);
+                }
+            }
+
+            // --- 5. Commit Transaction ---
+            conn.commit();
+
+            // --- 6. Trigger Downstream Purge (Asynchronous - Placeholder) ---
+            // purgeService.initiatePurgeRequest(userId, fiduciaryId, "CONSENT_WITHDRAWAL");
+
+            UUID finalNewRecordId = newRecordId;
+            return new JSONObject() {{
+                put("success", true);
+                put("message", "Consent successfully withdrawn and recorded.");
+                put("record_id", finalNewRecordId.toString());
+                put("triggered_purge", true);
+            }};
+
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback();
+            System.err.println("SQL Error during withdrawal: " + e.getMessage());
+            throw e;
+        } catch (ParseException e) {
+            // Should not happen unless stored JSON is corrupted
+            System.err.println("JSON Parse Error during withdrawal: " + e.getMessage());
+            throw new SQLException("Internal JSON corruption detected.", e);
+        } finally {
+            if (conn != null) conn.setAutoCommit(true);
+            pool.cleanup(null, null, conn);
+        }
+    }
+
 
 
     /**

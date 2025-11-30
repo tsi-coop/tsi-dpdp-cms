@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TSI DPDP CMS - Data Principal Hub</title>
+  <title>TSI DPDP CMS - User Dashboard Mock</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
         :root {
@@ -91,6 +91,18 @@
             cursor: pointer;
             line-height: 1;
         }
+
+        /* ID Capture Modal specific styles */
+        #id-capture-modal .modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .policy-detail-item {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #cbd5e1;
+        }
     </style>
 </head>
 
@@ -100,6 +112,14 @@
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
   <h1 class="text-3xl font-bold primary-text mb-6">User Dashboard Mock</h1>
+
+  <!-- User Information (Simplified Display) -->
+  <div class="card p-4 mb-6">
+    <p class="text-lg font-semibold primary-text" id="profile-name">Fetching Profile...</p>
+    <p class="text-sm text-gray-600" id="profile-email"></p>
+    <p class="text-xs text-gray-400" id="profile-user-id">ID: </p>
+  </div>
+
 
   <!-- Tabbed Interface for Main Content -->
   <div class="mt-4">
@@ -116,6 +136,7 @@
 
     <div id="dashboard-content" class="pt-6 card p-6">
       <!-- Content will load here -->
+      <p class="text-center text-gray-500">Loading data...</p>
     </div>
   </div>
 
@@ -128,7 +149,38 @@
   </div>
 </footer>
 
-<!-- Modal for Granular Consent Details -->
+<!-- Modal for Data Principal ID Capture -->
+<div id="id-capture-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 class="text-xl font-semibold primary-text mb-3">Data Principal</h2>
+    <p class="text-sm text-gray-600 mb-4">Please enter your authenticated Data Principal ID to access your dashboard.</p>
+
+    <form id="id-capture-form">
+      <div>
+        <label for="api-key" class="block text-sm font-medium text-gray-700">API Key</label>
+        <input type="text" id="api-key" required value=""
+               class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+      </div>
+      <div>
+        <label for="api-secret" class="block text-sm font-medium text-gray-700">API Secret</label>
+        <input type="text" id="api-secret" required value=""
+               class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+      </div>
+      <div>
+        <label for="input-principal-id" class="block text-sm font-medium text-gray-700">User ID / Email</label>
+        <input type="text" id="input-principal-id" required value=""
+               class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+      </div>
+      <div class="mt-6">
+        <button type="submit" class="action-button px-4 py-2 rounded-md text-sm font-medium w-full">
+          Access Dashboard
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal for Granular Consent Details (View Details) -->
 <div id="detail-modal-overlay" class="modal-overlay">
   <div class="modal-content">
     <button class="modal-close-btn" onclick="document.getElementById('detail-modal-overlay').style.display='none'">&times;</button>
@@ -146,7 +198,7 @@
     </div>
 
     <div class="mt-6 text-right">
-      <button class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700" onclick="alert('Purge workflow initiated for this user ID.')">
+      <button id="initiate-erasue-btn" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">
         Initiate Erasure
       </button>
     </div>
@@ -155,31 +207,43 @@
 
 
 <script>
-        // --- Configuration & Simulation ---
-        const USER_ID_SIMULATED = "DP-7890-TSI";
-        const USER_NAME_SIMULATED = "A. Data Principal";
-        const USER_EMAIL_SIMULATED = "a.principal@example.com";
-        const API_BASE_URL = 'http://localhost:8080/api/v1'; // Assuming base API path
+        // --- Configuration & API Endpoints ---
+        const API_BASE_URL = 'http://localhost:8080/api/v1';
+        const API_CONSENT = `${API_BASE_URL}/client/consent`;
+        const API_GRIEVANCE = `${API_BASE_URL}/grievances`;
+        const API_USER_PROFILE = `${API_BASE_URL}/users/profile`;
 
-        // --- Simulated Data ---
-        // Reduced the number of purposes in prefs for clean simulation
-        const dummyConsentHistory = [
-            { id: 'REC005', date: '2025-10-25T10:00:00Z', status: 'ACTIVE', mechanism: 'Pref Center Save', policy: 'v1.1', ip: '192.168.1.10', active: true,
-              prefs: { marketing: true, analytics: false, core: true } },
-            { id: 'REC004', date: '2025-09-01T15:30:00Z', status: 'ARCHIVED', mechanism: 'Accept All Banner', policy: 'v1.0', ip: '10.0.0.5', active: false,
-              prefs: { marketing: true, analytics: true, core: true } },
-            { id: 'REC003', date: '2025-01-10T11:00:00Z', status: 'WITHDRAWN', mechanism: 'Erasure Request', policy: 'v1.0', ip: '192.168.1.1', active: false,
-              prefs: { marketing: false, analytics: false, core: true } },
-        ];
+        // Local Storage Keys
+        const LOCAL_USER_ID_KEY = 'dp_user_id';
+        const LOCAL_USER_NAME_KEY = 'dp_user_name';
+        const X_API_KEY = 'x_api_key';
+        const X_API_SECRET = 'x_api_secret';
 
-        const dummyRequests = [
-            { id: 'GRV002', type: 'Erasure Request', subject: 'Request to delete old account data.', submitted: '2025-11-20T09:00:00Z', status: 'IN_PROGRESS', duedate: '2025-12-20T09:00:00Z' },
-            { id: 'REQ001', type: 'Data Access Request', subject: 'Request for data portability document.', submitted: '2025-11-01T14:00:00Z', status: 'PENDING_DPO_REVIEW', duedate: '2025-11-30T14:00:00Z' },
-        ];
+        // --- Cache for current data ---
+        let consentHistoryCache = [];
+        let grievanceCache = [];
+
+
 
         // --- DOM Elements ---
         const contentArea = document.getElementById('dashboard-content');
         const tabButtons = document.querySelectorAll('.tab-button');
+        const idCaptureModal = document.getElementById('id-capture-modal');
+        const idCaptureForm = document.getElementById('id-capture-form');
+        const principalIdInput = document.getElementById('input-principal-id');
+        const apikeyInput = document.getElementById('api-key');
+        const apisecretInput = document.getElementById('api-secret');
+
+        // --- Modal Detail Elements ---
+        const detailModalOverlay = document.getElementById('detail-modal-overlay');
+        const modalRecordId = document.getElementById('modal-record-id');
+        const modalRecordStatus = document.getElementById('modal-record-status');
+        const granularDetailsBody = document.getElementById('granular-details-body');
+        const provenanceDetailsBody = document.getElementById('provenance-details-body');
+        const profileNameDisplay = document.getElementById('profile-name');
+        const profileUserIdDisplay = document.getElementById('profile-user-id');
+        const userDisplayName = document.getElementById('user-display-name');
+
 
         // --- Utility Functions ---
 
@@ -216,34 +280,193 @@
             return `${diffDays} Days Left`;
         }
 
+        // --- API & Data Fetching Functions ---
+
+        async function fetchUserProfile(userId) {
+            try {
+                // In production: fetch profile data
+                console.log(`[API] Fetching profile for ${userId}...`);
+
+                // MOCK RESPONSE
+                return {
+                    name: "Data Principal " + userId.substring(3, 8).toUpperCase(),
+                    email: userId + "@privacyhub.com",
+                    userId: userId
+                };
+            } catch (e) {
+                return { name: "Error Loading User", email: "N/A", userId: userId };
+            }
+        }
+
+        // --- API 1: Consent History ---
+        async function fetchConsentHistory(userId) {
+            try {
+                const payload = { "_func": "list_consent_history", "user_id": userId, "limit": 50 };
+
+                const response = await fetch(`${API_CONSENT}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json',
+                        'X-API-Key': localStorage.getItem(X_API_KEY),
+                        'X-API-Secret': localStorage.getItem(X_API_SECRET)},
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`Status ${response.status}`);
+                const data = await response.json();
+
+                if (data.success && Array.isArray(data.data)) {
+                    consentHistoryCache = data.data;
+                    return data.data;
+                } else {
+                    console.warn("API returned successful status but no data or success=false:", data.message);
+                    return [];
+                }
+            } catch (e) {
+                console.error("Error fetching consent history:", e);
+                return [];
+            }
+        }
+
+        // --- API 2: Grievance List ---
+        async function fetchGrievances(userId) {
+            try {
+                const payload = { "_func": "list_user_requests", "user_id": userId, "sort_by": "SUBMISSION_DATE_DESC" };
+
+                const response = await fetch(`${API_GRIEVANCE}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json',
+                               'X-API-Key': localStorage.getItem(X_API_KEY),
+                               'X-API-Secret': localStorage.getItem(X_API_SECRET)
+                         },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`Status ${response.status}`);
+                const data = await response.json();
+
+                if (data.success && Array.isArray(data.data)) {
+                    grievanceCache = data.data;
+                    return data.data;
+                } else {
+                    console.warn("API returned successful status but no grievance data:", data.message);
+                    return [];
+                }
+            } catch (e) {
+                console.error("Error fetching grievances:", e);
+                return [];
+            }
+        }
+
+        // --- API 3: Withdraw Consent ---
+        async function withdrawConsent(userId) {
+            if (!confirm("CONFIRM: Are you sure you want to withdraw ALL non-mandatory consent? This is irreversible and triggers data purge.")) return false;
+
+            try {
+                const payload = {
+                    "_func": "withdraw_consent",
+                    "user_id": userId,
+                    "fiduciary_id": "TSI_COOP_ID_123", // Must be known
+                    "reason": "User requested complete withdrawal via dashboard."
+                };
+
+                const response = await fetch(`${API_CONSENT}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert("Withdrawal request successful! Data purge workflow initiated.");
+                    loadDashboardData(userId);
+                    return true;
+                } else {
+                    alert("Withdrawal failed. Check API response.");
+                    return false;
+                }
+            } catch (e) {
+                alert("Network error during withdrawal.");
+                return false;
+            }
+        }
+
+
+        // --- Data Orchestration & Initialization ---
+
+        async function loadDashboardData(userId) {
+            // Update UI with current user profile
+            const userProfile = await fetchUserProfile(userId);
+            //userDisplayName.textContent = `Welcome, ${userProfile.name.split(' ')[0]}!`;
+            //profileNameDisplay.textContent = userProfile.name;
+            profileUserIdDisplay.textContent = `ID: ${userId}`;
+
+            // Fetch all required data concurrently
+            const [consentHistory, grievances] = await Promise.all([
+                fetchConsentHistory(userId),
+                fetchGrievances(userId)
+            ]);
+
+            // Cache data
+            consentHistoryCache = consentHistory;
+            grievanceCache = grievances;
+
+            // Render data for the active tab (which is 'consent' by default)
+            setActiveTab('consent');
+        }
+
+        async function loadActiveTab(userId) {
+            const activeTab = document.querySelector('.tab-button.primary-text').dataset.tab;
+            contentArea.innerHTML = `<p class="text-center text-gray-500">Loading ${activeTab} data...</p>`;
+
+            // Render content from cache
+            if (activeTab === 'consent') {
+                renderConsentContent(consentHistoryCache);
+            } else if (activeTab === 'grievance') {
+                renderGrievanceContent(grievanceCache);
+            }
+        }
+
+
         // --- Dynamic Content Renderers ---
 
-        function renderConsentContent() {
-            const consentRows = dummyConsentHistory.map(record => `
+        function renderConsentContent(history) {
+            const userId = localStorage.getItem(LOCAL_USER_ID_KEY);
+            const activeRecord = history.find(r => r.is_active_consent); // Assuming active consent flag exists
+            const grantedCount = activeRecord ? Object.values(activeRecord.data_point_consents).filter(v => v).length : 0;
+            const totalPurposes = activeRecord ? Object.keys(activeRecord.data_point_consents).length : 0;
+            const percentage = totalPurposes > 0 ? ((grantedCount / totalPurposes) * 100).toFixed(0) : 0;
+
+
+            const consentRows = history.map(record => {
+                const isActive = record.is_active_consent;
+                const status = record.status || 'N/A';
+                return `
                 <tr>
                     <td class="px-3 py-4 whitespace-nowrap text-sm font-mono text-gray-700">...${record.id.slice(-8)}</td>
-                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${record.policy} (v${record.policy})</td>
-                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${formatTimestamp(record.date)}</td>
-                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${record.mechanism}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${record.policy_id} (v${record.policy_version})</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${formatTimestamp(record.timestamp)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${record.consent_mechanism}</td>
                     <td class="px-3 py-4 whitespace-nowrap text-sm">
-                        ${createStatusBadge(record.status, getStatusColor(record.status))}
+                        ${createStatusBadge(status, getStatusColor(status))}
                     </td>
-                    <td class="px-3 py-4 whitespace-nowrap text-sm">${record.active ? 'Yes' : 'No'}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm">${isActive ? 'Yes' : 'No'}</td>
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button class="text-indigo-600 hover:text-indigo-900 text-xs hover:underline" onclick="viewConsentDetails('${record.id}')">View Granular</button>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
 
             contentArea.innerHTML = `
-                <h2 class="text-xl font-semibold mb-4 primary-text">My Active Consent Status</h2>
-                <div class="flex flex-col sm:flex-row gap-4 mb-6">
-                    <button onclick="alert('Opening Preference Center (Simulated)')" class="action-button px-4 py-2 rounded-md font-medium text-sm">
-                        Review / Modify Consent Preferences
-                    </button>
-                    <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm" onclick="alert('Withdrawal initiated (Simulated)')">
-                        Withdraw All Consent
-                    </button>
+                <h2 class="text-xl font-semibold mb-4 primary-text">Current Consent Status & Manager</h2>
+
+                <div class="mb-6 p-4 border rounded-lg bg-indigo-50/50">
+                    <p class="text-sm font-medium text-gray-700">Overall Status (User: ${userId}):</p>
+                    <div class="flex items-center justify-between">
+                         <span class="text-2xl font-bold text-green-700">${percentage}% of Purposes Granted</span>
+                         <button onclick="withdrawConsent('${userId}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm">
+                            Withdraw All Consent
+                         </button>
+                    </div>
+                     <p class="text-xs text-gray-500 mt-1">You currently have ${grantedCount} active grants out of ${totalPurposes} defined purposes.</p>
                 </div>
 
                 <h3 class="text-lg font-semibold mt-6 mb-3 primary-text">Full Consent History</h3>
@@ -268,18 +491,18 @@
             `;
         }
 
-        function renderGrievanceContent() {
-            const requestRows = dummyRequests.map(item => `
+        function renderGrievanceContent(requests) {
+            const requestRows = requests.map(item => `
                 <tr>
                     <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.id}</td>
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-700">${item.type.replace(/_/g, ' ')}</td>
-                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${formatTimestamp(item.submitted)}</td>
-                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${calculateDaysLeft(item.duedate)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${formatTimestamp(item.submission_timestamp)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${calculateDaysLeft(item.due_date)}</td>
                     <td class="px-3 py-4 whitespace-nowrap text-sm">
                         ${createStatusBadge(item.status, getStatusColor(item.status))}
                     </td>
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button class="primary-text text-xs hover:underline" onclick="alert('View log for ${item.id} - ${item.subject}')">Track Log</button>
+                        <button class="primary-text text-xs hover:underline" onclick="alert('Viewing subject: ${item.subject}')">Track Log</button>
                     </td>
                 </tr>
             `).join('');
@@ -296,6 +519,7 @@
                     </button>
                 </div>
 
+                <h3 class="text-lg font-semibold mt-6 mb-3 primary-text">Submitted Requests</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -316,24 +540,27 @@
             `;
         }
 
-        // --- Modal Detail Viewer ---
+        // --- Modal Detail Viewer (View Granular) ---
 
         function viewConsentDetails(recordId) {
-            const record = dummyConsentHistory.find(r => r.id === recordId);
-            if (!record) return alert("Record not found.");
+            // Find the record based on ID from the cache
+            const record = consentHistoryCache.find(r => r.id === recordId);
+            if (!record) return alert(`Record ID ${recordId} not found in local cache.`);
 
             // Populate modal
-            document.getElementById('modal-record-id').textContent = record.id;
-            document.getElementById('modal-record-status').innerHTML = createStatusBadge(record.status, getStatusColor(record.status));
+            modalRecordId.textContent = record.id;
+            modalRecordStatus.innerHTML = createStatusBadge(record.status, getStatusColor(record.status));
 
             // Populate Granular Details
             let granularHtml = '';
-            for (const key in record.prefs) {
-                if (record.prefs.hasOwnProperty(key)) {
-                    const isGranted = record.prefs[key];
+            const preferences = record.data_point_consents || {};
+
+            for (const key in preferences) {
+                if (preferences.hasOwnProperty(key)) {
+                    const isGranted = preferences[key];
                     const statusBadge = isGranted
-                        ? `<span class="text-green-600">Granted</span>`
-                        : `<span class="text-red-600">Denied</span>`;
+                        ? `<span class="text-green-600">GRANTED</span>`
+                        : `<span class="text-red-600">DENIED</span>`;
 
                     granularHtml += `
                         <div class="policy-detail-item">
@@ -343,21 +570,42 @@
                     `;
                 }
             }
-            document.getElementById('granular-details-body').innerHTML = granularHtml;
+            granularDetailsBody.innerHTML = granularHtml;
 
             // Populate Provenance Details
-            document.getElementById('provenance-details-body').innerHTML = `
-                <p><strong>Policy Version:</strong> ${record.policy} | <strong>Mechanism:</strong> ${record.mechanism}</p>
-                <p><strong>Date Recorded:</strong> ${formatTimestamp(record.date)}</p>
-                <p><strong>IP Address:</strong> ${record.ip || 'Unknown'} </p>
+            provenanceDetailsBody.innerHTML = `
+                <p><strong>Policy Version:</strong> ${record.policy_version} | <strong>Mechanism:</strong> ${record.consent_mechanism}</p>
+                <p><strong>Date Recorded:</strong> ${formatTimestamp(record.timestamp)}</p>
+                <p><strong>IP Address:</strong> ${record.ip_address || 'Unknown'} </p>
             `;
 
             // Show Modal
-            document.getElementById('detail-modal-overlay').style.display = 'flex';
+            detailModalOverlay.style.display = 'flex';
         }
 
 
-        // --- Tab Control Logic ---
+        // --- Data Orchestration & Initialization ---
+
+        async function loadDashboardData(userId) {
+            // Update UI with current user profile
+            const userProfile = await fetchUserProfile(userId);
+            //userDisplayName.textContent = `Welcome, ${userProfile.name.split(' ')[0]}!`;
+            //profileNameDisplay.textContent = userProfile.name;
+            profileUserIdDisplay.textContent = `ID: ${userId}`;
+
+            // Fetch all required data sequentially/concurrently
+            const [consentHistory, grievances] = await Promise.all([
+                fetchConsentHistory(userId),
+                fetchGrievances(userId)
+            ]);
+
+            // Cache data
+            consentHistoryCache = consentHistory;
+            grievanceCache = grievances;
+
+            // Render data for the active tab (which is 'consent' by default)
+            setActiveTab('consent');
+        }
 
         function setActiveTab(tabId) {
             document.querySelectorAll('.tab-button').forEach(button => {
@@ -370,46 +618,71 @@
                 }
             });
 
-            // Render specific content
-            switch (tabId) {
-                case 'consent': renderConsentContent(); break;
-                case 'grievance': renderGrievanceContent(); break;
+            // Trigger content render based on tab
+            const userId = localStorage.getItem(LOCAL_USER_ID_KEY);
+
+            if (userId) {
+                if (tabId === 'consent') {
+                    renderConsentContent(consentHistoryCache);
+                } else if (tabId === 'grievance') {
+                    renderGrievanceContent(grievanceCache);
+                }
+            } else {
+                contentArea.innerHTML = `<p class="text-center text-red-600 font-bold">Error: User ID not found. Please refresh and enter your ID.</p>`;
             }
         }
 
         function handleLogout() {
-            // In a real system, this clears the session on the server
+            // Clear all local user and session data
             localStorage.removeItem('authToken');
             localStorage.removeItem('username');
-            localStorage.removeItem('user_id_simulated');
+            localStorage.removeItem(LOCAL_USER_ID_KEY);
             window.location.href = "login.html";
         }
 
-
-        // --- Initialization ---
-
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Profile Initialization (Simulated) ---
-            const userId = localStorage.getItem('user_id_simulated') || USER_ID_SIMULATED;
-            const userName = localStorage.getItem('username_simulated') || USER_NAME_SIMULATED;
+            // Check for existing user ID
+            const existingUserId = localStorage.getItem(LOCAL_USER_ID_KEY);
+            if (!existingUserId) {
+                document.getElementById('id-capture-modal').style.display = 'flex';
+            } else {
+                 // Load data based on stored ID
+                 loadDashboardData(existingUserId);
+            }
 
-            //document.getElementById('user-display-name').textContent = `Welcome, ${userName.split(' ')[0]}!`;
 
-            // --- Attach Tab Listeners ---
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     setActiveTab(e.target.dataset.tab);
                 });
             });
 
-            // Load default tab (Consent Manager)
-            setActiveTab('consent');
+             // Form submission handler for ID capture modal
+            document.getElementById('id-capture-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const principalId = principalIdInput.value.trim();
+                const apikey = apikeyInput.value.trim();
+                const apisecret = apisecretInput.value.trim();
+
+                if (principalId) {
+                    // Simulate successful authentication and save DP ID
+                    localStorage.setItem(LOCAL_USER_ID_KEY, principalId);
+                    localStorage.setItem(LOCAL_USER_NAME_KEY, "Authenticated User (" + principalId + ")");
+                    localStorage.setItem(X_API_KEY, apikey);
+                    localStorage.setItem(X_API_SECRET, apisecret);
+                    document.getElementById('id-capture-modal').style.display = 'none';
+
+                    // Load data for the first time
+                    await loadDashboardData(principalId);
+                }
+            });
         });
 
         // Expose function globally for inline use
         window.viewConsentDetails = viewConsentDetails;
         window.handleLogout = handleLogout;
         window.setActiveTab = setActiveTab;
+        window.withdrawConsent = withdrawConsent;
     </script>
 </body>
 </html>
