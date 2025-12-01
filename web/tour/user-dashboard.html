@@ -114,12 +114,13 @@
   <h1 class="text-3xl font-bold primary-text mb-6">User Dashboard</h1>
 
   <!-- User Information (Simplified Display) -->
+  <!--
   <div class="card p-4 mb-6">
     <p class="text-lg font-semibold primary-text" id="profile-name">Fetching Profile...</p>
     <p class="text-sm text-gray-600" id="profile-email"></p>
     <p class="text-xs text-gray-400" id="profile-user-id">ID: </p>
   </div>
-
+  -->
 
   <!-- Tabbed Interface for Main Content -->
   <div class="mt-4">
@@ -610,7 +611,7 @@
             const userProfile = await fetchUserProfile(userId);
             //userDisplayName.textContent = `Welcome, ${userProfile.name.split(' ')[0]}!`;
             //profileNameDisplay.textContent = userProfile.name;
-            profileUserIdDisplay.textContent = `ID: ${userId}`;
+            //profileUserIdDisplay.textContent = `ID: ${userId}`;
 
             // Fetch all required data sequentially/concurrently
             const [consentHistory, grievances] = await Promise.all([
