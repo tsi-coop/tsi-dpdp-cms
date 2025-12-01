@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TSI DPDP CMS - Data Processors Management</title>
+  <title>TSI DPDP CMS - Apps Management</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="../env.js"></script>
@@ -145,7 +145,7 @@
   <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
   </button>
-  <span class="text-xl font-bold primary-text">Processors</span>
+  <span class="text-xl font-bold primary-text">Apps</span>
   <div class="text-sm text-gray-500">Admin User</div>
 </div>
 
@@ -163,7 +163,7 @@
         Fiduciaries
       </a>
       <a href="#" class="nav-link active">
-        Data Processors
+        Apps
       </a>
       <a href="users.html" class="nav-link">
         CMS Users
@@ -193,9 +193,9 @@
 <!-- Main Content Area -->
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-xl font-semibold text-gray-800">Data Processors Management</h1>
+    <h1 class="text-xl font-semibold text-gray-800">Apps Management</h1>
     <button id="add-processor-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
-      + Add New Processor
+      + Add New App
     </button>
   </div>
 
@@ -210,7 +210,7 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead>
         <tr class="table-header">
-          <th class="px-4 py-3 text-sm">Processor Name</th>
+          <th class="px-4 py-3 text-sm">App Name</th>
           <th class="px-4 py-3 text-sm">Associated Fiduciary</th>
           <th class="px-4 py-3 text-sm">Processing Purpose</th>
           <th class="px-4 py-3 text-sm">DPA Reference</th>
@@ -222,7 +222,7 @@
         <!-- Data will be dynamically inserted here -->
         <tr>
           <td colspan="6" class="p-4 text-center text-gray-500">
-            Loading Data Processor data...
+            Loading Apps data...
           </td>
         </tr>
         </tbody>
@@ -238,7 +238,7 @@
 <!-- Modal for Adding/Editing Data Processor -->
 <div id="processor-modal-overlay" class="modal-overlay">
   <div class="modal-content">
-    <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New Data Processor</h2>
+    <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New App</h2>
     <form id="processor-form" class="space-y-4">
 
       <!-- Hidden Field to store Processor ID during edit -->
@@ -254,8 +254,8 @@
           </select>
         </div>
         <div>
-          <label for="processor-name" class="block text-sm font-medium text-gray-700">Processor Legal Name</label>
-          <input type="text" id="processor-name" name="name" required placeholder="e.g., AnalyticsPro Inc." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <label for="processor-name" class="block text-sm font-medium text-gray-700">App Name</label>
+          <input type="text" id="processor-name" name="name" required placeholder="e.g., AnalyticsPro" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         </div>
       </div>
 
@@ -273,7 +273,7 @@
 
       <!-- Section 3: Processing Scope -->
       <div>
-        <label for="processing-purpose" class="block text-sm font-medium text-gray-700">Processing Purpose (e.g., Marketing, Analytics, Credit-Decisioning)</label>
+        <label for="processing-purpose" class="block text-sm font-medium text-gray-700">Processing Purposes (e.g., Marketing, Analytics, Credit-Decisioning)</label>
         <input type="text" id="processing-purpose" name="processing_purpose" required placeholder="e.g., WEBSITE_ANALYTICS, LEAD_SCORING" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         <p class="mt-1 text-xs text-gray-500">List purposes separated by commas (Internal IDs/Codes preferred).</p>
       </div>
@@ -288,7 +288,7 @@
 
       <div class="modal-footer">
         <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
-        <button type="submit" id="save-processor-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Processor</button>
+        <button type="submit" id="save-processor-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save App</button>
       </div>
     </form>
   </div>
@@ -322,7 +322,7 @@
         processorForm.reset();
         processorIdHidden.value = '';
 
-        document.getElementById('save-processor-btn').textContent = isEdit ? 'Update Processor' : 'Save Processor';
+        document.getElementById('save-processor-btn').textContent = isEdit ? 'Update App' : 'Save App';
 
         // Ensure inputs are enabled for creation, or potentially disabled/locked for editing sensitive fields
         processorNameInput.disabled = false;
@@ -468,7 +468,7 @@
                 tableBody.innerHTML = '';
 
                 if (processors.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No Data Processors found matching criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No Apps found matching criteria.</td></tr>`;
                 } else {
                     processors.forEach(processor => {
                         tableBody.appendChild(createProcessorRow(processor));
@@ -604,7 +604,7 @@
     // --- Event Listener Attachments ---
     menuToggle.addEventListener('click', toggleMenu);
     backdrop.addEventListener('click', toggleMenu);
-    addProcessorBtn.addEventListener('click', () => showModal('Add New Data Processor'));
+    addProcessorBtn.addEventListener('click', () => showModal('Add New App'));
     closeModalBtn.addEventListener('click', closeModal);
 
     // --- Search Functionality ---
