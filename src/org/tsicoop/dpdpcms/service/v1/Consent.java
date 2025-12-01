@@ -341,7 +341,7 @@ public class Consent implements Action {
                 "WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE LIMIT 1";
 
         UUID oldRecordId = null;
-        JSONObject currentConsents = null;
+        JSONArray currentConsents = null;
         String policyId = null;
         String policyVersion = null;
 
@@ -364,10 +364,10 @@ public class Consent implements Action {
             policyId = rs.getString("policy_id");
             policyVersion = rs.getString("policy_version");
             // Cast JSONB string back to JSONObject
-            currentConsents = (JSONObject) new JSONParser().parse(rs.getString("data_point_consents"));
+            currentConsents = (JSONArray) new JSONParser().parse(rs.getString("data_point_consents"));
 
             // --- 2. Deactivate Old Record ---
-            String sqlDeactivate = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW(), status = 'WITHDRAWN_SUPERSEDED' WHERE id = ?";
+            String sqlDeactivate = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE id = ?";
             pstmt.close();
             pstmt = conn.prepareStatement(sqlDeactivate);
             pstmt.setObject(1, oldRecordId);
@@ -377,17 +377,17 @@ public class Consent implements Action {
             // In a real system, you would look up the full policy definition to find
             // which purposes are mandatory (and thus cannot be withdrawn).
             // MOCK: For simplicity, we assume "core" purposes cannot be withdrawn.
-            JSONObject withdrawnConsents = new JSONObject();
-            for (Object keyObj : currentConsents.keySet()) {
-                String purposeId = (String) keyObj;
-                // Keep 'core' purposes granted, set everything else to false
-                boolean isMandatory = purposeId.contains("core");
-                withdrawnConsents.put(purposeId, isMandatory);
+            JSONArray withdrawnConsents = new JSONArray();
+            Iterator<JSONObject> consentIt = currentConsents.iterator();
+            while(consentIt.hasNext()) {
+                JSONObject currc = (JSONObject) consentIt.next();
+                currc.put("consent_granted",false);
+                withdrawnConsents.add(currc);
             }
 
             // --- 4. Insert New WITHDRAWN Record (Immutability/Provenance) ---
-            String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at, status) " +
-                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', 'WITHDRAWN', 'USER_WITHDRAWAL', ?::jsonb, TRUE, NOW(), 'WITHDRAWN') RETURNING id";
+            String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at,language_selected,ip_address) " +
+                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', 'WITHDRAWN', 'USER_WITHDRAWAL', ?::jsonb, FALSE, NOW(), 'en', '[0:0:0:0:0:0:0:1]') RETURNING id";
 
             pstmt.close();
             pstmt = conn.prepareStatement(sqlInsertNew, Statement.RETURN_GENERATED_KEYS);

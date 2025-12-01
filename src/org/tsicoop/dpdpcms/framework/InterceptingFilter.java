@@ -34,7 +34,8 @@ public class InterceptingFilter implements Filter {
             "validate_consent",
             "list_consent_history",
             "list_user_grievances",
-            "get_consent_record_details"
+            "get_consent_record_details",
+            "withdraw_consent"
             // Add other client-facing functions as needed
     ));
 

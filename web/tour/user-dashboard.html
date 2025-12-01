@@ -365,13 +365,15 @@
                 const payload = {
                     "_func": "withdraw_consent",
                     "user_id": userId,
-                    "fiduciary_id": "TSI_COOP_ID_123", // Must be known
                     "reason": "User requested complete withdrawal via dashboard."
                 };
 
                 const response = await fetch(`${API_CONSENT}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json',
+                               'X-API-Key': localStorage.getItem(X_API_KEY),
+                               'X-API-Secret': localStorage.getItem(X_API_SECRET)
+                               },
                     body: JSON.stringify(payload)
                 });
 
