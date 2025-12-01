@@ -15,7 +15,6 @@
   },
   "required": [
     "_func",
-    "record_id",
-    "fiduciary_id"
+    "record_id"
   ]
 }

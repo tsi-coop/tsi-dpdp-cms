@@ -33,7 +33,8 @@ public class InterceptingFilter implements Filter {
             "get_grievance",
             "validate_consent",
             "list_consent_history",
-            "list_user_grievances"
+            "list_user_grievances",
+            "get_consent_record_details"
             // Add other client-facing functions as needed
     ));
 

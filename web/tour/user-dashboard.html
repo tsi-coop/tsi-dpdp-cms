@@ -197,11 +197,13 @@
       <!-- Provenance Data Loaded Here -->
     </div>
 
+    <!--
     <div class="mt-6 text-right">
       <button id="initiate-erasue-btn" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">
         Initiate Erasure
       </button>
     </div>
+    -->
   </div>
 </div>
 
@@ -253,7 +255,7 @@
         }
 
         function createStatusBadge(status, colorClass) {
-            return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}">${status.replace(/_/g, ' ')}</span>`;
+            return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}">${status}</span>`;
         }
 
         function getStatusColor(status) {
@@ -542,14 +544,29 @@
 
         // --- Modal Detail Viewer (View Granular) ---
 
-        function viewConsentDetails(recordId) {
-            // Find the record based on ID from the cache
-            const record = consentHistoryCache.find(r => r.id === recordId);
-            if (!record) return alert(`Record ID ${recordId} not found in local cache.`);
+        async function viewConsentDetails(recordId) {
+
+            const payload = { "_func": "get_consent_record_details", "record_id": recordId };
+
+            const response = await fetch(API_CONSENT, {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': localStorage.getItem(X_API_KEY),
+                'X-API-Secret': localStorage.getItem(X_API_SECRET)
+                 },
+                body: JSON.stringify(payload)
+            });
+
+            const record = await response.json();
+            console.log(record);
+            if (!record.id) {
+               throw new Error(`Failed to fetch details for consent ${recordId}.`);
+            }
 
             // Populate modal
             modalRecordId.textContent = record.id;
-            modalRecordStatus.innerHTML = createStatusBadge(record.status, getStatusColor(record.status));
+            //modalRecordStatus.innerHTML = createStatusBadge(record.is_active_consent?"ACTIVE":"INACTIVE", getStatusColor(record.is_active_consent));
 
             // Populate Granular Details
             let granularHtml = '';
@@ -557,14 +574,14 @@
 
             for (const key in preferences) {
                 if (preferences.hasOwnProperty(key)) {
-                    const isGranted = preferences[key];
+                    const isGranted = preferences[key].consent_granted;
                     const statusBadge = isGranted
                         ? `<span class="text-green-600">GRANTED</span>`
                         : `<span class="text-red-600">DENIED</span>`;
 
                     granularHtml += `
                         <div class="policy-detail-item">
-                            <p class="text-gray-800 font-medium">${key.charAt(0).toUpperCase() + key.slice(1)}:</p>
+                            <p class="text-gray-800 font-medium">${preferences[key].purpose_agreed_to}:</p>
                             <p class="ml-4">${statusBadge}</p>
                         </div>
                     `;
