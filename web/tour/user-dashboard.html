@@ -225,8 +225,6 @@
         let consentHistoryCache = [];
         let grievanceCache = [];
 
-
-
         // --- DOM Elements ---
         const contentArea = document.getElementById('dashboard-content');
         const tabButtons = document.querySelectorAll('.tab-button');
@@ -245,7 +243,6 @@
         const profileNameDisplay = document.getElementById('profile-name');
         const profileUserIdDisplay = document.getElementById('profile-user-id');
         const userDisplayName = document.getElementById('user-display-name');
-
 
         // --- Utility Functions ---
 
@@ -460,15 +457,20 @@
             contentArea.innerHTML = `
                 <h2 class="text-xl font-semibold mb-4 primary-text">Current Consent Status & Manager</h2>
 
-                <div class="mb-6 p-4 border rounded-lg bg-indigo-50/50">
-                    <p class="text-sm font-medium text-gray-700">Overall Status (User: ${userId}):</p>
+               <!-- <div class="mb-6 p-4 border rounded-lg bg-indigo-50/50">
                     <div class="flex items-center justify-between">
-                         <span class="text-2xl font-bold text-green-700">${percentage}% of Purposes Granted</span>
-                         <button onclick="withdrawConsent('${userId}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm">
+                          <button onclick="withdrawConsent('${userId}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm">
                             Withdraw All Consent
                          </button>
                     </div>
-                     <p class="text-xs text-gray-500 mt-1">You currently have ${grantedCount} active grants out of ${totalPurposes} defined purposes.</p>
+                </div> -->
+
+                <div class="mb-6 p-4 border rounded-lg bg-indigo-50/50">
+                    <div class="flex items-center justify-end">
+                          <button onclick="withdrawConsent('${userId}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm">
+                            Withdraw All Consent
+                         </button>
+                    </div>
                 </div>
 
                 <h3 class="text-lg font-semibold mt-6 mb-3 primary-text">Full Consent History</h3>
