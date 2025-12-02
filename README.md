@@ -8,7 +8,7 @@ Note: The solution is currently under preview stage. We encourage developers to 
 
 [The Big Picture](https://youtu.be/caQFjwrZj9w)
 
-[System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/5379e96519caed23a14763c29d6f004907d8c8be/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design.pdf)
+[System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/296d41274d0bf449de295e89c1cf3c92a7f81259/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf)
 
 [Installation Walkthrough](https://youtu.be/8LKycujvHBU)
 
