@@ -23,7 +23,7 @@ services:
     build: . # Build the image from the Dockerfile in the current directory
     container_name: tsi_dpdp_cms_jetty
     ports:
-      - "8080:8080" # Map host port 8080 to container port 8080 (Jetty's default)
+      - "8080:8080" # Map host port 8090 to container port 8090
     environment:
       # Database
       POSTGRES_HOST: "jdbc:postgresql://postgres_db:5432"

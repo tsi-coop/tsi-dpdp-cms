@@ -44,15 +44,12 @@
 
 <div class="card-login">
     <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold primary-text">System Setup</h1>
-        <p class="text-sm text-gray-500 mt-2">
-            Create the initial Super Administrator account.
-        </p>
+        <h1 class="text-3xl font-bold primary-text">Super Admin Setup</h1>
     </div>
 
-    <form id="setup-form" class="space-y-4">
+    <p id="setup-message" class="text-sm font-medium hidden" role="alert"></p>
 
-        <p id="setup-message" class="text-sm font-medium hidden" role="alert"></p>
+    <form id="setup-form" class="space-y-4">
 
         <!-- Email -->
         <div>
@@ -171,7 +168,8 @@
                         // --- SUCCESS ---
                         displayMessage("Setup complete! Super Administrator account created successfully.", false);
                         setupBtn.textContent = 'Setup Complete';
-
+                        setupBtn.disabled = false;
+                        form.style.display = 'none';
                         // Show login link after successful setup
                         loginLink.style.display = 'block';
 

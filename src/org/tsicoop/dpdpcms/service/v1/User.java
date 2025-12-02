@@ -288,7 +288,7 @@ public class User implements Action {
         JSONObject result = new JSONObject();
 
         // Query by username or email
-        String sql = "SELECT u.id, u.username, u.email, u.password_hash, u.status, u.mfa_enabled, u.role, u.fiduciary_id, f.name FROM users u, fiduciaries f WHERE (u.username = ? OR u.email = ?)";
+        String sql = "SELECT u.id, u.username, u.email, u.password_hash, u.status, u.mfa_enabled, u.role, u.fiduciary_id, f.name FROM users u LEFT OUTER JOIN fiduciaries f ON u.fiduciary_id = f.id WHERE (u.username = ? OR u.email = ?)";
 
         try {
             conn = pool.getConnection();

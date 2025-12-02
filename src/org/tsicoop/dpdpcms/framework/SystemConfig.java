@@ -44,6 +44,7 @@ public class SystemConfig {
         appConfig.setProperty("framework.db.user",System.getenv("POSTGRES_USER"));
         appConfig.setProperty("framework.db.password",System.getenv("POSTGRES_PASSWD"));
         appConfig.setProperty("framework.db.host",System.getenv("POSTGRES_HOST"));
+        //System.out.println("App Config:"+appConfig.toString());
     }
 
     public static Properties getAppConfig() {
