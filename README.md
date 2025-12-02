@@ -2,7 +2,7 @@
 
 An open-source consent management system compliant with India's DPDP Act, 2023
 
-Note: The solution is currently under preview stage. We encourage developers to use this solution for their sandbox testing and drop us an email if there are any questions.
+Note: This solution is currently in Public Preview. While we encourage developers to integrate it for sandbox testing and experimentation, please be aware it is not yet production-ready. We highly value your feedback. Please email us with any questions or issues you encounter.
 
 ## Getting Started
 
