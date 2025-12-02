@@ -1,0 +1,16 @@
+# --- Basic Configuration ---
+JAVA_HOME=C:\software\jdk-17
+JETTY_HOME=C:\software\jetty-home-12.0.22
+JETTY_BASE=C:\work\tsi-dpdp-cms\server
+
+# --- Database Configuration ---
+# Recommended: A strong, random password.
+POSTGRES_HOST=jdbc:postgresql://localhost:5432
+POSTGRES_DB=<db_name>
+POSTGRES_USER=<user_name>
+POSTGRES_PASSWD=<password>
+
+# --- Application Configuration ---
+TSI_DPDP_CMS_ENV=local
+TSI_DPDP_CMS_HOME=C:\work\tsi-dpdp-cms
+TSI_DPDP_CMS_SERVER_URL=http://localhost:8080
