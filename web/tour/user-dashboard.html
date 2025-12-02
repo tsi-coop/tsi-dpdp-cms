@@ -470,6 +470,41 @@
             }
         }
 
+        // --- Submit Grievance ---
+        async function submitGrievance(userId, type, subject, description) {
+            //  alert('submitting');
+             try {
+                const payload = {
+                    "_func": "submit_grievance",
+                    "user_id": userId,
+                    "type": type,
+                    "subject": subject,
+                    "description": description
+                };
+
+                const response = await fetch(API_GRIEVANCE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json',
+                               'X-API-Key': localStorage.getItem(X_API_KEY),
+                               'X-API-Secret': localStorage.getItem(X_API_SECRET) },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        return { success: true, message: `Grievance submitted successfully. ID: ${result.data.grievance_id}` };
+                    } else {
+                        return { success: false, message: result.message || "Grievance API rejection." };
+                    }
+                } else {
+                    return { success: false, message: `API Error: Status ${response.status}` };
+                }
+            } catch (e) {
+                return { success: false, message: "Network error during submission." };
+            }
+        }
+
 
         // --- Dynamic Content Renderers ---
 
@@ -544,7 +579,7 @@
         function renderGrievanceContent(requests) {
             const requestRows = requests.map(item => `
                 <tr>
-                    <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.id}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.grievance_id}</td>
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-700">${item.type.replace(/_/g, ' ')}</td>
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${formatTimestamp(item.submission_timestamp)}</td>
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${calculateDaysLeft(item.due_date)}</td>
@@ -738,6 +773,37 @@
                     // Load data for the first time
                     await loadDashboardData(principalId);
                 }
+            });
+
+            // --- Grievance Submission Form Handler ---
+            document.getElementById('grievance-submission-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const userId = localStorage.getItem(LOCAL_USER_ID_KEY);
+                if (!userId) return alert("Error: Cannot submit grievance. User ID missing.");
+
+                const type = document.getElementById('grievance-type').value;
+                const subject = document.getElementById('grievance-subject').value;
+                const description = document.getElementById('grievance-description').value;
+
+                const submitBtn = document.getElementById('submit-grievance-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+
+                const result = await submitGrievance(userId, type, subject, description);
+
+                if (result.success) {
+                    alert(result.message);
+                    document.getElementById('submit-grievance-modal').style.display = 'none';
+                    // Reload the grievance tab data
+                    await fetchGrievances(userId);
+                    setActiveTab('grievance');
+                } else {
+                    alert(`Submission Failed: ${result.message}`);
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Grievance';
             });
         });
 

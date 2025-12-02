@@ -32,11 +32,8 @@
   "required": [
     "_func",
     "user_id",
-    "fiduciary_id",
     "type",
     "subject",
-    "description",
-    "attachments",
-    "language"
+    "description"
   ]
 }
