@@ -10,6 +10,8 @@ Note: The solution is currently under preview stage. We encourage developers to 
 
 [System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/5379e96519caed23a14763c29d6f004907d8c8be/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design.pdf)
 
+[Installation Walkthrough](https://youtu.be/8LKycujvHBU)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following software installed on your development machine or server:
