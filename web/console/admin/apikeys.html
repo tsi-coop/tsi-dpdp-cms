@@ -474,7 +474,7 @@
                 // Default: No processor selected is NOT an option anymore if we enforce strict processor keys
                 // But user could be creating a key for the Fiduciary's own app, which technically acts as a processor of its own data.
                 // However, based on requirements, we force selection.
-                processorSelect.innerHTML = '<option value="">-- Select Data Processor --</option>';
+                processorSelect.innerHTML = '<option value="">-- Select App --</option>';
 
                 processors.forEach(p => {
                     const option = document.createElement('option');

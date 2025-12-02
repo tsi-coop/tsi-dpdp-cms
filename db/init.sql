@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS processors (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
     phone VARCHAR(50),
-    dpa_reference VARCHAR(255) UNIQUE,
+    dpa_reference VARCHAR(255),
     processing_purposes JSONB NOT NULL DEFAULT '[]'::jsonb,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
