@@ -181,6 +181,42 @@
   </div>
 </div>
 
+<!-- Modal for Grievance Submission -->
+<div id="submit-grievance-modal" class="modal-overlay">
+  <div class="modal-content">
+    <button class="modal-close-btn" onclick="document.getElementById('submit-grievance-modal').style.display='none'">&times;</button>
+    <h2 class="text-xl font-semibold primary-text mb-3">Submit New Grievance</h2>
+    <form id="grievance-submission-form" class="space-y-4">
+      <p class="text-sm text-gray-600">Please provide details for your request or complaint. All fields are required.</p>
+
+      <div>
+        <label for="grievance-type" class="block text-sm font-medium text-gray-700">Request Type</label>
+        <select id="grievance-type" name="type" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <option value="GENERAL_COMPLAINT">General Complaint / Inquiry</option>
+          <option value="ERASURE_REQUEST">Right to Erasure (Deletion)</option>
+          <option value="DATA_ACCESS_REQUEST">Data Access / Portability Request</option>
+          <option value="CORRECTION_REQUEST">Correction / Update Request</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="grievance-subject" class="block text-sm font-medium text-gray-700">Subject / Summary</label>
+        <input type="text" id="grievance-subject" name="subject" required placeholder="e.g., Request to change my contact number" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+      </div>
+
+      <div>
+        <label for="grievance-description" class="block text-sm font-medium text-gray-700">Detailed Description</label>
+        <textarea id="grievance-description" name="description" rows="5" required placeholder="Please explain the issue or the data you wish to modify/delete." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" onclick="document.getElementById('submit-grievance-modal').style.display='none'" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+        <button type="submit" id="submit-grievance-btn" class="action-button px-4 py-2 rounded-md text-sm font-medium">Submit Grievance</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal for Granular Consent Details (View Details) -->
 <div id="detail-modal-overlay" class="modal-overlay">
   <div class="modal-content">
@@ -244,6 +280,13 @@
         const profileNameDisplay = document.getElementById('profile-name');
         const profileUserIdDisplay = document.getElementById('profile-user-id');
         const userDisplayName = document.getElementById('user-display-name');
+
+        // Grievance Submission Modal Elements
+        const submitGrievanceModal = document.getElementById('submit-grievance-modal');
+        const grievanceSubmissionForm = document.getElementById('grievance-submission-form');
+        const grievanceTypeSelect = document.getElementById('grievance-type');
+        const grievanceSubjectInput = document.getElementById('grievance-subject');
+        const grievanceDescriptionInput = document.getElementById('grievance-description');
 
         // --- Utility Functions ---
 
@@ -517,11 +560,9 @@
             contentArea.innerHTML = `
                 <h2 class="text-xl font-semibold mb-4 primary-text">Requests & Grievance Redressal</h2>
 
-                <div class="flex justify-end mb-4 gap-2">
-                    <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-300" onclick="alert('Opening Data Access Request Form')">
-                        Request Data Access
-                    </button>
-                    <button class="action-button px-4 py-2 rounded-md font-medium text-sm" onclick="alert('Opening New Grievance Form')">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-sm text-gray-600">Total submitted requests: ${requests.length}</p>
+                    <button onclick="document.getElementById('submit-grievance-modal').style.display='flex'" class="action-button px-4 py-2 rounded-md font-medium text-sm">
                         Submit New Grievance
                     </button>
                 </div>
