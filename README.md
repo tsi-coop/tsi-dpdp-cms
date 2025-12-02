@@ -12,6 +12,8 @@ Note: The solution is currently under preview stage. We encourage developers to 
 
 [Installation Walkthrough](https://youtu.be/8LKycujvHBU)
 
+[Functional Demo](https://youtu.be/d85ye4BoFbM)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following software installed on your development machine or server:
