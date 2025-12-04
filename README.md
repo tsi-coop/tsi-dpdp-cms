@@ -115,12 +115,12 @@ Follow these steps to get the TSI Aadhaar Vault Plus solution running on your lo
 
 ## Installation Steps (without Docker)
 
-These steps describe how to install and run the TSI Aadhaar Vault Plus solution directly on a Linux/Windows server without using Docker.
+These steps describe how to install and run the TSI DPDP CMS solution directly on a Linux/Windows server without using Docker.
 
 1.   **Clone the Repository:**
      ```bash
      git clone https://github.com/tsi-coop/tsi-dpdp-cms.git
-     cd tsi-aadhaar-vault-plus
+     cd tsi-dpdp-cms
      ```
 
 2.  **PostgreSQL Database Setup:**
@@ -137,7 +137,7 @@ These steps describe how to install and run the TSI Aadhaar Vault Plus solution 
     * Exit the postgres user: `exit`
     * **Initialize Schema:** Execute the `db/init.sql` script to create the necessary tables.
     ```bash
-    psql -U <<your-db-user-here>> -d <<your-db-name-here>> -h localhost -f /path/to/tsi-aadhaar-vault-plus/db/init.sql
+    psql -U <<your-db-user-here>> -d <<your-db-name-here>> -h localhost -f /path/to/tsi-dpdp-cms/db/init.sql
     ```
 3.  **Build WAR:**
     ```bash
@@ -166,7 +166,7 @@ These steps describe how to install and run the TSI Aadhaar Vault Plus solution 
 
    ```bash
    set-base.bat #Sets the jetty base directory
-   serve.bat # Copies the target/tsi_aadhaar_vault_plus.war to %JETTY_BASE%/webapps/ROOT.wat. Starts the server in 8080
+   serve.bat # Copies the target/tsi_dpdp_cms.war to %JETTY_BASE%/webapps/ROOT.wat. Starts the server in 8080
    ```
 
 
