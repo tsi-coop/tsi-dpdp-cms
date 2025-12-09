@@ -163,7 +163,7 @@ async function saveConsentState(preferences, mechanism) {
 async function invokeBackendConsentAPI(preferences, mechanism) {
     // This user ID should come from your actual user authentication system
     // For a non-logged-in user, you might use a cookie ID or generate a temporary one.
-    const userId = localStorage.getItem('tsi_dpdp_cms_anon_id') || `anon_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const userId = localStorage.getItem('tsi_dpdp_cms_principal_id') || localStorage.getItem('tsi_dpdp_cms_anon_id') || `anon_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     localStorage.setItem('tsi_dpdp_cms_anon_id', userId); // Persist anon ID if generated
 
     const consentPayload = {
