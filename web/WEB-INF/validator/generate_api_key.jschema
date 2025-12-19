@@ -9,7 +9,7 @@
     "fiduciary_id": {
       "type": "string"
     },
-    "owner_type": {
+    "app_id": {
       "type": "string"
     },
     "description": {
@@ -25,7 +25,7 @@
   "required": [
     "_func",
     "fiduciary_id",
-    "owner_type",
+    "app_id",
     "description",
     "permissions"
   ]

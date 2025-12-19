@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * API Key Management Service (ApiKey).
  * This service manages the secure generation, storage, usage tracking, and lifecycle
- * of API keys for Data Fiduciaries and Data Processors.
+ * of API keys for Apps.
  */
 public class ApiKey implements Action {
 
@@ -38,9 +38,6 @@ public class ApiKey implements Action {
         JSONObject input = null;
         JSONObject output = null;
         JSONArray outputArray = null;
-
-        // Placeholder for current CMS user ID (from authentication context)
-        UUID actionByCmsUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
         try {
             input = InputProcessor.getInput(req);
@@ -73,8 +70,6 @@ public class ApiKey implements Action {
                     return;
                 }
             }
-            // ---------------------------------
-
 
             switch (func.toLowerCase()) {
                 case "generate_api_key":
@@ -82,29 +77,28 @@ public class ApiKey implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required to generate a key.", req.getRequestURI());
                         return;
                     }
-                    String ownerType = (String) input.get("owner_type");
                     String description = (String) input.get("description");
                     JSONArray permissionsJson = (JSONArray) input.get("permissions");
-                    String processorIdStr = (String) input.get("processor_id");
+                    String appIdStr = (String) input.get("app_id");
 
-                    UUID processorId = null;
-                    if (processorIdStr != null && !processorIdStr.isEmpty()) {
+                    UUID appId = null;
+                    if (appIdStr != null && !appIdStr.isEmpty()) {
                         try {
-                            processorId = UUID.fromString(processorIdStr);
+                            appId = UUID.fromString(appIdStr);
                         } catch (IllegalArgumentException e) {
                             OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid 'processor_id' format.", req.getRequestURI());
                             return;
                         }
                     }
 
-                    if (ownerType == null || ownerType.isEmpty() || permissionsJson == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (owner_type, permissions) for key generation.", req.getRequestURI());
+                    if (permissionsJson == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (permissions) for key generation.", req.getRequestURI());
                         return;
                     }
 
                     // NOTE: Fiduciary existence check is recommended here but omitted for brevity.
 
-                    output = generateAndSaveApiKey(fiduciaryId, processorId, ownerType, description, permissionsJson);
+                    output = generateAndSaveApiKey(fiduciaryId, appId, description, permissionsJson);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -124,10 +118,9 @@ public class ApiKey implements Action {
 
                 case "list_api_keys":
                     String statusFilter = (String) input.get("status");
-                    String ownerTypeFilter = (String) input.get("owner_type");
                     String search = (String) input.get("search");
 
-                    outputArray = listApiKeysFromDb("", statusFilter, ownerTypeFilter, search);
+                    outputArray = listApiKeysFromDb("", statusFilter, search);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -136,7 +129,7 @@ public class ApiKey implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'key_id' is required for revocation.", req.getRequestURI());
                         return;
                     }
-                    revokeApiKeyInDb(keyId, actionByCmsUserId);
+                    revokeApiKeyInDb(keyId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "API Key revoked successfully."); }});
                     break;
 
@@ -155,7 +148,7 @@ public class ApiKey implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Use 'revoke_api_key' function to permanently revoke keys.", req.getRequestURI());
                         return;
                     }
-                    updateApiKeyStatusInDb(keyId, statusFilter, actionByCmsUserId);
+                    updateApiKeyStatusInDb(keyId, statusFilter);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "API Key status updated successfully."); }});
                     break;
 
@@ -163,7 +156,6 @@ public class ApiKey implements Action {
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
                     break;
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "A database error occurred: " + e.getMessage(), req.getRequestURI());
@@ -209,7 +201,7 @@ public class ApiKey implements Action {
     /**
      * Generates a new API key, saves the hashed value, and returns the raw key.
      */
-    private JSONObject generateAndSaveApiKey(UUID fiduciaryId, UUID processorId, String ownerType, String description,
+    private JSONObject generateAndSaveApiKey(UUID fiduciaryId, UUID appId, String description,
                                              JSONArray permissionsJson) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -223,7 +215,7 @@ public class ApiKey implements Action {
 
         JSONObject output = new JSONObject();
 
-        String sql = "INSERT INTO api_keys (id, key_value, fiduciary_id, processor_id, owner_type, description, permissions, created_at, status) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?::jsonb, NOW(), 'ACTIVE') RETURNING id";
+        String sql = "INSERT INTO api_keys (id, key_value, fiduciary_id, app_id, description, permissions, created_at, status) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?::jsonb, NOW(), 'ACTIVE') RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -232,10 +224,9 @@ public class ApiKey implements Action {
             // NOTE: Storing the HASHED key in the key_value column.
             pstmt.setString(1, hashedKey);
             pstmt.setObject(2, fiduciaryId);
-            pstmt.setObject(3, processorId);
-            pstmt.setString(4, ownerType);
-            pstmt.setString(5, description);
-            pstmt.setString(6, permissionsString);
+            pstmt.setObject(3, appId);
+            pstmt.setString(4, description);
+            pstmt.setString(5, permissionsString);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -248,6 +239,7 @@ public class ApiKey implements Action {
                 output.put("raw_api_key", rawKey); // RETURN RAW KEY ONLY ONCE!
                 output.put("permissions", permissionsJson);
                 output.put("fiduciary_id", fiduciaryId.toString());
+                output.put("app_id", appId.toString());
 
                 // NOTE: Audit log service call would go here to log key creation.
             } else {
@@ -269,7 +261,7 @@ public class ApiKey implements Action {
         PoolDB pool = new PoolDB();
 
         // Exclude the sensitive key_value hash from being pulled into general objects
-        String sql = "SELECT id, fiduciary_id, processor_id, owner_type, description, status, permissions, created_at, expires_at, last_used_at FROM api_keys WHERE id = ?";
+        String sql = "SELECT id, fiduciary_id, app_id, description, status, permissions, created_at, expires_at, last_used_at FROM api_keys WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -279,8 +271,7 @@ public class ApiKey implements Action {
                 JSONObject key = new JSONObject();
                 key.put("key_id", rs.getString("id"));
                 key.put("fiduciary_id", rs.getString("fiduciary_id"));
-                key.put("processor_id", rs.getString("processor_id"));
-                key.put("owner_type", rs.getString("owner_type"));
+                key.put("app_id", rs.getString("app_id"));
                 key.put("description", rs.getString("description"));
                 key.put("status", rs.getString("status"));
                 key.put("permissions", new JSONParser().parse(rs.getString("permissions")));
@@ -300,7 +291,7 @@ public class ApiKey implements Action {
     /**
      * Revokes an API key by setting its status to REVOKED and recording revocation details.
      */
-    private void revokeApiKeyInDb(UUID keyId, UUID revokedByUserId) throws SQLException {
+    private void revokeApiKeyInDb(UUID keyId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
@@ -331,19 +322,18 @@ public class ApiKey implements Action {
     /**
      * Updates the ACTIVE/INACTIVE/EXPIRED status of an existing key.
      */
-    private void updateApiKeyStatusInDb(UUID keyId, String status, UUID updatedByUserId) throws SQLException {
+    private void updateApiKeyStatusInDb(UUID keyId, String status) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
-        String sql = "UPDATE api_keys SET status = ?, last_updated_at = NOW(), last_updated_by_user_id = ? WHERE id = ? AND status != 'REVOKED'";
+        String sql = "UPDATE api_keys SET status = ?, last_updated_at = NOW() WHERE id = ? AND status != 'REVOKED'";
 
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, status.toUpperCase());
-            pstmt.setObject(2, updatedByUserId);
-            pstmt.setObject(3, keyId);
+            pstmt.setObject(2, keyId);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -365,7 +355,7 @@ public class ApiKey implements Action {
     /**
      * Retrieves a list of API keys for a specific Fiduciary, with filtering.
      */
-    private JSONArray listApiKeysFromDb(String fiduciaryId, String statusFilter, String ownerTypeFilter, String search) throws SQLException {
+    private JSONArray listApiKeysFromDb(String fiduciaryId, String statusFilter, String search) throws SQLException {
         JSONArray keysArray = new JSONArray();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -373,7 +363,7 @@ public class ApiKey implements Action {
         PoolDB pool = new PoolDB();
 
         // Select metadata columns (excluding the hash)
-        StringBuilder sqlBuilder = new StringBuilder("SELECT ak.id, ak.fiduciary_id, ak.processor_id, ak.owner_type, ak.description, ak.status, ak.permissions, ak.created_at, ak.expires_at, ak.last_used_at, p.name FROM api_keys ak, processors p WHERE ak.processor_id=p.id");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT ak.id, ak.fiduciary_id, ak.app_id, ak.description, ak.status, ak.permissions, ak.created_at, ak.expires_at, ak.last_used_at, ap.name FROM api_keys ak, apps ap WHERE ak.app_id=ap.id");
         List<Object> params = new ArrayList<>();
 
         if (fiduciaryId != null && !fiduciaryId.isEmpty()) {
@@ -384,16 +374,10 @@ public class ApiKey implements Action {
             sqlBuilder.append(" AND status = ?");
             params.add(statusFilter.toUpperCase());
         }
-        if (ownerTypeFilter != null && !ownerTypeFilter.isEmpty()) {
-            sqlBuilder.append(" AND owner_type = ?");
-            params.add(ownerTypeFilter.toUpperCase());
-        }
         if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (description LIKE ? OR owner_type LIKE ?)");
-            params.add("%" + search + "%");
+            sqlBuilder.append(" AND description LIKE ?");
             params.add("%" + search + "%");
         }
-
         sqlBuilder.append(" ORDER BY created_at DESC");
 
         try {
@@ -408,9 +392,8 @@ public class ApiKey implements Action {
                 JSONObject key = new JSONObject();
                 key.put("key_id", rs.getString("id"));
                 key.put("fiduciary_id", rs.getString("fiduciary_id"));
-                key.put("processor_id", rs.getString("processor_id"));
-                key.put("processor_name", rs.getString("name"));
-                key.put("owner_type", rs.getString("owner_type"));
+                key.put("app_id", rs.getString("app_id"));
+                key.put("app_name", rs.getString("name"));
                 key.put("description", rs.getString("description"));
                 key.put("status", rs.getString("status"));
                 key.put("created_at", rs.getTimestamp("created_at").toInstant().toString());

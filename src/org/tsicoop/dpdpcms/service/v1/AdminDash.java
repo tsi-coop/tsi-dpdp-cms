@@ -32,7 +32,7 @@ import java.sql.Timestamp;
  * in the JSON request body to specify the desired operation.
  *
  * NOTE ON DATABASE SCHEMA ASSUMPTIONS:
- * - Tables: 'fiduciaries', 'processors', 'grievances', 'purge_requests', 'audit_logs'.
+ * - Tables: 'fiduciaries', 'apps', 'grievances', 'purge_requests', 'audit_logs'.
  */
 public class AdminDash implements Action {
 
@@ -202,7 +202,7 @@ public class AdminDash implements Action {
             }
 
             // SQL to count Active Processors (ACTIVE status, not deleted)
-            String sqlProcessors = "SELECT COUNT(*) FROM processors WHERE status = 'ACTIVE'";
+            String sqlProcessors = "SELECT COUNT(*) FROM apps WHERE status = 'ACTIVE'";
             try (PreparedStatement pstmt = conn.prepareStatement(sqlProcessors); ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     metrics.put("active_processors", rs.getInt(1));

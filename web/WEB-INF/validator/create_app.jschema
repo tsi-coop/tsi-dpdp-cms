@@ -35,10 +35,7 @@
     },
     "dpa_expiry_date": {},
     "processing_purposes": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+       "type": "string"
     },
     "data_categories_processed": {
       "type": "array",

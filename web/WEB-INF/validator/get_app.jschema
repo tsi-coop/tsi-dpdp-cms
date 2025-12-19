@@ -6,7 +6,7 @@
     "_func": {
       "type": "string"
     },
-    "processor_id": {
+    "app_id": {
       "type": "string"
     },
     "fiduciary_id": {
@@ -15,7 +15,7 @@
   },
   "required": [
     "_func",
-    "processor_id",
+    "app_id",
     "fiduciary_id"
   ]
 }

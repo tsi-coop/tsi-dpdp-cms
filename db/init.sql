@@ -51,14 +51,14 @@ CREATE TABLE IF NOT EXISTS users (
 -- 3. Table: processors (Can be created now, references fiduciaries and users)
 -- Stores registered Data Processor profiles.
 --
-CREATE TABLE IF NOT EXISTS processors (
+CREATE TABLE IF NOT EXISTS apps (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
     phone VARCHAR(50),
     dpa_reference VARCHAR(255),
-    processing_purposes JSONB NOT NULL DEFAULT '[]'::jsonb,
+    processing_purposes VARCHAR(1000),
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -174,14 +174,13 @@ CREATE TABLE IF NOT EXISTS retention_policies (
 );
 
 --
--- 9. Table: api_keys (Can be created now, references fiduciaries and processors and users)
+-- 9. Table: api_keys (Can be created now, references apps)
 --
 CREATE TABLE IF NOT EXISTS api_keys (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     key_value VARCHAR(255) NOT NULL UNIQUE, -- Store hashed/encrypted value, not plain text
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
-    processor_id UUID REFERENCES processors(id), -- Nullable if key is for a specific Processor
-    owner_type VARCHAR(50) NOT NULL, -- FIDUCIARY_APP, PROCESSOR_INTEGRATION, CMS_ADMIN_TOOL
+    app_id UUID REFERENCES apps(id), -- Nullable if key is for a specific app
     description TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED, EXPIRED
     permissions JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of granted API permissions
@@ -218,7 +217,7 @@ CREATE TABLE IF NOT EXISTS purge_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id VARCHAR(255) NOT NULL, -- Data Principal ID whose data is to be purged
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
-    processor_id UUID REFERENCES processors(id), -- Nullable, if purge is at Fiduciary level directly
+    app_id UUID REFERENCES apps(id), -- Nullable, if purge is at Fiduciary level directly
     trigger_event VARCHAR(100) NOT NULL, -- e.g., "ConsentWithdrawal", "RetentionPolicyExpiry", "ErasureRequest"
     data_categories_to_purge JSONB NOT NULL DEFAULT '[]'::jsonb,
     processing_purposes_affected JSONB NOT NULL DEFAULT '[]'::jsonb,

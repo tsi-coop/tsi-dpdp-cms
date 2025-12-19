@@ -4,7 +4,7 @@
 /api/v1/policy=org.tsicoop.dpdpcms.service.v1.Policy
 /api/v1/consent=org.tsicoop.dpdpcms.service.v1.Consent
 /api/v1/apikey=org.tsicoop.dpdpcms.service.v1.ApiKey
-/api/v1/processor=org.tsicoop.dpdpcms.service.v1.Processor
+/api/v1/app=org.tsicoop.dpdpcms.service.v1.App
 /api/v1/grievance=org.tsicoop.dpdpcms.service.v1.Grievance
 /api/v1/notification=org.tsicoop.dpdpcms.service.v1.Notification
 /api/v1/audit=org.tsicoop.dpdpcms.service.v1.Audit

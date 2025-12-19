@@ -254,11 +254,11 @@
           </select>
         </div>
         <div>
-          <label for="processor-select" class="block text-sm font-medium text-gray-700">Select App</label>
-          <select id="processor-select" name="processor_id" disabled required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50">
+          <label for="app-select" class="block text-sm font-medium text-gray-700">Select App</label>
+          <select id="app-select" name="app_id" disabled required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50">
             <option value="">-- Select Fiduciary First --</option>
           </select>
-          <p class="text-xs text-red-500 mt-1 hidden" id="processor-required-msg">A Data Processor must be selected to generate a key.</p>
+          <p class="text-xs text-red-500 mt-1 hidden" id="app-required-msg">An App must be selected to generate a key.</p>
         </div>
       </div>
 
@@ -307,7 +307,7 @@
     // --- Configuration ---
     const API_URL_KEYS = ENV_SERVER_URL + '/api/v1/admin/apikey';
     const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
-    const API_URL_PROCESSORS_LIST = ENV_SERVER_URL + '/api/v1/admin/processor';
+    const API_URL_APPS_LIST = ENV_SERVER_URL + '/api/v1/admin/app';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'Admin User';
@@ -315,7 +315,7 @@
 
     // --- Global DOM Element Variables ---
     let sidebar, menuToggle, backdrop, keyModalOverlay, addKeyBtn, closeModalBtnInner, keyForm, tableBody, countSpan, errorMessageP, searchInput;
-    let fiduciarySelect, processorSelect, keyDescriptionInput, processorRequiredMsg;
+    let fiduciarySelect, appSelect, keyDescriptionInput, appRequiredMsg;
     let keyOutputSection, generatedKeyValue, generatedKeyId;
     let FiduciaryList = [];
 
@@ -335,16 +335,16 @@
       document.getElementById('save-key-btn').disabled = false;
 
       // Hide warning
-      processorRequiredMsg.classList.add('hidden');
+      appRequiredMsg.classList.add('hidden');
 
       // Clear previous permissions check
       document.querySelectorAll('input[name="permissions"]').forEach(checkbox => {
         checkbox.checked = false;
       });
 
-      // Reset processor dropdown
-      processorSelect.innerHTML = '<option value="">-- Select Fiduciary First --</option>';
-      processorSelect.disabled = true;
+      // Reset app dropdown
+      appSelect.innerHTML = '<option value="">-- Select Fiduciary First --</option>';
+      appSelect.disabled = true;
 
       keyModalOverlay.style.display = 'flex';
     }
@@ -381,9 +381,9 @@
         const lastUsed = key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never';
         const showRevoke = key.status === 'ACTIVE' || key.status === 'PENDING';
 
-        // If processor_id is present, display ID (or ideally map name if available).
-        // If no processor (which shouldn't happen with new logic, but legacy keys might exist), display "Direct".
-        const targetEntity = key.processor_name;
+        // If app_id is present, display ID (or ideally map name if available).
+        // If no app (which shouldn't happen with new logic, but legacy keys might exist), display "Direct".
+        const targetEntity = key.app_name;
 
         const actionsHtml = `
             ${showRevoke ?
@@ -449,19 +449,19 @@
       }
     }
 
-    // 2. Fetch Processors dynamically based on selected Fiduciary
-    async function fetchProcessorsForFiduciary(fiduciaryId) {
-        processorSelect.innerHTML = '<option value="">Loading...</option>';
-        processorSelect.disabled = true;
+    // 2. Fetch Apps dynamically based on selected Fiduciary
+    async function fetchAppsForFiduciary(fiduciaryId) {
+        appSelect.innerHTML = '<option value="">Loading...</option>';
+        appSelect.disabled = true;
 
         try {
             const payload = {
-                "_func": "list_processors",
+                "_func": "list_apps",
                 "fiduciary_id": fiduciaryId,
                 "status": "ACTIVE"
             };
 
-            const response = await fetch(API_URL_PROCESSORS_LIST, {
+            const response = await fetch(API_URL_APPS_LIST, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
@@ -469,32 +469,32 @@
 
             if (response.ok) {
                 const responseData = await response.json();
-                const processors = responseData.data || responseData;
+                const apps = responseData.data || responseData;
 
-                // Default: No processor selected is NOT an option anymore if we enforce strict processor keys
-                // But user could be creating a key for the Fiduciary's own app, which technically acts as a processor of its own data.
+                // Default: No app selected is NOT an option anymore if we enforce strict app keys
+                // But user could be creating a key for the Fiduciary's own app, which technically acts as an app of its own data.
                 // However, based on requirements, we force selection.
-                processorSelect.innerHTML = '<option value="">-- Select App --</option>';
+                appSelect.innerHTML = '<option value="">-- Select App --</option>';
 
-                processors.forEach(p => {
+                apps.forEach(p => {
                     const option = document.createElement('option');
-                    option.value = p.processor_id;
+                    option.value = p.app_id;
                     option.textContent = p.name + " (" + (p.processing_purpose || 'General') + ")";
-                    processorSelect.appendChild(option);
+                    appSelect.appendChild(option);
                 });
 
-                if (processors.length === 0) {
-                     processorSelect.innerHTML = '<option value="">No Active Processors Found</option>';
+                if (apps.length === 0) {
+                     appSelect.innerHTML = '<option value="">No Active Apps Found</option>';
                 }
 
-                processorSelect.disabled = false;
+                appSelect.disabled = false;
             } else {
-                console.error("Failed to load processors");
-                processorSelect.innerHTML = '<option value="">Failed to load processors</option>';
+                console.error("Failed to load apps");
+                appSelect.innerHTML = '<option value="">Failed to load apps</option>';
             }
         } catch (error) {
-            console.error("Error fetching processors:", error);
-            processorSelect.innerHTML = '<option value="">Error loading processors</option>';
+            console.error("Error fetching apps:", error);
+            appSelect.innerHTML = '<option value="">Error loading apps</option>';
         }
     }
 
@@ -610,13 +610,13 @@
     errorMessageP = document.getElementById('key-error-message');
     searchInput = document.getElementById('search-input');
     fiduciarySelect = document.getElementById('fiduciary-select');
-    processorSelect = document.getElementById('processor-select');
+    appSelect = document.getElementById('app-select');
     keyDescriptionInput = document.getElementById('key-description');
     keyOutputSection = document.getElementById('key-output-section');
     generatedKeyValue = document.getElementById('generated-key-value');
     generatedKeyId = document.getElementById('generated-key-id');
     closeModalBtnInner = document.getElementById('close-modal-btn-inner');
-    processorRequiredMsg = document.getElementById('processor-required-msg');
+    appRequiredMsg = document.getElementById('app-required-msg');
 
     // --- Event Listener Attachments ---
     menuToggle.addEventListener('click', toggleMenu);
@@ -624,14 +624,14 @@
     addKeyBtn.addEventListener('click', () => showModal('Generate New API Key'));
     closeModalBtnInner.addEventListener('click', closeModal);
 
-    // Dynamic Processor Loading
+    // Dynamic App Loading
     fiduciarySelect.addEventListener('change', (e) => {
         const selectedFiduciaryId = e.target.value;
         if (selectedFiduciaryId) {
-            fetchProcessorsForFiduciary(selectedFiduciaryId);
+            fetchAppsForFiduciary(selectedFiduciaryId);
         } else {
-            processorSelect.innerHTML = '<option value="">-- Select Fiduciary First --</option>';
-            processorSelect.disabled = true;
+            appSelect.innerHTML = '<option value="">-- Select Fiduciary First --</option>';
+            appSelect.disabled = true;
         }
     });
 
@@ -664,25 +664,21 @@
         return;
       }
 
-      const selectedProcessorId = formData.get('processor_id');
+      const selectedAppId = formData.get('app_id');
 
-      // [FIX] Validation: Ensure a processor is selected
-      if (!selectedProcessorId || selectedProcessorId === "") {
-          processorRequiredMsg.classList.remove('hidden');
-          alert("Error: You must select a valid Data Processor to generate a key.");
+      // [FIX] Validation: Ensure an app is selected
+      if (!selectedAppId || selectedAppId === "") {
+          appRequiredMsg.classList.remove('hidden');
+          alert("Error: You must select a valid App to generate a key.");
           return;
       } else {
-          processorRequiredMsg.classList.add('hidden');
+          appRequiredMsg.classList.add('hidden');
       }
-
-      // Owner Type is now implicitly PROCESSOR_INTEGRATION because a processor must be selected
-      const ownerType = "PROCESSOR_INTEGRATION";
 
       const payload = {
         "_func": "generate_api_key",
         "fiduciary_id": formData.get('fiduciary_id'),
-        "processor_id": selectedProcessorId,
-        "owner_type": ownerType,
+        "app_id": selectedAppId,
         "description": formData.get('description'),
         "permissions": permissions
       };

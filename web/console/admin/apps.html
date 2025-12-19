@@ -194,16 +194,16 @@
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-xl font-semibold text-gray-800">Apps Management</h1>
-    <button id="add-processor-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
+    <button id="add-app-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
       + Add New App
     </button>
   </div>
 
-  <!-- Processors List Card -->
+  <!-- Apps List Card -->
   <div class="card">
      <div class="flex justify-between items-center mb-4">
       <input type="text" id="search-input" placeholder="Search by Name or DPA Ref..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
-      <span id="processor-count" class="text-sm text-gray-500">Loading...</span>
+      <span id="app-count" class="text-sm text-gray-500">Loading...</span>
     </div>
 
     <div class="overflow-x-auto">
@@ -218,7 +218,7 @@
           <th class="px-4 py-3 text-sm">Actions</th>
         </tr>
         </thead>
-        <tbody id="processor-table-body" class="bg-white divide-y divide-gray-200">
+        <tbody id="app-table-body" class="bg-white divide-y divide-gray-200">
         <!-- Data will be dynamically inserted here -->
         <tr>
           <td colspan="6" class="p-4 text-center text-gray-500">
@@ -229,20 +229,20 @@
       </table>
     </div>
 
-    <p id="processor-error-message" class="mt-4 text-sm text-red-600 hidden">
+    <p id="app-error-message" class="mt-4 text-sm text-red-600 hidden">
       Failed to load data. Please check the API connection and token.
     </p>
   </div>
 </main>
 
-<!-- Modal for Adding/Editing Data Processor -->
-<div id="processor-modal-overlay" class="modal-overlay">
+<!-- Modal for Adding/Editing App-->
+<div id="app-modal-overlay" class="modal-overlay">
   <div class="modal-content">
     <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-4">Add New App</h2>
-    <form id="processor-form" class="space-y-4">
+    <form id="app-form" class="space-y-4">
 
-      <!-- Hidden Field to store Processor ID during edit -->
-      <input type="hidden" id="processor-id-hidden" name="processorId" value="">
+      <!-- Hidden Field to store App ID during edit -->
+      <input type="hidden" id="app-id-hidden" name="appId" value="">
 
       <!-- Section 1: Association & Name -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -254,20 +254,20 @@
           </select>
         </div>
         <div>
-          <label for="processor-name" class="block text-sm font-medium text-gray-700">App Name</label>
-          <input type="text" id="processor-name" name="name" required placeholder="e.g., AnalyticsPro" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+          <label for="app-name" class="block text-sm font-medium text-gray-700">App Name</label>
+          <input type="text" id="app-name" name="name" required placeholder="e.g., AnalyticsPro" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         </div>
       </div>
 
       <!-- Section: Contact Details -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="processor-email" class="block text-sm font-medium text-gray-700">Contact Email</label>
-          <input type="email" id="processor-email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+          <label for="app-email" class="block text-sm font-medium text-gray-700">Contact Email</label>
+          <input type="email" id="app-email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div>
-          <label for="processor-phone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
-          <input type="text" id="processor-phone" name="phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+          <label for="app-phone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
+          <input type="text" id="app-phone" name="phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
       </div>
 
@@ -288,7 +288,7 @@
 
       <div class="modal-footer">
         <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
-        <button type="submit" id="save-processor-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save App</button>
+        <button type="submit" id="save-app-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save App</button>
       </div>
     </form>
   </div>
@@ -297,7 +297,7 @@
 <script>
     // --- Configuration ---
     // Assuming API structure based on FiduciaryService and convention
-    const API_URL_PROCESSORS = ENV_SERVER_URL + '/api/v1/admin/processor';
+    const API_URL_APPS = ENV_SERVER_URL + '/api/v1/admin/app';
     const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary'; // To populate dropdown
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
@@ -305,8 +305,8 @@
     document.getElementById('username').textContent = USER_NAME;
 
     // --- Global DOM Element Variables ---
-    let sidebar, menuToggle, backdrop, processorModalOverlay, addProcessorBtn, closeModalBtn, processorForm, tableBody, countSpan, errorMessageP, searchInput;
-    let processorIdHidden, processorNameInput, fiduciarySelect, processorEmailInput, processorPhoneInput, processingPurposeInput, dpaReferenceInput;
+    let sidebar, menuToggle, backdrop, appModalOverlay, addAppBtn, closeModalBtn, appForm, tableBody, countSpan, errorMessageP, searchInput;
+    let appIdHidden, appNameInput, fiduciarySelect, appEmailInput, appPhoneInput, processingPurposeInput, dpaReferenceInput;
 
     let FiduciaryList = []; // Cache Fiduciary names for display
 
@@ -319,21 +319,19 @@
 
     function showModal(title, isEdit = false) {
         document.getElementById('modal-title').textContent = title;
-        processorForm.reset();
-        processorIdHidden.value = '';
+        appForm.reset();
+        appIdHidden.value = '';
 
-        document.getElementById('save-processor-btn').textContent = isEdit ? 'Update App' : 'Save App';
+        document.getElementById('save-app-btn').textContent = isEdit ? 'Update App' : 'Save App';
 
         // Ensure inputs are enabled for creation, or potentially disabled/locked for editing sensitive fields
-        processorNameInput.disabled = false;
+        appNameInput.disabled = false;
         fiduciarySelect.disabled = false;
-
-
-        processorModalOverlay.style.display = 'flex';
+        appModalOverlay.style.display = 'flex';
     }
 
     function closeModal() {
-        processorModalOverlay.style.display = 'none';
+        appModalOverlay.style.display = 'none';
     }
 
     function createStatusBadge(status) {
@@ -354,24 +352,22 @@
         return fiduciary ? fiduciary.name : 'Unknown Fiduciary';
     }
 
-    function createProcessorRow(processor) {
+    function createAppRow(app) {
         const row = document.createElement('tr');
-        // Note: processor.processor_id is used for actions, processor.fiduciary_id is used for lookup
-        const showDeactivate = processor.status === 'ACTIVE' || processor.status === 'PENDING';
+        const showDeactivate = app.status === 'ACTIVE' || app.status === 'PENDING';
 
         const actionsHtml = `
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editProcessor('${processor.processor_id}', '${processor.fiduciary_id}')">Edit</button>
             ${showDeactivate ?
-                `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateProcessor('${processor.processor_id}', '${processor.fiduciary_id}')">Deactivate</button>`
+                `<button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editApp('${app.app_id}', '${app.fiduciary_id}')">Edit</button><button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateApp('${app.app_id}', '${app.fiduciary_id}')">Deactivate</button>`
                 : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
         `;
 
         row.innerHTML = `
-            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${processor.name || 'N/A'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(processor.fiduciary_id)}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${processor.processing_purpose || 'N/A'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${processor.dpa_reference || 'N/A'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(processor.status)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${app.name || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(app.fiduciary_id)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${app.processing_purpose || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${app.dpa_reference || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(app.status)}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">
                 ${actionsHtml}
             </td>
@@ -398,7 +394,7 @@
             });
 
             if (!response.ok) {
-                 // Even if list fails, we want to try loading processors later
+                 // Even if list fails, we want to try loading apps later
                  console.error("Failed to fetch Fiduciaries list for dropdown. Status:", response.status);
                  return [];
             }
@@ -422,9 +418,9 @@
     }
 
 
-    // 2. Load Processors List
-    async function loadProcessors(searchTerm = "") {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading Data Processor data...</td></tr>`;
+    // 2. Load Apps List
+    async function loadApps(searchTerm = "") {
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading Apps...</td></tr>`;
         errorMessageP.classList.add('hidden');
 
         // Ensure Fiduciary list is loaded first for display names
@@ -441,7 +437,7 @@
 
         try {
             const listPayload = {
-                "_func": "list_processors",
+                "_func": "list_apps",
                 "fiduciary_id": "",
                 "search": searchTerm,
                 "status": "",
@@ -449,7 +445,7 @@
                 "limit": 50
             };
 
-            const response = await fetch(API_URL_PROCESSORS, {
+            const response = await fetch(API_URL_APPS, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -464,23 +460,23 @@
 
             // Assuming responseData structure is: [{...}, {...}]
             if (Array.isArray(responseData)) {
-                const processors = responseData;
+                const apps = responseData;
                 tableBody.innerHTML = '';
 
-                if (processors.length === 0) {
+                if (apps.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No Apps found matching criteria.</td></tr>`;
                 } else {
-                    processors.forEach(processor => {
-                        tableBody.appendChild(createProcessorRow(processor));
+                    apps.forEach(app => {
+                        tableBody.appendChild(createAppRow(app));
                     });
-                    countSpan.textContent = `Showing 1 - ${processors.length} of ${processors.length} Total`;
+                    countSpan.textContent = `Showing 1 - ${apps.length} of ${apps.length} Total`;
                 }
             } else {
                 throw new Error(responseData.message || 'API returned unexpected structure.');
             }
 
         } catch (error) {
-            console.error("Error loading Processors:", error);
+            console.error("Error loading apps:", error);
             tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">
                 Error connecting to the CMS API. Ensure the service is running and the token is valid.
             </td></tr>`;
@@ -489,54 +485,54 @@
         }
     }
 
-    // 3. Fetch Single Processor Details
-    async function fetchProcessorDetails(processorId, fiduciaryId) {
+    // 3. Fetch Single App Details
+    async function fetchAppDetails(appId, fiduciaryId) {
         try {
             const payload = {
-                "_func": "get_processor",
-                "processor_id": processorId,
+                "_func": "get_app",
+                "app_id": appId,
                 "fiduciary_id": fiduciaryId // Include Fiduciary ID in the payload
             };
 
-            const response = await fetch(API_URL_PROCESSORS, {
+            const response = await fetch(API_URL_APPS, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) throw new Error(`Failed to fetch details for ${processorId}. Status: ${response.status}`);
+            if (!response.ok) throw new Error(`Failed to fetch details for ${appId}. Status: ${response.status}`);
 
             const responseData = await response.json();
 
             if (responseData.name) {
                 return responseData;
             } else {
-                throw new Error(responseData.message || 'Processor details not found.');
+                throw new Error(responseData.message || 'App details not found.');
             }
         } catch (error) {
-            console.error("Error fetching Processor details:", error);
+            console.error("Error fetching App details:", error);
             alert(`Failed to load details for editing: ${error.message}`);
             return null;
         }
     }
 
     // 4. Handle Edit
-    async function editProcessor(processorId, fiduciaryId) {
-        showModal('Edit Data Processor', true);
-        const processor = await fetchProcessorDetails(processorId, fiduciaryId);
-
-        if (processor) {
-            processorIdHidden.value = processor.processor_id;
-            processorNameInput.value = processor.name || '';
-            fiduciarySelect.value = processor.fiduciary_id || '';
-            processorEmailInput.value = processor.email || '';
-            processorPhoneInput.value = processor.phone || '';
-            processingPurposeInput.value = processor.processing_purposes.join(',') || '';
-            dpaReferenceInput.value = processor.dpa_reference || '';
-            processorStatusSelect.value = processor.status || 'ACTIVE';
+    async function editApp(appId, fiduciaryId) {
+        showModal('Edit App', true);
+        const app = await fetchAppDetails(appId, fiduciaryId);
+        console.log(app);
+        if (app) {
+            appIdHidden.value = app.app_id;
+            appNameInput.value = app.name || '';
+            fiduciarySelect.value = app.fiduciary_id || '';
+            appEmailInput.value = app.email || '';
+            appPhoneInput.value = app.phone || '';
+            processingPurposeInput.value = app.processing_purposes || '';
+            dpaReferenceInput.value = app.dpa_reference || '';
+            appStatusSelect.value = app.status || 'ACTIVE';
 
             // Lock fields that should not be changed easily
-            processorNameInput.disabled = true;
+            appNameInput.disabled = true;
             fiduciarySelect.disabled = true;
         } else {
             closeModal();
@@ -544,24 +540,24 @@
     }
 
     // 5. Handle Deactivate
-    async function deactivateProcessor(processorId, fiduciaryId) {
-        if (confirm(`Are you sure you want to DEACTIVATE Processor ID ${processorId}? This will suspend all data processing for this entity.`)) {
+    async function deactivateApp(appId, fiduciaryId) {
+        if (confirm(`Are you sure you want to DEACTIVATE App ID ${appId}? This will suspend all data processing for this entity.`)) {
             try {
-                const payload = { "_func": "delete_processor", "processor_id": processorId, "fiduciary_id": fiduciaryId};
+                const payload = { "_func": "delete_app", "app_id": appId, "fiduciary_id": fiduciaryId};
 
-                const response = await fetch(API_URL_PROCESSORS, {
+                const response = await fetch(API_URL_APPS, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                     body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
-                    alert(`Processor ID ${processorId} successfully deactivated.`);
-                    loadProcessors();
+                    alert(`App ID ${appId} successfully deactivated.`);
+                    loadApps();
                 } else {
                     const responseData = await response.json();
                     const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
-                    alert(`Failed to deactivate Processor ID ${id}: ${errorMsg}`);
+                    alert(`Failed to deactivate App ID ${id}: ${errorMsg}`);
                 }
 
             } catch (error) {
@@ -583,28 +579,28 @@
     sidebar = document.getElementById('sidebar');
     menuToggle = document.getElementById('menu-toggle');
     backdrop = document.getElementById('sidebar-backdrop');
-    processorModalOverlay = document.getElementById('processor-modal-overlay');
-    addProcessorBtn = document.getElementById('add-processor-btn');
+    appModalOverlay = document.getElementById('app-modal-overlay');
+    addAppBtn = document.getElementById('add-app-btn');
     closeModalBtn = document.getElementById('close-modal-btn');
-    processorForm = document.getElementById('processor-form');
-    tableBody = document.getElementById('processor-table-body');
-    countSpan = document.getElementById('processor-count');
-    errorMessageP = document.getElementById('processor-error-message');
+    appForm = document.getElementById('app-form');
+    tableBody = document.getElementById('app-table-body');
+    countSpan = document.getElementById('app-count');
+    errorMessageP = document.getElementById('app-error-message');
     searchInput = document.getElementById('search-input');
 
     // Form Fields for Edit/Add
-    processorIdHidden = document.getElementById('processor-id-hidden');
-    processorNameInput = document.getElementById('processor-name');
+    appIdHidden = document.getElementById('app-id-hidden');
+    appNameInput = document.getElementById('app-name');
     fiduciarySelect = document.getElementById('fiduciary-select');
-    processorEmailInput = document.getElementById('processor-email');
-    processorPhoneInput = document.getElementById('processor-phone');
+    appEmailInput = document.getElementById('app-email');
+    appPhoneInput = document.getElementById('app-phone');
     processingPurposeInput = document.getElementById('processing-purpose');
     dpaReferenceInput = document.getElementById('dpa-reference');
 
     // --- Event Listener Attachments ---
     menuToggle.addEventListener('click', toggleMenu);
     backdrop.addEventListener('click', toggleMenu);
-    addProcessorBtn.addEventListener('click', () => showModal('Add New App'));
+    addAppBtn.addEventListener('click', () => showModal('Add New App'));
     closeModalBtn.addEventListener('click', closeModal);
 
     // --- Search Functionality ---
@@ -612,38 +608,37 @@
         if (event.key === 'Enter') {
             event.preventDefault();
             const searchTerm = searchInput.value.trim();
-            loadProcessors(searchTerm);
+            loadApps(searchTerm);
         }
     });
 
     // --- Initialization Call ---
-    // Load Fiduciaries first, then the main list
-    loadProcessors();
+    loadApps();
 
      // 5. Handle Form Submission
-    processorForm.addEventListener('submit', async function(event) {
+    appForm.addEventListener('submit', async function(event) {
         event.preventDefault();
 
-        const formData = new FormData(processorForm);
+        const formData = new FormData(appForm);
         const data = Object.fromEntries(formData.entries());
 
-        const isEditing = !!data.processorId;
-        const func = isEditing ? "update_processor" : "create_processor";
+        const isEditing = !!data.appId;
+        const func = isEditing ? "update_app" : "create_app";
 
         const payload = {
             "_func": func,
-            "processor_id": data.processorId,
+            "app_id": data.appId,
             "fiduciary_id": data.fiduciary_id,
             "name": data.name,
             "email": data.email,
             "phone": data.phone,
-            "processing_purposes": data.processing_purpose.split(','),
+            "processing_purposes": data.processing_purpose,
             "dpa_reference": data.dpa_reference
         };
 
         // Clean up payload if creating (remove ID)
         if (!isEditing) {
-            delete payload.processor_id;
+            delete payload.app_id;
             if (!payload.fiduciary_id) {
                 alert("Please select an Associated Data Fiduciary.");
                 return;
@@ -651,10 +646,10 @@
         }
 
         try {
-            document.getElementById('save-processor-btn').textContent = isEditing ? 'Updating...' : 'Saving...';
-            document.getElementById('save-processor-btn').disabled = true;
+            document.getElementById('save-app-btn').textContent = isEditing ? 'Updating...' : 'Saving...';
+            document.getElementById('save-app-btn').disabled = true;
 
-            const response = await fetch(API_URL_PROCESSORS, {
+            const response = await fetch(API_URL_APPS, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -664,27 +659,27 @@
             });
 
             if (response.ok) {
-                alert(`Processor ${isEditing ? 'updated' : 'added'} successfully!`);
+                alert(`App ${isEditing ? 'updated' : 'added'} successfully!`);
                 closeModal();
-                loadProcessors();
+                loadApps();
             } else {
                 const responseData = await response.json();
                 const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
-                alert(`Failed to ${isEditing ? 'update' : 'add'} Processor: ${errorMsg}`);
+                alert(`Failed to ${isEditing ? 'update' : 'add'} App: ${errorMsg}`);
             }
 
         } catch (error) {
-            console.error(`Error ${isEditing ? 'updating' : 'creating'} Processor:`, error);
+            console.error(`Error ${isEditing ? 'updating' : 'creating'} App:`, error);
             alert("Network error: Could not connect to API.");
         } finally {
-            document.getElementById('save-processor-btn').textContent = isEditing ? 'Update Processor' : 'Save Processor';
-            document.getElementById('save-processor-btn').disabled = false;
+            document.getElementById('save-app-btn').textContent = isEditing ? 'Update App' : 'Save App';
+            document.getElementById('save-app-btn').disabled = false;
         }
     });
 
     // Expose functions globally so they can be called by inline onclick attributes
-    window.editProcessor = editProcessor;
-    window.deactivateProcessor = deactivateProcessor;
+    window.editApp = editApp;
+    window.deactivateApp = deactivateApp;
     window.toggleMenu = toggleMenu; // Mobile menu
 
 </script>

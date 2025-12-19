@@ -6,7 +6,7 @@
     "_func": {
       "type": "string"
     },
-    "processor_id": {
+    "app_id": {
       "type": "string"
     },
     "fiduciary_id": {
@@ -22,15 +22,12 @@
       "type": "string"
     },
     "processing_purposes": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+       "type": "string"
     }
   },
   "required": [
     "_func",
-    "processor_id",
+    "app_id",
     "fiduciary_id",
     "name",
     "email",
