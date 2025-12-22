@@ -108,16 +108,21 @@ public class Consent implements Action {
                     Timestamp timestamp = Timestamp.from(Instant.parse(timestampStr));
 
                     // Check if policy exists (important for provenance)
-                    if (!policyExists(policyId, policyVersion, fiduciaryId)) {
+                    JSONObject policy = getPolicy(policyId, policyVersion, fiduciaryId);
+                    if (policy == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Referenced policy (ID: " + policyId + ", Version: " + policyVersion + ") not found or does not belong to fiduciary.", req.getRequestURI());
                         return;
+                    }else{
+                        // Determine consent expiry
+                        JSONArray revisedDataPoints =  CESUtil.appendConsentExpiry( policy,
+                                                                                    dataPointConsents,
+                                                                              "CONSENT_GIVEN");
+
+                        output = recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
+                                consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, currentCmsUserId);
+                        OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     }
-
-                    output = recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
-                            consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, dataPointConsents, currentCmsUserId);
-                    OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
-
                 case "get_active_consent":
                     if (userId == null || userId.isEmpty() || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'user_id' and 'fiduciary_id' are required for 'get_active_consent'.", req.getRequestURI());
@@ -131,7 +136,6 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "No active consent found for User ID '" + userId + "' and Fiduciary ID '" + fiduciaryId + "'.", req.getRequestURI());
                     }
                     break;
-
                 case "get_consent_record_details":
                     String recordId = (String) input.get("record_id");
                     Optional<JSONObject> consentOptional = getConsentFromDb(UUID.fromString(recordId));
@@ -374,15 +378,14 @@ public class Consent implements Action {
             pstmt.executeUpdate();
 
             // --- 3. Determine New (Denied) Consents ---
-            // In a real system, you would look up the full policy definition to find
-            // which purposes are mandatory (and thus cannot be withdrawn).
-            // MOCK: For simplicity, we assume "core" purposes cannot be withdrawn.
-            JSONArray withdrawnConsents = new JSONArray();
-            Iterator<JSONObject> consentIt = currentConsents.iterator();
-            while(consentIt.hasNext()) {
-                JSONObject currc = (JSONObject) consentIt.next();
-                currc.put("consent_granted",false);
-                withdrawnConsents.add(currc);
+
+            // Check if policy exists (important for provenance)
+            JSONObject policy = getPolicy(policyId, policyVersion, UUID.fromString(fiduciaryId));
+            if (policy != null) {
+                // Determine consent expiry
+                currentConsents = CESUtil.appendConsentExpiry(          policy,
+                                                                        currentConsents,
+                                                                  "CONSENT_WITHDRAWN");
             }
 
             // --- 4. Insert New WITHDRAWN Record (Immutability/Provenance) ---
@@ -395,7 +398,7 @@ public class Consent implements Action {
             pstmt.setObject(2, UUID.fromString(fiduciaryId));
             pstmt.setString(3, policyId);
             pstmt.setString(4, policyVersion);
-            pstmt.setString(5, withdrawnConsents.toJSONString()); // Store the new DENIED state
+            pstmt.setString(5, currentConsents.toJSONString()); // Store the new DENIED state
 
             if (pstmt.executeUpdate() == 0) {
                 throw new SQLException("Creating withdrawal record failed.");
@@ -422,14 +425,13 @@ public class Consent implements Action {
                 put("triggered_purge", true);
             }};
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             if (conn != null) conn.rollback();
             System.err.println("SQL Error during withdrawal: " + e.getMessage());
-            throw e;
-        } catch (ParseException e) {
-            // Should not happen unless stored JSON is corrupted
-            System.err.println("JSON Parse Error during withdrawal: " + e.getMessage());
-            throw new SQLException("Internal JSON corruption detected.", e);
+            return new JSONObject() {{
+                put("success", false);
+                put("message", e.getMessage());
+            }};
         } finally {
             if (conn != null) conn.setAutoCommit(true);
             pool.cleanup(null, null, conn);
@@ -485,12 +487,13 @@ public class Consent implements Action {
      * Checks if a specific policy version exists for a fiduciary.
      * (Ideally, this would be an API call to PolicyService in a microservices 5)
      */
-    private boolean policyExists(String policyId, String version, UUID fiduciaryId) throws SQLException {
+    private JSONObject  getPolicy(String policyId, String version, UUID fiduciaryId) throws Exception {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ? AND status = 'ACTIVE'";
+        JSONObject retval = null;
+        String sql = "SELECT policy_content FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ? AND status = 'ACTIVE'";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -498,10 +501,13 @@ public class Consent implements Action {
             pstmt.setString(2, version);
             pstmt.setObject(3, fiduciaryId);
             rs = pstmt.executeQuery();
-            return rs.next() && rs.getInt(1) > 0;
+            if(rs.next()){
+                retval = (JSONObject) new JSONParser().parse(rs.getString("policy_content"));
+            }
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
+        return retval;
     }
 
     /**

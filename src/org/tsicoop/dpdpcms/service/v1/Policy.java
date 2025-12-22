@@ -385,7 +385,7 @@ public class Policy implements Action {
      * @return An Optional containing the policy JSONObject if found, otherwise empty.
      * @throws SQLException if a database access error occurs.
      */
-    private Optional<JSONObject> getPolicyFromDb(String policyId, String version) throws SQLException {
+    protected Optional<JSONObject> getPolicyFromDb(String policyId, String version) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -423,7 +423,7 @@ public class Policy implements Action {
      * @return An Optional containing the policy JSONObject if found, otherwise empty.
      * @throws SQLException if a database access error occurs.
      */
-    private Optional<JSONObject> getActivePolicyFromDb(UUID fiduciaryId, String jurisdiction) throws SQLException {
+    protected  Optional<JSONObject> getActivePolicyFromDb(UUID fiduciaryId, String jurisdiction) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
