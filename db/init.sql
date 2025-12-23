@@ -151,30 +151,7 @@ CREATE TABLE IF NOT EXISTS grievances (
 );
 
 --
--- 8. Table: retention_policies (Can be created now, references fiduciaries and users)
--- Defines data retention rules.
---
-CREATE TABLE IF NOT EXISTS retention_policies (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    applicable_purposes JSONB NOT NULL DEFAULT '[]'::jsonb,
-    applicable_data_categories JSONB NOT NULL DEFAULT '[]'::jsonb,
-    retention_duration_value INTEGER NOT NULL,
-    retention_duration_unit VARCHAR(50) NOT NULL, -- DAYS, MONTHS, YEARS
-    retention_start_event VARCHAR(100) NOT NULL, -- CONSENT_GIVEN, SERVICE_TERMINATED
-    action_at_expiry VARCHAR(50) NOT NULL, -- DELETE, ANONYMIZE, ARCHIVE
-    legal_reference TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID REFERENCES users(id),
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID REFERENCES users(id)
-);
-
---
--- 9. Table: api_keys (Can be created now, references apps)
+-- 8. Table: api_keys (Can be created now, references apps)
 --
 CREATE TABLE IF NOT EXISTS api_keys (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -191,23 +168,26 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 --
--- 10. Table: legal_retention_exceptions (Can be created now, references fiduciaries and users)
+-- 9. Table: data_principal
 --
-CREATE TABLE IF NOT EXISTS legal_retention_exceptions (
+CREATE TABLE IF NOT EXISTS data_principal (
+    user_id VARCHAR(255) PRIMARY KEY , -- Data Principal's ID
+    fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED, EXPIRED
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+--
+-- 10. Table: consent_validations
+--
+CREATE TABLE IF NOT EXISTS consent_validations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    fiduciary_id UUID REFERENCES fiduciaries(id), -- If specific per Fiduciary, else NULL
-    exception_id VARCHAR(100) NOT NULL UNIQUE, -- e.g., "PMLA_AML_RETENTION"
-    name VARCHAR(255) NOT NULL,
-    legal_reference TEXT NOT NULL,
-    applicable_data_categories JSONB NOT NULL DEFAULT '[]'::jsonb,
-    applicable_processing_purposes JSONB NOT NULL DEFAULT '[]'::jsonb,
-    retention_period_override VARCHAR(100),
-    condition_for_override TEXT, -- SQL snippet, rule ID, or reference to complex evaluation logic
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID REFERENCES users(id),
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID REFERENCES users(id)
+    fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
+    app_id UUID REFERENCES apps(id), -- Nullable if key is for a specific app
+    user_id VARCHAR(255) NOT NULL, -- Data Principal's ID
+    purpose_id VARCHAR(100) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'VALID', -- VALID, INVALID
+    accessed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 --
@@ -235,30 +215,13 @@ CREATE TABLE IF NOT EXISTS purge_requests (
 );
 
 --
--- 12. Table: notification_templates (Can be created now, references users)
+-- 12. Table: notifications (Can be created now, references notification_templates, fiduciaries, users)
 --
-CREATE TABLE IF NOT EXISTS notification_templates (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL UNIQUE,
-    category VARCHAR(50) NOT NULL, -- e.g., Compliance, Security, Grievance
-    severity VARCHAR(50) NOT NULL, -- e.g., CRITICAL, HIGH, MEDIUM, INFO
-    channels_enabled JSONB NOT NULL DEFAULT '[]'::jsonb, -- e.g., ["EMAIL", "SMS", "IN_APP"]
-    content_template JSONB NOT NULL, -- Multilingual text with placeholders
-    action_link_template TEXT, -- URL template for clickable actions
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID REFERENCES users(id),
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID REFERENCES users(id)
-);
-
---
--- 13. Table: notification_instances (Can be created now, references notification_templates, fiduciaries, users)
---
-CREATE TABLE IF NOT EXISTS notification_instances (
+CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     template_id UUID NOT NULL REFERENCES notification_templates(id),
     recipient_type VARCHAR(50) NOT NULL, -- DATA_PRINCIPAL, DPO_ADMIN, DATA_PROCESSOR
-    recipient_id VARCHAR(255) NOT NULL, -- User ID, Fiduciary ID, Processor ID
+    recipient_id VARCHAR(255) NOT NULL, -- User ID, DPO ID, App ID
     fiduciary_id UUID REFERENCES fiduciaries(id), -- Contextual Fiduciary ID
     status VARCHAR(50) NOT NULL, -- SENT, FAILED, DELIVERED, READ
     channel_used VARCHAR(50) NOT NULL, -- EMAIL, SMS, IN_APP
@@ -268,4 +231,24 @@ CREATE TABLE IF NOT EXISTS notification_instances (
     read_at TIMESTAMP WITH TIME ZONE, -- When recipient read it (for IN_APP)
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     created_by_user_id UUID REFERENCES users(id) -- User who dispatched it (e.g., system user)
+);
+
+--
+-- 13. Table: legal_retention_exceptions (Can be created now, references fiduciaries and users)
+--
+CREATE TABLE IF NOT EXISTS legal_retention_exceptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    fiduciary_id UUID REFERENCES fiduciaries(id), -- If specific per Fiduciary, else NULL
+    exception_id VARCHAR(100) NOT NULL UNIQUE, -- e.g., "PMLA_AML_RETENTION"
+    name VARCHAR(255) NOT NULL,
+    legal_reference TEXT NOT NULL,
+    applicable_data_categories JSONB NOT NULL DEFAULT '[]'::jsonb,
+    applicable_processing_purposes JSONB NOT NULL DEFAULT '[]'::jsonb,
+    retention_period_override VARCHAR(100),
+    condition_for_override TEXT, -- SQL snippet, rule ID, or reference to complex evaluation logic
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_by_user_id UUID REFERENCES users(id),
+    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_updated_by_user_id UUID REFERENCES users(id)
 );

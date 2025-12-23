@@ -171,7 +171,7 @@ public class Consent implements Action {
                         return;
                     }
 
-                    linkUserConsentRecords(anonymousUserId, authenticatedUserId, currentCmsUserId);
+                    linkUserConsentRecords(anonymousUserId, authenticatedUserId, fiduciaryId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "User consent records linked successfully."); }});
                     break;
 
@@ -179,6 +179,7 @@ public class Consent implements Action {
                     // --- Extract Validation Parameters from Body ---
                     userId = (String) input.get("user_id");
                     String requiredPurposeId = (String) input.get("required_purpose_id");
+                    String appId = getAppId(UUID.fromString(apiKey),apiSecret);
 
                     if (userId == null || fiduciaryId == null || requiredPurposeId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id, required_purpose_id).", req.getRequestURI());
@@ -186,7 +187,7 @@ public class Consent implements Action {
                     }
 
                     // --- Execute Validation ---
-                    JSONObject result = validateConsent(userId, fiduciaryIdStr, requiredPurposeId);
+                    JSONObject result = validateConsent(userId, fiduciaryIdStr, appId, requiredPurposeId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
                     break;
 
@@ -236,7 +237,7 @@ public class Consent implements Action {
      * @return JSONObject containing the validation result (success: boolean, consent_granted: boolean).
      * @throws SQLException
      */
-    private JSONObject validateConsent(String userId, String fiduciaryId, String requiredPurposeId) throws SQLException {
+    private JSONObject validateConsent(String userId, String fiduciaryId, String appId, String requiredPurposeId) throws SQLException {
 
         JSONObject result = new JSONObject();
         result.put("success", false);
@@ -246,66 +247,67 @@ public class Consent implements Action {
 
         try {
             conn = pool.getConnection();
+            conn.setAutoCommit(false);
 
             // --- STEP 3: RETRIEVE ACTIVE CONSENT RECORD ---
-            String sqlConsent = "SELECT data_point_consents, is_active_consent, created_at FROM consent_records " +
+                String sqlConsent = "SELECT data_point_consents, is_active_consent, created_at FROM consent_records " +
                     "WHERE user_id = ? AND fiduciary_id = ? " +
                     "ORDER BY created_at DESC LIMIT 1";
 
-            try (PreparedStatement pstmt = conn.prepareStatement(sqlConsent)) {
-                pstmt.setString(1, userId);
-                pstmt.setObject(2, UUID.fromString(fiduciaryId)); // Cast string to UUID for DB
+                try (PreparedStatement pstmt = conn.prepareStatement(sqlConsent)) {
+                    pstmt.setString(1, userId);
+                    pstmt.setObject(2, UUID.fromString(fiduciaryId)); // Cast string to UUID for DB
 
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (!rs.next()) {
-                        result.put("message", "No active consent record found for this principal.");
-                        return result;
-                    }
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        if (!rs.next()) {
+                            result.put("message", "No active consent record found for this principal.");
+                            return result;
+                        }
 
-                    // --- STEP 4: CHECK GRANULAR CONSENT ---
+                        // --- STEP 4: CHECK GRANULAR CONSENT ---
 
-                    boolean active= rs.getBoolean("is_active_consent");
-                    String consentsJson = rs.getString("data_point_consents");
+                        boolean active= rs.getBoolean("is_active_consent");
+                        String consentsJson = rs.getString("data_point_consents");
 
-                    if (!active) {
-                        result.put("message", "Consent record exists but is INACTIVE/REVOKED.");
-                        return result;
-                    }
+                        if (!active) {
+                            result.put("message", "Consent record exists but is INACTIVE/REVOKED.");
+                            return result;
+                        }
 
-                    // Parse the JSONB data point consents
-                    JSONParser parser = new JSONParser();
-                    JSONArray granularConsents = (JSONArray) parser.parse(consentsJson);
-                    Iterator<JSONObject> it = granularConsents.iterator();
-                    JSONObject consent = null;
-                    Boolean granted = null;
-                    while(it.hasNext()) {
-                        consent = (JSONObject) it.next();
-                        // Check if the specific required purpose ID is present and set to TRUE
-                        String purposeId = (String)consent.get("data_point_id");
-                        if(purposeId.equalsIgnoreCase(requiredPurposeId)) {
-                            granted = (Boolean) consent.get("consent_granted");
-                            if (granted != null && granted) break;
+                        // Parse the JSONB data point consents
+                        JSONParser parser = new JSONParser();
+                        JSONArray granularConsents = (JSONArray) parser.parse(consentsJson);
+                        Iterator<JSONObject> it = granularConsents.iterator();
+                        JSONObject consent = null;
+                        Boolean granted = null;
+                        while(it.hasNext()) {
+                            consent = (JSONObject) it.next();
+                            // Check if the specific required purpose ID is present and set to TRUE
+                            String purposeId = (String)consent.get("data_point_id");
+                            if(purposeId.equalsIgnoreCase(requiredPurposeId)) {
+                                granted = (Boolean) consent.get("consent_granted");
+                                if (granted != null && granted) break;
+                            }
+                        }
+
+                        if (granted != null && granted) {
+                            result.put("success", true);
+                            result.put("consent_granted", true);
+                            result.put("message", "Consent granted for purpose: " + requiredPurposeId);
+
+                            logConsentValidations(conn, UUID.fromString(fiduciaryId), UUID.fromString(appId), userId, requiredPurposeId, "VALID");
+
+                            // AuditLogService.logEvent(userId, "CONSENT_VALIDATED", "ConsentRecord", rs.getString("id"), "Purpose granted.", "SUCCESS", "ConsentService");
+
+                        } else {
+                            // Denied, or purpose was not listed (which defaults to denied)
+                            result.put("message", "Consent not granted for purpose: " + requiredPurposeId);
+
+                            // AuditLogService.logEvent(userId, "CONSENT_DENIED", "ConsentRecord", rs.getString("id"), "Purpose explicitly denied or missing.", "FAILURE", "ConsentService");
+
                         }
                     }
-
-                    if (granted != null && granted) {
-                        result.put("success", true);
-                        result.put("consent_granted", true);
-                        result.put("message", "Consent granted for purpose: " + requiredPurposeId);
-
-                        // AuditLogService.logEvent(userId, "CONSENT_VALIDATED", "ConsentRecord", rs.getString("id"), "Purpose granted.", "SUCCESS", "ConsentService");
-
-                        return result;
-
-                    } else {
-                        // Denied, or purpose was not listed (which defaults to denied)
-                        result.put("message", "Consent not granted for purpose: " + requiredPurposeId);
-
-                        // AuditLogService.logEvent(userId, "CONSENT_DENIED", "ConsentRecord", rs.getString("id"), "Purpose explicitly denied or missing.", "FAILURE", "ConsentService");
-
-                        return result;
-                    }
-                }
+                conn.commit();
             }
         } catch (SQLException e) {
             // Log detailed SQL error internally
@@ -319,6 +321,18 @@ public class Consent implements Action {
             pool.cleanup(null,null,conn);
         }
         return result;
+    }
+
+    private void logConsentValidations(Connection conn, UUID fiduciaryId, UUID appId, String userId, String purpose_id, String status) throws SQLException{
+        // Upsert Data Principal Record
+        String upsertDataPrincipalSql = "INSERT INTO consent_validations (fiduciary_id,app_id,user_id,purpose_id,status) VALUES (?,?,?,?,?)";
+        PreparedStatement stmt = conn.prepareStatement(upsertDataPrincipalSql);
+        stmt.setObject(1, fiduciaryId);
+        stmt.setObject(2, appId);
+        stmt.setString(3, userId);
+        stmt.setObject(4, appId);
+        stmt.setObject(5, appId);
+        stmt.executeUpdate();
     }
 
     /**
@@ -458,10 +472,6 @@ public class Consent implements Action {
 
     // --- Helper Methods for Consent Record Management ---
 
-    /**
-     * Checks if a specific policy version exists for a fiduciary.
-     * (Ideally, this would be an API call to PolicyService in a microservices 5)
-     */
     public String getFiduciaryId(UUID apiKey, String apiSecret) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -481,6 +491,27 @@ public class Consent implements Action {
             pool.cleanup(rs, pstmt, conn);
         }
         return fiduciaryId;
+    }
+
+    public String getAppId(UUID apiKey, String apiSecret) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        String appId = null;
+        String sql = "SELECT app_id FROM api_keys WHERE id = ? AND key_value=?";
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, apiKey);
+            pstmt.setString(2, "HASHED_"+apiSecret);
+            rs = pstmt.executeQuery();
+            if(rs.next())
+                appId = rs.getString("app_id");
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return appId;
     }
 
     /**
@@ -738,31 +769,29 @@ public class Consent implements Action {
      * This operation is transactional.
      * @throws SQLException if a database access error occurs.
      */
-    private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID actionByUserId) throws SQLException {
+    private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID fiduciaryId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtUpdateConsent = null;
         PoolDB pool = new PoolDB();
 
-        String updateConsentSql = "UPDATE consent_records SET user_id = ?, last_updated_at = NOW() WHERE user_id = ?";
 
         try {
             conn = pool.getConnection();
             conn.setAutoCommit(false); // Start transaction
 
+            // Update Consent Record
+            String updateConsentSql = "UPDATE consent_records SET user_id = ?, last_updated_at = NOW() WHERE user_id = ?";
             pstmtUpdateConsent = conn.prepareStatement(updateConsentSql);
             pstmtUpdateConsent.setString(1, authenticatedUserId);
             pstmtUpdateConsent.setString(2, anonymousUserId);
-            int affectedRows = pstmtUpdateConsent.executeUpdate();
+            pstmtUpdateConsent.executeUpdate();
 
-            if (affectedRows > 0) {
-                // Audit Log: Log the linking event
-                // This would typically be an async call to an Audit Log Service
-                // auditLogService.logEvent(actionByUserId, "USER_LINKED", "User", authenticatedUserId, "Linked from anonymous ID: " + anonymousUserId, null, "SUCCESS", "ConsentRecordService");
-            } else {
-                // No records to link, might be an issue or already linked/no anonymous activity
-                // Log this as an info or warning
-                System.out.println("No consent records found for anonymous ID: " + anonymousUserId + " to link.");
-            }
+            // Upsert Data Principal Record
+            String upsertDataPrincipalSql = "INSERT INTO data_principal (user_id, fiduciary_id, status) VALUES (?,?,'ACTIVE') ON CONFLICT (user_id) DO NOTHING";
+            pstmtUpdateConsent = conn.prepareStatement(upsertDataPrincipalSql);
+            pstmtUpdateConsent.setString(1, authenticatedUserId);
+            pstmtUpdateConsent.setObject(2, fiduciaryId);
+            pstmtUpdateConsent.executeUpdate();
 
             conn.commit(); // Commit transaction
 
