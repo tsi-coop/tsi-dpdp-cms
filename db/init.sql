@@ -173,8 +173,8 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE TABLE IF NOT EXISTS data_principal (
     user_id VARCHAR(255) PRIMARY KEY , -- Data Principal's ID
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, REVOKED, EXPIRED
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    purged_at TIMESTAMP
 );
 
 --
@@ -252,3 +252,18 @@ CREATE TABLE IF NOT EXISTS legal_retention_exceptions (
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_updated_by_user_id UUID REFERENCES users(id)
 );
+
+--
+-- 14. Schema for System Metadata used by the CES (Compliance Enforcement Service)
+--
+CREATE TABLE system_metadata (
+    metadata_key VARCHAR(255) PRIMARY KEY,
+    metadata_value TIMESTAMP NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Initial seed for the CES launcher (optional, as the Java code handles insertion if missing)
+INSERT INTO system_metadata (metadata_key, metadata_value, description)
+VALUES ('LAST_CES_RUN', '2025-01-01 00:00:00', 'Tracks the last successful run of the Compliance Enforcement Service batch.');

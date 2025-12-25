@@ -55,7 +55,15 @@ public class CESUtil {
                     if ("CONSENT_WITHDRAWN".equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
                     } else if ("CONSENT_GIVEN".equals(startEvent)) {
-                        // Per requirement: set to current time if start event was CONSENT_GIVEN
+                        expiryDate = calculateExpiry(now, durationValue, durationUnit);
+                    } else {
+                        expiryDate = null;
+                    }
+                } else if ("ERASURE_REQUEST".equals(action)) {
+                    consent.put("consent_granted",false);
+                    if ("CONSENT_WITHDRAWN".equals(startEvent)) {
+                        expiryDate = calculateExpiry(now, durationValue, durationUnit);
+                    } else if ("CONSENT_GIVEN".equals(startEvent)) {
                         expiryDate = now;
                     } else {
                         expiryDate = null;

@@ -52,6 +52,7 @@ public class Consent implements Action {
         JSONObject input = null;
         JSONObject output = null;
         JSONArray outputArray = null;
+        String reason = null;
 
         // Placeholder for current user ID (in a real system, this would come from authentication context)
         // For consent records, the 'actor' is often the Data Principal or the system acting on their behalf.
@@ -194,18 +195,30 @@ public class Consent implements Action {
                 case "withdraw_consent":
                     // --- Extract Withdrawal Parameters ---
                     userId = (String) input.get("user_id");
-                    String reason = (String) input.get("reason");
+                    reason = (String) input.get("reason");
 
                     if (userId == null || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
                         return;
                     }
 
-                    result = withdrawConsent(userId, fiduciaryIdStr, reason);
+                    result = withdrawConsent(userId, fiduciaryIdStr, reason, false);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
 
                     break;
+                case "erasure_request":
+                    // --- Extract Withdrawal Parameters ---
+                    userId = (String) input.get("user_id");
+                    reason = (String) input.get("reason");
 
+                    if (userId == null || fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
+                        return;
+                    }
+
+                    result = withdrawConsent(userId, fiduciaryIdStr, reason, true);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
+                    break;
                 default:
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
                     break;
@@ -347,11 +360,16 @@ public class Consent implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException
      */
-    private JSONObject withdrawConsent(String userId, String fiduciaryId, String reason) throws SQLException {
+    private JSONObject withdrawConsent(String userId, String fiduciaryId, String reason, boolean erasure) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
+        String action = "CONSENT_WITHDRAWN";
+        JSONObject result = null;
+
+        if(erasure)
+            action = "ERASURE_REQUEST";
 
         // --- 1. Find the current ACTIVE record and Policy context ---
         // This query also ensures the user exists and has a record.
@@ -399,12 +417,12 @@ public class Consent implements Action {
                 // Determine consent expiry
                 currentConsents = CESUtil.appendConsentExpiry(          policy,
                                                                         currentConsents,
-                                                                  "CONSENT_WITHDRAWN");
+                                                                  action);
             }
 
             // --- 4. Insert New WITHDRAWN Record (Immutability/Provenance) ---
             String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at,language_selected,ip_address) " +
-                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', 'WITHDRAWN', 'USER_WITHDRAWAL', ?::jsonb, FALSE, NOW(), 'en', '[0:0:0:0:0:0:0:1]') RETURNING id";
+                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', ?, ?, ?::jsonb, FALSE, NOW(), 'en', '[0:0:0:0:0:0:0:1]') RETURNING id";
 
             pstmt.close();
             pstmt = conn.prepareStatement(sqlInsertNew, Statement.RETURN_GENERATED_KEYS);
@@ -412,7 +430,9 @@ public class Consent implements Action {
             pstmt.setObject(2, UUID.fromString(fiduciaryId));
             pstmt.setString(3, policyId);
             pstmt.setString(4, policyVersion);
-            pstmt.setString(5, currentConsents.toJSONString()); // Store the new DENIED state
+            pstmt.setString(5, action);
+            pstmt.setString(6, action);
+            pstmt.setString(7, currentConsents.toJSONString()); // Store the new DENIED state
 
             if (pstmt.executeUpdate() == 0) {
                 throw new SQLException("Creating withdrawal record failed.");
@@ -432,13 +452,11 @@ public class Consent implements Action {
             // purgeService.initiatePurgeRequest(userId, fiduciaryId, "CONSENT_WITHDRAWAL");
 
             UUID finalNewRecordId = newRecordId;
-            return new JSONObject() {{
-                put("success", true);
-                put("message", "Consent successfully withdrawn and recorded.");
-                put("record_id", finalNewRecordId.toString());
-                put("triggered_purge", true);
-            }};
-
+            result =  new JSONObject();
+            result.put("success", true);
+            result.put("message", "Consent successfully withdrawn and recorded.");
+            result.put("record_id", finalNewRecordId.toString());
+            result.put("action", action);
         } catch (Exception e) {
             if (conn != null) conn.rollback();
             System.err.println("SQL Error during withdrawal: " + e.getMessage());
@@ -450,6 +468,7 @@ public class Consent implements Action {
             if (conn != null) conn.setAutoCommit(true);
             pool.cleanup(null, null, conn);
         }
+        return result;
     }
 
 
