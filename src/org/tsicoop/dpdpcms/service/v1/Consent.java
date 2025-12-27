@@ -374,7 +374,7 @@ public class Consent implements Action {
         // --- 1. Find the current ACTIVE record and Policy context ---
         // This query also ensures the user exists and has a record.
         String sqlSelectActive = "SELECT id, policy_id, policy_version, data_point_consents FROM consent_records " +
-                "WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE LIMIT 1";
+                "WHERE user_id = ? AND fiduciary_id = ? ORDER BY timestamp DESC LIMIT 1";
 
         UUID oldRecordId = null;
         JSONArray currentConsents = null;
@@ -393,7 +393,7 @@ public class Consent implements Action {
 
             if (!rs.next()) {
                 conn.rollback();
-                return new JSONObject() {{ put("success", false); put("message", "No active consent record found for withdrawal."); }};
+                return new JSONObject() {{ put("success", false); put("message", "No consent record found for withdrawal."); }};
             }
 
             oldRecordId = UUID.fromString(rs.getString("id"));
@@ -470,6 +470,9 @@ public class Consent implements Action {
         }
         return result;
     }
+
+
+
 
 
 
@@ -791,12 +794,20 @@ public class Consent implements Action {
     private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID fiduciaryId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtUpdateConsent = null;
+        PreparedStatement pstmtDeactivate = null;
         PoolDB pool = new PoolDB();
+        String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
 
 
         try {
             conn = pool.getConnection();
             conn.setAutoCommit(false); // Start transaction
+
+            // Deactivate previous active consent for this authenticated user and fiduciary (if any)
+            pstmtDeactivate = conn.prepareStatement(deactivateSql);
+            pstmtDeactivate.setString(1, authenticatedUserId);
+            pstmtDeactivate.setObject(2, fiduciaryId);
+            pstmtDeactivate.executeUpdate();
 
             // Update Consent Record
             String updateConsentSql = "UPDATE consent_records SET user_id = ?, last_updated_at = NOW() WHERE user_id = ?";

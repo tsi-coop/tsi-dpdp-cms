@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "_func": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "user_id",
+    "_func"
+  ]
+}

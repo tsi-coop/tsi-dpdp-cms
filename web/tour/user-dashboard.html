@@ -423,7 +423,7 @@
                 });
 
                 if (response.ok) {
-                    alert("Withdrawal request successful! Data purge workflow initiated.");
+                    alert("Withdrawal request successful!");
                     loadDashboardData(userId);
                     return true;
                 } else {
@@ -436,6 +436,39 @@
             }
         }
 
+          // --- API 4: Erasure Request ---
+        async function erasureRequest(userId) {
+            if (!confirm("CONFIRM: Are you sure you want to erase ALL non-mandatory consent? This is irreversible and triggers data purge.")) return false;
+
+            try {
+                const payload = {
+                    "_func": "erasure_request",
+                    "user_id": userId,
+                    "reason": "User requested complete erasure via dashboard."
+                };
+
+                const response = await fetch(`${API_CONSENT}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json',
+                               'X-API-Key': localStorage.getItem(X_API_KEY),
+                               'X-API-Secret': localStorage.getItem(X_API_SECRET)
+                               },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert("Erasure request successful! Data purge workflow initiated.");
+                    loadDashboardData(userId);
+                    return true;
+                } else {
+                    alert("Erasure request failed. Check API response.");
+                    return false;
+                }
+            } catch (e) {
+                alert("Network error during erasure.");
+                return false;
+            }
+        }
 
         // --- Data Orchestration & Initialization ---
 
@@ -540,18 +573,13 @@
             contentArea.innerHTML = `
                 <h2 class="text-xl font-semibold mb-4 primary-text">Current Consent Status & Manager</h2>
 
-               <!-- <div class="mb-6 p-4 border rounded-lg bg-indigo-50/50">
-                    <div class="flex items-center justify-between">
-                          <button onclick="withdrawConsent('${userId}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm">
+                <div class="mb-6 p-4 border rounded-lg bg-indigo-50/50">
+                    <div class="flex items-center space-x-4 justify-end">
+                          <button onclick="withdrawConsent('${userId}')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md font-medium text-sm">
                             Withdraw All Consent
                          </button>
-                    </div>
-                </div> -->
-
-                <div class="mb-6 p-4 border rounded-lg bg-indigo-50/50">
-                    <div class="flex items-center justify-end">
-                          <button onclick="withdrawConsent('${userId}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm">
-                            Withdraw All Consent
+                          <button onclick="erasureRequest('${userId}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm">
+                            Erasure Request
                          </button>
                     </div>
                 </div>
