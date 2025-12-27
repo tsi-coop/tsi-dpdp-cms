@@ -545,10 +545,17 @@
 
         function renderConsentContent(history) {
             const userId = localStorage.getItem(LOCAL_USER_ID_KEY);
-            const activeRecord = history.find(r => r.is_active_consent); // Assuming active consent flag exists
-            const grantedCount = activeRecord ? Object.values(activeRecord.data_point_consents).filter(v => v).length : 0;
-            const totalPurposes = activeRecord ? Object.keys(activeRecord.data_point_consents).length : 0;
-            const percentage = totalPurposes > 0 ? ((grantedCount / totalPurposes) * 100).toFixed(0) : 0;
+            if (!history || history.length === 0) {
+                contentArea.innerHTML = `<p class="text-center py-10">No consent history found.</p>`;
+                return;
+            }
+
+            const latestRecord = history[0];
+            const mechanism = latestRecord.consent_mechanism;
+
+            // BUTTON LOGIC: Disable based on status and mechanism
+            const canWithdraw = mechanism !== 'CONSENT_WITHDRAWN' && mechanism !== 'ERASURE_REQUEST';
+            const canRequestErasure = mechanism !== 'ERASURE_REQUEST';
 
 
             const consentRows = history.map(record => {
@@ -571,17 +578,26 @@
             `}).join('');
 
             contentArea.innerHTML = `
-                <h2 class="text-xl font-semibold mb-4 primary-text">Current Consent Status & Manager</h2>
-
-                <div class="mb-6 p-4 border rounded-lg bg-indigo-50/50">
-                    <div class="flex items-center space-x-4 justify-end">
-                          <button onclick="withdrawConsent('${userId}')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md font-medium text-sm">
-                            Withdraw All Consent
-                         </button>
-                          <button onclick="erasureRequest('${userId}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm">
-                            Erasure Request
-                         </button>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold primary-text">Consent Manager</h2>
+                        <p class="text-sm text-gray-500">Manage your data permissions and rights</p>
                     </div>
+                    <div class="flex gap-2">
+                        <button onclick="withdrawConsent('${userId}')" ${!canWithdraw ? 'disabled' : ''}
+                            class="px-4 py-2 rounded text-sm font-medium transition-colors ${canWithdraw ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}">
+                            Withdraw All Consent
+                        </button>
+                        <button onclick="erasureRequest('${userId}')" ${!canRequestErasure ? 'disabled' : ''}
+                            class="px-4 py-2 rounded text-sm font-medium transition-colors ${canRequestErasure ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}">
+                            Erasure Request
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                    <p class="text-sm"><strong>Latest State:</strong> ${mechanism}</p>
+                    <p class="text-xs text-gray-400 mt-1 italic">Note: Mandatory data points cannot be withdrawn while the account is active.</p>
                 </div>
 
                 <h3 class="text-lg font-semibold mt-6 mb-3 primary-text">Full Consent History</h3>
