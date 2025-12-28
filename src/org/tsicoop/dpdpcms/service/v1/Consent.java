@@ -92,7 +92,7 @@ public class Consent implements Action {
                     String jurisdiction = (String) input.get("jurisdiction");
                     String languageSelected = (String) input.get("language_selected");
                     String consentStatusGeneral = (String) input.get("consent_status_general");
-                    String consentMechanism = (String) input.get("consent_mechanism");
+                    String consentMechanism = "CONSENT_GIVEN";
                     String ipAddressStr = (String) req.getRemoteAddr();
                     String userAgent = (String) input.get("user_agent");
                     JSONArray dataPointConsents = (JSONArray) input.get("data_point_consents");

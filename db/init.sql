@@ -173,9 +173,9 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE TABLE IF NOT EXISTS data_principal (
     user_id VARCHAR(255) PRIMARY KEY , -- Data Principal's ID
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, DEACTIVATED, PENDING_ERASURE
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    purged_at TIMESTAMP
+    last_consent_mechanism VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_ces_run TIMESTAMP
 );
 
 --
