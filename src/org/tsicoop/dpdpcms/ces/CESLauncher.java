@@ -49,9 +49,10 @@ public class CESLauncher {
                         principal = (JSONObject) it.next();
                         //System.out.println(principal);
                         // Identify and execute necessary purge requests
-                        cesService.processPrincipalPurge(   (String) principal.get("user_id"),
-                                                            (String) principal.get("last_ces_run"),
-                                                            (String) principal.get("consent_mechanism"));
+                        cesService.processPrincipal(   (String) principal.get("fiduciary_id"),
+                                                        (String) principal.get("user_id"),
+                                                        (Timestamp) principal.get("last_ces_run"),
+                                                        (String) principal.get("consent_mechanism"));
                     }
                     offset += BATCH_SIZE;
                     System.out.println("Processed batch ending at offset: " + offset);

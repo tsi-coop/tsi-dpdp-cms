@@ -343,8 +343,8 @@ public class Consent implements Action {
         stmt.setObject(1, fiduciaryId);
         stmt.setObject(2, appId);
         stmt.setString(3, userId);
-        stmt.setObject(4, appId);
-        stmt.setObject(5, appId);
+        stmt.setObject(4, purpose_id);
+        stmt.setObject(5, status);
         stmt.executeUpdate();
     }
 
@@ -817,7 +817,7 @@ public class Consent implements Action {
             pstmtUpdateConsent.executeUpdate();
 
             // Upsert Data Principal Record
-            String upsertDataPrincipalSql = "INSERT INTO data_principal (user_id, fiduciary_id, status) VALUES (?,?,'ACTIVE') ON CONFLICT (user_id) DO NOTHING";
+            String upsertDataPrincipalSql = "INSERT INTO data_principal (user_id, fiduciary_id) VALUES (?,?) ON CONFLICT (user_id) DO NOTHING";
             pstmtUpdateConsent = conn.prepareStatement(upsertDataPrincipalSql);
             pstmtUpdateConsent.setString(1, authenticatedUserId);
             pstmtUpdateConsent.setObject(2, fiduciaryId);

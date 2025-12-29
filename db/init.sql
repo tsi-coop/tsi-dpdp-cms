@@ -198,73 +198,26 @@ CREATE TABLE IF NOT EXISTS purge_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id VARCHAR(255) NOT NULL, -- Data Principal ID whose data is to be purged
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
-    app_id UUID REFERENCES apps(id), -- Nullable, if purge is at Fiduciary level directly
+    app_id UUID REFERENCES apps(id),
     trigger_event VARCHAR(100) NOT NULL, -- e.g., "ConsentWithdrawal", "RetentionPolicyExpiry", "ErasureRequest"
-    data_categories_to_purge JSONB NOT NULL DEFAULT '[]'::jsonb,
-    processing_purposes_affected JSONB NOT NULL DEFAULT '[]'::jsonb,
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- PENDING, IN_PROGRESS, COMPLETED, FAILED, UNDER_LEGAL_HOLD
     initiated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMP WITH TIME ZONE,
     records_affected_count INTEGER,
     details TEXT, -- Additional details or error messages
-    legal_exception_applied_id UUID REFERENCES legal_retention_exceptions(id), -- FK if purge was legally overridden
-    error_message TEXT,
-    confirmed_by_entity_id UUID, -- ID of the Fiduciary/Processor if they confirm via API
-    confirmed_at TIMESTAMP WITH TIME ZONE,
-    created_by_user_id UUID REFERENCES users(id), -- If initiated by CMS admin/DPO
+    legal_exception_summary TEXT,
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 --
--- 12. Table: notifications (Can be created now, references notification_templates, fiduciaries, users)
+-- 12. Table: notifications
 --
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    template_id UUID NOT NULL REFERENCES notification_templates(id),
-    recipient_type VARCHAR(50) NOT NULL, -- DATA_PRINCIPAL, DPO_ADMIN, DATA_PROCESSOR
+    recipient_type VARCHAR(50) NOT NULL, -- PRINCIPAL, DPO, APP
     recipient_id VARCHAR(255) NOT NULL, -- User ID, DPO ID, App ID
     fiduciary_id UUID REFERENCES fiduciaries(id), -- Contextual Fiduciary ID
-    status VARCHAR(50) NOT NULL, -- SENT, FAILED, DELIVERED, READ
-    channel_used VARCHAR(50) NOT NULL, -- EMAIL, SMS, IN_APP
-    sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    payload_data JSONB, -- Actual data used to populate template
-    error_details TEXT, -- If status is FAILED
+    notification_type VARCHAR(100) NOT NULL,
     read_at TIMESTAMP WITH TIME ZONE, -- When recipient read it (for IN_APP)
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID REFERENCES users(id) -- User who dispatched it (e.g., system user)
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
-
---
--- 13. Table: legal_retention_exceptions (Can be created now, references fiduciaries and users)
---
-CREATE TABLE IF NOT EXISTS legal_retention_exceptions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    fiduciary_id UUID REFERENCES fiduciaries(id), -- If specific per Fiduciary, else NULL
-    exception_id VARCHAR(100) NOT NULL UNIQUE, -- e.g., "PMLA_AML_RETENTION"
-    name VARCHAR(255) NOT NULL,
-    legal_reference TEXT NOT NULL,
-    applicable_data_categories JSONB NOT NULL DEFAULT '[]'::jsonb,
-    applicable_processing_purposes JSONB NOT NULL DEFAULT '[]'::jsonb,
-    retention_period_override VARCHAR(100),
-    condition_for_override TEXT, -- SQL snippet, rule ID, or reference to complex evaluation logic
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    created_by_user_id UUID REFERENCES users(id),
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_updated_by_user_id UUID REFERENCES users(id)
-);
-
---
--- 14. Schema for System Metadata used by the CES (Compliance Enforcement Service)
---
-CREATE TABLE system_metadata (
-    metadata_key VARCHAR(255) PRIMARY KEY,
-    metadata_value TIMESTAMP NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Initial seed for the CES launcher (optional, as the Java code handles insertion if missing)
-INSERT INTO system_metadata (metadata_key, metadata_value, description)
-VALUES ('LAST_CES_RUN', '2025-01-01 00:00:00', 'Tracks the last successful run of the Compliance Enforcement Service batch.');
