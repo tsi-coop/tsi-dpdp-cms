@@ -85,6 +85,8 @@ public class CESUtil {
             case "YEARS": return base.plusYears(value);
             case "MONTHS": return base.plusMonths(value);
             case "DAYS": return base.plusDays(value);
+            case "HOURS": return base.plusHours(value);
+            case "MINUTES": return base.plusMinutes(value);
             default: return base;
         }
     }

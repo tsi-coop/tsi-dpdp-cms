@@ -148,13 +148,13 @@ class CESService {
             if(expiry != null){
                 tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
                 if(tsExpiry.before(tsFromInstant)){
-                    System.out.println("Enforcing Purge for Principal: " + principalId + " | Purpose: " + purposeId);
                     // Identify Apps (Data Processors)
                     List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
                     Iterator<JSONObject> appidIt = appids.iterator();
                     while(appidIt.hasNext()){
                         JSONObject appidJSON = (JSONObject) appidIt.next();
                         String appid = (String) appidJSON.get("app_id");
+                        System.out.println("Enforcing Purge for Principal: " + principalId + " | App: "+ appid+" | Purpose: " + purposeId);
                         // Create Purge Request
                         insertPurgeRequest( principalId,
                                             fiduciaryId,
@@ -172,7 +172,7 @@ class CESService {
     }
 
     private List<JSONObject> getAppIdsByPurpose(String userId, String fiduciaryId, String purposeId) throws SQLException {
-        System.out.println("userId:"+userId+" fiduciaryId:"+fiduciaryId+" purposeId:"+purposeId);
+        //System.out.println("userId:"+userId+" fiduciaryId:"+fiduciaryId+" purposeId:"+purposeId);
         List<JSONObject> appIds = new ArrayList<JSONObject>();
         String sql = "SELECT DISTINCT app_id FROM consent_validations WHERE user_id = ? AND fiduciary_id = ? AND purpose_id = ?";
 
@@ -254,13 +254,13 @@ class CESService {
             if(expiry != null){
                 tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
                 if(tsExpiry.before(tsFromInstant)){
-                    System.out.println("Enforcing Purge for Principal: " + principalId + " | Purpose: " + purposeId);
                     // Identify Apps (Data Processors)
                     List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
                     Iterator<JSONObject> appidIt = appids.iterator();
                     while(appidIt.hasNext()){
                         JSONObject appidJSON = (JSONObject) appidIt.next();
                         String appid = (String) appidJSON.get("app_id");
+                        System.out.println("Enforcing Purge for Principal: " + principalId + " | App: "+ appid+" | Purpose: " + purposeId);
                         // Create Purge Request
                         insertPurgeRequest( principalId,
                                 fiduciaryId,

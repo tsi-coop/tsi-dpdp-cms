@@ -471,11 +471,6 @@ public class Consent implements Action {
         return result;
     }
 
-
-
-
-
-
     /**
      * Validates the HTTP method and request content type.
      * @param method The HTTP method of the request.
