@@ -5,10 +5,11 @@
 /api/v1/consent=org.tsicoop.dpdpcms.service.v1.Consent
 /api/v1/apikey=org.tsicoop.dpdpcms.service.v1.ApiKey
 /api/v1/app=org.tsicoop.dpdpcms.service.v1.App
+/api/v1/compliance=org.tsicoop.dpdpcms.service.v1.Compliance
 /api/v1/grievance=org.tsicoop.dpdpcms.service.v1.Grievance
 /api/v1/notification=org.tsicoop.dpdpcms.service.v1.Notification
 /api/v1/audit=org.tsicoop.dpdpcms.service.v1.Audit
-/api/v1/lifecycle=org.tsicoop.dpdpcms.service.v1.Lifecycle
 /api/v1/admindash=org.tsicoop.dpdpcms.service.v1.AdminDash
 /api/v1/setup=org.tsicoop.dpdpcms.service.v1.AdminSetup
+
 

@@ -2,11 +2,9 @@ package org.tsicoop.dpdpcms.ces;
 
 import org.json.simple.JSONObject;
 import org.tsicoop.dpdpcms.framework.BatchDB;
-import org.tsicoop.dpdpcms.framework.PoolDB;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;

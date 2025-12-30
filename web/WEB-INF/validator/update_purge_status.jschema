@@ -3,7 +3,10 @@
   "title": "Generated schema for Root",
   "type": "object",
   "properties": {
-    "_func": {
+    "details": {
+      "type": "string"
+    },
+    "id": {
       "type": "string"
     },
     "fiduciary_id": {
@@ -12,23 +15,15 @@
     "status": {
       "type": "string"
     },
-    "trigger_event": {
+    "_func": {
       "type": "string"
-    },
-    "search": {
-      "type": "string"
-    },
-    "page": {
-      "type": "number"
-    },
-    "limit": {
-      "type": "number"
     }
   },
   "required": [
-    "_func",
-    "fiduciary_id",
+    "details",
+    "id",
     "status",
-    "search"
+    "fiduciary_id",
+    "_func"
   ]
 }

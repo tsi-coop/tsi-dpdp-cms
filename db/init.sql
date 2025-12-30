@@ -202,10 +202,7 @@ CREATE TABLE IF NOT EXISTS purge_requests (
     trigger_event VARCHAR(100) NOT NULL, -- e.g., "ConsentWithdrawal", "RetentionPolicyExpiry", "ErasureRequest"
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- PENDING, IN_PROGRESS, COMPLETED, FAILED, UNDER_LEGAL_HOLD
     initiated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    completed_at TIMESTAMP WITH TIME ZONE,
-    records_affected_count INTEGER,
-    details TEXT, -- Additional details or error messages
-    legal_exception_summary TEXT,
+    details TEXT, -- Additional details or error messages or legal exception
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 

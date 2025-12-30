@@ -6,29 +6,16 @@
     "_func": {
       "type": "string"
     },
+    "id": {
+      "type": "string"
+    },
     "fiduciary_id": {
       "type": "string"
-    },
-    "status": {
-      "type": "string"
-    },
-    "trigger_event": {
-      "type": "string"
-    },
-    "search": {
-      "type": "string"
-    },
-    "page": {
-      "type": "number"
-    },
-    "limit": {
-      "type": "number"
     }
   },
   "required": [
     "_func",
-    "fiduciary_id",
-    "status",
-    "search"
+    "id",
+    "fiduciary_id"
   ]
 }
