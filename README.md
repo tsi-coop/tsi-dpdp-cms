@@ -12,7 +12,7 @@ This solution is currently in Public Preview. While we encourage developers to i
 
 [Installation Walkthrough](https://youtu.be/8LKycujvHBU)
 
-[Functional Demo](https://youtu.be/d85ye4BoFbM)
+[Functional Overview](https://youtu.be/d85ye4BoFbM)
 
 [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
