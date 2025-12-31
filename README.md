@@ -14,6 +14,8 @@ This solution is currently in Public Preview. While we encourage developers to i
 
 [Functional Demo](https://youtu.be/d85ye4BoFbM)
 
+[Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following software installed on your development machine or server:
