@@ -136,6 +136,12 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
     ```sql
     CREATE DATABASE <<your-db-name-here>>;
     CREATE USER <<your-db-user-here>> WITH ENCRYPTED PASSWORD '<<your_db_password_here>>';
+    ```
+    * Connect to the new database and grant permissions: (Note: These steps are required for PostgreSQL 15+ compatibility)
+    ```sql
+    \c <<your-db-name-here>>
+    ALTER SCHEMA public OWNER TO <<your-db-user-here>>;
+    GRANT ALL PRIVILEGES ON SCHEMA public TO <<your-db-user-here>>;
     GRANT ALL PRIVILEGES ON DATABASE <<your-db-name-here>> TO <<your-db-user-here>>;
     ```
     * Exit the postgres user: `exit`
@@ -143,6 +149,7 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
     ```bash
     psql -U <<your-db-user-here>> -d <<your-db-name-here>> -h localhost -f /path/to/tsi-dpdp-cms/db/init.sql
     ```
+
 3.  **Build WAR:**
     ```bash
     cd /path/to/tsi-dpdp-cms
@@ -159,7 +166,7 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
 
     ```bash
     ./set-base.sh #Sets the jetty base directory
-    ./serve.sh # Copies the target/tsi-dpdp-cms.war to %JETTY_BASE%/webapps/ROOT.war. Starts the server in 8080
+    ./serve.sh # Copies the target/tsi-dpdp-cms.war to $JETTY_BASE/webapps/ROOT.war. Starts the server in 8080
     ```
 5. **Deploy Solution (windows):**
    ```bash
