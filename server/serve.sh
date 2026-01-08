@@ -18,5 +18,5 @@ export POSTGRES_USER=$POSTGRES_USER
 export POSTGRES_PASSWD=$POSTGRES_PASSWD
 export JETTY_HOME=$JETTY_HOME
 export JETTY_BASE=$JETTY_BASE
-cp %TSI_DPDP_CMS_HOME%\target\tsi_dpdp_cms.war %JETTY_BASE%\webapps\ROOT.war
+cp $TSI_DPDP_CMS_HOME/target/tsi_dpdp_cms.war $JETTY_BASE/webapps/ROOT.war
 java -jar $JETTY_HOME/start.jar
