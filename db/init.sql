@@ -116,12 +116,13 @@ ON consent_records (user_id, fiduciary_id) WHERE is_active_consent IS TRUE;
 --
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     user_id VARCHAR(255) NOT NULL,
     service_type VARCHAR(100) NOT NULL, -- e.g., APP, SYSTEM, USER
-    service_id VARCHAR(255), -- ID of the affected entity (UUID or other string ID)
-    audit_action VARCHAR(100) NOT NULL, -- e.g., POLICY_PUBLISHED, CONSENT_UPDATED
-    context_details JSONB, -- JSON payload of relevant data/changes
+    service_id UUID, -- ID of the affected entity (UUID or other string ID)
+    audit_action VARCHAR(100) NOT NULL, -- e.g., POLICY_PUBLISHED, CONSENT_GIVEN, CONSENT_WITHDRAWN, ERASURE_REQUEST
+    context_details JSONB -- JSON payload of relevant data/changes
 );
 
 --
