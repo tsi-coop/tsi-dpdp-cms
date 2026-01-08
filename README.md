@@ -177,7 +177,10 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
 
    ```bash
    set-base.bat #Sets the jetty base directory
-   serve.bat # Copies the target/tsi_dpdp_cms.war to %JETTY_BASE%/webapps/ROOT.wat. Starts the server in 8080
+   serve.bat # Copies the target/tsi_dpdp_cms.war to %JETTY_BASE%/webapps/ROOT.war. Starts the server in 8080
    ```
-
-
+6. **Validation Step:**
+   To confirm server status.
+   ```bash
+   curl -I http://localhost:8080
+   ```
