@@ -49,7 +49,7 @@ public class Audit implements Action {
             }
 
             switch (func.toLowerCase()) {
-                case "log_event":
+               /* case "log_event":
                     String userId = (String) input.get("user_id");
                     String serviceType = (String) input.get("service_type"); // APP, SYSTEM, USER
                     String serviceId = (String) input.get("service_id");
@@ -62,14 +62,14 @@ public class Audit implements Action {
                     }
 
                     // Perform the database insertion asynchronously
-                    logEventAsync(userId, serviceType, serviceId, auditAction, contextDetails);
+                    logEventAsync(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails);
 
                     // Respond immediately to the caller
                     output = new JSONObject();
                     output.put("success", true);
                     output.put("message", "Audit event queued for processing.");
                     OutputProcessor.send(res, HttpServletResponse.SC_ACCEPTED, output);
-                    break;
+                    break;*/
 
                 case "list_audit_logs":
                     String search = (String) input.get("search");
@@ -125,19 +125,19 @@ public class Audit implements Action {
     /**
      * Submits a logging task to the internal thread pool.
      */
-    private void logEventAsync(String userId, String serviceType, String serviceId, String auditAction, JSONObject contextDetails) {
+    protected void logEventAsync(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) {
         auditExecutor.submit(() -> {
             try {
-                logEventToDb(userId, serviceType, serviceId, auditAction, contextDetails);
+                logEventToDb(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails);
             } catch (SQLException e) {
                 System.err.println("Asynchronous Audit Error for principal " + userId + ": " + e.getMessage());
             }
         });
     }
 
-    private JSONObject logEventToDb(String userId, String serviceType, String serviceId, String auditAction, JSONObject contextDetails) throws SQLException {
-        String sql = "INSERT INTO audit_logs (id, timestamp, user_id, service_type, service_id, audit_action, context_details) " +
-                "VALUES (uuid_generate_v4(), NOW(), ?, ?, ?, ?, ?::jsonb) RETURNING id";
+    private JSONObject logEventToDb(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) throws SQLException {
+        String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details) " +
+                "VALUES (uuid_generate_v4(), ?, NOW(), ?, ?, ?, ?, ?) RETURNING id";
 
         PoolDB pool = new PoolDB();
         Connection conn = null;
@@ -147,11 +147,12 @@ public class Audit implements Action {
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, userId);
-            pstmt.setString(2, serviceType);
-            pstmt.setString(3, serviceId);
-            pstmt.setString(4, auditAction);
-            pstmt.setString(5, contextDetails != null ? contextDetails.toJSONString() : "{}");
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setString(2, userId);
+            pstmt.setString(3, serviceType);
+            pstmt.setObject(4, serviceId);
+            pstmt.setString(5, auditAction);
+            pstmt.setString(6, contextDetails);
 
             rs = pstmt.executeQuery();
             JSONObject result = new JSONObject();

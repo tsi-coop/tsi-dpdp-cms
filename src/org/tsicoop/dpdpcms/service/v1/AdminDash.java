@@ -245,9 +245,9 @@ public class AdminDash implements Action {
         PoolDB pool = new PoolDB();
 
         // Note: Using entity_id AS VARCHAR for compatibility, though it's likely UUID in DB
-        String sql = "SELECT timestamp, actor_user_id, actor_system_id, action_type, entity_type, CAST(entity_id AS VARCHAR) AS entity_id, status FROM audit_logs ORDER BY timestamp DESC LIMIT ?";
+        String sql = "SELECT timestamp, actor_system_id, action_type, entity_type, CAST(entity_id AS VARCHAR) AS entity_id, status FROM audit_logs ORDER BY timestamp DESC LIMIT ?";
 
-        try {
+      /*  try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, limit);
@@ -257,11 +257,9 @@ public class AdminDash implements Action {
                 JSONObject activity = new JSONObject();
 
                 // Assuming retrieval of UUIDs as Strings/Objects from JDBC
-                String actorId = rs.getString("actor_user_id");
                 String entityId = rs.getString("entity_id");
 
                 activity.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
-                activity.put("actor_user_id", actorId);
                 activity.put("actor_system_id", rs.getString("actor_system_id"));
                 activity.put("action_type", rs.getString("action_type"));
                 activity.put("entity_type", rs.getString("entity_type"));
@@ -273,7 +271,7 @@ public class AdminDash implements Action {
 
         } finally {
             pool.cleanup(rs, pstmt, conn);
-        }
+        }*/
         return activities;
     }
 

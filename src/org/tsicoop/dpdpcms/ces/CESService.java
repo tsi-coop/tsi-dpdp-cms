@@ -83,6 +83,7 @@ class CESService {
         //System.out.println(recent);
         if(recent != null) {
             mechanism = (String) recent.get("mechanism");
+            System.out.println("mechanism:"+mechanism);
             if (mechanism.equalsIgnoreCase("ERASURE_REQUEST")) {
                 handleErasure(recent, principalId, fiduciaryId, tsFromInstant);
             } else {
@@ -130,6 +131,34 @@ class CESService {
         return recent;
     }
 
+    private JSONObject logEventToDb(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) throws SQLException {
+        String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details) " +
+                "VALUES (uuid_generate_v4(), ?, NOW(), ?, ?, ?, ?, ?) RETURNING id";
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setString(2, userId);
+            pstmt.setString(3, serviceType);
+            pstmt.setObject(4, serviceId);
+            pstmt.setString(5, auditAction);
+            pstmt.setString(6, contextDetails);
+
+            rs = pstmt.executeQuery();
+            JSONObject result = new JSONObject();
+            if (rs.next()) {
+                result.put("success", true);
+                result.put("id", rs.getObject("id").toString());
+            }
+            return result;
+        } finally {
+            batchdb.close(rs);
+            batchdb.close(pstmt);
+        }
+    }
+
     private void handleErasure(JSONObject recent, String principalId, String fiduciaryId, Timestamp tsFromInstant) throws Exception{
         JSONObject consent = null;
         String purposeId = null;
@@ -159,12 +188,14 @@ class CESService {
                         insertPurgeRequest( principalId,
                                             fiduciaryId,
                                             appid,
-                                            "ERASURE_REQUEST");
+                                            "ERASURE");
                         // Send purge notification to data processor
                         insertNotification( "APP",
                                             appid,
                                             fiduciaryId,
-                                            "PURGE_REQUEST");
+                                            "PURGE_NOTIF");
+                        // log audit event
+                        logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", "ERASURE_REQUEST"+"-"+appid+"-"+purposeId);
                     }
                 }
             }
@@ -231,7 +262,7 @@ class CESService {
                     insertNotification( "PRINCIPAL",
                                                     principalId,
                                                     fiduciaryId,
-                                                    "RETENTION_EXPIRY");
+                                                    "EXPIRY_NOTIFICATION");
                 }
             }
         }
@@ -250,9 +281,10 @@ class CESService {
             purposeId = (String) consent.get("data_point_id");
             granted = (boolean) consent.get("consent_granted");
             expiry = (String) consent.get("consent_expiry");
-            //System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
+            System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
             if(expiry != null){
                 tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
+                System.out.println("TS Expiry:"+tsExpiry+" Instant:"+tsFromInstant);
                 if(tsExpiry.before(tsFromInstant)){
                     // Identify Apps (Data Processors)
                     List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
@@ -265,12 +297,14 @@ class CESService {
                         insertPurgeRequest( principalId,
                                 fiduciaryId,
                                 appid,
-                                "ERASURE_REQUEST");
+                                "RETENTION_EXPIRED");
                         // Send purge notification to data processor
                         insertNotification( "APP",
                                 appid,
                                 fiduciaryId,
-                                "PURGE_REQUEST");
+                                "PURGE_NOTIF");
+                        // log audit event
+                        logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", "RETENTION_EXPIRY"+"-"+appid+"-"+purposeId);
                     }
                 }
             }

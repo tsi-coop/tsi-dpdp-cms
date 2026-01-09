@@ -288,6 +288,28 @@ public class ApiKey implements Action {
         return Optional.empty();
     }
 
+    public UUID getAppId(String apiKey, String apiSecret) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        UUID appId = null;
+        String sql = "SELECT app_id FROM api_keys WHERE id = ? AND key_value=?";
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, UUID.fromString(apiKey));
+            pstmt.setString(2, "HASHED_"+apiSecret);
+            rs = pstmt.executeQuery();
+            if(rs.next())
+                appId = UUID.fromString(rs.getString("app_id"));
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return appId;
+    }
+
+
     /**
      * Revokes an API key by setting its status to REVOKED and recording revocation details.
      */

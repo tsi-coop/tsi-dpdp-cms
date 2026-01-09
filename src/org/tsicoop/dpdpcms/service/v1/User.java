@@ -286,6 +286,8 @@ public class User implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         JSONObject result = new JSONObject();
+        String userId = null;
+        String fiduciaryId = null;
 
         // Query by username or email
         String sql = "SELECT u.id, u.username, u.email, u.password_hash, u.status, u.mfa_enabled, u.role, u.fiduciary_id, f.name FROM users u LEFT OUTER JOIN fiduciaries f ON u.fiduciary_id = f.id WHERE (u.username = ? OR u.email = ?)";
@@ -298,14 +300,14 @@ public class User implements Action {
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                String userId = rs.getString("id");
+                userId = rs.getString("id");
                 String username = rs.getString("username");
                 String email = rs.getString("email");
                 String storedHashedPassword = rs.getString("password_hash");
                 String status = rs.getString("status");
                 boolean mfaEnabled = rs.getBoolean("mfa_enabled");
                 String roleName = rs.getString("role");
-                String fiduciaryId = rs.getString("fiduciary_id");
+                fiduciaryId = rs.getString("fiduciary_id");
                 if(fiduciaryId == null) fiduciaryId = "";
                 String fiduciaryName = rs.getString("name");
                 if(fiduciaryName == null) fiduciaryName = "";
@@ -349,18 +351,30 @@ public class User implements Action {
                         result.put("token", generatedToken);
                         result.put("fiduciary_id", fiduciaryId);
                         result.put("fiduciary_name", fiduciaryName);
+
+                        // Log Audit Event
+                        if(fiduciaryId==null || fiduciaryId.trim().isEmpty()){
+                            fiduciaryId = "00000000-0000-0000-0000-000000000000"; // Admin
+                        }
+                        new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId) , "LOGIN_SUCCESS", "");
                     }
                 } else {
                     result.put("error", true);
                     result.put("status_code", HttpServletResponse.SC_UNAUTHORIZED);
                     result.put("error_message", "Invalid credentials.");
                     result.put("error_details", "Password mismatch.");
+
+                    // Log Audit Event
+                    new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId) , "LOGIN_FAILURE", "Password mismatch");
                 }
             } else {
                 result.put("error", true);
                 result.put("status_code", HttpServletResponse.SC_UNAUTHORIZED);
                 result.put("error_message", "Invalid credentials.");
                 result.put("error_details", "User not found.");
+
+                // Log Audit Event
+                new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId) , "LOGIN_FAILURE", "User not found");
             }
         } finally {
             pool.cleanup(rs, pstmt, conn);
@@ -419,7 +433,6 @@ public class User implements Action {
                 result.put("status_code", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 result.put("error_message", "Failed to reset password.");
             }
-
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }

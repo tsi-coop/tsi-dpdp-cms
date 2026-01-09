@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     service_type VARCHAR(100) NOT NULL, -- e.g., APP, SYSTEM, USER
     service_id UUID, -- ID of the affected entity (UUID or other string ID)
     audit_action VARCHAR(100) NOT NULL, -- e.g., POLICY_PUBLISHED, CONSENT_GIVEN, CONSENT_WITHDRAWN, ERASURE_REQUEST
-    context_details JSONB -- JSON payload of relevant data/changes
+    context_details TEXT -- relevant data/changes
 );
 
 --

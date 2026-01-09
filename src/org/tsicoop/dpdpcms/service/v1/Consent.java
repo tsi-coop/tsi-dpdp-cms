@@ -65,6 +65,7 @@ public class Consent implements Action {
             String func = (String) input.get("_func");
             String apiKey = req.getHeader("X-API-Key");
             String apiSecret = req.getHeader("X-API-Secret");
+            UUID appId = new ApiKey().getAppId(apiKey,apiSecret);
 
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
@@ -120,7 +121,7 @@ public class Consent implements Action {
                                                                               "CONSENT_GIVEN");
 
                         output = recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
-                                consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, currentCmsUserId);
+                                consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, appId);
                         OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     }
                     break;
@@ -172,7 +173,7 @@ public class Consent implements Action {
                         return;
                     }
 
-                    linkUserConsentRecords(anonymousUserId, authenticatedUserId, fiduciaryId);
+                    linkUserConsentRecords(anonymousUserId, authenticatedUserId, fiduciaryId, appId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "User consent records linked successfully."); }});
                     break;
 
@@ -180,7 +181,6 @@ public class Consent implements Action {
                     // --- Extract Validation Parameters from Body ---
                     userId = (String) input.get("user_id");
                     String requiredPurposeId = (String) input.get("required_purpose_id");
-                    String appId = getAppId(UUID.fromString(apiKey),apiSecret);
 
                     if (userId == null || fiduciaryId == null || requiredPurposeId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id, required_purpose_id).", req.getRequestURI());
@@ -202,7 +202,7 @@ public class Consent implements Action {
                         return;
                     }
 
-                    result = withdrawConsent(userId, fiduciaryIdStr, reason, false);
+                    result = withdrawConsent(userId, fiduciaryId, appId, reason, false);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
 
                     break;
@@ -216,7 +216,7 @@ public class Consent implements Action {
                         return;
                     }
 
-                    result = withdrawConsent(userId, fiduciaryIdStr, reason, true);
+                    result = withdrawConsent(userId, fiduciaryId, appId, reason, true);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
                     break;
                 default:
@@ -250,13 +250,14 @@ public class Consent implements Action {
      * @return JSONObject containing the validation result (success: boolean, consent_granted: boolean).
      * @throws SQLException
      */
-    private JSONObject validateConsent(String userId, String fiduciaryId, String appId, String requiredPurposeId) throws SQLException {
+    private JSONObject validateConsent(String userId, String fiduciaryId, UUID appId, String requiredPurposeId) throws SQLException {
 
         JSONObject result = new JSONObject();
         result.put("success", false);
         result.put("consent_granted", false);
         Connection conn = null;
         PoolDB pool = new PoolDB();
+        Boolean granted = null;
 
         try {
             conn = pool.getConnection();
@@ -292,7 +293,7 @@ public class Consent implements Action {
                         JSONArray granularConsents = (JSONArray) parser.parse(consentsJson);
                         Iterator<JSONObject> it = granularConsents.iterator();
                         JSONObject consent = null;
-                        Boolean granted = null;
+
                         while(it.hasNext()) {
                             consent = (JSONObject) it.next();
                             // Check if the specific required purpose ID is present and set to TRUE
@@ -308,19 +309,16 @@ public class Consent implements Action {
                             result.put("consent_granted", true);
                             result.put("message", "Consent granted for purpose: " + requiredPurposeId);
 
-                            logConsentValidations(conn, UUID.fromString(fiduciaryId), UUID.fromString(appId), userId, requiredPurposeId, "VALID");
-
-                            // AuditLogService.logEvent(userId, "CONSENT_VALIDATED", "ConsentRecord", rs.getString("id"), "Purpose granted.", "SUCCESS", "ConsentService");
-
-                        } else {
-                            // Denied, or purpose was not listed (which defaults to denied)
-                            result.put("message", "Consent not granted for purpose: " + requiredPurposeId);
-
-                            // AuditLogService.logEvent(userId, "CONSENT_DENIED", "ConsentRecord", rs.getString("id"), "Purpose explicitly denied or missing.", "FAILURE", "ConsentService");
-
+                            logConsentValidations(conn, UUID.fromString(fiduciaryId), appId, userId, requiredPurposeId, "VALID");
                         }
                     }
                 conn.commit();
+
+                if (granted != null && granted) {
+                    new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_VALIDATED", userId + "-"+requiredPurposeId);
+                } else {
+                    new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_DENIED", userId + "-"+requiredPurposeId);
+                }
             }
         } catch (SQLException e) {
             // Log detailed SQL error internally
@@ -360,7 +358,7 @@ public class Consent implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException
      */
-    private JSONObject withdrawConsent(String userId, String fiduciaryId, String reason, boolean erasure) throws SQLException {
+    private JSONObject withdrawConsent(String userId, UUID fiduciaryId, UUID appId, String reason, boolean erasure) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -388,7 +386,7 @@ public class Consent implements Action {
             // A. Select current active record details
             pstmt = conn.prepareStatement(sqlSelectActive);
             pstmt.setString(1, userId);
-            pstmt.setObject(2, UUID.fromString(fiduciaryId));
+            pstmt.setObject(2, fiduciaryId);
             rs = pstmt.executeQuery();
 
             if (!rs.next()) {
@@ -412,12 +410,12 @@ public class Consent implements Action {
             // --- 3. Determine New (Denied) Consents ---
 
             // Check if policy exists (important for provenance)
-            JSONObject policy = getPolicy(policyId, policyVersion, UUID.fromString(fiduciaryId));
+            JSONObject policy = getPolicy(policyId, policyVersion, fiduciaryId);
             if (policy != null) {
                 // Determine consent expiry
                 currentConsents = CESUtil.appendConsentExpiry(          policy,
                                                                         currentConsents,
-                                                                  action);
+                                                                        action);
             }
 
             // --- 4. Insert New WITHDRAWN Record (Immutability/Provenance) ---
@@ -427,7 +425,7 @@ public class Consent implements Action {
             pstmt.close();
             pstmt = conn.prepareStatement(sqlInsertNew, Statement.RETURN_GENERATED_KEYS);
             pstmt.setString(1, userId);
-            pstmt.setObject(2, UUID.fromString(fiduciaryId));
+            pstmt.setObject(2, fiduciaryId);
             pstmt.setString(3, policyId);
             pstmt.setString(4, policyVersion);
             pstmt.setString(5, action);
@@ -448,8 +446,12 @@ public class Consent implements Action {
             // --- 5. Commit Transaction ---
             conn.commit();
 
-            // --- 6. Trigger Downstream Purge (Asynchronous - Placeholder) ---
-            // purgeService.initiatePurgeRequest(userId, fiduciaryId, "CONSENT_WITHDRAWAL");
+            // --- 6. log audit event
+            if(erasure){
+                new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "ERASURE_REQUEST", reason);
+            }else{
+                new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_WITHDRAWAL", reason);
+            }
 
             UUID finalNewRecordId = newRecordId;
             result =  new JSONObject();
@@ -510,26 +512,7 @@ public class Consent implements Action {
         return fiduciaryId;
     }
 
-    public String getAppId(UUID apiKey, String apiSecret) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-        String appId = null;
-        String sql = "SELECT app_id FROM api_keys WHERE id = ? AND key_value=?";
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, apiKey);
-            pstmt.setString(2, "HASHED_"+apiSecret);
-            rs = pstmt.executeQuery();
-            if(rs.next())
-                appId = rs.getString("app_id");
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-        return appId;
-    }
+
 
     /**
      * Checks if a specific policy version exists for a fiduciary.
@@ -567,7 +550,7 @@ public class Consent implements Action {
                                          Timestamp timestamp, String jurisdiction, String languageSelected,
                                          String consentStatusGeneral, String consentMechanism,
                                          String ipAddress, String userAgent, JSONArray dataPointConsents,
-                                         UUID actionByUserId) throws SQLException {
+                                         UUID appId) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmtDeactivate = null;
@@ -622,8 +605,7 @@ public class Consent implements Action {
             conn.commit(); // Commit transaction
 
             // Audit Log: Log the consent record event
-            // This would typically be an async call to an Audit Log Service
-            // auditLogService.logEvent(actionByUserId, "CONSENT_RECORDED", "ConsentRecord", newConsentId, dataPointConsents.toJSONString(), ipAddress.getHostAddress(), "SUCCESS", "ConsentRecordService");
+            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_GIVEN", dataPointConsents.toJSONString());
 
         } catch (SQLException e) {
             if (conn != null) {
@@ -640,7 +622,6 @@ public class Consent implements Action {
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
     }
-
 
     /**
      * Retrieves the active consent record for a given user and fiduciary.
@@ -786,7 +767,7 @@ public class Consent implements Action {
      * This operation is transactional.
      * @throws SQLException if a database access error occurs.
      */
-    private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID fiduciaryId) throws SQLException {
+    private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID fiduciaryId, UUID appId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtUpdateConsent = null;
         PreparedStatement pstmtDeactivate = null;
@@ -819,6 +800,9 @@ public class Consent implements Action {
             pstmtUpdateConsent.executeUpdate();
 
             conn.commit(); // Commit transaction
+
+            // Audit Log: Log the link user event
+            new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , "LINK_USER", anonymousUserId+"-"+authenticatedUserId);
 
         } catch (SQLException e) {
             if (conn != null) {

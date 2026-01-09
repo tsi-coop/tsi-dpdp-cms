@@ -12,9 +12,9 @@
         "data_categories_involved": ["email_address", "business_name", "industry", "city", "organization_type", "business_start_year","professional_name", "career_start_year", "college_type", "disability","household_income_range"],
         "recipients_or_third_parties": [],
         "retention_policy": "Until account deletion, plus statutory record-keeping period (e.g., 7 years).",
-        "retention_duration_value": 7,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "CONSENT_WITHDRAWN",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "MINUTES",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
