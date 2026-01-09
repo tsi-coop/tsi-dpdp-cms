@@ -4,11 +4,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.BatchDB;
-import org.tsicoop.dpdpcms.framework.PoolDB;
+import org.tsicoop.dpdpcms.util.Constants;
 
 import java.sql.*;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -80,11 +79,9 @@ class CESService {
         Timestamp tsFromInstant = Timestamp.from(Instant.now());
 
         JSONObject recent = getRecentConsent(principalId,lastCESRun);
-        //System.out.println(recent);
         if(recent != null) {
             mechanism = (String) recent.get("mechanism");
-            System.out.println("mechanism:"+mechanism);
-            if (mechanism.equalsIgnoreCase("ERASURE_REQUEST")) {
+            if (mechanism.equalsIgnoreCase(Constants.ACTION_ERASURE_REQUEST)) {
                 handleErasure(recent, principalId, fiduciaryId, tsFromInstant);
             } else {
                 handleRetentionNotification(recent, principalId, fiduciaryId, tsFromInstant);
@@ -188,12 +185,12 @@ class CESService {
                         insertPurgeRequest( principalId,
                                             fiduciaryId,
                                             appid,
-                                            "ERASURE");
+                                            Constants.EVENT_PURGE_INITIATED);
                         // Send purge notification to data processor
                         insertNotification( "APP",
                                             appid,
                                             fiduciaryId,
-                                            "PURGE_NOTIF");
+                                            Constants.NOTIF_PURGE_INIT);
                         // log audit event
                         logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", "ERASURE_REQUEST"+"-"+appid+"-"+purposeId);
                     }
@@ -262,7 +259,7 @@ class CESService {
                     insertNotification( "PRINCIPAL",
                                                     principalId,
                                                     fiduciaryId,
-                                                    "EXPIRY_NOTIFICATION");
+                                                    Constants.NOTIF_EXPIRY_REMINDER);
                 }
             }
         }
@@ -296,15 +293,14 @@ class CESService {
                         // Create Purge Request
                         insertPurgeRequest( principalId,
                                 fiduciaryId,
-                                appid,
-                                "RETENTION_EXPIRED");
+                                appid, Constants.EVENT_PURGE_INITIATED);
                         // Send purge notification to data processor
                         insertNotification( "APP",
                                 appid,
                                 fiduciaryId,
-                                "PURGE_NOTIF");
+                                Constants.NOTIF_PURGE_INIT);
                         // log audit event
-                        logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", "RETENTION_EXPIRY"+"-"+appid+"-"+purposeId);
+                        logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , Constants.EVENT_PURGE_INITIATED, "RETENTION_EXPIRY"+"-"+appid+"-"+purposeId);
                     }
                 }
             }

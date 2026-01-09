@@ -356,7 +356,7 @@ public class User implements Action {
                         if(fiduciaryId==null || fiduciaryId.trim().isEmpty()){
                             fiduciaryId = "00000000-0000-0000-0000-000000000000"; // Admin
                         }
-                        new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId) , "LOGIN_SUCCESS", "");
+                        new Audit().logEventAsync(email, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId) , "LOGIN_SUCCESS", "");
                     }
                 } else {
                     result.put("error", true);

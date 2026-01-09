@@ -1,8 +1,9 @@
-package org.tsicoop.dpdpcms.framework;
+package org.tsicoop.dpdpcms.ces;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.tsicoop.dpdpcms.util.Constants;
 
 import java.io.*;
 import java.time.ZonedDateTime;
@@ -36,34 +37,35 @@ public class CESUtil {
                     break;
                 }
             }
-
+            System.out.println("matchedPurpose:"+matchedPurpose);
             if (matchedPurpose != null) {
                 String startEvent = (String) matchedPurpose.get("retention_start_event");
                 int durationValue = (int)(long)matchedPurpose.get("retention_duration_value");
                 String durationUnit = (String) matchedPurpose.get("retention_duration_unit");
                 ZonedDateTime expiryDate;
 
-                if ("CONSENT_GIVEN".equals(action)) {
-                    if ("CONSENT_GIVEN".equals(startEvent)) {
+                System.out.println("action:"+action);
+                if (Constants.ACTION_CONSENT_GIVEN.equals(action)) {
+                    if (Constants.EVENT_CONSENT_GIVEN.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
                     } else {
                         // If given but policy event is different, leave null or default
                         expiryDate = null;
                     }
-                } else if ("CONSENT_WITHDRAWN".equals(action)) {
+                } else if (Constants.ACTION_CONSENT_WITHDRAWN.equals(action)) {
                     consent.put("consent_granted",false);
-                    if ("CONSENT_WITHDRAWN".equals(startEvent)) {
+                    if (Constants.EVENT_CONSENT_WITHDRAWN.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
-                    } else if ("CONSENT_GIVEN".equals(startEvent)) {
+                    } else if (Constants.EVENT_CONSENT_GIVEN.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
                     } else {
                         expiryDate = null;
                     }
-                } else if ("ERASURE_REQUEST".equals(action)) {
+                } else if (Constants.ACTION_ERASURE_REQUEST.equals(action)) {
                     consent.put("consent_granted",false);
-                    if ("CONSENT_WITHDRAWN".equals(startEvent)) {
+                    if (Constants.EVENT_CONSENT_WITHDRAWN.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
-                    } else if ("CONSENT_GIVEN".equals(startEvent)) {
+                    } else if (Constants.EVENT_CONSENT_GIVEN.equals(startEvent)) {
                         expiryDate = now;
                     } else {
                         expiryDate = null;
@@ -77,6 +79,7 @@ public class CESUtil {
             }
             result.add(consent);
         }
+        System.out.println("result:"+result);
         return result;
     }
 

@@ -1,5 +1,7 @@
 package org.tsicoop.dpdpcms.service.v1; // Package changed as requested
 
+import org.tsicoop.dpdpcms.ces.CESUtil;
+import org.tsicoop.dpdpcms.util.Constants;
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,7 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement; // For Statement.RETURN_GENERATED_KEYS
 import java.sql.Timestamp;
-import java.net.InetAddress; // For INET type
 import java.time.Instant;
 import java.util.*;
 
@@ -118,7 +119,7 @@ public class Consent implements Action {
                         // Determine consent expiry
                         JSONArray revisedDataPoints =  CESUtil.appendConsentExpiry( policy,
                                                                                     dataPointConsents,
-                                                                              "CONSENT_GIVEN");
+                                                                                    Constants.ACTION_CONSENT_GIVEN);
 
                         output = recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
                                 consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, appId);
@@ -363,11 +364,11 @@ public class Consent implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String action = "CONSENT_WITHDRAWN";
+        String action = Constants.ACTION_CONSENT_WITHDRAWN;
         JSONObject result = null;
 
         if(erasure)
-            action = "ERASURE_REQUEST";
+            action = Constants.ACTION_ERASURE_REQUEST;
 
         // --- 1. Find the current ACTIVE record and Policy context ---
         // This query also ensures the user exists and has a record.
@@ -448,9 +449,9 @@ public class Consent implements Action {
 
             // --- 6. log audit event
             if(erasure){
-                new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "ERASURE_REQUEST", reason);
+                new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_ERASURE_REQUEST, reason);
             }else{
-                new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_WITHDRAWAL", reason);
+                new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_CONSENT_WITHDRAWN, reason);
             }
 
             UUID finalNewRecordId = newRecordId;
@@ -802,7 +803,7 @@ public class Consent implements Action {
             conn.commit(); // Commit transaction
 
             // Audit Log: Log the link user event
-            new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , "LINK_USER", anonymousUserId+"-"+authenticatedUserId);
+            new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , Constants.ACTION_LINK_USER, anonymousUserId+"-"+authenticatedUserId);
 
         } catch (SQLException e) {
             if (conn != null) {
