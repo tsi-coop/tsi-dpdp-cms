@@ -62,14 +62,14 @@ public class Compliance implements Action {
         JSONObject output = null;
         JSONArray outputArray = null;
 
-        // Placeholder for current CMS user ID (from authentication context)
-        UUID actionByCmsUserId = UUID.fromString("00000000-0000-0000-0000-000000000001"); // Example Admin User ID
-
         try {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
+            // For client APIs
             String apiKey = req.getHeader("X-API-Key");
             String apiSecret = req.getHeader("X-API-Secret");
+            // For Admin APIs
+            UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
 
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
@@ -89,7 +89,7 @@ public class Compliance implements Action {
 
             switch (func.toLowerCase()) {
                 // --- Purge Request Management ---
-                case "initiate_purge_request": // Called by other services (e.g., GrievanceService for Erasure)
+               /* case "initiate_purge_request": // Called by other services (e.g., GrievanceService for Erasure)
                     String userId = (String) input.get("user_id");
                     String triggerEvent = (String) input.get("trigger_event");
                     JSONArray dataCategoriesToPurgeJson = (JSONArray) input.get("data_categories_to_purge");
@@ -97,7 +97,7 @@ public class Compliance implements Action {
                     UUID processorId = null; // Optional, if purge is specific to a processor
                     String processorIdStr = (String) input.get("processor_id");
                     if (processorIdStr != null && !processorIdStr.isEmpty()) {
-                        try { processorId = UUID.fromString(processorIdStr); } catch (IllegalArgumentException e) { /* handled below */ }
+                        try { processorId = UUID.fromString(processorIdStr); } catch (IllegalArgumentException e) { *//* handled below *//* }
                     }
                     if (processorIdStr != null && processorId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid 'processor_id' format for purge request.", req.getRequestURI());
@@ -111,7 +111,7 @@ public class Compliance implements Action {
 
                     output = initiatePurgeRequest(userId, fiduciaryId, processorId, triggerEvent, dataCategoriesToPurgeJson, processingPurposesAffectedJson,"MANUAL_PURGE");
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
-                    break;
+                    break;*/
 
                 case "update_purge_status":
                     UUID purgeRequestId = null;
@@ -125,7 +125,7 @@ public class Compliance implements Action {
                     }
                     String status = (String) input.get("status"); // COMPLETED, FAILED, IN_PROGRESS
                     String details = (String) input.get("details");
-                    updatePurgeStatus(purgeRequestId, status, details);
+                    updatePurgeStatus(purgeRequestId, status, details, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Purge status confirmed."); }});
                     break;
 
@@ -220,7 +220,7 @@ public class Compliance implements Action {
      */
     private JSONObject initiatePurgeRequest(String userId, UUID fiduciaryId, UUID processorId, String triggerEvent,
                                             JSONArray dataCategoriesToPurge, JSONArray processingPurposesAffected,
-                                            String status) throws SQLException {
+                                            String status, String postedBy) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -268,12 +268,14 @@ public class Compliance implements Action {
      * Confirms the status of a purge request (called by DF/DP).
      * @throws SQLException if a database access error occurs.
      */
-    private void updatePurgeStatus(UUID purgeRequestId, String confirmationStatus, String details) throws SQLException {
+    private void updatePurgeStatus(UUID purgeRequestId, String confirmationStatus, String details, UUID loginUserId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
+        ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
         String sql = "UPDATE purge_requests SET status = ?, details = ?, last_updated_at = NOW() WHERE id = ?";
+        String sql2 = "select user_id,fiduciary_id from  purge_requests WHERE id = ?";
 
         try {
             conn = pool.getConnection();
@@ -288,8 +290,14 @@ public class Compliance implements Action {
             }
 
             // Audit Log: Log the purge confirmation event
-            // auditLogService.logEvent(updatedByUserId, "PURGE_CONFIRMED", "PurgeRequest", purgeRequestId, details, null, "SUCCESS", "DataRetentionService");
-
+            pstmt = conn.prepareStatement(sql2);
+            pstmt.setObject(1, purgeRequestId);
+            rs = pstmt.executeQuery();
+            if(rs.next()) {
+                String userId = rs.getString("user_id");
+                UUID fiduciaryId = UUID.fromString(rs.getString("fiduciary_id"));
+                new Audit().logEventAsync(userId, fiduciaryId, "USER", loginUserId, confirmationStatus, details);
+            }
         } finally {
             pool.cleanup(null, pstmt, conn);
         }

@@ -118,6 +118,35 @@ public class InputProcessor {
         return email;
     }
 
+    public static UUID getAuthenticatedUserId(HttpServletRequest req){
+        JSONObject authToken = null;
+        UUID loginUserId = null;
+        String email = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = null;
+        String sql = "SELECT id FROM users WHERE email=?";
+
+        try {
+            authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
+            email = (String) authToken.get("email");
+
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, email);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                loginUserId = UUID.fromString(rs.getString("id"));
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return loginUserId;
+    }
+
     public static String getName(HttpServletRequest req){
         JSONObject authToken = null;
         String name = null;
@@ -142,41 +171,7 @@ public class InputProcessor {
         return role;
     }
 
-    public static String getAccountType(HttpServletRequest req){
-        JSONObject authToken = null;
-        String type = null;
-        try {
-            authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
-            type = (String) authToken.get("type");
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        return type;
-    }
 
-    public static String getState(HttpServletRequest req){
-        JSONObject authToken = null;
-        String state = null;
-        try {
-            authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
-            state = (String) authToken.get("state");
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        return state;
-    }
-
-    public static String getCity(HttpServletRequest req){
-        JSONObject authToken = null;
-        String city = null;
-        try {
-            authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
-            city = (String) authToken.get("city");
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        return city;
-    }
 
 
 
