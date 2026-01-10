@@ -3,7 +3,7 @@ package org.tsicoop.dpdpcms.ces;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.tsicoop.dpdpcms.framework.BatchDB;
+import org.tsicoop.dpdpcms.framework.PoolDB;
 import org.tsicoop.dpdpcms.util.Constants;
 
 import java.sql.*;
@@ -19,12 +19,10 @@ import java.util.UUID;
  */
 class CESService {
 
-    private BatchDB batchdb = null;
+    private PoolDB pool = null;
     private Connection conn = null;
 
-    public CESService(BatchDB batchdb){
-        this.batchdb = batchdb;
-        this.conn = batchdb.getConnection();
+    public CESService(){
     }
 
     /**
@@ -39,6 +37,8 @@ class CESService {
         JSONObject principal = null;
 
         try{
+            pool = new PoolDB();
+            conn = pool.getConnection();
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, limit);
             stmt.setInt(2, offset);
@@ -52,8 +52,7 @@ class CESService {
                 principals.add(principal);
             }
         }finally {
-            batchdb.close(rs);
-            batchdb.close(stmt);
+            pool.cleanup(rs,stmt,conn);
         }
         return principals;
     }
@@ -93,7 +92,7 @@ class CESService {
 
     private JSONObject getRecentConsent(String principalId, Timestamp lastCESRun) throws Exception{
         JSONObject recent = null;
-        PreparedStatement checkStmt = null;
+        PreparedStatement stmt = null;
         ResultSet rs = null;
         String mechanism = null;
         Timestamp createdAt = null;
@@ -101,9 +100,11 @@ class CESService {
 
         String checkSql = "SELECT id, consent_mechanism, data_point_consents, created_at FROM consent_records WHERE user_id = ? order by created_at desc LIMIT 1";
         try{
-            checkStmt = conn.prepareStatement(checkSql);
-            checkStmt.setString(1, principalId);
-            rs = checkStmt.executeQuery();
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            stmt = conn.prepareStatement(checkSql);
+            stmt.setString(1, principalId);
+            rs = stmt.executeQuery();
             if (rs.next()) {
                 String recordId = rs.getString("id");
                 mechanism = (String)  rs.getString("consent_mechanism");
@@ -122,8 +123,7 @@ class CESService {
                 recent.put("consents",consents);
             }
         }finally {
-            batchdb.close(rs);
-            batchdb.close(checkStmt);
+            pool.cleanup(rs,stmt,conn);
         }
         return recent;
     }
@@ -135,6 +135,8 @@ class CESService {
         ResultSet rs = null;
 
         try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, fiduciaryId);
             pstmt.setString(2, userId);
@@ -151,8 +153,7 @@ class CESService {
             }
             return result;
         } finally {
-            batchdb.close(rs);
-            batchdb.close(pstmt);
+            pool.cleanup(rs,pstmt,conn);
         }
     }
 
@@ -209,6 +210,8 @@ class CESService {
         JSONObject appIdObj = null;
 
         try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, userId);
             stmt.setObject(2, UUID.fromString(fiduciaryId));
@@ -224,8 +227,7 @@ class CESService {
             // Handle UUID parsing issues
             return appIds;
         } finally {
-            batchdb.close(rs);
-            batchdb.close(stmt);
+            pool.cleanup(rs,stmt,conn);
         }
         return appIds;
     }
@@ -324,6 +326,8 @@ class CESService {
         ResultSet rs = null;
 
         try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
             stmt = conn.prepareStatement(sql);
 
             stmt.setString(1, userId);
@@ -337,8 +341,7 @@ class CESService {
                 response.put("id", rs.getObject("id").toString());
             }
         } finally {
-            batchdb.close(rs);
-            batchdb.close(stmt);
+            pool.cleanup(rs,stmt,conn);
         }
         return response;
     }
@@ -359,6 +362,8 @@ class CESService {
         ResultSet rs = null;
 
         try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, recipientType);
             stmt.setString(2, recipientId);
@@ -371,8 +376,7 @@ class CESService {
                 response.put("id", rs.getObject("id").toString());
             }
         } finally {
-            batchdb.close(rs);
-            batchdb.close(stmt);
+            pool.cleanup(rs,stmt,conn);
         }
         return response;
     }
@@ -388,6 +392,8 @@ class CESService {
         PreparedStatement stmt = null;
 
         try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, mechanism);
             stmt.setTimestamp(2, lastCESRun);
@@ -402,7 +408,7 @@ class CESService {
                 response.put("message", "Principal not found.");
             }
         } finally {
-            batchdb.close(stmt);
+            pool.cleanup(null,stmt,conn);
         }
         return response;
     }

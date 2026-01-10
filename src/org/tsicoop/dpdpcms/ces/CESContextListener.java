@@ -4,8 +4,6 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 import org.json.simple.JSONObject;
-import org.tsicoop.dpdpcms.ces.CESLauncher;
-import org.tsicoop.dpdpcms.framework.BatchDB;
 import org.tsicoop.dpdpcms.framework.SystemConfig;
 
 import java.sql.Timestamp;
@@ -52,18 +50,16 @@ public class CESContextListener implements ServletContextListener {
             } catch (Exception e) {
                 System.err.println("CES RUN ERROR: Automated compliance batch failed: " + e.getMessage());
             }
-        }, 5, 3, TimeUnit.MINUTES);
+        }, 2, 2, TimeUnit.MINUTES);
     }
 
     public void enforce(Properties config) {
         System.out.println("Starting CES at " + LocalDateTime.now());
-        BatchDB batchdb = null;
         JSONObject principal = null;
         CESService cesService = null;
 
         try {
-            batchdb = new BatchDB(config);
-            cesService = new CESService(batchdb);
+            cesService = new CESService();
             // 1. Iterate through all active data principals in batches
             int offset = 0;
             boolean hasMore = true;
