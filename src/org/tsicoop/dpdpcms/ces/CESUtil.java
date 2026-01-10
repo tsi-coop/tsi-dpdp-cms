@@ -37,14 +37,12 @@ public class CESUtil {
                     break;
                 }
             }
-            System.out.println("matchedPurpose:"+matchedPurpose);
             if (matchedPurpose != null) {
                 String startEvent = (String) matchedPurpose.get("retention_start_event");
                 int durationValue = (int)(long)matchedPurpose.get("retention_duration_value");
                 String durationUnit = (String) matchedPurpose.get("retention_duration_unit");
                 ZonedDateTime expiryDate;
 
-                System.out.println("action:"+action);
                 if (Constants.ACTION_CONSENT_GIVEN.equals(action)) {
                     if (Constants.EVENT_CONSENT_GIVEN.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);

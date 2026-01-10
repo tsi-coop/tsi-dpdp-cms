@@ -6,12 +6,16 @@
     "fiduciary_id": {
       "type": "string"
     },
+    "id": {
+      "type": "string"
+    },
     "_func": {
       "type": "string"
     }
   },
   "required": [
     "fiduciary_id",
+    "id",
     "_func"
   ]
 }
