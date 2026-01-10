@@ -33,7 +33,7 @@ public class CESContextListener implements ServletContextListener {
      */
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        System.out.println("TSI DPDP CMS: Initializing Compliance Enforcement background worker...");
+        System.out.println("Initializing Compliance Enforcement background worker...");
 
         // Use a single-thread scheduled executor to ensure only one instance
         // of the batch runs at any given time.

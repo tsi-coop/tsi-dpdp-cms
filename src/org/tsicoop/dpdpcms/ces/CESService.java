@@ -61,7 +61,7 @@ class CESService {
      * Logic to identify records where consent was withdrawn and retention period has passed.
      */
     public void processPrincipal(String fiduciaryId, String principalId, Timestamp lastCESRun, String lastConsentMechanism) throws Exception {
-        System.out.println("Processing "+principalId);
+        //System.out.println("Processing "+principalId);
         String mechanism = null;
 
         /**
@@ -112,7 +112,7 @@ class CESService {
                 consents = (JSONArray) new JSONParser().parse((String) rs.getString("data_point_consents"));
                 if(lastCESRun != null){
                     if(createdAt.before(lastCESRun)){
-                        System.out.println("Skipping Principal: " + principalId + " | Reason: No Recent Consent");
+                        //System.out.println("Skipping Principal: " + principalId + " | Reason: No Recent Consent");
                         return recent;
                     }
                 }
@@ -255,7 +255,7 @@ class CESService {
                 notifInstant = expiryinstant.minus(5, ChronoUnit.DAYS);
                 tsNotif = Timestamp.from(notifInstant);
                 if(tsNotif.before(tsFromInstant) && tsFromInstant.before(tsExpiry)){
-                    System.out.println("Sending retention notification to : " + principalId + " | Purpose: " + purposeId);
+                    //System.out.println("Sending retention notification to : " + principalId + " | Purpose: " + purposeId);
                     // Create notification
                     // Send purge notification to data processor
                     insertNotification( "PRINCIPAL",
@@ -280,10 +280,10 @@ class CESService {
             purposeId = (String) consent.get("data_point_id");
             granted = (boolean) consent.get("consent_granted");
             expiry = (String) consent.get("consent_expiry");
-            System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
+            //System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
             if(expiry != null){
                 tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
-                System.out.println("TS Expiry:"+tsExpiry+" Instant:"+tsFromInstant);
+                //System.out.println("TS Expiry:"+tsExpiry+" Instant:"+tsFromInstant);
                 if(tsExpiry.before(tsFromInstant)){
                     // Identify Apps (Data Processors)
                     List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
