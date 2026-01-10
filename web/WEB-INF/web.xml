@@ -5,15 +5,23 @@
 		xsi:schemaLocation = "https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
 		version = "5.0"
 		metadata-complete = "false">
-<filter>
-	<filter-name>TSI_DPDP_CMS</filter-name>
-	<filter-class>org.tsicoop.dpdpcms.framework.InterceptingFilter</filter-class>
-</filter>
+	<!--
+  Configuration for the Compliance Enforcement Service (CES) Listener.
+  This ensures the background scheduler starts when the app is deployed.
+-->
+	<listener>
+		<listener-class>org.tsicoop.dpdpcms.ces.CESContextListener</listener-class>
+	</listener>
+
+	<filter>
+		<filter-name>TSI_DPDP_CMS</filter-name>
+		<filter-class>org.tsicoop.dpdpcms.framework.InterceptingFilter</filter-class>
+	</filter>
 	
-<filter-mapping>
-	<filter-name>TSI_DPDP_CMS</filter-name>
-	<url-pattern>/api/*</url-pattern>
-	<dispatcher>REQUEST</dispatcher>
-	<dispatcher>FORWARD</dispatcher>
-</filter-mapping>
+	<filter-mapping>
+		<filter-name>TSI_DPDP_CMS</filter-name>
+		<url-pattern>/api/*</url-pattern>
+		<dispatcher>REQUEST</dispatcher>
+		<dispatcher>FORWARD</dispatcher>
+	</filter-mapping>
 </web-app>
