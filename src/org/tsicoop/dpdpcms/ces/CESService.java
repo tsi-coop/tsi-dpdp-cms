@@ -4,6 +4,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.PoolDB;
+import org.tsicoop.dpdpcms.service.v1.Audit;
 import org.tsicoop.dpdpcms.util.Constants;
 
 import java.sql.*;
@@ -19,9 +20,6 @@ import java.util.UUID;
  */
 class CESService {
 
-    private PoolDB pool = null;
-    private Connection conn = null;
-
     public CESService(){
     }
 
@@ -35,6 +33,8 @@ class CESService {
         PreparedStatement stmt = null;
         ResultSet rs = null;
         JSONObject principal = null;
+        PoolDB pool = null;
+        Connection conn = null;
 
         try{
             pool = new PoolDB();
@@ -97,6 +97,8 @@ class CESService {
         String mechanism = null;
         Timestamp createdAt = null;
         JSONArray consents = null;
+        PoolDB pool = null;
+        Connection conn = null;
 
         String checkSql = "SELECT id, consent_mechanism, data_point_consents, created_at FROM consent_records WHERE user_id = ? order by created_at desc LIMIT 1";
         try{
@@ -128,34 +130,7 @@ class CESService {
         return recent;
     }
 
-    private JSONObject logEventToDb(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) throws SQLException {
-        String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details) " +
-                "VALUES (uuid_generate_v4(), ?, NOW(), ?, ?, ?, ?, ?) RETURNING id";
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
 
-        try {
-            pool = new PoolDB();
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, fiduciaryId);
-            pstmt.setString(2, userId);
-            pstmt.setString(3, serviceType);
-            pstmt.setObject(4, serviceId);
-            pstmt.setString(5, auditAction);
-            pstmt.setString(6, contextDetails);
-
-            rs = pstmt.executeQuery();
-            JSONObject result = new JSONObject();
-            if (rs.next()) {
-                result.put("success", true);
-                result.put("id", rs.getObject("id").toString());
-            }
-            return result;
-        } finally {
-            pool.cleanup(rs,pstmt,conn);
-        }
-    }
 
     private void handleErasure(JSONObject recent, String principalId, String fiduciaryId, Timestamp tsFromInstant) throws Exception{
         JSONObject consent = null;
@@ -193,7 +168,7 @@ class CESService {
                                             fiduciaryId,
                                             Constants.NOTIF_PURGE_INIT);
                         // log audit event
-                        logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", "ERASURE_REQUEST"+"-"+appid+"-"+purposeId);
+                        new Audit().logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", "ERASURE_REQUEST"+"-"+appid+"-"+purposeId);
                     }
                 }
             }
@@ -208,6 +183,8 @@ class CESService {
         PreparedStatement stmt = null;
         ResultSet rs = null;
         JSONObject appIdObj = null;
+        PoolDB pool = null;
+        Connection conn = null;
 
         try {
             pool = new PoolDB();
@@ -302,7 +279,7 @@ class CESService {
                                 fiduciaryId,
                                 Constants.NOTIF_PURGE_INIT);
                         // log audit event
-                        logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , Constants.EVENT_PURGE_INITIATED, "RETENTION_EXPIRY"+"-"+appid+"-"+purposeId);
+                        new Audit().logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , Constants.EVENT_PURGE_INITIATED, "RETENTION_EXPIRY"+"-"+appid+"-"+purposeId);
                     }
                 }
             }
@@ -324,6 +301,8 @@ class CESService {
 
         PreparedStatement stmt = null;
         ResultSet rs = null;
+        PoolDB pool = null;
+        Connection conn = null;
 
         try {
             pool = new PoolDB();
@@ -360,6 +339,8 @@ class CESService {
 
         PreparedStatement stmt = null;
         ResultSet rs = null;
+        PoolDB pool = null;
+        Connection conn = null;
 
         try {
             pool = new PoolDB();
@@ -390,6 +371,8 @@ class CESService {
         String sql = "UPDATE data_principal SET last_consent_mechanism = ?, last_ces_run=?::timestamp WHERE user_id = ? and fiduciary_id=?";
 
         PreparedStatement stmt = null;
+        PoolDB pool = null;
+        Connection conn = null;
 
         try {
             pool = new PoolDB();

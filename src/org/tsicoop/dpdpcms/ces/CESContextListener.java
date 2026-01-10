@@ -4,6 +4,7 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 import org.json.simple.JSONObject;
+import org.tsicoop.dpdpcms.framework.PoolDB;
 import org.tsicoop.dpdpcms.framework.SystemConfig;
 
 import java.sql.Timestamp;
@@ -44,9 +45,8 @@ public class CESContextListener implements ServletContextListener {
         // Period: 2 minutes (for testing purposes)
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                System.out.println("CES RUN: Starting automated incremental check...");
+                System.out.println("CES RUN: Starting automated run at "+LocalDateTime.now()+" Pool Status:"+PoolDB.getPoolStatus());
                 this.enforce(SystemConfig.getAppConfig());
-
             } catch (Exception e) {
                 System.err.println("CES RUN ERROR: Automated compliance batch failed: " + e.getMessage());
             }
@@ -54,7 +54,6 @@ public class CESContextListener implements ServletContextListener {
     }
 
     public void enforce(Properties config) {
-        System.out.println("Starting CES at " + LocalDateTime.now());
         JSONObject principal = null;
         CESService cesService = null;
 
@@ -81,11 +80,10 @@ public class CESContextListener implements ServletContextListener {
                                 (String) principal.get("consent_mechanism"));
                     }
                     offset += BATCH_SIZE;
-                    System.out.println("Processed batch ending at offset: " + offset);
+                    //System.out.println("Processed batch ending at offset: " + offset);
                 }
             }
-
-            System.out.println("CES execution completed successfully at " + LocalDateTime.now());
+            //System.out.println("CES execution completed successfully at " + LocalDateTime.now());
         } catch (Exception e) {
             throw new RuntimeException("Compliance Batch failed due to Database Error: " + e.getMessage(), e);
         }

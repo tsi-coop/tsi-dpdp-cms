@@ -314,12 +314,6 @@ public class Consent implements Action {
                         }
                     }
                 conn.commit();
-
-                if (granted != null && granted) {
-                    new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_VALIDATED", userId + "-"+requiredPurposeId);
-                } else {
-                    new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_DENIED", userId + "-"+requiredPurposeId);
-                }
             }
         } catch (SQLException e) {
             // Log detailed SQL error internally
@@ -331,6 +325,12 @@ public class Consent implements Action {
             result.put("message", "Internal error: Failed to parse stored granular consent data.");
         } finally {
             pool.cleanup(null,null,conn);
+        }
+
+        if (granted != null && granted) {
+            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_VALIDATED", userId + "-"+requiredPurposeId);
+        } else {
+            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_DENIED", userId + "-"+requiredPurposeId);
         }
         return result;
     }
@@ -447,13 +447,6 @@ public class Consent implements Action {
             // --- 5. Commit Transaction ---
             conn.commit();
 
-            // --- 6. log audit event
-            if(erasure){
-                new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_ERASURE_REQUEST, reason);
-            }else{
-                new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_CONSENT_WITHDRAWN, reason);
-            }
-
             UUID finalNewRecordId = newRecordId;
             result =  new JSONObject();
             result.put("success", true);
@@ -470,6 +463,13 @@ public class Consent implements Action {
         } finally {
             if (conn != null) conn.setAutoCommit(true);
             pool.cleanup(null, null, conn);
+        }
+
+        // --- log audit event
+        if(erasure){
+            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_ERASURE_REQUEST, reason);
+        }else{
+            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_CONSENT_WITHDRAWN, reason);
         }
         return result;
     }
@@ -558,6 +558,7 @@ public class Consent implements Action {
         PreparedStatement pstmtInsert = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
+        boolean recorded = false;
 
         String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
         String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, TRUE, NOW(), NOW()) RETURNING id";
@@ -605,9 +606,7 @@ public class Consent implements Action {
 
             conn.commit(); // Commit transaction
 
-            // Audit Log: Log the consent record event
-            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_GIVEN", dataPointConsents.toJSONString());
-
+            recorded = true;
         } catch (SQLException e) {
             if (conn != null) {
                 try {
@@ -620,6 +619,11 @@ public class Consent implements Action {
         } finally {
             pool.cleanup(rs, pstmtInsert, null); // Cleanup rs and pstmtInsert
             pool.cleanup(null, pstmtDeactivate, conn); // Cleanup pstmtDeactivate and conn
+        }
+
+        if(recorded){
+            // Audit Log: Log the consent record event
+            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_GIVEN", dataPointConsents.toJSONString());
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
     }
@@ -774,7 +778,6 @@ public class Consent implements Action {
         PreparedStatement pstmtDeactivate = null;
         PoolDB pool = new PoolDB();
         String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
-
 
         try {
             conn = pool.getConnection();

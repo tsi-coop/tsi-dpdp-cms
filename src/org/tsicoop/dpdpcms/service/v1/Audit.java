@@ -141,24 +141,27 @@ public class Audit implements Action {
         });
     }
 
-    private JSONObject logEventToDb(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) throws SQLException {
+    public JSONObject logEventToDb(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) throws SQLException {
         String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details) " +
                 "VALUES (uuid_generate_v4(), ?, NOW(), ?, ?, ?, ?, ?)";
-
+        PreparedStatement pstmt = null;
+        Connection conn = null;
         PoolDB pool = new PoolDB();
-        try (Connection conn = pool.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, fiduciaryId);
             pstmt.setString(2, userId);
             pstmt.setString(3, serviceType);
             pstmt.setObject(4, serviceId);
             pstmt.setString(5, auditAction);
             pstmt.setString(6, contextDetails);
-
             pstmt.executeUpdate();
-            return new JSONObject() {{ put("success", true); }};
+        }catch (Exception e){}
+        finally{
+            pool.cleanup(null,pstmt,conn);
         }
+        return new JSONObject() {{ put("success", true); }};
     }
 
     private JSONArray listAuditLogsFromDb(String search, UUID fiduciaryId, String serviceType, String action, int page, int limit) throws SQLException {
@@ -183,33 +186,35 @@ public class Audit implements Action {
         params.add((page - 1) * limit);
 
         PoolDB pool = new PoolDB();
-        try (Connection conn = pool.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql.toString());
 
             for (int i = 0; i < params.size(); i++) {
                 pstmt.setObject(i + 1, params.get(i));
             }
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    JSONObject log = new JSONObject();
-                    log.put("id", rs.getObject("id").toString());
-                    log.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
-                    log.put("user_id", rs.getString("user_id"));
-                    log.put("service_type", rs.getString("service_type"));
-                    log.put("service_id", rs.getString("service_id"));
-                    log.put("audit_action", rs.getString("audit_action"));
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                JSONObject log = new JSONObject();
+                log.put("id", rs.getObject("id").toString());
+                log.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
+                log.put("user_id", rs.getString("user_id"));
+                log.put("service_type", rs.getString("service_type"));
+                log.put("service_id", rs.getString("service_id"));
+                log.put("audit_action", rs.getString("audit_action"));
 
-                    // Parse details if they look like JSON, otherwise return as string
-                    String details = rs.getString("context_details");
-                    try {
-                        log.put("context_details", new JSONParser().parse(details));
-                    } catch (Exception e) {
-                        log.put("context_details", details);
-                    }
-                    logs.add(log);
-                }
+                // Parse details if they look like JSON, otherwise return as string
+                String details = rs.getString("context_details");
+                log.put("context_details", details);
+                logs.add(log);
             }
+        }catch (Exception e){}
+        finally{
+            pool.cleanup(rs,pstmt,conn);
         }
         return logs;
     }
@@ -217,29 +222,34 @@ public class Audit implements Action {
     private Optional<JSONObject> getAuditLogEntryFromDb(UUID id) throws SQLException {
         String sql = "SELECT * FROM audit_logs WHERE id = ?";
         PoolDB pool = new PoolDB();
-        try (Connection conn = pool.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try{
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    JSONObject log = new JSONObject();
-                    log.put("id", rs.getObject("id").toString());
-                    log.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
-                    log.put("user_id", rs.getString("user_id"));
-                    log.put("service_type", rs.getString("service_type"));
-                    log.put("service_id", rs.getString("service_id"));
-                    log.put("audit_action", rs.getString("audit_action"));
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                JSONObject log = new JSONObject();
+                log.put("id", rs.getObject("id").toString());
+                log.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
+                log.put("user_id", rs.getString("user_id"));
+                log.put("service_type", rs.getString("service_type"));
+                log.put("service_id", rs.getString("service_id"));
+                log.put("audit_action", rs.getString("audit_action"));
 
-                    String details = rs.getString("context_details");
-                    try {
-                        log.put("context_details", new JSONParser().parse(details));
-                    } catch (Exception e) {
-                        log.put("context_details", details);
-                    }
-                    return Optional.of(log);
+                String details = rs.getString("context_details");
+                try {
+                    log.put("context_details", new JSONParser().parse(details));
+                } catch (Exception e) {
+                    log.put("context_details", details);
                 }
+                return Optional.of(log);
             }
+        }catch(Exception e){}
+        finally{
+            pool.cleanup(rs,pstmt,conn);
         }
         return Optional.empty();
     }

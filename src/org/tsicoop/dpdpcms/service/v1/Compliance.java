@@ -273,6 +273,9 @@ public class Compliance implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
+        String userId = null;
+        UUID fiduciaryId = null;
+        boolean updated = false;
 
         String sql = "UPDATE purge_requests SET status = ?, details = ?, last_updated_at = NOW() WHERE id = ?";
         String sql2 = "select user_id,fiduciary_id from  purge_requests WHERE id = ?";
@@ -294,12 +297,15 @@ public class Compliance implements Action {
             pstmt.setObject(1, purgeRequestId);
             rs = pstmt.executeQuery();
             if(rs.next()) {
-                String userId = rs.getString("user_id");
-                UUID fiduciaryId = UUID.fromString(rs.getString("fiduciary_id"));
-                new Audit().logEventAsync(userId, fiduciaryId, "USER", loginUserId, confirmationStatus, details);
+                userId = rs.getString("user_id");
+                fiduciaryId = UUID.fromString(rs.getString("fiduciary_id"));
+                updated = true;
             }
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+        if(updated) {
+            new Audit().logEventAsync(userId, fiduciaryId, "USER", loginUserId, confirmationStatus, details);
         }
     }
 

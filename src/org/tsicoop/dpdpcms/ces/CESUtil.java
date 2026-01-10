@@ -77,7 +77,6 @@ public class CESUtil {
             }
             result.add(consent);
         }
-        System.out.println("result:"+result);
         return result;
     }
 
