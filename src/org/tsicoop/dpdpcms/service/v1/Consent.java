@@ -804,10 +804,6 @@ public class Consent implements Action {
             pstmtUpdateConsent.executeUpdate();
 
             conn.commit(); // Commit transaction
-
-            // Audit Log: Log the link user event
-            new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , Constants.ACTION_LINK_USER, anonymousUserId+"-"+authenticatedUserId);
-
         } catch (SQLException e) {
             if (conn != null) {
                 try {
@@ -820,5 +816,8 @@ public class Consent implements Action {
         } finally {
             pool.cleanup(null, pstmtUpdateConsent, conn);
         }
+
+        // Audit Log: Log the link user event
+        new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , Constants.ACTION_LINK_USER, anonymousUserId+"-"+authenticatedUserId);
     }
 }

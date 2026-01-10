@@ -137,12 +137,13 @@ public class InputProcessor {
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, email);
             rs = pstmt.executeQuery();
-
             if (rs.next()) {
                 loginUserId = UUID.fromString(rs.getString("id"));
             }
         }catch(Exception e){
             e.printStackTrace();
+        }finally{
+            pool.cleanup(rs,pstmt,conn);
         }
         return loginUserId;
     }
@@ -170,10 +171,6 @@ public class InputProcessor {
         }
         return role;
     }
-
-
-
-
 
     public static JSONObject getAdminAuthToken(HttpServletRequest req, HttpServletResponse res) throws Exception{
         JSONObject tokenDetails = null;
