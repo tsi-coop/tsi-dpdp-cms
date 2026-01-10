@@ -29,7 +29,7 @@ import java.util.concurrent.Executors;
 public class Audit implements Action {
 
     // Thread pool for background logging to minimize latency on core business logic
-    private static final ExecutorService auditExecutor = Executors.newFixedThreadPool(10);
+    private static final ExecutorService auditExecutor = Executors.newFixedThreadPool(2);
 
     @Override
     public void post(HttpServletRequest req, HttpServletResponse res) {

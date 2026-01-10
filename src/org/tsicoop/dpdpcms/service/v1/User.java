@@ -288,6 +288,7 @@ public class User implements Action {
         JSONObject result = new JSONObject();
         String userId = null;
         String fiduciaryId = null;
+        boolean login = false;
 
         // Query by username or email
         String sql = "SELECT u.id, u.username, u.email, u.password_hash, u.status, u.mfa_enabled, u.role, u.fiduciary_id, f.name FROM users u LEFT OUTER JOIN fiduciaries f ON u.fiduciary_id = f.id WHERE (u.username = ? OR u.email = ?)";
@@ -353,32 +354,36 @@ public class User implements Action {
                         result.put("fiduciary_name", fiduciaryName);
 
                         // Log Audit Event
-                        if(fiduciaryId==null || fiduciaryId.trim().isEmpty()){
-                            fiduciaryId = "00000000-0000-0000-0000-000000000000"; // Admin
-                        }
-                        new Audit().logEventAsync(email, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId) , "LOGIN_SUCCESS", "");
+                        login = true;
                     }
                 } else {
                     result.put("error", true);
                     result.put("status_code", HttpServletResponse.SC_UNAUTHORIZED);
                     result.put("error_message", "Invalid credentials.");
                     result.put("error_details", "Password mismatch.");
-
-                    // Log Audit Event
-                    new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId) , "LOGIN_FAILURE", "Password mismatch");
                 }
             } else {
                 result.put("error", true);
                 result.put("status_code", HttpServletResponse.SC_UNAUTHORIZED);
                 result.put("error_message", "Invalid credentials.");
                 result.put("error_details", "User not found.");
-
-                // Log Audit Event
-                new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId) , "LOGIN_FAILURE", "User not found");
             }
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
+
+        // Log Audit Event
+        if(fiduciaryId==null || fiduciaryId.trim().isEmpty()){
+            fiduciaryId = "00000000-0000-0000-0000-000000000000"; // Admin
+        }
+
+        if(login) {
+            new Audit().logEventAsync(identifier, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId), "LOGIN_SUCCESS", "-");
+        }
+        else {
+            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId), "LOGIN_FAILURE", (String) result.get("error_details"));
+        }
+
         return result;
     }
 
