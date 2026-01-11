@@ -54,6 +54,7 @@ public class Consent implements Action {
         JSONObject output = null;
         JSONArray outputArray = null;
         String reason = null;
+        UUID appId = null;
 
         // Placeholder for current user ID (in a real system, this would come from authentication context)
         // For consent records, the 'actor' is often the Data Principal or the system acting on their behalf.
@@ -66,7 +67,7 @@ public class Consent implements Action {
             String func = (String) input.get("_func");
             String apiKey = req.getHeader("X-API-Key");
             String apiSecret = req.getHeader("X-API-Secret");
-            UUID appId = new ApiKey().getAppId(apiKey,apiSecret);
+            appId = new ApiKey().getAppId(apiKey,apiSecret);
 
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());

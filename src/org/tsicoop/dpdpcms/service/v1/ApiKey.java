@@ -289,6 +289,7 @@ public class ApiKey implements Action {
     }
 
     public UUID getAppId(String apiKey, String apiSecret) throws SQLException {
+        if(apiKey == null || apiSecret == null) return null;
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
