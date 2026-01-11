@@ -17,7 +17,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement; // For Statement.RETURN_GENERATED_KEYS
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -252,7 +255,7 @@ public class Consent implements Action {
      * @return JSONObject containing the validation result (success: boolean, consent_granted: boolean).
      * @throws SQLException
      */
-    private JSONObject validateConsent(String userId, String fiduciaryId, UUID appId, String requiredPurposeId) throws SQLException {
+    private JSONObject validateConsent(String userId, String fiduciaryId, UUID appId, String requiredPurposeId) throws Exception {
 
         JSONObject result = new JSONObject();
         result.put("success", false);
@@ -300,8 +303,16 @@ public class Consent implements Action {
                             consent = (JSONObject) it.next();
                             // Check if the specific required purpose ID is present and set to TRUE
                             String purposeId = (String)consent.get("data_point_id");
+                            String expiryStr = (String)consent.get("consent_expiry");
+                            Instant expiryinstant = Instant.parse(expiryStr);
+                            Timestamp expiry = Timestamp.from(expiryinstant);
+                            Timestamp now = Timestamp.from(Instant.now());
                             if(purposeId.equalsIgnoreCase(requiredPurposeId)) {
                                 granted = (Boolean) consent.get("consent_granted");
+                                if(expiry!=null && now.after(expiry)){
+                                    //System.out.println("Consent Expired");
+                                    granted = false;
+                                }
                                 if (granted != null && granted) break;
                             }
                         }
@@ -317,14 +328,11 @@ public class Consent implements Action {
                     }
                 conn.commit();
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             // Log detailed SQL error internally
             System.err.println("SQL Error in validateConsent: " + e.getMessage());
             result.put("message", "Internal error during database lookup.");
             throw e;
-        } catch (ParseException e) {
-            System.err.println("JSON Parse Error in validateConsent: " + e.getMessage());
-            result.put("message", "Internal error: Failed to parse stored granular consent data.");
         } finally {
             pool.cleanup(null,null,conn);
         }
