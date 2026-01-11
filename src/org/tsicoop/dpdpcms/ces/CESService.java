@@ -48,7 +48,7 @@ class CESService {
                 principal.put("user_id", rs.getString("user_id"));
                 principal.put("fiduciary_id", rs.getString("fiduciary_id"));
                 principal.put("last_consent_mechanism", rs.getString("last_consent_mechanism"));
-                principal.put("last_ces_run", rs.getTimestamp("last_ces_run"));
+                principal.put("last_ces_run", rs.getTimestamp("last_ces_run")!=null?rs.getTimestamp("last_ces_run"):Timestamp.from(Instant.EPOCH));
                 principals.add(principal);
             }
         }finally {
@@ -67,7 +67,7 @@ class CESService {
         /**
          * Steps:
          * 1. For each data principal, check the recent consent mechanism (CONSENT_GIVEN or CONSENT_WITHDRAWN or ERASURE REQUEST).
-         * 2. Ensure that the recent consent is received post the last_ces_run date for the data principal. If not, do nothing. Go to the next principal.
+         * 2. Retrieve that the recent consent for the data principal.
          * 3. If consent mechanism is CONSENT_GIVEN or CONSENT_WITHDRAWN, evaluate the consent_expiry based on retention policies.
          * 4. If the consent_expiry is X days away, initiate a notification to the data principal. The frontend system can request for renewal.
          * 5. If the consent_expiry is passed, identify the consent validators and issue a purge request. Notify the data principal about the purge.
@@ -75,22 +75,24 @@ class CESService {
          * 7. Update the data principal with the latest consent mechanism and the ces run timestamp
          */
 
-        Timestamp tsFromInstant = Timestamp.from(Instant.now());
-
-        JSONObject recent = getRecentConsent(principalId,lastCESRun);
-        if(recent != null) {
-            mechanism = (String) recent.get("mechanism");
-            if (mechanism.equalsIgnoreCase(Constants.ACTION_ERASURE_REQUEST)) {
-                handleErasure(recent, principalId, fiduciaryId, tsFromInstant);
-            } else {
-                handleRetentionNotification(recent, principalId, fiduciaryId, tsFromInstant);
-                handleRetentionPurge(recent, principalId, fiduciaryId, tsFromInstant);
+        Timestamp newCESRun = Timestamp.from(Instant.now());
+        JSONObject recent = getRecentConsent(principalId);
+        Timestamp createdAt = (Timestamp) recent.get("created_at");
+            //System.out.println("Processing:"+principalId);
+        mechanism = (String) recent.get("mechanism");
+        if (mechanism.equalsIgnoreCase(Constants.ACTION_ERASURE_REQUEST)) {
+            if(createdAt.after(lastCESRun)){
+                handleErasure(recent, principalId, fiduciaryId, newCESRun);
+                updatePrincipalComplianceMetadata(fiduciaryId, principalId, mechanism, newCESRun);
             }
-            updatePrincipalComplianceMetadata(fiduciaryId, principalId, mechanism, tsFromInstant);
+        } else {
+            handleRetentionNotification(recent, principalId, fiduciaryId, lastCESRun, newCESRun);
+            handleRetentionPurge(recent, principalId, fiduciaryId, lastCESRun, newCESRun);
+            updatePrincipalComplianceMetadata(fiduciaryId, principalId, mechanism, newCESRun);
         }
     }
 
-    private JSONObject getRecentConsent(String principalId, Timestamp lastCESRun) throws Exception{
+    private JSONObject getRecentConsent(String principalId) throws Exception{
         JSONObject recent = null;
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -112,12 +114,6 @@ class CESService {
                 mechanism = (String)  rs.getString("consent_mechanism");
                 createdAt = (Timestamp)  rs.getTimestamp("created_at");
                 consents = (JSONArray) new JSONParser().parse((String) rs.getString("data_point_consents"));
-                if(lastCESRun != null){
-                    if(createdAt.before(lastCESRun)){
-                        //System.out.println("Skipping Principal: " + principalId + " | Reason: No Recent Consent");
-                        return recent;
-                    }
-                }
                 recent = new JSONObject();
                 recent.put("id",recordId);
                 recent.put("mechanism",mechanism);
@@ -132,7 +128,7 @@ class CESService {
 
 
 
-    private void handleErasure(JSONObject recent, String principalId, String fiduciaryId, Timestamp tsFromInstant) throws Exception{
+    private void handleErasure(JSONObject recent, String principalId, String fiduciaryId, Timestamp newCESRun) throws Exception{
         JSONObject consent = null;
         String purposeId = null;
         boolean granted = false;
@@ -149,7 +145,7 @@ class CESService {
             //System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
             if(expiry != null){
                 tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
-                if(tsExpiry.before(tsFromInstant)){
+                if(tsExpiry.before(newCESRun)){
                     // Identify Apps (Data Processors)
                     List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
                     Iterator<JSONObject> appidIt = appids.iterator();
@@ -209,7 +205,7 @@ class CESService {
         return appIds;
     }
 
-    private void handleRetentionNotification(JSONObject recent, String principalId, String fiduciaryId, Timestamp tsFromInstant) throws SQLException{
+    private void handleRetentionNotification(JSONObject recent, String principalId, String fiduciaryId, Timestamp lastCESRun, Timestamp newCESRun) throws SQLException{
         JSONObject consent = null;
         String purposeId = null;
         boolean granted = false;
@@ -231,7 +227,7 @@ class CESService {
                 expiryinstant = tsExpiry.toInstant();
                 notifInstant = expiryinstant.minus(5, ChronoUnit.DAYS);
                 tsNotif = Timestamp.from(notifInstant);
-                if(tsNotif.before(tsFromInstant) && tsFromInstant.before(tsExpiry)){
+                if(tsNotif.after(lastCESRun) && tsNotif.before(newCESRun) && newCESRun.before(tsExpiry)){
                     //System.out.println("Sending retention notification to : " + principalId + " | Purpose: " + purposeId);
                     // Create notification
                     // Send purge notification to data processor
@@ -244,7 +240,7 @@ class CESService {
         }
     }
 
-    private void handleRetentionPurge(JSONObject recent, String principalId, String fiduciaryId, Timestamp tsFromInstant) throws SQLException{
+    private void handleRetentionPurge(JSONObject recent, String principalId, String fiduciaryId, Timestamp lastCESRun, Timestamp tsFromInstant) throws SQLException{
         JSONObject consent = null;
         String purposeId = null;
         boolean granted = false;
@@ -261,7 +257,7 @@ class CESService {
             if(expiry != null){
                 tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
                 //System.out.println("TS Expiry:"+tsExpiry+" Instant:"+tsFromInstant);
-                if(tsExpiry.before(tsFromInstant)){
+                if(tsExpiry.after(lastCESRun) && tsExpiry.before(tsFromInstant)){
                     // Identify Apps (Data Processors)
                     List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
                     Iterator<JSONObject> appidIt = appids.iterator();

@@ -312,6 +312,7 @@ public class Consent implements Action {
                             result.put("message", "Consent granted for purpose: " + requiredPurposeId);
 
                             logConsentValidations(conn, UUID.fromString(fiduciaryId), appId, userId, requiredPurposeId, "VALID");
+                            flagCES(conn, UUID.fromString(fiduciaryId), userId); // do a sanity run
                         }
                     }
                 conn.commit();
@@ -345,6 +346,15 @@ public class Consent implements Action {
         stmt.setString(3, userId);
         stmt.setObject(4, purpose_id);
         stmt.setObject(5, status);
+        stmt.executeUpdate();
+    }
+
+    private void flagCES(Connection conn, UUID fiduciaryId, String userId) throws SQLException{
+        // Upsert Data Principal Record
+        String upsertDataPrincipalSql = "update data_principal set last_ces_run=null where fiduciary_id=? and user_id=?";
+        PreparedStatement stmt = conn.prepareStatement(upsertDataPrincipalSql);
+        stmt.setObject(1, fiduciaryId);
+        stmt.setString(2, userId);
         stmt.executeUpdate();
     }
 
