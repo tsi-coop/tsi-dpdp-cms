@@ -6,7 +6,6 @@
     <title>TSI DPDP CMS - Policy Management</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../env.js"></script>
     <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -307,7 +306,7 @@
 
 <script>
     // --- Configuration ---
-    const API_URL_POLICY = ENV_SERVER_URL + '/api/v1/policy';
+    const API_URL_POLICY = '/api/v1/policy';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';

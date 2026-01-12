@@ -7,7 +7,6 @@
     <title>TSI DPDP CMS - Data Principal Consent Review</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../env.js"></script>
     <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -280,7 +279,7 @@
 
 <script>
     // --- Configuration ---
-    const API_URL_CONSENT = ENV_SERVER_URL + '/api/v1/consent';
+    const API_URL_CONSENT = '/api/v1/consent';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';

@@ -7,7 +7,6 @@
   <title>TSI DPDP CMS - API Keys Management</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="../env.js"></script>
   <style>
     :root {
       --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -305,9 +304,9 @@
 
 <script>
     // --- Configuration ---
-    const API_URL_KEYS = ENV_SERVER_URL + '/api/v1/admin/apikey';
-    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
-    const API_URL_APPS_LIST = ENV_SERVER_URL + '/api/v1/admin/app';
+    const API_URL_KEYS = '/api/v1/admin/apikey';
+    const API_URL_FIDUCIARIES_LIST = '/api/v1/admin/fiduciary';
+    const API_URL_APPS_LIST = '/api/v1/admin/app';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'Admin User';

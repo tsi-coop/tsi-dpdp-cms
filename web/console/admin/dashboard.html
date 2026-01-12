@@ -7,7 +7,6 @@
   <title>TSI DPDP CMS - Admin Dashboard</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="../env.js"></script>
   <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -218,7 +217,7 @@
 
 <script>
         // --- Configuration ---
-        const API_URL_DASHBOARD = ENV_SERVER_URL+'/api/v1/admindash';
+        const API_URL_DASHBOARD = '/api/v1/admindash';
         const AUTH_TOKEN = localStorage.getItem('authToken');
         const USER_NAME = localStorage.getItem('username');
 

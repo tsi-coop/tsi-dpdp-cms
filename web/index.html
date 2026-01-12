@@ -7,7 +7,6 @@
     <title>TSI DPDP CMS - Console Login</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="console/env.js"></script>
     <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -143,9 +142,8 @@
  * The function is asynchronous to prevent blocking the UI thread.
  */
 async function handleLogin(event) {
-    //console.log(ENV_SERVER_URL);
     // Configuration Constants
-    const API_LOGIN_URL = ENV_SERVER_URL+'/api/v1/admin/user';
+    const API_LOGIN_URL = 'api/v1/admin/user';
     const ADMIN_DASHBOARD_URL = 'console/admin/dashboard.html';
     const DPO_DASHBOARD_URL = 'console/dpo/dashboard.html';
 

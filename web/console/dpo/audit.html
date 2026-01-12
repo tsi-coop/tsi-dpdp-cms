@@ -9,7 +9,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load SheetJS for Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="../env.js"></script>
     <style>
         :root {
             --tsi-primary: #006A67;
@@ -242,7 +241,7 @@
 
 <script>
     // --- Configuration ---
-    const API_URL_AUDIT = ENV_SERVER_URL + '/api/v1/admin/audit';
+    const API_URL_AUDIT = '/api/v1/admin/audit';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
     document.getElementById('username').textContent = localStorage.getItem('username') || 'DPO User';

@@ -7,7 +7,6 @@
   <title>TSI DPDP CMS - Apps Management</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="../env.js"></script>
   <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -297,8 +296,8 @@
 <script>
     // --- Configuration ---
     // Assuming API structure based on FiduciaryService and convention
-    const API_URL_APPS = ENV_SERVER_URL + '/api/v1/admin/app';
-    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary'; // To populate dropdown
+    const API_URL_APPS = '/api/v1/admin/app';
+    const API_URL_FIDUCIARIES_LIST = '/api/v1/admin/fiduciary'; // To populate dropdown
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
     // set user name

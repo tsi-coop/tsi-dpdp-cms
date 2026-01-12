@@ -7,7 +7,6 @@
     <title>TSI DPDP CMS - Reports & Audit</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../env.js"></script>
     <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -285,8 +284,8 @@
 
 <script>
     // --- Configuration ---
-    const API_URL_REPORTS = ENV_SERVER_URL + '/api/v1/admin/reports';
-    const API_URL_FIDUCIARIES_LIST = ENV_SERVER_URL + '/api/v1/admin/fiduciary';
+    const API_URL_REPORTS = '/api/v1/admin/reports';
+    const API_URL_FIDUCIARIES_LIST = '/api/v1/admin/fiduciary';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';
