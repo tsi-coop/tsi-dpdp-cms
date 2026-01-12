@@ -110,6 +110,30 @@
             .mobile-header { display: none; }
             body { padding-left: 250px; }
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 700px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
     </style>
 </head>
 
@@ -135,7 +159,7 @@
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
-            <a href="#" class="nav-link active">Audit</a>
+            <a href="audit_logs.html" class="nav-link active">Audit</a>
             <a href="reports.html" class="nav-link">Reports</a>
         </nav>
     </div>
@@ -200,6 +224,22 @@
     </div>
 </main>
 
+<!-- Modal for Audit Context -->
+<div id="audit-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <h2 class="text-2xl font-semibold primary-text mb-2">Audit Context Artifact</h2>
+        <p class="text-xs text-gray-400 mb-6 font-mono" id="modal-log-id"></p>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-5 font-mono text-xs text-slate-600 overflow-x-auto max-h-[400px]">
+            <pre id="modal-context-content"></pre>
+        </div>
+
+        <div class="flex justify-end mt-8">
+            <button onclick="closeModal()" class="bg-gray-100 text-gray-700 px-6 py-2 rounded-md text-sm font-bold hover:bg-gray-200 transition-colors">Close Inspection</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // --- Configuration ---
     const API_URL_AUDIT = ENV_SERVER_URL + '/api/v1/admin/audit';
@@ -207,13 +247,15 @@
     const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
     document.getElementById('username').textContent = localStorage.getItem('username') || 'DPO User';
 
-    let tableBody, countSpan, searchInput, actionFilter;
+    let tableBody, countSpan, searchInput, actionFilter, modalOverlay;
     let currentLogs = []; // Global variable to store fetched logs for export
 
     function toggleMenu() {
         document.getElementById('sidebar').classList.toggle('open');
         document.getElementById('sidebar-backdrop').classList.toggle('hidden');
     }
+
+    function closeModal() { modalOverlay.style.display = 'none'; }
 
     function getActorTag(type, id) {
         let tagClass = 'tag-system';
@@ -279,6 +321,13 @@
             });
 
             const data = await response.json();
+
+             if (data.status === 401) {
+                alert("Auth Failed: " + (data.message || "Authentication required."));
+                handleLogout();
+                return;
+            }
+
             const logs = data.data || data;
 
             currentLogs = logs; // Store for export
@@ -291,8 +340,39 @@
             countSpan.textContent = `Displaying latest ${logs.length || 0} events`;
 
         } catch (error) {
-            tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold">Failed to load audit trail from the microservice.</td></tr>`;
+            console.error("Audit load error:", error);
+            tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold">Failed to load audit trail: ${error.message}</td></tr>`;
         }
+    }
+
+    async function inspectArtifact(id) {
+        try {
+            const response = await fetch(API_URL_AUDIT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "get_audit_log", "id": id, "fiduciary_id": FIDUCIARY_ID })
+            });
+
+            // Handle Unauthorized Access (Session Expired)
+            if (response.status === 401) {
+                handleLogout();
+                return;
+            }
+
+            if (!response.ok) {
+                console.error("Inspect failed. Status:", response.status);
+                return;
+            }
+
+            const log = await response.json();
+            const context = log.context_details || log.data?.context_details;
+
+            document.getElementById('modal-log-id').textContent = `Log Ref: ${id}`;
+            const contextDisplay = typeof context === 'string' ? context : JSON.stringify(context, null, 2);
+            document.getElementById('modal-context-content').textContent = contextDisplay || "{}";
+
+            modalOverlay.style.display = 'flex';
+        } catch (e) { console.error("Error fetching context artifact:", e); }
     }
 
     /**
@@ -345,6 +425,7 @@
     countSpan = document.getElementById('log-count');
     searchInput = document.getElementById('principal-search');
     actionFilter = document.getElementById('action-filter');
+    modalOverlay = document.getElementById('audit-modal-overlay');
 
     document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
     document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
