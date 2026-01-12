@@ -298,15 +298,22 @@ public class Consent implements Action {
                         JSONArray granularConsents = (JSONArray) parser.parse(consentsJson);
                         Iterator<JSONObject> it = granularConsents.iterator();
                         JSONObject consent = null;
+                        String purposeId = null;
+                        String expiryStr = null;
+                        Instant expiryinstant = null;
+                        Timestamp expiry = null;
+                        Timestamp now = null;
 
                         while(it.hasNext()) {
                             consent = (JSONObject) it.next();
                             // Check if the specific required purpose ID is present and set to TRUE
-                            String purposeId = (String)consent.get("data_point_id");
-                            String expiryStr = (String)consent.get("consent_expiry");
-                            Instant expiryinstant = Instant.parse(expiryStr);
-                            Timestamp expiry = Timestamp.from(expiryinstant);
-                            Timestamp now = Timestamp.from(Instant.now());
+                            purposeId = (String)consent.get("data_point_id");
+                            expiryStr = (String)consent.get("consent_expiry");
+                            if(expiryStr!=null) {
+                                expiryinstant = Instant.parse(expiryStr);
+                                expiry = Timestamp.from(expiryinstant);
+                            }
+                            now = Timestamp.from(Instant.now());
                             if(purposeId.equalsIgnoreCase(requiredPurposeId)) {
                                 granted = (Boolean) consent.get("consent_granted");
                                 if(expiry!=null && now.after(expiry)){
