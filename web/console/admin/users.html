@@ -441,6 +441,12 @@
             if (!response.ok) throw new Error("Failed to fetch Fiduciaries list for dropdown.");
 
             const responseData = await response.json();
+
+            if (responseData.status === 401) {
+              alert("Auth Failed: " + (responseData.message || "Authentication required."));
+              handleLogout();
+              return;
+            }
             const fiduciaries = responseData.data || responseData;
 
             fiduciarySelect.innerHTML = '<option value="">-- No Fiduciary Assigned (Global) --</option>';

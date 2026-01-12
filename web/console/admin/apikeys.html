@@ -434,6 +434,13 @@
         }
 
         const responseData = await response.json();
+
+        if (responseData.status === 401) {
+          alert("Auth Failed: " + (responseData.message || "Authentication required."));
+          handleLogout();
+          return;
+        }
+
         FiduciaryList = responseData.data || responseData; // Adjust based on likely backend response
 
         fiduciarySelect.innerHTML = '<option value="">-- Select Fiduciary --</option>';

@@ -259,6 +259,12 @@
 
                 const data = await response.json();
 
+                if (data.status === 401) {
+                  alert("Auth Failed: " + (data.message || "Authentication required."));
+                  handleLogout();
+                  return;
+                }
+
                 // Assuming successful data structure: { success: true, metrics: { active_fiduciaries: 5, active_processors: 10, pending_grievances: 3, failed_purges: 0 } }
                 if (data.success && data.metrics) {
                     const metrics = data.metrics;

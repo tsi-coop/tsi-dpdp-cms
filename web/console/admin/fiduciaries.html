@@ -434,6 +434,12 @@ async function loadFiduciaries(searchTerm = "") {
 
         const responseData = await response.json();
 
+        if (responseData.status === 401) {
+          alert("Auth Failed: " + (responseData.message || "Authentication required."));
+          handleLogout();
+          return;
+        }
+
         // Assuming responseData structure is: { success: true, data: [{...}, {...}] }
         if (Array.isArray(responseData)) {
             const fiduciaries = responseData;
