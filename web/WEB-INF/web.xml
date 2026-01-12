@@ -13,7 +13,7 @@
       This ensures that navigating to the root '/' loads index.html automatically.
     -->
 	<welcome-file-list>
-		<welcome-file>console/index.html</welcome-file>
+		<welcome-file>index.html</welcome-file>
 	</welcome-file-list>
 
 	<!--
