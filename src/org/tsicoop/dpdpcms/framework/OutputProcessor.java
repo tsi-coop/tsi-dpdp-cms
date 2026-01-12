@@ -2,86 +2,88 @@ package org.tsicoop.dpdpcms.framework;
 
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
+import org.json.simple.JSONAware;
 import org.json.simple.JSONObject;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 public class OutputProcessor {
 
-    public static final String MEDIA_TYPE_JSON = "application/json";
-
-     private static final DateTimeFormatter ISO_INSTANT_FORMATTER = DateTimeFormatter.ISO_INSTANT.withZone(ZoneOffset.UTC);
-
-    public static void errorResponse(HttpServletResponse res,int status, String error, String message, String path) {
-        JSONObject errorNode = new JSONObject();
-        ServletOutputStream out = null;
-        errorNode.put("timestamp", ISO_INSTANT_FORMATTER.format(Instant.now()));
-        errorNode.put("status", status);
-        errorNode.put("error", error);
-        errorNode.put("message", message);
-        errorNode.put("path", path);
-        try {
-            out = res.getOutputStream();
-            out.print(errorNode.toJSONString());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }finally {
-            if (out != null) {
-                try {
-                    out.flush();
-                    out.close();
-                }catch(Exception ignore){}
-            }
-        }
-    }
-
+    /**
+     * Sends a successful or data-bearing JSON response.
+     */
     public static void send(HttpServletResponse res, int status, Object data) {
-        ServletOutputStream out = null;
+        // Set headers BEFORE getting the writer to lock in UTF-8
+        res.setStatus(status);
+        res.setCharacterEncoding("UTF-8");
+        res.setContentType("application/json; charset=UTF-8");
+
         try {
-            res.setContentType(MEDIA_TYPE_JSON);
-            res.setCharacterEncoding("UTF-8");
-            res.setStatus(status);
-            out = res.getOutputStream();
-            if (data != null) {
-                if (data instanceof byte[]) {
-                    out.write((byte[]) data);
-                } else {
-                    out.print(String.valueOf(data));
-                }
+            PrintWriter out = res.getWriter();
+            if (data == null) {
+                out.print("{}");
+            } else if (data instanceof JSONAware) {
+                out.print(((JSONAware) data).toJSONString());
+            } else {
+                // Defensive: ensure we don't print internal objects like HttpOutput
+                out.print(JSONObject.escape(data.toString()));
             }
-        } catch (Exception e) {
-        }finally {
-        if (out != null) {
-            try {
-                out.flush();
-                out.close();
-            }catch(Exception ignore){}
+            out.flush();
+        } catch (IOException e) {
+            System.err.println("Failed to write response: " + e.getMessage());
         }
     }
+
+    /**
+     * Standardized error response to ensure the frontend always receives
+     * valid JSON, even when things go wrong on the backend.
+     */
+    public static void errorResponse(HttpServletResponse res, int code, String error, String message, String path) {
+        res.setStatus(code);
+        res.setCharacterEncoding("UTF-8");
+        res.setContentType("application/json; charset=UTF-8");
+
+        JSONObject errorJson = new JSONObject();
+        errorJson.put("timestamp", Instant.now().toString());
+        errorJson.put("status", code);
+        errorJson.put("error", error);
+        errorJson.put("message", message);
+        errorJson.put("path", path);
+
+        try {
+            PrintWriter out = res.getWriter();
+            out.print(errorJson.toJSONString());
+            out.flush();
+        } catch (IOException e) {
+            System.err.println("Critical error sending error response: " + e.getMessage());
+        }
     }
 
-    public static void sendError(HttpServletResponse res, int status, String message) {
-        ServletOutputStream out = null;
-        res.setContentType(MEDIA_TYPE_JSON);
+    /**
+     * Standardized error response to ensure the frontend always receives
+     * valid JSON, even when things go wrong on the backend.
+     */
+    public static void sendError(HttpServletResponse res, int code, String error) {
+        res.setStatus(code);
         res.setCharacterEncoding("UTF-8");
-        res.setStatus(status);
-        JSONObject resp = new JSONObject();
-        resp.put("status", status);
-        resp.put("error", message);
+        res.setContentType("application/json; charset=UTF-8");
+
+        JSONObject errorJson = new JSONObject();
+        errorJson.put("timestamp", Instant.now().toString());
+        errorJson.put("status", code);
+        errorJson.put("error", error);
+
+
         try {
-            out = res.getOutputStream();
-            out.print(String.valueOf(out));
-        } catch (Exception e) {
-        } finally {
-            if (out != null) {
-                try {
-                    out.flush();
-                    out.close();
-                } catch (Exception ignore) {
-                }
-            }
+            PrintWriter out = res.getWriter();
+            out.print(errorJson.toJSONString());
+            out.flush();
+        } catch (IOException e) {
+            System.err.println("Critical error sending error response: " + e.getMessage());
         }
     }
 }

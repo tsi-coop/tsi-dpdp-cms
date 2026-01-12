@@ -422,7 +422,7 @@
             const response = await fetch(API_URL_POLICY, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json; charset=UTF-8',
                     'Authorization': `Bearer ${AUTH_TOKEN}`
                 },
                 body: JSON.stringify(listPayload)
@@ -477,7 +477,8 @@
 
             const response = await fetch(API_URL_POLICY, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                headers: { 'Content-Type': 'application/json; charset=UTF-8',
+                'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
             if (!response.ok) throw new Error(`Failed to fetch details for policy ${policyId}/${version}. Status: ${response.status}`);
@@ -564,7 +565,7 @@
 
             const response = await fetch(API_URL_POLICY, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                headers: { 'Content-Type': 'application/json; charset=UTF-8', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
 
@@ -596,7 +597,7 @@
 
             const response = await fetch(API_URL_POLICY, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                headers: { 'Content-Type': 'application/json; charset=UTF-8', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
 
@@ -705,7 +706,7 @@
 
             const response = await fetch(API_URL_POLICY, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                headers: { 'Content-Type': 'application/json; charset=UTF-8', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
 

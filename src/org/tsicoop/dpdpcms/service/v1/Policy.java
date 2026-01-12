@@ -61,6 +61,9 @@ public class Policy implements Action {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
 
+            res.setCharacterEncoding("UTF-8");
+            res.setContentType("application/json; charset=UTF-8");
+
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
                 return;
@@ -405,12 +408,12 @@ public class Policy implements Action {
                 policy.put("effective_date", rs.getTimestamp("effective_date").toInstant().toString());
                 policy.put("status", rs.getString("status"));
                 policy.put("jurisdiction", rs.getString("jurisdiction"));
-                policy.put("policy_content", new JSONParser().parse(rs.getString("policy_content"))); // Parse JSONB to JSONObject
+                policy.put("policy_content", rs.getString("policy_content")); // Parse JSONB to String
                 policy.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 policy.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
                 return Optional.of(policy);
             }
-        } catch (ParseException e) {
+        } catch (Exception e) {
             throw new SQLException("Failed to parse policy_content JSON from DB: " + e.getMessage(), e);
         } finally {
             pool.cleanup(rs, pstmt, conn);
