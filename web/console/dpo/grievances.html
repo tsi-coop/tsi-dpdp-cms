@@ -178,7 +178,7 @@
             <a href="compliance.html" class="nav-link">
                 Compliance
             </a>
-            <a href="#" class="nav-link active">
+            <a href="grievances.html" class="nav-link active">
                 Grievances
             </a>
             <a href="audit.html" class="nav-link">Audit</a>
@@ -399,6 +399,13 @@
 
             if (response.ok) {
                 const responseData = await response.json();
+
+                if (responseData.status === 401) {
+                    alert("Auth Failed: " + (responseData.message || "Authentication required."));
+                    handleLogout();
+                    return;
+                }
+
                 const fiduciaries = responseData.data || responseData;
                 FiduciaryList = {};
                 fiduciaries.forEach(f => {

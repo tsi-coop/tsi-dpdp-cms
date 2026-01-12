@@ -173,7 +173,7 @@
                 Dashboard
             </a>
             <!-- Compliance Menus -->
-            <a href="#" class="nav-link active">
+            <a href="policies.html" class="nav-link active">
                 Policies
             </a>
             <a href="principals.html" class="nav-link">
@@ -434,6 +434,12 @@
             }
 
             const responseData = await response.json();
+
+            if (responseData.status === 401) {
+                alert("Auth Failed: " + (responseData.message || "Authentication required."));
+                handleLogout();
+                return;
+            }
 
             const policies = responseData.data || responseData;
 

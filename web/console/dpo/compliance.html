@@ -161,7 +161,7 @@
             <a href="dashboard.html" class="nav-link">Dashboard</a>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="principals.html" class="nav-link">Principals</a>
-            <a href="#" class="nav-link active">Compliance</a>
+            <a href="compliance.html" class="nav-link active">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="audit.html" class="nav-link active">Audit</a>
             <a href="reports.html" class="nav-link">Reports</a>
@@ -335,6 +335,13 @@
             });
 
             const data = await response.json();
+
+            if (data.status === 401) {
+                alert("Auth Failed: " + (data.message || "Authentication required."));
+                handleLogout();
+                return;
+            }
+
             const requests = data || [];
 
             tableBody.innerHTML = '';

@@ -125,7 +125,7 @@
             <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
-            <a href="#" class="nav-link active">
+            <a href="dashboard.html" class="nav-link active">
                 Dashboard
             </a>
 
@@ -292,6 +292,12 @@
                 }
 
                 const data = await response.json();
+
+                if (data.status === 401) {
+                    alert("Auth Failed: " + (data.message || "Authentication required."));
+                    handleLogout();
+                    return;
+                }
 
                 // Assuming data structure: { success: true, metrics: { sla_compliance: 95.5, pending_requests: 5, policies_due_for_review: 2, critical_purge_failures: 0 } }
                 if (data.success && data.metrics) {

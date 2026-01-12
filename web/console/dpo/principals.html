@@ -177,7 +177,7 @@
             <a href="policies.html" class="nav-link">
                 Policies
             </a>
-            <a href="#" class="nav-link active">
+            <a href="principals.html" class="nav-link active">
                 Principals
             </a>
             <a href="compliance.html" class="nav-link">
@@ -361,6 +361,13 @@
             }
 
             const responseData = await response.json();
+
+            if (responseData.status === 401) {
+                alert("Auth Failed: " + (responseData.message || "Authentication required."));
+                handleLogout();
+                return;
+            }
+
             const records = responseData.data || responseData;
 
             if (Array.isArray(records) && records.length > 0) {

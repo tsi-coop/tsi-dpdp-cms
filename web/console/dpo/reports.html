@@ -173,7 +173,7 @@
                 Grievances
             </a>
             <a href="audit.html" class="nav-link">Audit</a>
-            <a href="#" class="nav-link" active>
+            <a href="reports.html" class="nav-link" active>
                 Reports
             </a>
         </nav>
@@ -396,6 +396,13 @@
             if (!response.ok) throw new Error(`API returned status ${response.status}`);
 
             const responseData = await response.json();
+
+            if (responseData.status === 401) {
+                alert("Auth Failed: " + (responseData.message || "Authentication required."));
+                handleLogout();
+                return;
+            }
+
             const submissions = responseData.data || responseData;
 
             if (Array.isArray(submissions)) {
