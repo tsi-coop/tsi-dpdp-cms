@@ -11,7 +11,10 @@
         "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
         "data_categories_involved": ["email_address", "business_name", "industry", "city", "organization_type", "business_start_year","professional_name", "career_start_year", "college_type", "disability","household_income_range"],
         "recipients_or_third_parties": [],
-        "retention_period": "Until account deletion, plus statutory record-keeping period (e.g., 7 years).",
+        "retention_policy": "Until account deletion, plus statutory record-keeping period (e.g., 7 years).",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_WITHDRAWN",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -22,7 +25,10 @@
         "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
         "data_categories_involved": ["website_usage_data", "device_info"],
         "recipients_or_third_parties": ["Google Analytics"],
-        "retention_period": "Up to 26 months (for aggregated analytics data).",
+        "retention_policy": "Up to 24 months (for aggregated analytics data).",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -33,7 +39,10 @@
         "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
         "data_categories_involved": ["post", "meeting_invite", "enquiry", "rfp", "testimonial","discussion"],
         "recipients_or_third_parties": [],
-        "retention_period": "Up to 5 years from last engagement, or until consent withdrawal.",
+        "retention_policy": "Up to 2 years from last engagement, or until consent withdrawal.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -44,7 +53,10 @@
         "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
         "data_categories_involved": ["solution_details", "service_details", "training_details"],
         "recipients_or_third_parties": [],
-        "retention_period": "While active user, or until consent withdrawal.",
+        "retention_policy": "Up to 3 years from last engagement, or until consent withdrawal.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -55,142 +67,41 @@
         "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
         "data_categories_involved": ["assessment_responses", "business_name", "industry_type", "organization_type"],
         "recipients_or_third_parties": ["TSI Coop Consulting Partners"],
-        "retention_period": "5 years for individual responses, aggregated data retained indefinitely (anonymized).",
+        "retention_policy": "Up to 3 years from last engagement, or until consent withdrawal.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
     ],
     "data_categories_details": [
-      {
-        "id": "email_address",
-        "name": "Email Address",
-        "description": "Your professional email address used for communication and account access."
-      },
-      {
-        "id": "business_name",
-        "name": "Business Name",
-        "description": "The name of the company or organization you represent."
-      },
-      {
-        "id": "industry",
-        "name": "Industry",
-        "description": "The industry you represent."
-      },
-      {
-        "id": "city",
-        "name": "City",
-        "description": "The city where your business/profession is located."
-      },
-      {
-        "id": "organization_type",
-        "name": "Organization Type",
-        "description": ""
-      },
-      {
-        "id": "business_start_year",
-        "name": "Business Start Year",
-        "description": ""
-      },
-      {
-        "id": "professional_name",
-        "name": "Professional Name",
-        "description": "Your first and last name as a professional."
-      },
-      {
-        "id": "college_type",
-        "name": "College Type",
-        "description": "Tier-1, Tier-2, Tier-3."
-      },
-      {
-        "id": "career_start_year",
-        "name": "career_start_year",
-        "description": ""
-      },
-      {
-        "id": "disability",
-        "name": "Disability",
-        "description": ""
-      },
-      {
-        "id": "household_income_range",
-        "name": "Household Income Range",
-        "description": ""
-      },
-      {
-        "id": "website_usage_data",
-        "name": "Website Usage Data",
-        "description": "Information on how you interact with our website, including pages visited, time spent, clicks, and navigation paths. This data is often aggregated and anonymized."
-      },
-      {
-        "id": "device_info",
-        "name": "Device Information",
-        "description": "Details about the device you use, including IP address, operating system, browser type, and approximate location (city-level)."
-      },
-      {
-        "id": "post",
-        "name": "post",
-        "description": ""
-      },
-      {
-        "id": "meeting_invite",
-        "name": "meeting_invite",
-        "description": ""
-      },
-      {
-        "id": "enquiry",
-        "name": "enquiry",
-        "description": ""
-      },
-      {
-        "id": "rfp",
-        "name": "rfp",
-        "description": ""
-      },
-      {
-        "id": "testimonial",
-        "name": "testimonial",
-        "description": ""
-      },
-      {
-        "id": "discussion",
-        "name": "discussion",
-        "description": ""
-      },
-      {
-        "id": "solution_details",
-        "name": "solution_details",
-        "description": ""
-      },
-      {
-        "id": "service_details",
-        "name": "service_details",
-        "description": ""
-      },
-      {
-        "id": "training_details",
-        "name": "training_details",
-        "description": ""
-      },
-      {
-        "id": "assessment_responses",
-        "name": "assessment_responses",
-        "description": ""
-      },
-      {
-        "id": "grievance_note",
-        "name": "grievance_note",
-        "description": ""
-      },
-      {
-        "id": "support_request",
-        "name": "support_request",
-        "description": ""
-      },
-      {
-        "id": "advise_request",
-        "name": "advise_request",
-        "description": ""
-      }
+      { "id": "email_address", "name": "Email Address", "description": "Your professional email address used for communication and account access." },
+      { "id": "business_name", "name": "Business Name", "description": "The name of the company or organization you represent." },
+      { "id": "industry", "name": "Industry", "description": "The industry you represent." },
+      { "id": "city", "name": "City", "description": "The city where your business/profession is located." },
+      { "id": "organization_type", "name": "Organization Type", "description": "" },
+      { "id": "business_start_year", "name": "Business Start Year", "description": "" },
+      { "id": "professional_name", "name": "Professional Name", "description": "Your first and last name as a professional." },
+      { "id": "college_type", "name": "College Type", "description": "Tier-1, Tier-2, Tier-3." },
+      { "id": "career_start_year", "name": "career_start_year", "description": "" },
+      { "id": "disability", "name": "Disability", "description": "" },
+      { "id": "household_income_range", "name": "Household Income Range", "description": "" },
+      { "id": "website_usage_data", "name": "Website Usage Data", "description": "Information on how you interact with our website, including pages visited, time spent, clicks, and navigation paths. This data is often aggregated and anonymized." },
+      { "id": "device_info", "name": "Device Information", "description": "Details about the device you use, including IP address, operating system, browser type, and approximate location (city-level)." },
+      { "id": "post", "name": "post", "description": "" },
+      { "id": "meeting_invite", "name": "meeting_invite", "description": "" },
+      { "id": "enquiry", "name": "enquiry", "description": "" },
+      { "id": "rfp", "name": "rfp", "description": "" },
+      { "id": "testimonial", "name": "testimonial", "description": "" },
+      { "id": "discussion", "name": "discussion", "description": "" },
+      { "id": "solution_details", "name": "solution_details", "description": "" },
+      { "id": "service_details", "name": "service_details", "description": "" },
+      { "id": "training_details", "name": "training_details", "description": "" },
+      { "id": "assessment_responses", "name": "assessment_responses", "description": "" },
+      { "id": "grievance_note", "name": "grievance_note", "description": "" },
+      { "id": "support_request", "name": "support_request", "description": "" },
+      { "id": "advise_request", "name": "advise_request", "description": "" }
     ],
     "data_principal_rights_summary": "As per the Digital Personal Data Protection Act, 2023, you have rights to access, correct, complete, update, and erase your personal data. You can also withdraw consent for specific purposes, and have the right to grievance redressal. For full details, please refer to our full Privacy Policy.",
     "grievance_redressal_info": "For any data protection concerns or to exercise your rights, please contact our Data Protection Officer at: Email: dpo@tsicoop.com | Phone: +91 90000 11223 | Address: 123, Tech Plaza, Gandhipuram, Coimbatore - 641001, Tamil Nadu, India. Your concern will be addressed within stipulated timeframes.",
@@ -220,7 +131,10 @@
         "legal_basis": "ஒப்பந்தத் தேவை (டிபிடிபி சட்டம், பிரிவு 7(b))",
         "data_categories_involved": ["email_address", "business_name", "professional_name", "industry_type", "city", "organization_type"],
         "recipients_or_third_parties": [],
-        "retention_period": "கணக்கு நீக்கப்படும் வரை, மேலும் சட்டப்பூர்வ பதிவு வைத்தல் காலம் (எ.கா., 7 ஆண்டுகள்).",
+        "retention_policy": "கணக்கு நீக்கப்படும் வரை, மேலும் சட்டப்பூர்வ பதிவு வைத்தல் காலம் (எ.கா., 7 ஆண்டுகள்).",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_WITHDRAWN",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -231,7 +145,10 @@
         "legal_basis": "ஒப்புதல் (டிபிடிபி சட்டம், பிரிவு 6(1)(a))",
         "data_categories_involved": ["website_usage_data", "device_info"],
         "recipients_or_third_parties": ["Google Analytics", "Hotjar"],
-        "retention_period": "26 மாதங்கள் வரை (திரட்டப்பட்ட பகுப்பாய்வு தரவுகளுக்கு).",
+        "retention_policy": "24 மாதங்கள் வரை (திரட்டப்பட்ட பகுப்பாய்வு தரவுகளுக்கு).",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -242,7 +159,10 @@
         "legal_basis": "ஒப்புதல் (டிபிடிபி சட்டம், பிரிவு 6(1)(a))",
         "data_categories_involved": ["engagement_interactions", "email_address", "professional_name", "business_name"],
         "recipients_or_third_parties": ["CRM System (எ.கா., Salesforce)", "Helpdesk System"],
-        "retention_period": "கடைசி ஈடுபாட்டிலிருந்து 5 ஆண்டுகள் வரை, அல்லது ஒப்புதல் திரும்பப் பெறப்படும் வரை.",
+        "retention_policy": "கடைசி ஈடுபாட்டிலிருந்து 2 ஆண்டுகள் வரை, அல்லது ஒப்புதல் திரும்பப் பெறப்படும் வரை.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -253,7 +173,10 @@
         "legal_basis": "ஒப்புதல் (டிபிடிபி சட்டம், பிரிவு 6(1)(a))",
         "data_categories_involved": ["product_service_interest", "website_usage_data"],
         "recipients_or_third_parties": [],
-        "retention_period": "செயலில் உள்ள பயனர் இருக்கும் வரை, அல்லது ஒப்புதல் திரும்பப் பெறப்படும் வரை.",
+        "retention_policy": "கடைசி ஈடுபாட்டிலிருந்து 3 ஆண்டுகள் வரை, அல்லது ஒப்புதல் திரும்பப் பெறப்படும் வரை.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -264,83 +187,27 @@
         "legal_basis": "ஒப்புதல் (டிபிடிபி சட்டம், பிரிவு 6(1)(a))",
         "data_categories_involved": ["maturity_assessment_responses", "business_name", "industry_type", "organization_type"],
         "recipients_or_third_parties": [],
-        "retention_period": "தனிப்பட்ட பதில்களுக்கு 5 ஆண்டுகள், தொகுக்கப்பட்ட தரவு காலவரையின்றி தக்கவைக்கப்படும் (அநாமதேயமாக்கப்பட்ட).",
-        "is_mandatory_for_service": false,
-        "is_sensitive": false
-      },
-      {
-        "id": "purpose_education_network",
-        "name": "கல்வி நெட்வொர்க் மற்றும் ஒத்துழைப்பு",
-        "description": "TSI கூட்டுறவு சமூகத்தில் உங்கள் கல்விப் பின்னணியின் (கல்லூரி) அடிப்படையில் நெட்வொர்க்கிங் மற்றும் ஒத்துழைப்பு வாய்ப்புகளை எளிதாக்க.",
-        "legal_basis": "ஒப்புதல் (டிபிடிபி சட்டம், பிரிவு 6(1)(a))",
-        "data_categories_involved": ["college_name", "professional_name"],
-        "recipients_or_third_parties": [],
-        "retention_period": "கணக்கு நீக்கப்படும் வரை அல்லது ஒப்புதல் திரும்பப் பெறப்படும் வரை.",
+        "retention_policy": "கடைசி ஈடுபாட்டிலிருந்து 3 ஆண்டுகள் வரை, அல்லது ஒப்புதல் திரும்பப் பெறப்படும் வரை.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
     ],
     "data_categories_details": [
-      {
-        "id": "email_address",
-        "name": "மின்னஞ்சல் முகவரி",
-        "description": "தொடர்பு மற்றும் கணக்கு அணுகலுக்கான உங்கள் தொழில்முறை மின்னஞ்சல் முகவரி."
-      },
-      {
-        "id": "business_name",
-        "name": "வணிக பெயர்",
-        "description": "நீங்கள் பிரதிநிதித்துவப்படுத்தும் நிறுவனம் அல்லது அமைப்பின் பெயர்."
-      },
-      {
-        "id": "professional_name",
-        "name": "தொழில்முறை பெயர்",
-        "description": "ஒரு நிபுணராக உங்கள் முதல் மற்றும் கடைசி பெயர்."
-      },
-      {
-        "id": "college_name",
-        "name": "கல்லூரி பெயர்",
-        "description": "நீங்கள் படித்த கல்லூரி அல்லது பல்கலைக்கழகத்தின் பெயர், நெட்வொர்க்கிங் நோக்கங்களுக்காக."
-      },
-      {
-        "id": "industry_type",
-        "name": "தொழில்",
-        "description": "உங்கள் வணிகம்/தொழில் சேர்ந்திருக்கும் துறை அல்லது தொழில்."
-      },
-      {
-        "id": "city",
-        "name": "நகரம்",
-        "description": "உங்கள் வணிகம்/தொழில் அமைந்துள்ள நகரம்."
-      },
-      {
-        "id": "organization_type",
-        "name": "நிறுவன வகை",
-        "description": "உங்கள் நிறுவனத்தின் வகை (எ.கா., தொடக்க நிறுவனம், SME, நிறுவனம், பொதுத்துறை)."
-      },
-      {
-        "id": "website_usage_data",
-        "name": "வலைத்தள பயன்பாட்டுத் தரவு",
-        "description": "நீங்கள் எங்கள் வலைத்தளத்துடன் எவ்வாறு தொடர்பு கொள்கிறீர்கள் என்பது பற்றிய தகவல், பார்வையிட்ட பக்கங்கள், செலவழித்த நேரம், கிளிக்குகள் மற்றும் வழிசெலுத்தல் பாதைகள் உட்பட. இந்தத் தரவு பெரும்பாலும் திரட்டப்பட்டு அநாமதேயமாக்கப்படுகிறது."
-      },
-      {
-        "id": "device_info",
-        "name": "சாதன தகவல்",
-        "description": "IP முகவரி, இயக்க முறைமை, உலாவி வகை மற்றும் தோராயமான இருப்பிடம் (நகர அளவிலான) உள்ளிட்ட நீங்கள் பயன்படுத்தும் சாதனத்தைப் பற்றிய விவரங்கள்."
-      },
-      {
-        "id": "engagement_interactions",
-        "name": "ஈடுபாடு தொடர்புகள்",
-        "description": "தொழில்நுட்பப் பதிவுகள், கூட்டங்களில் பங்கேற்பு, விசாரணைகள், RFPகள் மற்றும் வழங்கப்பட்ட சான்றுகள் போன்ற உங்கள் தொடர்புகளின் பதிவுகள்."
-      },
-      {
-        "id": "product_service_interest",
-        "name": "தயாரிப்பு/சேவை ஆர்வம்",
-        "description": "உங்கள் வலைத்தள செயல்பாடு அல்லது நேரடி விசாரணைகளின் அடிப்படையில் குறிப்பிட்ட TSI கூட்டுறவு தயாரிப்புகள் அல்லது சேவைகளில் பெறப்பட்ட அல்லது வெளிப்படுத்தப்பட்ட ஆர்வம்."
-      },
-      {
-        "id": "maturity_assessment_responses",
-        "name": "முதிர்வு மதிப்பீட்டு பதில்கள்",
-        "description": "உங்கள் நிறுவனத்தின் செயல்முறைகள், கருவிகள் மற்றும் டிஜிட்டல் திறன்கள் பற்றிய விவரங்களைச் சேகரிக்கும் ஆய்வு கேள்விகளுக்கான உங்கள் பதில்கள்."
-      }
+      { "id": "email_address", "name": "மின்னஞ்சல் முகவரி", "description": "தொடர்பு மற்றும் கணக்கு அணுகலுக்கான உங்கள் தொழில்முறை மின்னஞ்சல் முகவரி." },
+      { "id": "business_name", "name": "வணிக பெயர்", "description": "நீங்கள் பிரதிநிதித்துவப்படுத்தும் நிறுவனம் அல்லது அமைப்பின் பெயர்." },
+      { "id": "professional_name", "name": "தொழில்முறை பெயர்", "description": "ஒரு நிபுணராக உங்கள் முதல் மற்றும் கடைசி பெயர்." },
+      { "id": "college_name", "name": "கல்லூரி பெயர்", "description": "நீங்கள் படித்த கல்லூரி அல்லது பல்கலைக்கழகத்தின் பெயர், நெட்வொர்க்கிங் நோக்கங்களுக்காக." },
+      { "id": "industry_type", "name": "தொழில்", "description": "உங்கள் வணிகம்/தொழில் சேர்ந்திருக்கும் துறை அல்லது தொழில்." },
+      { "id": "city", "name": "நகரம்", "description": "உங்கள் வணிகம்/தொழில் அமைந்துள்ள நகரம்." },
+      { "id": "organization_type", "name": "நிறுவன வகை", "description": "உங்கள் நிறுவனத்தின் வகை (எ.கா., தொடக்க நிறுவனம், SME, நிறுவனம், பொதுத்துறை)." },
+      { "id": "website_usage_data", "name": "வலைத்தள பயன்பாட்டுத் தரவு", "description": "நீங்கள் எங்கள் வலைத்தளத்துடன் எவ்வாறு தொடர்பு கொள்கிறீர்கள் என்பது பற்றிய தகவல், பார்வையிட்ட பக்கங்கள், செலவழித்த நேரம், கிளிக்குகள் மற்றும் வழிசெலுத்தல் பாதைகள் உட்பட. இந்தத் தரவு பெரும்பாலும் திரட்டப்பட்டு அநாமதேயமாக்கப்படுகிறது." },
+      { "id": "device_info", "name": "சாதன தகவல்", "description": "IP முகவரி, இயக்க முறைமை, உலாவி வகை மற்றும் தோராயமான இருப்பிடம் (நகர அளவிலான) உள்ளிட்ட நீங்கள் பயன்படுத்தும் சாதனத்தைப் பற்றிய விவரங்கள்." },
+      { "id": "engagement_interactions", "name": "ஈடுபாடு தொடர்புகள்", "description": "தொழில்நுட்பப் பதிவுகள், கூட்டங்களில் பங்கேற்பு, விசாரணைகள், RFPகள் மற்றும் வழங்கப்பட்ட சான்றுகள் போன்ற உங்கள் தொடர்புகளின் பதிவுகள்." },
+      { "id": "product_service_interest", "name": "தயாரிப்பு/சேவை ஆர்வம்", "description": "உங்கள் வலைத்தள செயல்பாடு அல்லது நேரடி விசாரணைகளின் அடிப்படையில் குறிப்பிட்ட TSI கூட்டுறவு தயாரிப்புகள் அல்லது சேவைகளில் பெறப்பட்ட அல்லது வெளிப்படுத்தப்பட்ட ஆர்வம்." },
+      { "id": "maturity_assessment_responses", "name": "முதிர்வு மதிப்பீட்டு பதில்கள்", "description": "உங்கள் நிறுவனத்தின் செயல்முறைகள், கருவிகள் மற்றும் டிஜிட்டல் திறன்கள் பற்றிய விவரங்களைச் சேகரிக்கும் ஆய்வு கேள்விகளுக்கான உங்கள் பதில்கள்." }
     ],
     "data_principal_rights_summary": "டிஜிட்டல் தனிப்பட்ட தரவுப் பாதுகாப்புச் சட்டம், 2023 இன் படி, உங்கள் தனிப்பட்ட தரவை அணுக, திருத்த, பூர்த்தி செய்ய, புதுப்பிக்க மற்றும் அழிக்க உங்களுக்கு உரிமை உண்டு. குறிப்பிட்ட நோக்கங்களுக்காக ஒப்புதலை திரும்பப் பெறவும் உங்களுக்கு உரிமை உண்டு, மேலும் குறை தீர்க்கவும் உங்களுக்கு உரிமை உண்டு. முழு விவரங்களுக்கு, எங்கள் முழு தனியுரிமைக் கொள்கையைப் பார்க்கவும்.",
     "grievance_redressal_info": "எந்தவொரு தரவு பாதுகாப்பு கவலைகள் அல்லது உங்கள் உரிமைகளைப் பயன்படுத்த, எங்கள் தரவு பாதுகாப்பு அதிகாரி: மின்னஞ்சல்: dpo@tsicoop.com | தொலைபேசி: +91 90000 11223 | முகவரி: 123, Tech Plaza, Gandhipuram, Coimbatore - 641001, Tamil Nadu, India ஐ தொடர்பு கொள்ளவும். உங்கள் கவலைகள் குறிப்பிட்ட காலக்கெடுவுக்குள் தீர்க்கப்படும்.",
@@ -370,7 +237,10 @@
         "legal_basis": "संविदात्मक आवश्यकता (डीपीडीपी अधिनियम, धारा 7(b))",
         "data_categories_involved": ["email_address", "business_name", "professional_name", "industry_type", "city", "organization_type"],
         "recipients_or_third_parties": [],
-        "retention_period": "खाता हटाने तक, साथ ही वैधानिक रिकॉर्ड-कीपिंग अवधि (जैसे, 7 साल)।",
+        "retention_policy": "खाता हटाने तक, साथ ही वैधानिक रिकॉर्ड-कीपिंग अवधि (जैसे, 7 साल)।",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_WITHDRAWN",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -381,7 +251,10 @@
         "legal_basis": "सहमति (डीपीडीपी अधिनियम, धारा 6(1)(a))",
         "data_categories_involved": ["website_usage_data", "device_info"],
         "recipients_or_third_parties": ["Google Analytics", "Hotjar"],
-        "retention_period": "26 महीने तक (एकत्रित विश्लेषण डेटा के लिए)।",
+        "retention_policy": "24 महीने तक (एकत्रित विश्लेषण डेटा के लिए)।",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -392,7 +265,10 @@
         "legal_basis": "सहमति (डीपीडीपी अधिनियम, धारा 6(1)(a))",
         "data_categories_involved": ["engagement_interactions", "email_address", "professional_name", "business_name"],
         "recipients_or_third_parties": ["CRM System (जैसे, Salesforce)", "हेल्पडेस्क सिस्टम"],
-        "retention_period": "अंतिम सहभागिता से 5 साल तक, या सहमति वापस लेने तक।",
+        "retention_policy": "अंतिम सहभागिता से 2 साल तक, या सहमति वापस लेने तक।",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -403,7 +279,10 @@
         "legal_basis": "सहमति (डीपीडीपी अधिनियम, धारा 6(1)(a))",
         "data_categories_involved": ["product_service_interest", "website_usage_data"],
         "recipients_or_third_parties": [],
-        "retention_period": "जब तक उपयोगकर्ता सक्रिय है, या सहमति वापस लेने तक।",
+        "retention_policy": "अंतिम सहभागिता से 3 साल तक, या सहमति वापस लेने तक।",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -414,83 +293,27 @@
         "legal_basis": "सहमति (डीपीडीपी अधिनियम, धारा 6(1)(a))",
         "data_categories_involved": ["maturity_assessment_responses", "business_name", "industry_type", "organization_type"],
         "recipients_or_third_parties": [],
-        "retention_period": "व्यक्तिगत प्रतिक्रियाओं के लिए 5 साल, एकत्रित डेटा अनिश्चित काल तक रखा जाता है (गुमनाम)।",
-        "is_mandatory_for_service": false,
-        "is_sensitive": false
-      },
-      {
-        "id": "purpose_education_network",
-        "name": "शैक्षिक नेटवर्क और सहयोग",
-        "description": "TSI कॉप समुदाय के भीतर आपकी शैक्षिक पृष्ठभूमि (कॉलेज) के आधार पर नेटवर्किंग और सहयोग के अवसरों को सुविधाजनक बनाने के लिए।",
-        "legal_basis": "सहमति (डीपीडीपी अधिनियम, धारा 6(1)(a))",
-        "data_categories_involved": ["college_name", "professional_name"],
-        "recipients_or_third_parties": [],
-        "retention_period": "खाता हटाने तक या सहमति वापस लेने तक।",
+        "retention_policy": "अंतिम सहभागिता से 3 साल तक, या सहमति वापस लेने तक।",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
     ],
     "data_categories_details": [
-      {
-        "id": "email_address",
-        "name": "ईमेल पता",
-        "description": "संचार और खाता पहुंच के लिए आपका पेशेवर ईमेल पता।"
-      },
-      {
-        "id": "business_name",
-        "name": "व्यवसाय का नाम",
-        "description": "आप जिस कंपनी या संगठन का प्रतिनिधित्व करते हैं, उसका नाम।"
-      },
-      {
-        "id": "professional_name",
-        "name": "पेशेवर का नाम",
-        "description": "एक पेशेवर के रूप में आपका पहला और अंतिम नाम।"
-      },
-      {
-        "id": "college_name",
-        "name": "कॉलेज का नाम",
-        "description": "नेटवर्किंग उद्देश्यों के लिए आपके कॉलेज या विश्वविद्यालय का नाम।"
-      },
-      {
-        "id": "industry_type",
-        "name": "उद्योग",
-        "description": "वह क्षेत्र या उद्योग जिससे आपका व्यवसाय/पेशा संबंधित है।"
-      },
-      {
-        "id": "city",
-        "name": "शहर",
-        "description": "वह शहर जहाँ आपका व्यवसाय/पेशा स्थित है।"
-      },
-      {
-        "id": "organization_type",
-        "name": "संगठन का प्रकार",
-        "description": "आपके संगठन का प्रकार (जैसे, स्टार्टअप, एसएमई, एंटरप्राइज़, सार्वजनिक क्षेत्र)।"
-      },
-      {
-        "id": "website_usage_data",
-        "name": "वेबसाइट उपयोग डेटा",
-        "description": "आप हमारी वेबसाइट के साथ कैसे इंटरैक्ट करते हैं, जिसमें देखे गए पृष्ठ, बिताया गया समय, क्लिक, और नेविगेशन पथ शामिल हैं। यह डेटा अक्सर एकत्रित और गुमनाम होता है।"
-      },
-      {
-        "id": "device_info",
-        "name": "डिवाइस जानकारी",
-        "description": "आपके द्वारा उपयोग किए जाने वाले डिवाइस के बारे में विवरण, जिसमें आईपी पता, ऑपरेटिंग सिस्टम, ब्राउज़र प्रकार, और अनुमानित स्थान (शहर-स्तर) शामिल हैं।"
-      },
-      {
-        "id": "engagement_interactions",
-        "name": "सहभागिता इंटरैक्शन",
-        "description": "आपके इंटरैक्शन के रिकॉर्ड जैसे तकनीकी पोस्ट पर विचार, बैठकों में भागीदारी, पूछताछ, आरएफपी, और प्रदान किए गए प्रशंसापत्र।"
-      },
-      {
-        "id": "product_service_interest",
-        "name": "उत्पाद/सेवा में रुचि",
-        "description": "आपकी वेबसाइट गतिविधि या प्रत्यक्ष पूछताछ के आधार पर विशिष्ट TSI कॉप उत्पादों या सेवाओं में अनुमानित या व्यक्त की गई रुचि।"
-      },
-      {
-        "id": "maturity_assessment_responses",
-        "name": "परिपक्वता मूल्यांकन प्रतिक्रियाएं",
-        "description": "आपकी संगठन प्रक्रियाओं, उपकरणों, और डिजिटल क्षमताओं के बारे में विवरण कैप्चर करने वाले सर्वेक्षण प्रश्नों के आपके जवाब।"
-      }
+      { "id": "email_address", "name": "ईमेल पता", "description": "संचार और खाता पहुंच के लिए आपका पेशेवर ईमेल पता।" },
+      { "id": "business_name", "name": "व्यवसाय का नाम", "description": "आप जिस कंपनी या संगठन का प्रतिनिधित्व करते हैं, उसका नाम।" },
+      { "id": "professional_name", "name": "पेशेवर का नाम", "description": "एक पेशेवर के रूप में आपका पहला और अंतिम नाम।" },
+      { "id": "college_name", "name": "कॉलेज का नाम", "description": "नेटवर्किंग उद्देश्यों के लिए आपके कॉलेज या विश्वविद्यालय का नाम।" },
+      { "id": "industry_type", "name": "उद्योग", "description": "वह क्षेत्र या उद्योग जिससे आपका व्यवसाय/पेशा संबंधित है।" },
+      { "id": "city", "name": "शहर", "description": "वह शहर जहाँ आपका व्यवसाय/पेशा स्थित है।" },
+      { "id": "organization_type", "name": "संगठन का प्रकार", "description": "आपके संगठन का प्रकार (जैसे, स्टार्टअप, एसएमई, एंटरप्राइज़, सार्वजनिक क्षेत्र)।" },
+      { "id": "website_usage_data", "name": "वेबसाइट उपयोग डेटा", "description": "आप हमारी वेबसाइट के साथ कैसे इंटरैक्ट करते हैं, जिसमें देखे गए पृष्ठ, बिताया गया समय, क्लिक, और नेविगेशन पथ शामिल हैं। यह डेटा अक्सर एकत्रित और गुमनाम होता है।" },
+      { "id": "device_info", "name": "डिवाइस जानकारी", "description": "आपके द्वारा उपयोग किए जाने वाले डिवाइस के बारे में विवरण, जिसमें आईपी पता, ऑपरेटिंग सिस्टम, ब्राउज़र प्रकार, और अनुमानित स्थान (शहर-स्तर) शामिल हैं।" },
+      { "id": "engagement_interactions", "name": "सहभागिता इंटरैक्शन", "description": "आपके इंटरैक्शन के रिकॉर्ड जैसे तकनीकी पोस्ट पर विचार, बैठकों में भागीदारी, पूछताछ, आरएफपी, और प्रदान किए गए प्रशंसापत्र।" },
+      { "id": "product_service_interest", "name": "उत्पाद/सेवा में रुचि", "description": "आपकी वेबसाइट गतिविधि या प्रत्यक्ष पूछताछ के आधार पर विशिष्ट TSI कॉप उत्पादों या सेवाओं में अनुमानित या व्यक्त की गई रुचि।" },
+      { "id": "maturity_assessment_responses", "name": "परिपक्वता मूल्यांकन प्रतिक्रियाएं", "description": "आपकी संगठन प्रक्रियाओं, उपकरणों, और डिजिटल क्षमताओं के बारे में विवरण कैप्चर करने वाले सर्वेक्षण प्रश्नों के आपके जवाब।" }
     ],
     "data_principal_rights_summary": "डिजिटल व्यक्तिगत डेटा संरक्षण अधिनियम, 2023 के अनुसार, आपको अपने व्यक्तिगत डेटा तक पहुंचने, सुधारने, पूरा करने, अपडेट करने और मिटाने का अधिकार है। आप विशिष्ट उद्देश्यों के लिए सहमति भी वापस ले सकते हैं, और शिकायत निवारण का अधिकार भी है। पूर्ण विवरण के लिए, कृपया हमारी पूरी गोपनीयता नीति देखें।",
     "grievance_redressal_info": "किसी भी डेटा सुरक्षा संबंधी चिंताओं या अपने अधिकारों का प्रयोग करने के लिए, कृपया हमारे डेटा सुरक्षा अधिकारी से संपर्क करें: ईमेल: dpo@tsicoop.com | फोन: +91 90000 11223 | पता: 123, Tech Plaza, Gandhipuram, Coimbatore - 641001, Tamil Nadu, India। आपकी चिंता का निर्धारित समय-सीमा के भीतर समाधान किया जाएगा।",

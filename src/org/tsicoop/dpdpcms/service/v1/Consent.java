@@ -93,11 +93,11 @@ public class Consent implements Action {
             switch (func.toLowerCase()) {
                 case "record_consent": // Used for initial grant, update, or withdrawal
                     String policyId = (String) input.get("policy_id");
-                    String policyVersion = (String) input.get("policy_version");
+                    String policyVersion = "";
                     String timestampStr = (String) input.get("timestamp");
-                    String jurisdiction = (String) input.get("jurisdiction");
+                    String jurisdiction = "IN";
                     String languageSelected = (String) input.get("language_selected");
-                    String consentStatusGeneral = (String) input.get("consent_status_general");
+                    String consentStatusGeneral = "CONSENT_GIVEN";
                     String consentMechanism = "CONSENT_GIVEN";
                     String ipAddressStr = (String) req.getRemoteAddr();
                     String userAgent = (String) input.get("user_agent");
@@ -112,7 +112,7 @@ public class Consent implements Action {
                         return;
                     }
 
-                    Timestamp timestamp = Timestamp.from(Instant.parse(timestampStr));
+                    Timestamp timestamp = Timestamp.from(Instant.now());
 
                     // Check if policy exists (important for provenance)
                     JSONObject policy = getPolicy(policyId, policyVersion, fiduciaryId);

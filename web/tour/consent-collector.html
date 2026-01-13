@@ -4,366 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSI DPDP CMS - Consent Collector - Tour</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* (Keep your existing CSS styles from previous example here) */
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        /* Base Styling */
+        body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; background-color: #f4fbf9; color: #333; }
+        .container { padding: 40px 20px; max-width: 900px; margin: 0 auto; }
+
+        /* Banner & Modals */
         .cookie-banner {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: #333;
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
-        }
-        .cookie-banner p {
-            margin: 0 15px 0 0;
-            flex-grow: 1;
-            font-size: 0.9em;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: #1e293b; color: white; padding: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; z-index: 1000; box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+            display: none;
         }
         .cookie-banner button {
-            background-color: #006A67;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            margin-left: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background-color 0.3s ease;
+            background-color: #006A67; color: white; border: none;
+            padding: 10px 20px; margin-left: 10px; border-radius: 6px;
+            cursor: pointer; font-weight: 600; transition: all 0.2s ease;
         }
-        .cookie-banner button:hover {
-            background-color: #0056b3;
-        }
-        .cookie-banner .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .cookie-banner button:hover { background-color: #004F4C; transform: translateY(-1px); }
 
-        /* Preference Center Styles */
         .preference-center-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0,0,0,0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1001;
-            display: none; /* Hidden by default */
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(15, 23, 42, 0.8); display: flex;
+            justify-content: center; align-items: center; z-index: 1001;
+            display: none;
         }
         .preference-center-content {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            color: #333;
-        }
-        .preference-center-content h2 {
-            margin-top: 0;
-            color: #006A67;
-            font-size: 1.5em;
-        }
-        .preference-center-content .category {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-        .preference-center-content .category h3 {
-            margin-top: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.1em;
-            color: #555;
-        }
-        .preference-center-content .category p {
-            font-size: 0.85em;
-            color: #666;
-            margin-top: 5px;
-        }
-        .preference-center-content .category .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 20px;
-        }
-        .preference-center-content .category .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .preference-center-content .category .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            -webkit-transition: .4s;
-            transition: .4s;
-            border-radius: 20px;
-        }
-        .preference-center-content .category .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        .preference-center-content .category input:checked + .slider {
-            background-color: #006A67;
-        }
-        .preference-center-content .category input:focus + .slider {
-            box-shadow: 0 0 1px #006A67;
-        }
-        .preference-center-content .category input:checked + .slider:before {
-            -webkit-transform: translateX(20px);
-            -ms-transform: translateX(20px);
-            transform: translateX(20px);
-        }
-        .preference-center-content .footer-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .cookie-settings-link {
-            position: fixed;
-            bottom: 50px;
-            right: 10px;
-            font-size: 0.8em;
-            color: #006A67;
-            cursor: pointer;
-            z-index: 999;
+            background-color: white; padding: 35px; border-radius: 12px;
+            max-width: 650px; width: 95%; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        .category .details {
-            margin-top: 10px;
-            padding-left: 10px;
-            border-left: 2px solid #ddd;
-            font-size: 0.8em;
-            color: #777;
+        /* Tour UI Elements */
+        .info-card {
+            background: white; padding: 25px; border-radius: 12px;
+            border-left: 6px solid #006A67; margin-bottom: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
-        .category .details strong {
-            color: #555;
+        h3 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-top: 40px; font-size: 1.25rem; font-weight: 700; }
+
+        .tour-link {
+            color: #006A67; font-weight: 700; text-decoration: none;
+            border-bottom: 2px solid transparent; transition: all 0.2s ease;
+            cursor: pointer;
         }
-          /* Modal Styles for Credential Input & Linking */
+        .tour-link:hover { border-bottom-color: #006A67; background-color: #f0fdfa; }
+
+        /* Configuration Modal */
         .credentials-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000; /* Highest z-index to appear on top */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9); display: flex;
+            justify-content: center; align-items: center; z-index: 2000;
         }
         .credentials-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            width: 400px;
-            text-align: left;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            background: white; padding: 40px; border-radius: 16px;
+            width: 420px; text-align: left; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
+        .credentials-content h2 { margin-top: 0; color: #006A67; font-size: 1.5rem; font-weight: 700; }
         .credentials-content input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0 20px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+            width: 100%; padding: 12px; margin: 8px 0 20px 0;
+            border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;
+            font-family: monospace; font-size: 0.9rem;
         }
         .credentials-content button {
-            background-color: #006A67;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1em;
-            transition: background-color 0.3s;
+            background-color: #006A67; color: white; border: none;
+            padding: 14px; border-radius: 8px; cursor: pointer;
+            width: 100%; font-weight: 700; font-size: 1rem;
         }
-        .credentials-content button:hover {
-            background-color: #0056b3;
+
+        .privacy-trigger {
+            position: fixed; bottom: 30px; right: 30px;
+            background: white; border: 1px solid #e2e8f0;
+            padding: 10px 15px; border-radius: 100px;
+            font-size: 0.85rem; font-weight: 600; color: #006A67;
+            cursor: pointer; z-index: 999; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .credentials-content h2 {
-            margin-top: 0;
-            color: #006A67;
+
+        .lang-select {
+            background: #334155; color: white; border: 1px solid #475569;
+            padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;
+            cursor: pointer; font-weight: 600; outline: none;
+        }
+        .lang-select-light {
+            background: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1;
+            padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;
+            cursor: pointer; font-weight: 600;
         }
     </style>
 </head>
 <body>
-<a href="https://tsicoop.org" target="_blank"><img src = "https://tsicoop.org/logo.svg" alt="TSI Coop Foundation"/></a>
-<h1>TSI DPDP CMS - Consent Collector - Tour</h1>
-<h3>Welcome to Your Privacy Journey with TSI DPDP CMS!</h3>
-<p>This tour will walk you through how our system collects consent. </p>
 
-<h3>Sample Data Fiduciary: TSI Digital Hub</h3>
-<p>TSI Digital Hub is a digital platform that connects business IT departments with solutions, services and talent.</p>
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <a href="https://tsicoop.org" target="_blank"><img src="https://tsicoop.org/logo.svg" alt="TSI Coop" style="height: 50px;"/></a>
+        <span style="font-size: 0.75rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.1em; text-transform: uppercase;">Compliance Tour v1.3</span>
+    </div>
 
-<h3>Understanding Your Data & Our Purposes</h3>
-<p>Before we dive into the demo, let's briefly look at the types of information we might collect and why. Remember, you control what you share!</p>
+    <h1 style="color: #006A67; font-size: 2.25rem; font-weight: 800; margin-bottom: 10px;">Consent & Identity Journey</h1>
 
-<h3>We Collect Data For These Core Purposes</h3>
+    <div class="info-card">
+        <p><strong>Operational Notice:</strong> This interactive tour demonstrates how the TSI DPDP CMS enforces data principal rights. The initial <strong>Notice</strong> (Banner) and <strong>Capture</strong> (Preference Center) workflows are foundational and trigger automatically based on the policy configuration.</p>
+    </div>
 
-<p><strong>Account Registration & Management</strong>: To create and manage your business or professional account, enable login, and provide access to exclusive content and services on the TSI Digital Hub. This data is essential for you to have an account with us.</p>
+    <h3>Consent Evidence & Auditability</h3>
+    <p>Section 6 of the DPDP Act requires the Fiduciary to provide proof of consent. This action retrieves the cryptographically unique JSON artifact currently stored in your browser session.</p>
+    <p><a href="javascript:void(0)" id="view-preferences" class="tour-link">→ View My Signed Consent Artifact</a></p>
 
-<p><strong>Website Analytics & Performance</strong>: To understand how visitors use our website, which pages are most popular, and identify areas for improvement. This helps us enhance your browse experience and site performance.</p>
+    <h3>Identity Consolidation (Account Linking)</h3>
+    <p>To ensure portable rights, users can link anonymous browser interactions to a registered Data Principal ID. This flow simulates collecting verified account details and updating the CMS identity registry.</p>
+    <p><a href="javascript:void(0)" id="link-principal" class="tour-link">→ Link Anonymous Activity to Account</a></p>
 
-<p><strong>Community Engagement</strong>: Your community interactions such as technical posts, meetings/webinars invite, enquiries, RFPs, testimonials, support requests and grievances. This helps us offer stakeholder collaboration in the MSME tech ecosystem.</p>
-
-<p><strong>Solutions & Services Showcase</strong>: Solutions and Services that will help the MSMEs & Professionals to discover and benefit. This will help us expand the reach of local providers.</p>
-
-<p><strong>Maturity Assessments</strong>: Digital Maturity Assessments of businesses and Capability Maturity Assessment of local providers. This helps us offer Ratings & advise on areas of improvement. </p>
-
-<h3>The Data Fields Involved Include</h3>
-
-<p>Email Address, Business Name, Professional Name, College Name, Industry Type, City, Organization Type.</p>
-
-<p>Website Usage Data, Device Information.</p>
-
-<p>Engagement Interactions (e.g., technical post views, meetings, inquiries, RFPs, testimonials, support request, grievances).</p>
-
-<p>Solution & Service details of local providers.</p>
-
-<p>Maturity Assessment Responses.</p>
-
-<h1>Your Interactive Demo Journey: Putting You in Control</h1>
-<p>Let's begin! Follow the steps below and click on the elements within the demo page to see how it all works.</p>
-
-<h3>Step 1: Your First Interaction - The Consent Banner</h3>
-
-<p>What you see: When you first visit the site (or if your consent has expired), a Consent Banner will appear at the bottom of your screen (see below). This is our way of giving you clear notice as soon as you arrive.</p>
-
-<p><strong>Your Action</strong>: You have three clear options:</p>
-
-<p>Click "Accept All & Continue": This quickly grants consent for all non-essential purposes.</p>
-
-<p>Click "Reject Non-Essential": This will only enable the absolutely necessary functions of the website.</p>
-
-<p>Click "Manage My Preferences": This is where you get granular control!</p>
-
-<h3>Step 2: Granular Control - Managing Your Preferences</h3>
-
-<p><strong>How to access</strong>: If you clicked "Manage My Preferences" on the banner, or if you click the "Privacy Choices" link at the bottom-right of the page now, a modal window (the "Preference Center") will pop up.</p>
-
-<p><strong>What you see:</strong></p>
-
-<p>A list of all our data processing purposes (like "Website Analytics," "Personalized Marketing," etc.).</p>
-
-<p>Mandatory purposes (like "Account Registration") will be marked as "Mandatory for Service" and their toggles will be disabled, as they are essential for core site functionality.</p>
-
-<p>For optional purposes, you'll see a toggle switch.</p>
-
-<p><strong>Your Action:</strong></p>
-
-<p>Toggle the switches to your desired "ON" (accept) or "OFF" (reject) position for each purpose.</p>
-
-<p>Click "Save Choices" at the bottom of the modal to apply your selections.</p>
-
-<p><strong>Observe</strong>: Watch how the console messages change, indicating which scripts (e.g., analytics, community engagement) are now active or inactive based on your choices!</p>
-
-<h3>Step 3: Checking Your Choices - "View Preferences"</h3>
-
-<p><strong>What it is</strong>: This feature allows you to see the exact JSON representation of your current consent preferences stored in your browser.</p>
-
-<div id="view-preferences"><strong>Your Action</strong>: Click the <a href="">View Preferences</a> link on the page.</div>
-
-<p><strong>Observe</strong>: A modal will appear showing a formatted JSON object. This is your personal consent artifact!</p>
-
-<p>If you haven't made a choice yet, it will politely inform you.</p>
-
-<p>If you've made choices, you'll see policyId, policyVersion, timestamp, mechanism, and your preferences (a list of purpose_id: true/false). This is our auditable record of your choices.</p>
-
-<h3>Step 4: Linking Your Identity - "Link Principal"</h3>
-
-<p><strong>The Challenge</strong>: Sometimes, you interact with a website before logging in (an "anonymous" session). Later, you log in. How do we connect those early choices to your official account? This is where "Link Principal" comes in.</p>
-
-<div id="link-principal"><strong>Your Action</strong>: Click the <a href="">Link Principal</a> link on the page.</div>
-
-<p><strong>Observe:</strong></p>
-
-<p>If you see a modal asking for your Name and Email, it means your browser has an anonymous ID that can be linked. Fill in details and click "Submit & Link Account." We'll simulate receiving a "Principal ID."</p>
-
-<p>If you immediately see a modal saying "Account Already Linked!", it means your browser already has a non-anonymous ID associated with it.</p>
-
-<p><strong>Observe (after linking)</strong>: The modal will update to show your new, persistent principal_id stored in your browser's local storage, along with all your consent preferences under this unified ID. In a real system, this ID would be your authenticated user ID from our backend.</p>
-
-<h3>Step 5: Consent-Gated Features - "Add Post" & "Provider Zone"</h3>
-
-<p><strong>The Principle</strong>: Certain functionalities on our site require your consent for specific data processing purposes.</p>
-
-<p><strong>Your Action (Add Post):</strong></p>
-
-<div id="validate-add-post">Click <a href="">Add Post</a></div>
-
-<p><strong>Observe</strong>: A modal will appear.</p>
-
-<p>If your "Community Engagement" preference is OFF, it will deny access and prompt you to "Manage Preferences."</p>
-
-<p>If your "Community Engagement" preference is ON, it will grant access.</p>
-
-<p><strong>Try This</strong>: If denied, click "Manage Preferences" from the modal, enable "Community Engagement", "Save Choices", then try "Add Post" again.
-
-<h3>Conclusion: Trust, Transparency, and Control</h3>
-<p>This tour demonstrates how TSI Digital Hub empowers you to manage your privacy. Our system not only complies with the DPDP Act but strives to give you full transparency and control over your personal data. We are continuously working to make your experience secure, seamless, and trustworthy.</p>
-
-<p><strong>Thank you for taking the tour!</strong></p>
-
-<div id="cookie-consent-banner" class="cookie-banner">
+    <h3>Compliance-Gated Interactions</h3>
+    <p>Under DPDP guidelines, processing is strictly limited to consented purposes. These tests verify that application features are dynamically enabled or blocked based on your current preferences.</p>
+    <div style="display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap;">
+        <a href="javascript:void(0)" id="validate-add-post" class="tour-link">Test: Add Community Post</a>
+        <a href="javascript:void(0)" id="validate-provider-zone" class="tour-link">Test: Access Provider Zone</a>
+        <a href="javascript:void(0)" id="view-profile" class="tour-link">Test: View User Profile</a>
+    </div>
 </div>
+
+<!-- Dynamic Overlay Containers -->
+<div id="cookie-consent-banner" class="cookie-banner"></div>
 
 <div id="preference-center-overlay" class="preference-center-overlay">
     <div class="preference-center-content">
-        <div class="footer-buttons">
-            <button id="save-preferences">Save Choices</button>
+        <div id="preference-content-body"></div>
+        <div class="footer-buttons" style="margin-top: 25px; text-align: right;">
+            <button id="save-preferences" style="background: #006A67; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold;">Apply Choices</button>
         </div>
     </div>
 </div>
 
-<!-- Credentials Modal (Initial Setup) -->
-<div id="credentials-modal" class="credentials-modal" style="display: none;">
+<!-- Tour Setup Modal -->
+<div id="credentials-modal" class="credentials-modal">
     <div class="credentials-content">
-        <h2>Configure Credentials & Policy</h2>
-        <p style="font-size: 0.9em; color: #666;">Please enter your API credentials & Policy Id to connect to the TSI DPDP CMS backend.</p>
+        <h2 style="margin-bottom: 10px;">Tour Configuration</h2>
+        <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 25px;">Enter your app credentials to connect the tour to the TSI CMS backend.</p>
 
-        <label for="api-key" style="display:block; margin-top:10px; font-weight:bold;">X-API-Key</label>
-        <input type="text" id="api-key" placeholder="Enter API Key">
+        <label style="display:block; font-weight:700; font-size: 0.75rem; text-transform: uppercase; color: #475569;">X-API-Key</label>
+        <input type="text" id="api-key" placeholder="UUID Key">
 
-        <label for="api-secret" style="display:block; margin-top:10px; font-weight:bold;">X-API-Secret</label>
-        <input type="text" id="api-secret" placeholder="Enter API Secret (Raw Key)">
+        <label style="display:block; font-weight:700; font-size: 0.75rem; text-transform: uppercase; color: #475569;">X-API-Secret</label>
+        <input type="text" id="api-secret" placeholder="Secret Token">
 
-        <label for="policy-id" style="display:block; margin-top:10px; font-weight:bold;">Policy Id</label>
-        <input type="text" id="policy-id" placeholder="Enter Policy Id">
+        <label style="display:block; font-weight:700; font-size: 0.75rem; text-transform: uppercase; color: #475569;">Policy ID</label>
+        <input type="text" id="policy-id" placeholder="e.g. WEB_POLICY_V1">
 
-        <button id="save-credentials-btn">Start Tour</button>
+        <button id="save-credentials-btn">Start Interactive Tour</button>
     </div>
 </div>
-<a href="#" id="open-cookie-settings" class="cookie-settings-link">Privacy Choices</a>
 
+<a href="javascript:void(0)" id="open-cookie-settings" class="privacy-trigger">Open Privacy Center</a>
+
+<!-- Global Config Placeholder -->
 <script type="application/json" id="config-data">
     {
         "tsi_dpdp_cms_localstoragekey": "tsi_dpdp_cms_key",
@@ -373,50 +169,424 @@
 </script>
 
 <script>
- async function checkCredentials() {
-    const key = config.tsi_dpdp_cms_apikey;
-    const secret = config.tsi_dpdp_cms_apisecret;
-
-    // Check if both keys exist. If not, show the modal.
-    if (!key || !secret) {
-        credentialsModal.style.display = 'flex';
-    } else {
-        // Credentials exist, proceed to initialize the app
-        console.log("Credentials found. Initializing...");
-        initConsentManager();
-    }
- }
-
-// --- Configuration & Globals ---
+/**
+ * --- CONSENT MANAGER LOGIC (Integrated) ---
+ */
 const config = JSON.parse(document.getElementById('config-data').textContent);
 
-// --- DOM Elements ---
-const credentialsModal = document.getElementById('credentials-modal');
-const apiKeyInput = document.getElementById('api-key');
-const apiSecretInput = document.getElementById('api-secret');
-const policyIdInput = document.getElementById('policy-id');
-const saveCredentialsBtn = document.getElementById('save-credentials-btn');
+const CONSENT_LOCAL_STORAGE_KEY = config.tsi_dpdp_cms_localstoragekey;
+const CONSENT_EXPIRY_DAYS = parseInt(config.tsi_dpdp_cms_consentexpiry);
+const API_BASE_URL = config.tsi_dpdp_cms_apibaseurl;
 
-// Start by checking for API credentials
-document.addEventListener('DOMContentLoaded', checkCredentials);
+let API_KEY = null;
+let API_SECRET = null;
+let POLICY_ID = null;
+let currentPolicy = null;
+let currentLanguageContent = null;
 
-saveCredentialsBtn.addEventListener('click', () => {
-        const key = apiKeyInput.value.trim();
-        const secret = apiSecretInput.value.trim();
-        const policyId = policyIdInput.value.trim();
+const cookieBanner = document.getElementById('cookie-consent-banner');
+const preferenceCenterOverlay = document.getElementById('preference-center-overlay');
 
-        if (key && secret) {
-            config.tsi_dpdp_cms_apikey = key;
-            config.tsi_dpdp_cms_apisecret = secret;
-            config.tsi_dpdp_cms_policyid = policyId;
-            credentialsModal.style.display = 'none';
-            alert("Credentials Saved! Starting tour...");
-            initConsentManager();
-        } else {
-            alert("Please enter both API Key, Secret and Policy Id to proceed.");
+// Global Headers Helper to ensure UTF-8 for both Request AND Expectation
+const getHeaders = () => ({
+    'Content-Type': 'application/json; charset=UTF-8',
+    'Accept': 'application/json; charset=UTF-8',
+    'X-API-Key': API_KEY,
+    'X-API-Secret': API_SECRET
+});
+
+// UI Helpers
+function displayCustomModal(title, bodyHtml, actionButtonHtml = '') {
+    const existing = document.getElementById('custom-message-modal-overlay');
+    if (existing) existing.remove();
+
+    let modalHtml = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 3000;" id="custom-message-modal-overlay">
+            <div style="background-color: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; font-family: Arial, sans-serif; color: #333; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+                <button style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: #888;" onclick="document.getElementById('custom-message-modal-overlay').remove();">&times;</button>
+                <h2 style="color:#006A67; margin-top:0; font-weight:700;">${title}</h2>
+                <div style="font-size: 1rem; margin-top: 20px; line-height: 1.6; color: #475569;">${bodyHtml}</div>
+                <div style="margin-top:30px;">${actionButtonHtml}</div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function resolvePolicyContent(data) {
+    let content = data.policy_content || data;
+    if (typeof content === 'string') {
+        try { content = JSON.parse(content); } catch (e) { console.error("JSON Error", e); }
+    }
+    return content;
+}
+
+function getPreferredLanguage(policyMap) {
+    const lang = (document.documentElement.lang || navigator.language || 'en').toLowerCase();
+    const availableLangs = Object.keys(policyMap);
+    if (availableLangs.includes(lang)) return lang;
+    const baseLang = lang.split('-')[0];
+    if (availableLangs.includes(baseLang)) return baseLang;
+    return availableLangs.includes('en') ? 'en' : availableLangs[0];
+}
+
+/**
+ * Switch the active language and re-render components.
+ */
+function changeLanguage(langCode) {
+    const map = resolvePolicyContent(currentPolicy);
+    if (map[langCode]) {
+        currentLanguageContent = map[langCode];
+        document.documentElement.lang = langCode;
+
+        // Re-render UI
+        renderCookieBanner();
+
+        if (preferenceCenterOverlay.style.display === 'flex') {
+            const currentPrefs = {};
+            (currentLanguageContent.data_processing_purposes || []).forEach(p => {
+                const el = document.getElementById(`toggle-${p.id}`);
+                if (el) currentPrefs[p.id] = el.checked;
+            });
+
+            renderPreferenceCenter();
+
+            (currentLanguageContent.data_processing_purposes || []).forEach(p => {
+                const el = document.getElementById(`toggle-${p.id}`);
+                if (el) el.checked = currentPrefs[p.id] !== undefined ? currentPrefs[p.id] : p.is_mandatory_for_service;
+            });
         }
- });
+    }
+}
+
+async function fetchConsentPolicy() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/client/policy`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ "_func": "get_policy", "policy_id": POLICY_ID })
+        });
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.data || data;
+    } catch (e) { return null; }
+}
+
+function getConsentState() {
+    try {
+        const stored = localStorage.getItem(CONSENT_LOCAL_STORAGE_KEY);
+        if (stored) {
+            const data = JSON.parse(stored);
+            const expiryDate = new Date(data.timestamp);
+            expiryDate.setDate(expiryDate.getDate() + CONSENT_EXPIRY_DAYS);
+            if (new Date() < expiryDate) return data.preferences;
+        }
+    } catch (e) {}
+    return null;
+}
+
+async function saveConsentState(preferences, mechanism) {
+    const consentData = {
+        preferences,
+        timestamp: new Date().toISOString(),
+        mechanism,
+        policyVersion: currentPolicy ? currentPolicy.version : "1.0",
+        policyId: POLICY_ID
+    };
+    localStorage.setItem(CONSENT_LOCAL_STORAGE_KEY, JSON.stringify(consentData));
+
+    const userId = localStorage.getItem('tsi_dpdp_cms_principal_id') || localStorage.getItem('tsi_dpdp_cms_anon_id') || `anon_${Date.now()}`;
+    localStorage.setItem('tsi_dpdp_cms_anon_id', userId);
+
+    try {
+        const fiduciaryId = currentPolicy ? currentPolicy.fiduciary_id : (localStorage.getItem('fiduciary_id') || 'fiduciary_hub_abc');
+
+        const payload = {
+            _func: 'record_consent',
+            user_id: userId,
+            policy_id: POLICY_ID,
+            fiduciary_id: fiduciaryId,
+            language_selected: document.documentElement.lang || 'en', // FIX: Pass language
+            consent_mechanism: mechanism,
+            data_point_consents: Object.keys(preferences).map(id => {
+                const purposeObj = (currentLanguageContent.data_processing_purposes || []).find(p => p.id === id);
+                return {
+                    data_point_id: id,
+                    consent_granted: !!preferences[id],
+                    purpose_agreed_to: purposeObj ? purposeObj.name : id,
+                    timestamp_updated: new Date().toISOString()
+                };
+            })
+        };
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/client/consent`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Consent Sync Failed:", errorText);
+        }
+    } catch (e) { console.error("Sync to DB failed", e); }
+
+    if (cookieBanner) cookieBanner.style.display = 'none';
+}
+
+function renderCookieBanner() {
+    if (!currentLanguageContent) return;
+    const btn = currentLanguageContent.buttons || {};
+    const map = resolvePolicyContent(currentPolicy);
+    const languages = Object.keys(map);
+
+    let langOptions = languages.map(l => `<option value="${l}" ${document.documentElement.lang === l ? 'selected' : ''}>${l.toUpperCase()}</option>`).join('');
+
+    cookieBanner.innerHTML = `
+        <div style="flex: 1; min-width: 300px;">
+            <p style="margin:0; font-size: 0.95rem;">${currentLanguageContent.general_purpose_description || 'Compliance Notice'}.</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:15px; flex-wrap: wrap; margin-top:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:0.7rem; color:#94a3b8; font-weight:700;">LANGUAGE:</span>
+                <select onchange="changeLanguage(this.value)" class="lang-select">
+                    ${langOptions}
+                </select>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="handleAcceptAll()">${btn.accept_all || 'Accept All'}</button>
+                <button onclick="handleRejectAll()" style="background:#64748b;">${btn.reject_all_non_essential || 'Reject'}</button>
+                <button onclick="handleManagePreferences()" style="background:transparent; border:1px solid #475569;">${btn.manage_preferences || 'Preferences'}</button>
+            </div>
+        </div>
+    `;
+    cookieBanner.style.display = 'flex';
+}
+
+function renderPreferenceCenter() {
+    if (!currentLanguageContent) return;
+    const map = resolvePolicyContent(currentPolicy);
+    const languages = Object.keys(map);
+    let langOptions = languages.map(l => `<option value="${l}" ${document.documentElement.lang === l ? 'selected' : ''}>${l.toUpperCase()}</option>`).join('');
+
+    let html = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:0.7rem; color:#64748b; font-weight:800;">UI LANGUAGE:</span>
+                <select onchange="changeLanguage(this.value)" class="lang-select-light">
+                    ${langOptions}
+                </select>
+            </div>
+            <button onclick="closePreferenceCenter()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#888;">&times;</button>
+        </div>
+        <h2 style="color:#006A67; font-size: 1.5rem; font-weight: 700;">${currentLanguageContent.title}</h2>
+        <div style="margin-top:25px;">`;
+
+    (currentLanguageContent.data_processing_purposes || []).forEach(p => {
+        html += `
+            <div style="padding:15px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:12px; background:#f8fafc;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#1e293b;">${p.name}</strong>
+                    ${p.is_mandatory_for_service ? '<span style="color:#059669; font-size:0.7rem; font-weight:800; text-transform:uppercase;">Mandatory</span>' : `
+                        <input type="checkbox" id="toggle-${p.id}" style="width:20px; height:20px; cursor:pointer;">
+                    `}
+                </div>
+                <p style="font-size:0.85rem; color:#64748b; margin-top:4px; line-height:1.4;">${p.description}</p>
+            </div>
+        `;
+    });
+    document.getElementById('preference-content-body').innerHTML = html + "</div>";
+}
+
+function handleAcceptAll() {
+    const prefs = {};
+    currentLanguageContent.data_processing_purposes.forEach(p => prefs[p.id] = true);
+    saveConsentState(prefs, 'accept_all_banner');
+}
+
+function handleRejectAll() {
+    const prefs = {};
+    currentLanguageContent.data_processing_purposes.forEach(p => prefs[p.id] = p.is_mandatory_for_service);
+    saveConsentState(prefs, 'reject_all_banner');
+}
+
+function handleManagePreferences() {
+    const prefs = getConsentState() || {};
+    renderPreferenceCenter();
+    (currentLanguageContent.data_processing_purposes || []).forEach(p => {
+        const el = document.getElementById(`toggle-${p.id}`);
+        if (el) el.checked = prefs[p.id] !== undefined ? prefs[p.id] : p.is_mandatory_for_service;
+    });
+    preferenceCenterOverlay.style.display = 'flex';
+    cookieBanner.style.display = 'none';
+}
+
+document.getElementById('save-preferences').onclick = () => {
+    const prefs = {};
+    currentLanguageContent.data_processing_purposes.forEach(p => {
+        const el = document.getElementById(`toggle-${p.id}`);
+        prefs[p.id] = el ? el.checked : p.is_mandatory_for_service;
+    });
+    saveConsentState(prefs, 'save_preferences_center');
+    preferenceCenterOverlay.style.display = 'none';
+};
+
+function closePreferenceCenter() { preferenceCenterOverlay.style.display = 'none'; }
+
+// --- Tour Actions ---
+
+function initiateLinkPrincipalFlow() {
+    const anonymousUserId = localStorage.getItem('tsi_dpdp_cms_anon_id');
+    const existingPrincipal = localStorage.getItem('tsi_dpdp_cms_principal_id');
+
+    if (existingPrincipal) {
+        displayCustomModal("Account Already Linked", `This session is already associated with Data Principal: <strong>${existingPrincipal}</strong>.`);
+        return;
+    }
+
+    const body = `
+        <div style="text-align: left;">
+            <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">Linking associates your anonymous choices with your verified account for portable rights management.</p>
+
+            <label style="display:block; font-size:0.8rem; font-weight:700; margin-bottom:5px; color:#475569; text-transform:uppercase;">Full Name</label>
+            <input type="text" id="link-user-name" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px; margin-bottom:20px;" placeholder="John Doe">
+
+            <label style="display:block; font-size:0.8rem; font-weight:700; margin-bottom:5px; color:#475569; text-transform:uppercase;">Email Address</label>
+            <input type="email" id="link-user-email" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;" placeholder="john@example.com">
+
+            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 20px;">
+                <p style="font-size: 0.7rem; color: #94a3b8; margin: 0;">Anonymous Target ID:</p>
+                <p style="font-size: 0.8rem; font-family: monospace; color: #475569; word-break: break-all; margin: 0;"><strong>${anonymousUserId || 'Session Not Found'}</strong></p>
+            </div>
+        </div>
+    `;
+
+    const action = `<button id="submit-link-btn" style="background:#006A67; color:white; border:none; padding:14px; border-radius:8px; cursor:pointer; width:100%; font-weight:700; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">Consolidate & Link Identity</button>`;
+
+    displayCustomModal("Link Data Principal", body, action);
+
+    document.getElementById('submit-link-btn').onclick = async () => {
+        const name = document.getElementById('link-user-name').value.trim();
+        const email = document.getElementById('link-user-email').value.trim();
+        if (!name || !email) return alert("Full Name and Email are mandatory for linking.");
+
+        const btn = document.getElementById('submit-link-btn');
+        btn.disabled = true;
+        btn.textContent = "Posting to Registry...";
+
+        try {
+            const fiduciaryId = currentPolicy ? currentPolicy.fiduciary_id : (localStorage.getItem('fiduciary_id') || 'fiduciary_hub_abc');
+
+            const payload = {
+                _func: "link_user",
+                anonymous_user_id: anonymousUserId || "anon_undefined",
+                authenticated_user_id: email,
+                fiduciary_id: fiduciaryId,
+                language_selected: document.documentElement.lang || 'en', // FIX: Pass language
+                meta: { name }
+            };
+
+            const res = await fetch(`${API_BASE_URL}/api/v1/client/consent`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                localStorage.setItem('tsi_dpdp_cms_principal_id', email);
+                const currentPrefs = getConsentState() || {};
+                await saveConsentState(currentPrefs, 'account_linked_sync');
+
+                displayCustomModal("Identity Linked!", `<p>Successfully linked <strong>${anonymousUserId}</strong> to <strong>${email}</strong>.</p><p style="color: #059669; font-weight: 700; margin-top: 10px;">✓ Consent records synchronized for the linked user.</p>`);
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert("Backend Error: " + (errData.message || "The server rejected the identity consolidation request."));
+            }
+        } catch (e) {
+            console.error("Linking Post Error:", e);
+            alert("Network Error: Could not reach the CMS Registry. Please check backend status.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Consolidate & Link Identity";
+        }
+    };
+}
+
+async function initConsentManager() {
+    API_KEY = config.tsi_dpdp_cms_apikey;
+    API_SECRET = config.tsi_dpdp_cms_apisecret;
+    POLICY_ID = config.tsi_dpdp_cms_policyid;
+
+    const rawPolicy = await fetchConsentPolicy();
+    if (!rawPolicy) return;
+
+    currentPolicy = rawPolicy;
+    const map = resolvePolicyContent(rawPolicy);
+    const lang = getPreferredLanguage(map);
+    currentLanguageContent = map[lang];
+    document.documentElement.lang = lang;
+
+    renderCookieBanner();
+    renderPreferenceCenter();
+
+    const bind = (id, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.onclick = (e) => { e.preventDefault(); fn(); };
+    };
+
+    bind('view-preferences', () => {
+        const stored = localStorage.getItem(CONSENT_LOCAL_STORAGE_KEY);
+        displayCustomModal("Consent Artifact", stored ? `<pre style="background:#f1f5f9; padding:15px; border-radius:8px; font-size:0.8rem; overflow-x:auto;">${JSON.stringify(JSON.parse(stored), null, 2)}</pre>` : '<p>Interact with the banner to generate an artifact.</p>');
+    });
+
+    bind('link-principal', initiateLinkPrincipalFlow);
+    bind('open-cookie-settings', handleManagePreferences);
+
+    bind('validate-add-post', () => {
+        const state = getConsentState();
+        if (state && state.purpose_community_engagement) {
+            displayCustomModal("Access Granted!", "Verification successful. You have granted 'Community Engagement' consent.");
+        } else {
+            displayCustomModal("Access Denied", "Requires 'Community Engagement' consent.", `<button onclick="handleManagePreferences()" style="background:#006A67; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;">Grant Consent</button>`);
+        }
+    });
+
+    bind('validate-provider-zone', () => {
+        const state = getConsentState();
+        if (state && state.purpose_solution_service_training_showcase) {
+            displayCustomModal("Access Granted!", "Verification successful. You have granted 'Solutions & Services' consent.");
+        } else {
+            displayCustomModal("Access Denied", "Requires 'Solutions & Services Showcase' consent.", `<button onclick="handleManagePreferences()" style="background:#006A67; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;">Update Preferences</button>`);
+        }
+    });
+
+    bind('view-profile', () => displayCustomModal("User Dashboard", "This view demonstrates the right to access (Section 11) for a verified Data Principal."));
+
+    if (getConsentState()) cookieBanner.style.display = 'none';
+}
+
+// --- App Bootstrap ---
+document.addEventListener('DOMContentLoaded', () => {
+    if (!config.tsi_dpdp_cms_apikey) {
+        document.getElementById('credentials-modal').style.display = 'flex';
+    } else {
+        initConsentManager();
+    }
+});
+
+document.getElementById('save-credentials-btn').onclick = () => {
+    const key = document.getElementById('api-key').value.trim();
+    const secret = document.getElementById('api-secret').value.trim();
+    const policyId = document.getElementById('policy-id').value.trim();
+
+    if (key && secret && policyId) {
+        config.tsi_dpdp_cms_apikey = key;
+        config.tsi_dpdp_cms_apisecret = secret;
+        config.tsi_dpdp_cms_policyid = policyId;
+        document.getElementById('credentials-modal').style.display = 'none';
+        initConsentManager();
+    }
+};
 </script>
-<script src="consent-manager.js"> </script>
 </body>
 </html>
