@@ -77,6 +77,7 @@ class CESService {
 
         Timestamp newCESRun = Timestamp.from(Instant.now());
         JSONObject recent = getRecentConsent(principalId);
+        if(recent == null) return;
         Timestamp createdAt = (Timestamp) recent.get("created_at");
             //System.out.println("Processing:"+principalId);
         mechanism = (String) recent.get("mechanism");
@@ -93,6 +94,7 @@ class CESService {
     }
 
     private JSONObject getRecentConsent(String principalId) throws Exception{
+        //System.out.println("Inside getRecentConsent:"+principalId);
         JSONObject recent = null;
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -120,7 +122,10 @@ class CESService {
                 recent.put("created_at",createdAt);
                 recent.put("consents",consents);
             }
-        }finally {
+        }catch(Exception e){
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+        }finally{
             pool.cleanup(rs,stmt,conn);
         }
         return recent;
