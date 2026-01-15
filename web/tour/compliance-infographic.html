@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP - Compliance Enforcement Infographic</title>
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <style>
+        :root {
+            --tsi-teal: #006A67;
+            --tsi-dark: #0f172a;
+        }
+        body { background-color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .flow-line { height: 2px; background: repeating-linear-gradient(to right, #cbd5e1 0, #cbd5e1 5px, transparent 5px, transparent 10px); }
+        .json-box { background-color: #1e293b; color: #94a3b8; font-family: 'ui-monospace', monospace; }
+        .teal-accent { color: #2dd4bf; }
+        .audit-step::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -20px;
+            width: 2px;
+            height: 20px;
+            background: #e2e8f0;
+        }
+        .audit-step:last-child::after { display: none; }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+
+<div class="max-w-6xl mx-auto">
+    <!-- Header Section -->
+    <header class="text-center mb-12">
+        <div class="inline-block px-4 py-1 rounded-full bg-teal-100 text-teal-700 text-xs font-black uppercase tracking-widest mb-4">DPDP Section 8 & 12 Enforcement</div>
+        <h1 class="text-4xl font-black text-slate-800 tracking-tight mb-4">The Compliance Enforcement Service (CES)</h1>
+        <p class="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            Technically enforcing data deletion is a significant compliance challenge. We handle this via a specialized, periodic background service that bridges the gap between <span class="font-bold text-teal-700">Legal Mandates</span> and <span class="font-bold text-teal-700">Technical Deletion</span>.
+        </p>
+    </header>
+
+    <!-- Main Logic Flow -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+
+        <!-- Logic Block 1: The engine -->
+        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 relative overflow-hidden text-center lg:text-left">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center justify-center lg:justify-start gap-2">
+                <span class="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white text-sm italic">1</span>
+                Nightly Engine
+            </h3>
+            <p class="text-sm text-slate-500 leading-relaxed">
+                The CES runs periodically (once every 24 hours). It scans every principal's consent state and cross-references them against active retention policies to identify required purge actions.
+            </p>
+            <div class="mt-6 pt-6 border-t border-slate-100">
+                <div class="flex items-center justify-center lg:justify-start gap-3 text-xs font-bold text-teal-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    STATUS: Scheduled Periodic Run
+                </div>
+            </div>
+        </div>
+
+        <!-- Logic Block 2: Retention Logic -->
+        <div class="lg:col-span-2 bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
+            <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white text-sm italic">2</span>
+                Purpose-Linked Retention Policies
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Account Data -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest">Statutory Data</span>
+                        <span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold">7 YEARS</span>
+                    </div>
+                    <div class="json-box p-4 rounded-xl text-[11px] leading-relaxed shadow-inner">
+                        {<br>
+                        &nbsp;&nbsp;"id": "<span class="teal-accent">purpose_account_management</span>",<br>
+                        &nbsp;&nbsp;"duration": <span class="text-orange-400">7</span>,<br>
+                        &nbsp;&nbsp;"unit": "YEARS",<br>
+                        &nbsp;&nbsp;"start": "CONSENT_WITHDRAWN"<br>
+                        }
+                    </div>
+                    <p class="text-[11px] text-slate-500 italic">Essential records retained following deletion to meet legal requirements.</p>
+                </div>
+
+                <!-- Analytics Data -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest">Behavioral Data</span>
+                        <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold">2 YEARS</span>
+                    </div>
+                    <div class="json-box p-4 rounded-xl text-[11px] leading-relaxed shadow-inner">
+                        {<br>
+                        &nbsp;&nbsp;"id": "<span class="teal-accent">purpose_website_analytics</span>",<br>
+                        &nbsp;&nbsp;"duration": <span class="text-orange-400">2</span>,<br>
+                        &nbsp;&nbsp;"unit": "YEARS",<br>
+                        &nbsp;&nbsp;"start": "CONSENT_GIVEN"<br>
+                        }
+                    </div>
+                    <p class="text-[11px] text-slate-500 italic">Automatically flagged for purge after 2 years or upon withdrawal.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Visual: Withdrawal vs Erasure -->
+    <div class="bg-slate-800 p-10 rounded-[40px] shadow-2xl mb-12 text-white overflow-hidden relative">
+        <div class="absolute -right-20 -top-20 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl"></div>
+
+        <h2 class="text-2xl font-black mb-10 text-center tracking-tight">The Enforcement Lifecycle</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-16 relative">
+            <!-- Vertical Divider for Desktop -->
+            <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-slate-700"></div>
+
+            <!-- Scenario A: Withdrawal -->
+            <div class="space-y-6">
+                <h4 class="text-teal-400 font-black uppercase text-xs tracking-widest flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>
+                    Scenario: Consent Withdrawal
+                </h4>
+                <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center text-[10px] font-bold">A1</div>
+                    <p class="text-sm text-slate-300"><span class="text-white font-bold">Immediate Deactivation:</span> Processing stops instantly to prevent unauthorized use.</p>
+                </div>
+                <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center text-[10px] font-bold">A2</div>
+                    <p class="text-sm text-slate-300"><span class="text-white font-bold">Scheduled Purge:</span> Background scrub is scheduled according to the 7-year or 2-year retention policy.</p>
+                </div>
+            </div>
+
+            <!-- Scenario B: Erasure -->
+            <div class="space-y-6">
+                <h4 class="text-orange-400 font-black uppercase text-xs tracking-widest flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    Scenario: Erasure Request
+                </h4>
+                <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center text-[10px] font-bold">B1</div>
+                    <p class="text-sm text-slate-300"><span class="text-white font-bold">Priority Queue:</span> The request is logged as a priority compliance task.</p>
+                </div>
+                <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center text-[10px] font-bold">B2</div>
+                    <p class="text-sm text-slate-300"><span class="text-white font-bold">Next-Run Purge:</span> The purge is initiated immediately in the subsequent CES run, overriding standard retention.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Footer -->
+        <div class="mt-12 bg-slate-900/50 p-6 rounded-2xl border border-slate-700 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-teal-500/20 rounded-full flex items-center justify-center text-teal-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7 3 9 3 9h6s3-2 3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-bold">Lightweight Notifications</p>
+                    <p class="text-xs text-slate-400">CES populates a 'dispatch_table'. Fiduciaries plug in via API to alert stakeholders.</p>
+                </div>
+            </div>
+            <div class="px-4 py-2 bg-teal-600 rounded-lg text-xs font-bold uppercase tracking-widest cursor-default">Plug-and-Play API</div>
+        </div>
+    </div>
+
+    <!-- DPO Oversight Section -->
+    <div class="bg-white p-10 rounded-[40px] shadow-xl border border-slate-200 mb-12">
+        <div class="flex flex-col md:flex-row items-center gap-12">
+            <div class="md:w-1/3">
+                <div class="actor-badge mb-4 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase inline-block border border-indigo-100">Manual Governance</div>
+                <h2 class="text-3xl font-black text-slate-800 mb-4 tracking-tight text-center md:text-left">The DPO Control Center</h2>
+                <p class="text-sm text-slate-500 leading-relaxed mb-6 text-center md:text-left">
+                    Automated deletion isn't always fully integrated. We provide a manual path for the DPO to act on grievances and manually transition requests to fulfillment.
+                </p>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                        <span class="w-4 h-4 rounded bg-slate-200 flex items-center justify-center text-[10px]">✓</span>
+                        Manual Status Overrides
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                        <span class="w-4 h-4 rounded bg-slate-200 flex items-center justify-center text-[10px]">✓</span>
+                        Immutable Audit Trail
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                        <span class="w-4 h-4 rounded bg-slate-200 flex items-center justify-center text-[10px]">✓</span>
+                        Direct Console Purge Triggers
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual of Console Status -->
+            <div class="md:w-2/3 w-full bg-slate-50 border border-slate-200 rounded-3xl p-6 shadow-inner">
+                <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-200">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Console: Purge Status Transition</span>
+                    <div class="flex gap-1">
+                        <div class="w-2 h-2 rounded-full bg-red-400"></div>
+                        <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+                        <div class="w-2 h-2 rounded-full bg-green-400"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex flex-col items-center">
+                        <div class="px-4 py-2 bg-amber-100 text-amber-700 text-xs font-black rounded-lg border border-amber-200">IN_PROGRESS</div>
+                        <span class="text-[9px] text-slate-400 mt-2 italic">Notifying Processors</span>
+                    </div>
+                    <div class="flow-line flex-1 hidden md:block"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <span class="text-[9px] text-slate-400 mt-2 italic">DPO Verification</span>
+                    </div>
+                    <div class="flow-line flex-1 hidden md:block"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="px-4 py-2 bg-green-100 text-green-700 text-xs font-black rounded-lg border border-green-200">COMPLETED</div>
+                        <span class="text-[9px] text-slate-400 mt-2 italic">Immutable Audit Entry</span>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-4 bg-white rounded-xl border border-slate-200 text-[10px] font-mono text-slate-500">
+                    [AUDIT LOG]: User <span class="text-teal-600">data_principal_789</span> marked COMPLETED by <span class="text-indigo-600">satish_dpo</span> via CMS Console. Deletion verified.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Full Lifecycle Audit Section -->
+    <section class="bg-indigo-900 p-10 rounded-[40px] shadow-2xl text-white overflow-hidden relative mb-12">
+        <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl"></div>
+
+        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+            <div class="text-center md:text-left">
+                <div class="actor-badge bg-white/20 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase inline-block mb-3 border border-white/10">Auditor Perspective</div>
+                <h2 class="text-3xl font-black tracking-tight">End-to-End Audit Integrity</h2>
+            </div>
+            <div class="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-teal-400"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <div class="text-xs">
+                    <p class="font-bold">Immutable Audit Store</p>
+                    <p class="text-white/50">Section 6 & 11 Compliant Evidence</p>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-sm text-indigo-100/70 mb-12 text-center max-w-2xl mx-auto leading-relaxed">
+            The TSI DPDP CMS ensures that every interaction is captured as a "Compliance Artifact". Auditors can trace the complete data lifecycle of a principal through these four definitive touchpoints:
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <!-- Audit 1 -->
+            <div class="relative p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors group">
+                <div class="text-teal-400 font-black text-xs uppercase mb-3 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded bg-teal-400/20 flex items-center justify-center text-[10px]">01</span>
+                    Notice
+                </div>
+                <h4 class="font-bold mb-2">Collection Proof</h4>
+                <p class="text-[11px] text-white/50 leading-relaxed">Verification of policy version, timestamp, and IP address at the moment of consent capture.</p>
+            </div>
+            <!-- Audit 2 -->
+            <div class="relative p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                <div class="text-teal-400 font-black text-xs uppercase mb-3 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded bg-teal-400/20 flex items-center justify-center text-[10px]">02</span>
+                    Processing
+                </div>
+                <h4 class="font-bold mb-2">Access Logs</h4>
+                <p class="text-[11px] text-white/50 leading-relaxed">Immutable log of every Processor API call validated by the CMS against the active consent state.</p>
+            </div>
+            <!-- Audit 3 -->
+            <div class="relative p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                <div class="text-teal-400 font-black text-xs uppercase mb-3 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded bg-teal-400/20 flex items-center justify-center text-[10px]">03</span>
+                    Governance
+                </div>
+                <h4 class="font-bold mb-2">Rights History</h4>
+                <p class="text-[11px] text-white/50 leading-relaxed">Full trail of grievance redressal, corrections, and DPO-initiated status transitions.</p>
+            </div>
+            <!-- Audit 4 -->
+            <div class="relative p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                <div class="text-teal-400 font-black text-xs uppercase mb-3 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded bg-teal-400/20 flex items-center justify-center text-[10px]">04</span>
+                    Erasure
+                </div>
+                <h4 class="font-bold mb-2">Purge Evidence</h4>
+                <p class="text-[11px] text-white/50 leading-relaxed">Cryptographic proof of hard-purge completion, ensuring PII is permanently removed or masked.</p>
+            </div>
+        </div>
+
+        <div class="mt-12 py-4 px-6 bg-indigo-950/50 rounded-xl border border-white/5 text-center italic text-[11px] text-indigo-200/50">
+            Audit logs are stored in a dedicated schema (`audit_logs`) and are logically separated from operational processing data to maintain high-assurance integrity.
+        </div>
+    </section>
+
+</div>
+
+</body>
+</html>
