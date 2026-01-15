@@ -8,13 +8,13 @@ Note: This solution is currently in Public Preview. While we encourage developer
 
 [Launch Note](https://techadvisory.substack.com/p/tsi-dpdp-cms-an-open-source-consent)
 
-[The Big Picture](https://youtu.be/caQFjwrZj9w)
+[The Big Picture - Video](https://youtu.be/caQFjwrZj9w)
 
 [System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/296d41274d0bf449de295e89c1cf3c92a7f81259/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf)
 
-[Installation Walkthrough](https://youtu.be/8LKycujvHBU)
+[Installation Walkthrough - Video](https://youtu.be/8LKycujvHBU)
 
-[Functional Overview](https://youtu.be/d85ye4BoFbM)
+[Functional Demo - Video](https://youtu.be/d85ye4BoFbM)
 
 [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
@@ -184,3 +184,26 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
    ```bash
    curl -I http://localhost:8080
    ```
+
+## Post-Installation Steps
+
+Once the installation is complete and the services are running, you can begin the interactive onboarding process to explore the full compliance lifecycle.
+
+🚀 Interactive Compliance Tour
+
+The system includes a pre-configured interactive tour designed for evaluators and administrators.
+
+Access the Tour: Open your browser and navigate to:
+http://localhost:8080/tour
+
+Follow the Guided Journey:
+
+Step 1: System Setup – Initialize your environment and configure master admin credentials.
+
+Step 2: Org Configuration – Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies.
+
+Step 3: Consent Collection – Experience the "Notice and Capture" workflow from a Data Principal's perspective.
+
+Step 4 & 5: Rights & Verification – Manage user grievances via the Dashboard and test real-time API consent validation.
+
+Step 6: Enforcement Logic – View the visual logic for technical data deletion, retention policies, and audit trails.
