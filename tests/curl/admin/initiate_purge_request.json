@@ -1,9 +1,0 @@
-{
-  "_func": "initiate_purge_request",
-  "user_id": "data_principal_xyz789",
-  "fiduciary_id": "ea30beff-ab1b-4c26-9dea-b0316103f6a7",
-  "processor_id": null,
-  "trigger_event": "ERASURE_REQUEST",
-  "data_categories_to_purge": ["email_address", "website_usage_data"],
-  "processing_purposes_affected": ["purpose_marketing_communication"]
-}

@@ -1,9 +1,0 @@
-{
-  "_func": "update_user",
-  "user_id": "8e3a84e6-dd16-4a24-80d4-d872c09d5f10",
-  "username": "john.doe.updated",
-  "email": "john.doe.new@tsicoop.org",
-  "password": "UpdatedP@ssw0rd1",
-  "role": "OPERATOR",
-  "status": "INACTIVE"
-}
