@@ -5,208 +5,237 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TSI DPDP CMS - Consent Verifier App</title>
+  <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
         :root {
-            --tsi-primary: #006A67; /* Primary Dark Teal Color */
-            --background: #f4fbf9;
-            --card-bg: #FFFFFF;
+            --tsi-primary: #006A67;
+            --tsi-dark: #0f172a;
+        }
+        body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; background-color: #f4fbf9; color: #333; }
+        .container { padding: 40px 20px; max-width: 700px; margin: 0 auto; }
+
+        /* Card Styling */
+        .glass-card {
+            background: white; padding: 35px; border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            border: 1px solid #e2e8f0;
         }
 
-        body {
-            background-color: var(--background);
-            font-family: ui-sans-serif, system-ui, sans-serif;
-            min-height: 100vh;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .input-group {
+            margin-bottom: 20px;
         }
 
-        .card {
-            background-color: var(--card-bg);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 0.5rem;
-            padding: 30px;
-            max-width: 500px;
-            width: 90%;
+        .input-label {
+            display: block; font-size: 0.7rem; font-weight: 800;
+            text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;
+            margin-bottom: 6px;
         }
 
-        .primary-text {
-            color: var(--tsi-primary);
+        .custom-input {
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1;
+            border-radius: 8px; font-size: 0.9rem; transition: border-color 0.2s;
+            outline: none;
         }
+        .custom-input:focus { border-color: var(--tsi-primary); box-shadow: 0 0 0 3px rgba(0, 106, 103, 0.1); }
 
         .action-button {
-            background-color: var(--tsi-primary);
-            color: white;
-            transition: background-color 0.3s ease;
+            background-color: var(--tsi-primary); color: white; border: none;
+            padding: 16px; border-radius: 8px; cursor: pointer;
+            width: 100%; font-weight: 700; font-size: 1rem;
+            transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
+        .action-button:hover { background-color: #004F4C; transform: translateY(-1px); }
+        .action-button:active { transform: translateY(0); }
+        .action-button:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; }
 
-        .action-button:hover {
-            background-color: #004F4C;
+        /* Log Styling */
+        .log-container {
+            background-color: #0f172a; color: #94a3b8; border-radius: 12px;
+            padding: 20px; font-family: 'ui-monospace', 'SFMono-Regular', monospace;
+            font-size: 0.8rem; line-height: 1.6; max-height: 300px;
+            overflow-y: auto; border: 1px solid #1e293b;
         }
+        .log-entry { margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; }
+        .log-time { color: #475569; margin-right: 10px; }
+        .log-success { color: #10b981; }
+        .log-error { color: #f43f5e; font-weight: bold; }
+        .log-info { color: #38bdf8; }
 
-        .log-box {
-            background-color: #f1f5f9;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 0.85rem;
+        .actor-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.6rem; font-weight: 900; text-transform: uppercase;
+            background: #e2e8f0; color: #475569; margin-bottom: 15px;
         }
     </style>
 </head>
 
 <body>
-<div class="card">
-  <h1 class="text-2xl font-bold primary-text mb-4">Consent Verifier Service</h1>
-  <p class="text-sm text-gray-600 mb-6">
-    Simulates a Data Processor (DP) checking the Data Fiduciary's (DF) Consent Manager System (CMS)
-    before processing data.
-  </p>
 
-  <!-- Configuration -->
-  <div class="space-y-4 mb-6 p-4 border border-indigo-200 rounded-md bg-indigo-50">
-    <p class="font-semibold text-sm text-indigo-800">Processing Context</p>
-    <div>
-      <label for="api-key" class="block text-xs font-medium text-gray-700">API Key</label>
-      <input type="text" id="api-key" value="" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
+<div class="container">
+  <!-- Brand Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <a href="index.html"><img src="https://tsicoop.org/logo.svg" alt="TSI Coop" style="height: 45px;"/></a>
+  </div>
+
+  <div class="glass-card">
+    <div class="actor-badge">Actor: Data Processor</div>
+    <h1 class="text-2xl font-black text-slate-800 mb-2">Consent Verifier Service</h1>
+    <p class="text-sm text-slate-500 mb-8 leading-relaxed">
+      Automated verification point. Simulates a Processor validating real-time consent state via the DF’s registry before initiating data workflows.
+    </p>
+
+    <!-- Configuration Section -->
+    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="input-group">
+          <label for="api-key" class="input-label">X-API-Key</label>
+          <input type="text" id="api-key" class="custom-input font-mono" placeholder="UUID Key">
+        </div>
+        <div class="input-group">
+          <label for="api-secret" class="input-label">X-API-Secret</label>
+          <input type="password" id="api-secret" class="custom-input font-mono" placeholder="Secret Token">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="input-group">
+          <label for="user-id" class="input-label">Data Principal ID</label>
+          <input type="text" id="user-id" class="custom-input" value="data_principal_xyz789">
+        </div>
+        <div class="input-group">
+          <label for="purpose-id" class="input-label">Required Purpose ID</label>
+          <input type="text" id="purpose-id" class="custom-input font-medium" placeholder="e.g. purpose_website_analytics">
+        </div>
+      </div>
     </div>
-    <div>
-      <label for="api-key" class="block text-xs font-medium text-gray-700">API Secret</label>
-      <input type="text" id="api-secret" value="" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
+
+    <!-- Action -->
+    <button id="process-data-btn" class="action-button mb-8">
+      Check Consent & Process Data
+    </button>
+
+    <!-- Log Output -->
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest">Transaction Activity Feed</h2>
+      <button onclick="document.getElementById('log-output').innerHTML = ''" class="text-[10px] font-bold text-slate-400 hover:text-red-500">Clear Logs</button>
     </div>
-    <div>
-      <label for="user-id" class="block text-xs font-medium text-gray-700">User ID (Data Principal ID)</label>
-      <input type="text" id="user-id" value="data_principal_xyz789" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
-    </div>
-    <div>
-      <label for="purpose-id" class="block text-xs font-medium text-gray-700">Purpose ID</label>
-      <input type="text" id="purpose-id" value="" class="mt-1 block w-full p-2 border border-gray-300 rounded-md text-sm">
+    <div id="log-output" class="log-container">
+      <div class="log-entry"><span class="log-time">[${new Date().toLocaleTimeString()}]</span> <span class="log-info">Awaiting validation trigger...</span></div>
     </div>
   </div>
 
-  <!-- Processing Action -->
-  <button id="process-data-btn" class="action-button px-4 py-2 rounded-md font-medium w-full hover:bg-primary-dark transition duration-150">
-    CHECK CONSENT & PROCESS DATA
-  </button>
-
-  <!-- Log Output -->
-  <h2 class="text-lg font-semibold text-gray-700 mt-6 mb-2">Process Log:</h2>
-  <div id="log-output" class="log-box text-gray-800">
-    [Awaiting validation trigger...]
-  </div>
-
+  <footer class="text-center py-8 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+    Certified TSI DPDP Compliance Layer
+  </footer>
 </div>
 
 <script>
-        // --- Configuration ---
-        const API_VALIDATE_ENDPOINT = `http://localhost:8080/api/v1/client/consent/validate`;
+    // --- Configuration ---
+    const API_VALIDATE_ENDPOINT = `http://localhost:8080/api/v1/client/consent/validate`;
 
-        // --DOM elements ---
-        const apiKeyInput = document.getElementById('api-key');
-        const apiSecretInput = document.getElementById('api-secret');
-        const userIdInput = document.getElementById('user-id');
-        const purposeIdSelect = document.getElementById('purpose-id');
-        const processButton = document.getElementById('process-data-btn');
-        const logOutput = document.getElementById('log-output');
+    // --DOM elements ---
+    const apiKeyInput = document.getElementById('api-key');
+    const apiSecretInput = document.getElementById('api-secret');
+    const userIdInput = document.getElementById('user-id');
+    const purposeIdSelect = document.getElementById('purpose-id');
+    const processButton = document.getElementById('process-data-btn');
+    const logOutput = document.getElementById('log-output');
 
-        // --- Utility Functions ---
+    // --- Utility Functions ---
 
-        function logMessage(message, isError = false, isSuccess = false) {
-            const entry = document.createElement('div');
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            if (isError) {
-                entry.style.color = '#c0392b'; // Red
-            } else if (isSuccess) {
-                entry.style.color = '#27ae60'; // Green
-            }
-            logOutput.prepend(entry);
+    function logMessage(message, type = 'info') {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+
+        let colorClass = 'log-info';
+        if (type === 'error') colorClass = 'log-error';
+        if (type === 'success') colorClass = 'log-success';
+
+        entry.innerHTML = `
+            <span class="log-time">${new Date().toLocaleTimeString()}</span>
+            <span class="${colorClass}">${message}</span>
+        `;
+        logOutput.prepend(entry);
+    }
+
+    // --- Core Validation Logic ---
+
+    async function checkConsentAndProcess() {
+        const userId = userIdInput.value.trim();
+        const requiredPurpose = purposeIdSelect.value.trim();
+        const apikey = apiKeyInput.value.trim();
+        const apisecret = apiSecretInput.value.trim();
+
+        if (!userId) {
+            logMessage("ERROR: Data Principal ID is required.", 'error');
+            return;
+        }
+        if (!requiredPurpose) {
+            logMessage("ERROR: Purpose ID is required for validation.", 'error');
+            return;
         }
 
-        // --- Core Validation Logic ---
+        logMessage(`INITIATING: Validating [${requiredPurpose}] for [${userId}]...`);
+        processButton.disabled = true;
 
-        async function checkConsentAndProcess() {
-            const userId = userIdInput.value.trim();
-            const requiredPurpose = purposeIdSelect.value;
-            const apikey = apiKeyInput.value;
-            const apisecret = apiSecretInput.value;
+        try {
+            const validationPayload = {
+                "_func": "validate_consent",
+                "user_id": userId,
+                "required_purpose_id": requiredPurpose
+            };
 
-            if (!userId) {
-                logMessage("ERROR: User ID cannot be empty.", true);
-                return;
-            }
+            const response = await fetch(API_VALIDATE_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apikey,
+                    'X-API-Secret': apisecret
+                },
+                body: JSON.stringify(validationPayload)
+            });
 
-            logMessage(`Attempting to validate consent for User: ${userId} and Purpose: ${requiredPurpose}...`);
-            processButton.disabled = true;
+            if (response.status === 200) {
+                const result = await response.json();
 
-            try {
-                const validationPayload = {
-                    "_func": "validate_consent",
-                    "user_id": userId,
-                    "required_purpose_id": requiredPurpose
-                };
-
-                const response = await fetch(API_VALIDATE_ENDPOINT, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': apikey,
-                        'X-API-Secret': apisecret
-                    },
-                    body: JSON.stringify(validationPayload)
-                });
-
-                if (response.status === 200) {
-                    const result = await response.json();
-
-                    // CRITICAL CHECK: Check the actual response payload for success/grant status
-                    if (result.success === true && result.consent_granted === true) {
-
-                        logMessage("SUCCESS: Consent is VALID and GRANTED for this purpose.", true);
-
-                        // --- PROCEED WITH DATA PROCESSING ---
-                        await simulateDataProcessing(userId, requiredPurpose);
-
-                    } else if (result.success === true && result.consent_granted === false) {
-
-                        logMessage("ACCESS DENIED: Consent is explicitly DENIED by the Data Principal.", true);
-                        logMessage("Processing halted. Respecting Data Principal preference.", true);
-
-                    } else {
-                         // Catches cases like missing record, inactive policy, or internal failure
-                         logMessage(`VALIDATION FAILED: CMS returned insufficient status. Reason: ${result.message || 'Unknown'}`, true);
-                    }
-
-                } else if (response.status === 401 || response.status === 403) {
-                     logMessage("FATAL ERROR: Authentication or Authorization Failed. Check API Key/Secret.", true);
+                if (result.success === true && result.consent_granted === true) {
+                    logMessage("VALIDATION SUCCESS: Consent is active and verifiable.", 'success');
+                    await simulateDataProcessing(userId, requiredPurpose);
+                } else if (result.success === true && result.consent_granted === false) {
+                    logMessage("ACCESS DENIED: Data Principal has revoked/denied consent.", 'error');
+                    logMessage("COMPLIANCE: Processing halted to respect privacy preference.", 'info');
                 } else {
-                    logMessage(`CMS ERROR: Validation API returned status ${response.status}`, true);
+                    logMessage(`FAILURE: CMS returned insufficient status. ${result.message || 'Unknown error'}`, 'error');
                 }
 
-            } catch (error) {
-                logMessage(`NETWORK ERROR: Could not connect to CMS. Check network.`, true);
-                console.error("Validation API error:", error);
-            } finally {
-                processButton.disabled = false;
+            } else if (response.status === 401 || response.status === 403) {
+                logMessage("AUTH ERROR: Invalid API Credentials. Check Key/Secret.", 'error');
+            } else {
+                logMessage(`SERVER ERROR: Registry returned status ${response.status}`, 'error');
             }
+
+        } catch (error) {
+            logMessage(`NETWORK ERROR: Registry endpoint unreachable.`, 'error');
+            console.error("Validation API error:", error);
+        } finally {
+            processButton.disabled = false;
         }
+    }
 
-        function simulateDataProcessing(userId, purpose) {
-            logMessage(`-- Processing data for ${userId} (Purpose: ${purpose})...`, false, true);
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    logMessage("Processing Complete. Data used strictly for consented purpose.", false, true);
-                    resolve();
-                }, 1500); // Simulate network latency and processing time
-            });
-        }
+    function simulateDataProcessing(userId, purpose) {
+        logMessage(`PROCESSING: Handling data for ${userId}...`, 'info');
+        return new Promise(resolve => {
+            setTimeout(() => {
+                logMessage("COMPLETE: Data processed strictly for consented purpose.", 'success');
+                resolve();
+            }, 1200);
+        });
+    }
 
-        // --- Event Listener ---
-        processButton.addEventListener('click', checkConsentAndProcess);
+    // --- Event Listener ---
+    processButton.addEventListener('click', checkConsentAndProcess);
 
-    </script>
+</script>
 </body>
 </html>
