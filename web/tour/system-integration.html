@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - System Integration</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67;
+            --tsi-dark: #0f172a;
+        }
+        body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #333; }
+        .container { padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
+
+        /* Code Block Styling */
+        .code-header {
+            background-color: #1e293b;
+            color: #94a3b8;
+            padding: 8px 16px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .code-block {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-badge {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 900;
+            background: #334155;
+            color: #38bdf8;
+        }
+
+        .api-card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 40px;
+        }
+
+        .copy-btn {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .copy-btn:hover { color: white; }
+
+        .json-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--tsi-primary);
+            margin-top: 8px;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .json-link:hover { opacity: 0.8; text-decoration: underline; }
+
+        .section-title {
+            color: var(--tsi-primary);
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Brand Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <a href="index.html"><img src="https://tsicoop.org/logo.svg" alt="TSI Coop" style="height: 50px;"/></a>
+    </div>
+
+    <header class="mb-12">
+        <h1 style="color: #0f172a; font-size: 2.5rem; font-weight: 900; letter-spacing: -0.025em;">System Integration</h1>
+        <p class="text-slate-500 mt-2 text-lg max-w-2xl">
+            Technical specifications for Data Fiduciaries and Data Processors to integrate the TSI DPDP CMS into their web, mobile, and backend applications.
+        </p>
+    </header>
+
+    <!-- SECTION 1: CONSENT -->
+    <h2 class="section-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Consent Management
+    </h2>
+
+    <div class="api-card">
+        <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-800">1. Get Active Policy</h3>
+            <p class="text-sm text-slate-500 italic mt-1">Retrieves the latest published policy content, including multilingual purposes and legal basis for the banner/preference center.</p>
+            <a href="json/get_policy.json" target="_blank" class="json-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                View Request JSON Template
+            </a>
+        </div>
+        <div class="code-header">
+            <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/policy</div>
+            <span class="copy-btn" onclick="copyCode('code-policy')">Copy</span>
+        </div>
+        <pre class="code-block" id="code-policy">curl -X POST -H "Content-Type: application/json" \
+-H "X-API-Key: a0741371-ee86-4ede-95a6-77f2006b1d4b" \
+-H "X-API-Secret: e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" \
+-d @get_policy.json http://localhost:8080/api/v1/client/policy</pre>
+
+        <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-800">2. Record Consent Artifact</h3>
+            <p class="text-sm text-slate-500 italic mt-1">Persists a cryptographically signed choice artifact representing the Principal's granular choices.</p>
+            <a href="json/record_consent.json" target="_blank" class="json-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                View Request JSON Template
+            </a>
+        </div>
+        <div class="code-header">
+            <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/consent</div>
+            <span class="copy-btn" onclick="copyCode('code-record')">Copy</span>
+        </div>
+        <pre class="code-block" id="code-record">curl -X POST -H "Content-Type: application/json" \
+-H "X-API-Key: a0741371-ee86-4ede-95a6-77f2006b1d4b" \
+-H "X-API-Secret: e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" \
+-d @record_consent.json http://localhost:8080/api/v1/client/consent</pre>
+
+        <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-800">3. Get Active Consent State</h3>
+            <p class="text-sm text-slate-500 italic mt-1">Verifies the current real-time state for a specific Data Principal across all purposes.</p>
+            <a href="json/get_active_consent.json" target="_blank" class="json-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                View Request JSON Template
+            </a>
+        </div>
+        <div class="code-header">
+            <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/consent</div>
+            <span class="copy-btn" onclick="copyCode('code-active')">Copy</span>
+        </div>
+        <pre class="code-block" id="code-active">curl -X POST -H "Content-Type: application/json" \
+-H "X-API-Key: a0741371-ee86-4ede-95a6-77f2006b1d4b" \
+-H "X-API-Secret: e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" \
+-d @get_active_consent.json http://localhost:8080/api/v1/client/consent</pre>
+
+        <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-800">4. Link Identity (Consolidation)</h3>
+            <p class="text-sm text-slate-500 italic mt-1">Associates an anonymous browser-based ID with a verified, authenticated Data Principal account.</p>
+            <a href="json/link_user.json" target="_blank" class="json-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                View Request JSON Template
+            </a>
+        </div>
+        <div class="code-header">
+            <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/consent</div>
+            <span class="copy-btn" onclick="copyCode('code-link')">Copy</span>
+        </div>
+        <pre class="code-block" id="code-link">curl -X POST -H "Content-Type: application/json" \
+-H "X-API-Key: a0741371-ee86-4ede-95a6-77f2006b1d4b" \
+-H "X-API-Secret: e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" \
+-d @link_user.json http://localhost:8080/api/v1/client/consent</pre>
+    </div>
+
+    <!-- SECTION 2: GRIEVANCE -->
+    <h2 class="section-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Grievance Redressal
+    </h2>
+
+    <div class="api-card">
+        <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-800">1. Submit Grievance / Right Request</h3>
+            <p class="text-sm text-slate-500 italic mt-1">Logs a formal request (Correction, Erasure, or Complaint) as per Section 13 of the Act.</p>
+            <a href="json/submit_grievance.json" target="_blank" class="json-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                View Request JSON Template
+            </a>
+        </div>
+        <div class="code-header">
+            <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/grievance</div>
+            <span class="copy-btn" onclick="copyCode('code-submit-grv')">Copy</span>
+        </div>
+        <pre class="code-block" id="code-submit-grv">curl -X POST -H "Content-Type: application/json" \
+-H "X-API-Key: a0741371-ee86-4ede-95a6-77f2006b1d4b" \
+-H "X-API-Secret: e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" \
+-d @submit_grievance.json http://localhost:8080/api/v1/client/grievance</pre>
+
+        <div class="mb-6">
+            <h3 class="text-lg font-bold text-slate-800">2. Get Grievance Status</h3>
+            <p class="text-sm text-slate-500 italic mt-1">Retrieves the current fulfillment status and DPO notes for a pending request.</p>
+            <a href="json/get_grievance.json" target="_blank" class="json-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                View Request JSON Template
+            </a>
+        </div>
+        <div class="code-header">
+            <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/grievance</div>
+            <span class="copy-btn" onclick="copyCode('code-get-grv')">Copy</span>
+        </div>
+        <pre class="code-block" id="code-get-grv">curl -X POST -H "Content-Type: application/json" \
+-H "X-API-Key: a0741371-ee86-4ede-95a6-77f2006b1d4b" \
+-H "X-API-Secret: e937d311-739d-457a-b047-3b66fde51ebb1e27296b43514f0cb4b9dc8b68d1a9a4" \
+-d @get_grievance.json http://localhost:8080/api/v1/client/grievance</pre>
+    </div>
+
+</div>
+
+<script>
+    function copyCode(id) {
+        const text = document.getElementById(id).innerText;
+        const dummy = document.createElement("textarea");
+        document.body.appendChild(dummy);
+        dummy.value = text;
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+
+        // Visual feedback
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = "COPIED!";
+        btn.style.color = "#10b981";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.color = "";
+        }, 2000);
+    }
+</script>
+</body>
+</html>

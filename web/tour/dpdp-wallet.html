@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP - Portable Consent Wallet</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67;
+            --tsi-dark: #0f172a;
+        }
+        body { background-color: #0f172a; font-family: ui-sans-serif, system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+
+        /* Mobile Frame Styling */
+        .phone-frame {
+            width: 375px; height: 780px;
+            background: white; border: 12px solid #334155;
+            border-radius: 48px; position: relative;
+            overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .notch {
+            width: 150px; height: 26px; background: #334155;
+            position: absolute; top: 0; left: 50%;
+            transform: translateX(-50%); border-bottom-left-radius: 18px;
+            border-bottom-right-radius: 18px; z-index: 100;
+        }
+
+        /* Utilities */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .tab-active { color: var(--tsi-primary); }
+        .view-transition { transition: all 0.3s ease-in-out; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="phone-frame">
+    <div class="notch"></div>
+
+    <!-- Header -->
+    <header class="bg-white px-6 pt-10 pb-4 border-b flex justify-between items-center sticky top-0 z-40">
+        <div>
+            <h1 class="text-lg font-black tracking-tight text-slate-900">Portable Consent</h1>
+            <p class="text-[9px] text-teal-600 font-black uppercase tracking-widest leading-none mt-1">Lifecycle Wallet v1.5</p>
+        </div>
+        <div id="loading-spinner" class="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 hidden">
+            <svg class="animate-spin h-5 w-5 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="view-container" class="flex-1 overflow-y-auto bg-slate-50 p-5 scrollbar-hide relative">
+
+        <!-- View 1: Vault (Home) -->
+        <section id="view-vault" class="space-y-4">
+            <div class="flex justify-between items-center px-1">
+                <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">My Privacy Vault</h2>
+                <div class="flex gap-2">
+                    <button onclick="triggerFileInput()" class="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload
+                    </button>
+                    <button onclick="switchView('scanner')" class="bg-teal-700 text-white p-2 rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="fiduciary-list" class="space-y-3">
+                <!-- List dynamically populated -->
+            </div>
+
+            <div id="empty-state" class="text-center py-20 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-200 mb-4"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01"/><path d="M11 7h.01"/><path d="M15 7h.01"/><path d="M7 11h.01"/><path d="M11 11h.01"/><path d="M15 11h.01"/><path d="M7 15h.01"/><path d="M11 15h.01"/><path d="M15 15h.01"/></svg>
+                <p class="text-xs text-slate-400 font-medium">No artifacts in vault.<br/>Upload PCA JSON or scan QR.</p>
+            </div>
+        </section>
+
+        <!-- View 2: Scanner (Simulation) -->
+        <section id="view-scanner" class="hidden h-full flex flex-col items-center justify-center text-center px-8">
+            <div class="w-56 h-56 border-2 border-teal-500 border-dashed rounded-[40px] mb-8 flex items-center justify-center bg-teal-50/50 relative overflow-hidden group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-teal-700/20"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01"/><path d="M11 7h.01"/><path d="M7 11h.01"/><path d="M7 15h.01"/></svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-full h-1 bg-teal-500/20 animate-bounce"></div>
+                </div>
+            </div>
+            <h3 class="text-lg font-black text-slate-800 mb-2 leading-tight">Sync Consent Artifact</h3>
+            <p class="text-[10px] text-slate-500 leading-relaxed mb-10">Hold your device over the "Export to Wallet" QR code shown on the TSI dashboard.</p>
+            <button onclick="simulateScan()" class="bg-teal-700 text-white py-4 rounded-[20px] font-black w-full shadow-xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-[10px]">Simulate QR Scan</button>
+            <button onclick="switchView('vault')" class="mt-6 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:text-slate-600">Cancel</button>
+        </section>
+
+        <!-- View 3: Details -->
+        <section id="view-details" class="hidden space-y-6 pb-10">
+            <button onclick="switchView('vault')" class="flex items-center gap-2 text-slate-400 hover:text-slate-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span class="text-[10px] font-black uppercase tracking-widest">Back to Vault</span>
+            </button>
+            <div id="details-header" class="px-1">
+                <!-- Populated via JS -->
+            </div>
+            <div id="details-consents" class="bg-white rounded-[28px] border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-50">
+                <!-- Populated via JS -->
+            </div>
+            <div id="erasure-action-container">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- View 4: Audit Trail -->
+        <section id="view-history" class="hidden space-y-6">
+            <div class="px-1 mb-8">
+                <h2 class="text-xl font-black text-slate-800 tracking-tight">Regulatory Trail</h2>
+                <p class="text-[10px] text-slate-500 font-medium mt-1">Audit evidence for all ingested and modified artifacts.</p>
+            </div>
+            <div id="audit-trail-list" class="space-y-6 relative pl-6 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-slate-200">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- Hidden File Input -->
+        <input type="file" id="file-input" accept=".json" class="hidden" onchange="handleFileSelect(event)">
+
+    </main>
+
+    <!-- Navigation -->
+    <footer class="bg-white border-t border-slate-100 px-8 py-4 flex justify-around items-center h-20">
+        <button onclick="switchView('vault')" id="nav-vault" class="flex flex-col items-center gap-1 text-teal-700">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest">Vault</span>
+        </button>
+        <button onclick="switchView('history')" id="nav-history" class="flex flex-col items-center gap-1 text-slate-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 6v6l4 2"/></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest">Audit</span>
+        </button>
+        <button onclick="alert('DPDP Act Reference: Section 6 (Revocation) & Section 12 (Erasure).')" id="nav-law" class="flex flex-col items-center gap-1 text-slate-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest">Legal</span>
+        </button>
+    </footer>
+
+</div>
+
+<script>
+    // --- Initial State ---
+    let state = {
+        fiduciaries: [
+            {
+                id: 'fiduciary_hub_abc',
+                name: 'TSI Digital Hub',
+                type: 'Primary Fiduciary',
+                status: 'IDLE',
+                consents: [
+                    { id: 'acc', name: 'Account Registration', status: 'GRANTED', mandatory: true, retention: '7 Years' },
+                    { id: 'ana', name: 'Website Analytics', status: 'GRANTED', mandatory: false, retention: '2 Years' }
+                ],
+                audit: [
+                    { phase: 'COLLECTION', action: 'PCA Exported to Wallet', time: 'Jan 01, 10:00', actor: 'USER', status: 'SUCCESS' }
+                ]
+            }
+        ],
+        activeFidId: null,
+        currentView: 'vault'
+    };
+
+    // --- UI Logic ---
+
+    function switchView(viewName) {
+        document.getElementById('view-vault').classList.add('hidden');
+        document.getElementById('view-scanner').classList.add('hidden');
+        document.getElementById('view-details').classList.add('hidden');
+        document.getElementById('view-history').classList.add('hidden');
+
+        document.getElementById('view-' + viewName).classList.remove('hidden');
+
+        // Navigation Colors
+        document.getElementById('nav-vault').classList.remove('text-teal-700', 'text-slate-300');
+        document.getElementById('nav-history').classList.remove('text-teal-700', 'text-slate-300');
+        document.getElementById('nav-vault').classList.add(viewName === 'vault' || viewName === 'details' ? 'text-teal-700' : 'text-slate-300');
+        document.getElementById('nav-history').classList.add(viewName === 'history' ? 'text-teal-700' : 'text-slate-300');
+
+        state.currentView = viewName;
+        if (viewName === 'vault') renderVault();
+        if (viewName === 'history') renderAudit();
+    }
+
+    function renderVault() {
+        const list = document.getElementById('fiduciary-list');
+        list.innerHTML = '';
+        const empty = document.getElementById('empty-state');
+
+        if (state.fiduciaries.length === 0) {
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        state.fiduciaries.forEach(f => {
+            const card = document.createElement('div');
+            card.className = "bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between cursor-pointer hover:border-teal-300 active:scale-95 transition-all";
+            card.onclick = () => { state.activeFidId = f.id; renderDetails(); switchView('details'); };
+
+            const statusColor = f.status === 'IDLE' ? 'bg-green-100 text-green-700' : (f.status === 'PURGING' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600');
+
+            card.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1"/><path d="M19 21V7H5v14"/><path d="M7 21v-4a2 2 0 0 1 4 0v4"/><path d="M13 21v-4a2 2 0 0 1 4 0v4"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-xs text-slate-800">${f.name}</h3>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span class="text-[7px] font-black uppercase px-1 py-0.5 rounded ${statusColor}">${f.status}</span>
+                            <span class="text-[8px] text-slate-400 font-bold">${f.consents.filter(c => c.status === 'GRANTED').length} Permissions</span>
+                        </div>
+                    </div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><path d="m9 18 6-6-6-6"/></svg>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function renderDetails() {
+        const f = state.fiduciaries.find(fid => fid.id === state.activeFidId);
+        if (!f) return;
+
+        document.getElementById('details-header').innerHTML = `
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight leading-tight">${f.name}</h2>
+            <div class="flex items-center gap-2 mt-2">
+                <span class="text-[8px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">${f.type}</span>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Status: ${f.status}</p>
+            </div>
+        `;
+
+        const consentsList = document.getElementById('details-consents');
+        consentsList.innerHTML = `<div class="p-3 bg-slate-50/50 flex justify-between items-center"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Purpose Allowances</span></div>`;
+
+        f.consents.forEach(c => {
+            const row = document.createElement('div');
+            row.className = "p-4 flex justify-between items-start";
+            const btnHtml = (!c.mandatory && c.status === 'GRANTED' && f.status === 'IDLE')
+                ? `<button onclick="withdraw('${f.id}','${c.id}')" class="text-[8px] font-black text-red-500 hover:underline">WITHDRAW</button>`
+                : '';
+
+            row.innerHTML = `
+                <div class="max-w-[70%]">
+                    <p class="text-xs font-black text-slate-800">${c.name}</p>
+                    <p class="text-[9px] text-slate-400 mt-1 italic">Retention: ${c.retention}</p>
+                </div>
+                <div class="flex flex-col items-end gap-1.5">
+                    <span class="text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${c.status === 'GRANTED' ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}">${c.status}</span>
+                    ${btnHtml}
+                </div>
+            `;
+            consentsList.appendChild(row);
+        });
+
+        document.getElementById('erasure-action-container').innerHTML = `
+            <div class="p-6 bg-red-600 rounded-[32px] text-white shadow-lg shadow-red-100 relative overflow-hidden">
+                <h4 class="text-sm font-black mb-1">Right to Erasure</h4>
+                <p class="text-[10px] text-red-100 leading-tight mb-4">Immediate deactivation and permanent background purge.</p>
+                <button
+                    onclick="initiatePurge('${f.id}')"
+                    ${f.status !== 'IDLE' ? 'disabled' : ''}
+                    class="w-full py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all ${f.status === 'IDLE' ? 'bg-white text-red-600 hover:shadow-xl' : 'bg-red-800/50 text-red-200 cursor-not-allowed'}"
+                >
+                    ${f.status === 'IDLE' ? 'Request Data Purge' : 'Processing...'}
+                </button>
+            </div>
+        `;
+    }
+
+    function renderAudit() {
+        const list = document.getElementById('audit-trail-list');
+        list.innerHTML = '';
+
+        state.fiduciaries.forEach(f => {
+            const header = document.createElement('div');
+            header.innerHTML = `<div class="flex items-center gap-2 mb-4"><span class="text-[8px] font-black text-teal-600 uppercase tracking-widest">${f.name} Artifact Trace</span></div>`;
+            list.appendChild(header);
+
+            f.audit.slice().reverse().forEach(log => {
+                const entry = document.createElement('div');
+                entry.className = "relative mb-6";
+                entry.innerHTML = `
+                    <div class="absolute -left-[19px] top-1 w-2 h-2 rounded-full ring-4 ring-slate-50 ${log.phase === 'ERASURE' ? 'bg-red-500' : 'bg-teal-500'}"></div>
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex justify-between items-start mb-1.5">
+                            <span class="text-[7px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase">${log.phase}</span>
+                            <span class="text-[8px] text-slate-400 font-mono italic">${log.time}</span>
+                        </div>
+                        <p class="text-[10px] font-bold text-slate-700">${log.action}</p>
+                        <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
+                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Actor: ${log.actor}</span>
+                            <span class="text-[8px] font-black text-teal-600 uppercase italic">${log.status}</span>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(entry);
+            });
+        });
+    }
+
+    // --- Lifecycle Actions ---
+
+    function triggerFileInput() { document.getElementById('file-input').click(); }
+
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        showLoading(true);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (state.fiduciaries.find(f => f.id === data.id)) { alert("Artifact already in vault."); showLoading(false); return; }
+
+                const newFid = {
+                    ...data,
+                    status: 'IDLE',
+                    linkedAt: new Date().toLocaleDateString(),
+                    audit: [{ phase: 'COLLECTION', action: 'PCA Ingested via File', time: 'Just now', actor: 'USER', status: 'SUCCESS' }]
+                };
+                setTimeout(() => {
+                    state.fiduciaries.push(newFid);
+                    renderVault();
+                    showLoading(false);
+                    alert("Import Successful: PCA added to vault.");
+                }, 1000);
+            } catch (err) { alert("Invalid PCA Format."); showLoading(false); }
+        };
+        reader.readAsText(file);
+    }
+
+    function simulateScan() {
+        showLoading(true);
+        setTimeout(() => {
+            const scanData = {
+                id: 'retail_fiduciary_99',
+                name: 'Bharat Retail Hub',
+                type: 'E-Commerce Link',
+                status: 'IDLE',
+                consents: [
+                    { id: 'del', name: 'Delivery Logistics', status: 'GRANTED', mandatory: true, retention: '5 Years' },
+                    { id: 'mkt', name: 'Promotional Alerts', status: 'GRANTED', mandatory: false, retention: '1 Year' }
+                ],
+                audit: [{ phase: 'COLLECTION', action: 'PCA Synchronized via QR', time: 'Just now', actor: 'USER', status: 'SUCCESS' }]
+            };
+            if (!state.fiduciaries.find(f => f.id === scanData.id)) state.fiduciaries.push(scanData);
+            showLoading(false);
+            switchView('vault');
+        }, 1500);
+    }
+
+    function withdraw(fidId, pId) {
+        const f = state.fiduciaries.find(f => f.id === fidId);
+        const p = f.consents.find(c => c.id === pId);
+        p.status = 'WITHDRAWN';
+        f.audit.push({ phase: 'MAINTENANCE', action: `Withdrawn: ${p.name}`, time: 'Now', actor: 'USER', status: 'OK' });
+        renderDetails();
+    }
+
+    function initiatePurge(fidId) {
+        const f = state.fiduciaries.find(f => f.id === fidId);
+        f.status = 'PURGING';
+        f.audit.push({ phase: 'ERASURE', action: 'Hard Purge Triggered', time: 'Now', actor: 'USER', status: 'INITIATED' });
+        renderDetails();
+
+        // Simulate next-run effect
+        setTimeout(() => {
+            f.status = 'COMPLETED';
+            f.consents.forEach(c => c.status = 'ERASED');
+            f.audit.push({ phase: 'ERASURE', action: 'Data Scrubbed Permanently', time: 'T+4s', actor: 'SYSTEM:CES', status: 'PURGED' });
+            if (state.activeFidId === fidId) renderDetails();
+        }, 4000);
+    }
+
+    function showLoading(show) { document.getElementById('loading-spinner').classList.toggle('hidden', !show); }
+
+    // Init
+    window.onload = () => renderVault();
+</script>
+</body>
+</html>

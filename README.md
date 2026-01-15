@@ -204,6 +204,10 @@ Step 2: Org Configuration – Onboard your Fiduciaries, link Apps, and publish M
 
 Step 3: Consent Collection – Experience the "Notice and Capture" workflow from a Data Principal's perspective.
 
-Step 4 & 5: Rights & Verification – Manage user grievances via the Dashboard and test real-time API consent validation.
+Step 4: User Dashboard – Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
+
+Step 5: Consent Verifier – Test real-time API validation used by Data Processors to ensure purpose-limited processing.
 
 Step 6: Enforcement Logic – View the visual logic for technical data deletion, retention policies, and audit trails.
+
+Step 7: System Integration – Comprehensive API specifications for Data Fiduciaries and Processors to integrate CMS logic into their backend technical stacks.
