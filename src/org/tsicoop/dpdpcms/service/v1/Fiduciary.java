@@ -272,6 +272,28 @@ public class Fiduciary implements Action {
         }
     }
 
+    // --- Helper Methods for Purge Management ---
+    public String getFiduciaryId(UUID apiKey, String apiSecret) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        String fiduciaryId = null;
+        String sql = "SELECT fiduciary_id FROM api_keys WHERE id = ? AND key_value=?";
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, apiKey);
+            pstmt.setString(2, "HASHED_"+apiSecret);
+            rs = pstmt.executeQuery();
+            if(rs.next())
+                fiduciaryId = rs.getString("fiduciary_id");
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return fiduciaryId;
+    }
+
     /**
      * Validates the HTTP method and request content type.
      * @param method The HTTP method of the request.

@@ -36,7 +36,11 @@ public class InterceptingFilter implements Filter {
             "list_user_grievances",
             "get_consent_record_details",
             "withdraw_consent",
-            "erasure_request"
+            "erasure_request",
+            "list_purge_requests",
+            "update_purge_status",
+            "list_notifications",
+            "mark_notification_read"
             // Add other client-facing functions as needed
     ));
 

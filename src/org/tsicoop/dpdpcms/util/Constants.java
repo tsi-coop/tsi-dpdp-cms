@@ -37,4 +37,7 @@ public class Constants {
     public static final String AGE_ADULT = "ADULT";
     public static final String AGE_MINOR = "MINOR";
 
+    //-- Service Type
+    public static final String SERVICE_TYPE_APP = "APP";
+    public static final String SERVICE_TYPE_USER = "USER";
 }

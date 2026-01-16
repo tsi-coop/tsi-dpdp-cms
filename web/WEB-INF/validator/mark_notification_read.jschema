@@ -6,12 +6,12 @@
     "_func": {
       "type": "string"
     },
-    "instance_id": {
+    "id": {
       "type": "string"
     }
   },
   "required": [
     "_func",
-    "instance_id"
+    "id"
   ]
 }

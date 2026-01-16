@@ -26,12 +26,6 @@
     }
   },
   "required": [
-    "_func",
-    "recipient_type",
-    "recipient_id",
-    "fiduciary_id",
-    "status",
-    "page",
-    "limit"
+    "_func"
   ]
 }

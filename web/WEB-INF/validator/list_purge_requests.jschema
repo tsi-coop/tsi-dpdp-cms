@@ -26,9 +26,6 @@
     }
   },
   "required": [
-    "_func",
-    "fiduciary_id",
-    "status",
-    "search"
+    "_func"
   ]
 }

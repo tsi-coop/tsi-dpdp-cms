@@ -128,10 +128,11 @@ public class InputProcessor {
         PoolDB pool = null;
         String sql = "SELECT id FROM users WHERE email=?";
 
-        try {
-            authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
-            email = (String) authToken.get("email");
+        authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
+        if(authToken == null) return null;
+        email = (String) authToken.get("email");
 
+        try {
             pool = new PoolDB();
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
