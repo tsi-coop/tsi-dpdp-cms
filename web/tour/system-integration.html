@@ -283,6 +283,7 @@ http://localhost:8080/api/v1/client/grievance</pre>
         </h2>
         <p class="phase-subtitle">APIs to track data end-of-life and purge fulfillment.</p>
 
+        <div class="api-card">
         <div class="mb-6">
             <h3 class="text-lg font-bold text-slate-800">1. Retrieve Retention & Purge Notifications</h3>
             <p class="text-sm text-slate-500 mt-1 italic">Fetches notifications for data points nearing expiry or pending purge.</p>
@@ -305,7 +306,7 @@ http://localhost:8080/api/v1/client/notification</pre>
         <pre class="code-block" id="code-notif-read">curl -X POST [HEADERS] -d @mark_notification_read.json \
 http://localhost:8080/api/v1/client/notification</pre>
 
-        <div class="api-card">
+
             <div class="mb-6">
                 <h3 class="text-lg font-bold text-slate-800">3. Retrieve Purge Requests</h3>
                 <p class="text-sm text-slate-500 mt-1 italic">Fetches purge requests that need to be acted upon swiftly.</p>
@@ -330,39 +331,6 @@ http://localhost:8080/api/v1/client/compliance</pre>
 
 
 
-        </div>
-    </section>
-
-    <!-- PHASE 5: AUDIT & REPORTING -->
-    <section>
-        <h2 class="phase-title">
-            <span class="w-8 h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center text-sm italic">5</span>
-            Audit & Reporting
-        </h2>
-        <p class="phase-subtitle">Evidence retrieval for regulatory inspections and internal compliance reports.</p>
-
-        <div class="api-card">
-            <div class="mb-6">
-                <h3 class="text-lg font-bold text-slate-800">1. Retrieve Audit Logs</h3>
-                <p class="text-sm text-slate-500 mt-1 italic">Access the immutable regulatory trail for specific principals or services.</p>
-            </div>
-            <div class="code-header">
-                <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/admin/audit</div>
-                <span class="copy-btn" onclick="copyCode('code-audit')">Copy</span>
-            </div>
-            <pre class="code-block" id="code-audit">curl -X POST [HEADERS] -d '{"_func":"list_audit_logs","search":"data_principal_xyz789"}' \
-http://localhost:8080/api/v1/admin/audit</pre>
-
-            <div class="mb-6">
-                <h3 class="text-lg font-bold text-slate-800">2. Generate Compliance Report</h3>
-                <p class="text-sm text-slate-500 mt-1 italic">Generates structured datasets for DPB filings or internal audits.</p>
-            </div>
-            <div class="code-header">
-                <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/admin/reports</div>
-                <span class="copy-btn" onclick="copyCode('code-report')">Copy</span>
-            </div>
-            <pre class="code-block" id="code-report">curl -X POST [HEADERS] -d '{"_func":"generate_lifecycle_report","fiduciary_id":"..."}' \
-http://localhost:8080/api/v1/admin/reports</pre>
         </div>
     </section>
 </div>
