@@ -14,7 +14,6 @@
     }
   },
   "required": [
-    "reason",
     "user_id",
     "_func"
   ]

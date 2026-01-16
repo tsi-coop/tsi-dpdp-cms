@@ -1,7 +1,7 @@
 {
   "_func": "record_consent",
-  "user_id": "data_principal_xyz789",
-  "policy_id": "p4",
+  "user_id": "data_principal_xyz123",
+  "policy_id": "p13",
   "policy_version": "",
   "timestamp": "2025-11-30T10:00:00Z",
   "jurisdiction": "IN",

@@ -476,7 +476,10 @@ public class Consent implements Action {
             UUID finalNewRecordId = newRecordId;
             result =  new JSONObject();
             result.put("success", true);
-            result.put("message", "Consent successfully withdrawn and recorded.");
+            if(erasure)
+                result.put("message", "Erasure initiated successfully.");
+            else
+                result.put("message", "Consent successfully withdrawn and recorded.");
             result.put("record_id", finalNewRecordId.toString());
             result.put("action", action);
         } catch (Exception e) {

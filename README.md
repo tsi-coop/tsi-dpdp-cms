@@ -76,7 +76,7 @@ Before you begin, ensure you have the following software installed on your devel
 
 ## Installation Steps (Docker)
 
-Follow these steps to get the TSI Aadhaar Vault Plus solution running on your local machine using Docker Compose:
+Follow these steps to get the TSI DPDP CMS solution running on your local machine using Docker Compose:
 
 1.  **Clone the Repository:**
     ```bash

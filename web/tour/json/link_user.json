@@ -1,5 +1,5 @@
 {
   "_func": "link_user",
-  "anonymous_user_id": "anon_1678901234_abc",
-  "authenticated_user_id": "data_principal_xyz789"
+  "anonymous_user_id": "data_principal_xyz123",
+  "authenticated_user_id": "sat@sat.com"
 }

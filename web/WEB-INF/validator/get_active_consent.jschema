@@ -8,14 +8,10 @@
     },
     "user_id": {
       "type": "string"
-    },
-    "fiduciary_id": {
-      "type": "string"
     }
   },
   "required": [
     "_func",
-    "user_id",
-    "fiduciary_id"
+    "user_id"
   ]
 }
