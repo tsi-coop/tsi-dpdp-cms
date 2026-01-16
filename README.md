@@ -187,27 +187,23 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
 
 ## Post-Installation Steps
 
-Once the installation is complete and the services are running, you can begin the interactive onboarding process to explore the full compliance lifecycle.
-
-🚀 Interactive Compliance Tour
-
 The system includes a pre-configured interactive tour designed for evaluators and administrators.
 
-Access the Tour: Open your browser and navigate to:
+**Access the Tour**: Open your browser and navigate to:
 http://localhost:8080/tour
 
 Follow the Guided Journey:
 
-Step 1: System Setup – Initialize your environment and configure master admin credentials.
+Step 1: System Setup - Initialize your environment and configure master admin credentials.
 
-Step 2: Org Configuration – Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies.
+Step 2: Org Configuration - Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies.
 
-Step 3: Consent Collection – Experience the "Notice and Capture" workflow from a Data Principal's perspective.
+Step 3: Consent Collection - Experience the "Notice and Capture" workflow from a Data Principal's perspective.
 
-Step 4: User Dashboard – Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
+Step 4: User Dashboard - Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
 
-Step 5: Consent Verifier – Test real-time API validation used by Data Processors to ensure purpose-limited processing.
+Step 5: Consent Verifier - Test real-time API validation used by Data Processors to ensure purpose-limited processing.
 
-Step 6: Enforcement Logic – View the visual logic for technical data deletion, retention policies, and audit trails.
+Step 6: Enforcement Logic - View the visual logic for technical data deletion, retention policies, and audit trails.
 
-Step 7: System Integration – Comprehensive API specifications for Data Fiduciaries and Processors to integrate CMS logic into their backend technical stacks.
+Step 7: System Integration - Comprehensive API specifications for Data Fiduciaries and Processors to integrate CMS logic into their backend technical stacks.
