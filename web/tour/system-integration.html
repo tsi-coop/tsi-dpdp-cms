@@ -251,15 +251,28 @@ curl -X POST [HEADERS] -d @erasure_request.json \
 http://localhost:8080/api/v1/client/consent</pre>
 
             <div class="mb-6">
-                <h3 class="text-lg font-bold text-slate-800">4. Grievance Management</h3>
-                <p class="text-sm text-slate-500 mt-1 italic">Submit new grievances or retrieve status of existing requests.</p>
+                <h3 class="text-lg font-bold text-slate-800">4. List User Grievances</h3>
+                <p class="text-sm text-slate-500 mt-1 italic">Retrieve submitted grievances with status.</p>
+                <a href="json/list_user_grievances.json" target="_blank" class="json-link">View Submit JSON</a>
+            </div>
+            <div class="code-header">
+                <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/grievance</div>
+                <span class="copy-btn" onclick="copyCode('code-grv')">Copy</span>
+            </div>
+            <pre class="code-block" id="code-grv-1">curl -X POST [HEADERS] -d @list_user_grievances.json \
+http://localhost:8080/api/v1/client/grievance</pre>
+        </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-slate-800">5. Submit Grievance</h3>
+                <p class="text-sm text-slate-500 mt-1 italic">Submit new grievance.</p>
                 <a href="json/submit_grievance.json" target="_blank" class="json-link">View Submit JSON</a>
             </div>
             <div class="code-header">
                 <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/grievance</div>
                 <span class="copy-btn" onclick="copyCode('code-grv')">Copy</span>
             </div>
-            <pre class="code-block" id="code-grv">curl -X POST [HEADERS] -d @submit_grievance.json \
+            <pre class="code-block" id="code-grv-2">curl -X POST [HEADERS] -d @submit_grievance.json \
 http://localhost:8080/api/v1/client/grievance</pre>
         </div>
     </section>
