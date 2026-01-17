@@ -55,16 +55,15 @@ public class Grievance implements Action {
         JSONObject input = null;
         JSONObject output = null;
         JSONArray outputArray = null;
-
-        // Placeholder for current CMS user ID (from authentication context, if DPO/Admin)
-        // This is the user performing the action on the grievance (e.g., assigning, resolving)
-        UUID actionByCmsUserId = UUID.fromString("00000000-0000-0000-0000-000000000001"); // Example Admin User ID
+        UUID loginUserId = null;
 
         try {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
             String apiKey = req.getHeader("X-API-Key");
             String apiSecret = req.getHeader("X-API-Secret");
+            // For Admin APIs
+            loginUserId = InputProcessor.getAuthenticatedUserId(req);
 
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
@@ -85,7 +84,7 @@ public class Grievance implements Action {
 
             String userId = (String) input.get("user_id"); // Data Principal's ID
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Consent().getFiduciaryId(UUID.fromString(apiKey),apiSecret);
+            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Fiduciary().getFiduciaryId(UUID.fromString(apiKey),apiSecret);
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 try {
                     fiduciaryId = UUID.fromString(fiduciaryIdStr);
@@ -113,7 +112,7 @@ public class Grievance implements Action {
                         return;
                     }
 
-                    output = saveGrievanceToDb(userId, fiduciaryId, type, subject, description, attachmentsJson, language, actionByCmsUserId);
+                    output = saveGrievanceToDb(userId, fiduciaryId, type, subject, description, attachmentsJson, language, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 

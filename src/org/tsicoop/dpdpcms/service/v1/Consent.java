@@ -80,7 +80,7 @@ public class Consent implements Action {
             // Extract common parameters for consent record operations
             String userId = (String) input.get("user_id"); // Data Principal's ID
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):getFiduciaryId(UUID.fromString(apiKey),apiSecret);
+            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Fiduciary().getFiduciaryId(UUID.fromString(apiKey),apiSecret);
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 try {
                     fiduciaryId = UUID.fromString(fiduciaryIdStr);
@@ -520,29 +520,6 @@ public class Consent implements Action {
     }
 
     // --- Helper Methods for Consent Record Management ---
-
-    public String getFiduciaryId(UUID apiKey, String apiSecret) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-        String fiduciaryId = null;
-        String sql = "SELECT fiduciary_id FROM api_keys WHERE id = ? AND key_value=?";
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, apiKey);
-            pstmt.setString(2, "HASHED_"+apiSecret);
-            rs = pstmt.executeQuery();
-            if(rs.next())
-                fiduciaryId = rs.getString("fiduciary_id");
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-        return fiduciaryId;
-    }
-
-
 
     /**
      * Checks if a specific policy version exists for a fiduciary.

@@ -278,10 +278,11 @@
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Description:</h3>
         <p id="detail-description" class="p-2 bg-gray-50 rounded-md text-gray-700"></p>
 
+        <!--
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Resolution & Communication Log:</h3>
         <div id="communication-log" class="policy-detail-card h-40 overflow-y-auto text-xs space-y-2">
-            <!-- Communication log entries go here -->
         </div>
+        -->
 
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Update Status:</h3>
         <form id="resolution-form" class="mt-3 space-y-3">
@@ -289,7 +290,6 @@
                 <label for="new-status" class="block text-sm font-medium text-gray-700">Change Status To</label>
                 <select id="new-status" name="new_status" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                     <option value="IN_PROGRESS">In Progress</option>
-                    <option value="PENDING_DPO">Pending DPO Approval</option>
                     <option value="RESOLVED">Resolved (Final)</option>
                     <option value="ESCALATED">Escalated</option>
                 </select>
@@ -378,7 +378,7 @@
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(status)}</td>
             <td class="px-4 py-3 text-sm font-semibold">${calculateDeadlineDisplay(grievance.due_date)}</td>
             <td class="px-4 py-3 text-sm">
-                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.grievance_id}')">View/Manage</button>
+                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.grievance_id}','${grievance.fiduciary_id}')">View/Manage</button>
             </td>
         `;
         return row;
@@ -475,9 +475,10 @@
     }
 
     // Function to fetch a single Grievance record
-    async function fetchGrievanceDetails(grievanceId) {
+    async function fetchGrievanceDetails(grievanceId,fiduciaryId) {
         try {
-            const payload = { "_func": "get_grievance", "grievance_id": grievanceId };
+            const payload = { "_func": "get_grievance", "grievance_id": grievanceId, "fiduciary_id": fiduciaryId };
+            console.log(payload);
 
             const response = await fetch(API_URL_GRIEVANCE, {
                 method: 'POST',
@@ -502,8 +503,8 @@
     }
 
     // Function to populate and show modal
-    async function viewGrievance(id) {
-        const grievance = await fetchGrievanceDetails(id);
+    async function viewGrievance(id,fidid) {
+        const grievance = await fetchGrievanceDetails(id,fidid);
         if (!grievance) return;
 
         grievanceModalOverlay.style.display = 'flex';
@@ -521,6 +522,7 @@
 
         // Resolution Form Setup
         resolutionForm.setAttribute('data-grievance-id', grievance.grievance_id);
+        resolutionForm.setAttribute('fiduciary-id', grievance.fiduciary_id);
         newStatusSelect.value = grievance.status; // Set current status
 
         // Populate Communication Log
@@ -605,6 +607,7 @@
         event.preventDefault();
 
         const grievanceId = resolutionForm.getAttribute('data-grievance-id');
+        const fiduciaryId = resolutionForm.getAttribute('fiduciary-id');
         const newStatus = newStatusSelect.value;
         const resolutionNotes = resolutionDetailsInput.value;
 
@@ -620,6 +623,7 @@
             const payload = {
                 "_func": "update_grievance_status",
                 "grievance_id": grievanceId,
+                "fiduciary_id": fiduciaryId,
                 "status": newStatus,
                 "resolution_details": resolutionNotes
             };

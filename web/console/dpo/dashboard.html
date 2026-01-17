@@ -209,7 +209,6 @@
                     <th class="px-4 py-3 text-sm">Submitted</th>
                     <th class="px-4 py-3 text-sm">Deadline (Days Left)</th>
                     <th class="px-4 py-3 text-sm">Status</th>
-                    <th class="px-4 py-3 text-sm">Actions</th>
                 </tr>
                 </thead>
                 <tbody id="grievance-table-body" class="bg-white divide-y divide-gray-200">
@@ -365,9 +364,6 @@
                                 <td class="px-4 py-2 text-sm text-gray-600">${new Date(g.submission_timestamp).toLocaleDateString()}</td>
                                 <td class="px-4 py-2 text-sm font-semibold">${calculateDaysLeft(g.due_date)}</td>
                                 <td class="px-4 py-2 text-sm">${createStatusBadge(isOverdue ? 'OVERDUE' : g.status)}</td>
-                                <td class="px-4 py-2 text-sm">
-                                    <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="manageGrievance('${g.grievance_id}')">Manage</button>
-                                </td>
                             `;
                             grievanceTableBody.appendChild(row);
                         });
