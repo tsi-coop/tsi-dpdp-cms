@@ -26,10 +26,17 @@ public class CESService {
     /**
      * Fetches a fixed number of active principal IDs using limit and offset.
      */
-    public List<JSONObject> getPrincipalsBatch(   int limit,
-                                                  int offset) throws SQLException {
+    public List<JSONObject> getPrincipalsBatch( UUID fiduciaryId,
+                                                String target,
+                                                int limit,
+                                                int offset) throws SQLException {
         List<JSONObject> principals = new ArrayList<JSONObject>();
-        String sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal ORDER BY user_id LIMIT ? OFFSET ?";
+        String sql = null;
+        if(target == null || target.equalsIgnoreCase("FULL")) {
+            sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal WHERE fiduciary_id=? ORDER BY user_id LIMIT ? OFFSET ?";
+        }else{
+            sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal WHERE fiduciary_id=? AND user_id='"+target+"' ORDER BY user_id LIMIT ? OFFSET ?";
+        }
         PreparedStatement stmt = null;
         ResultSet rs = null;
         JSONObject principal = null;
@@ -40,8 +47,9 @@ public class CESService {
             pool = new PoolDB();
             conn = pool.getConnection();
             stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, limit);
-            stmt.setInt(2, offset);
+            stmt.setObject(1, fiduciaryId);
+            stmt.setInt(2, limit);
+            stmt.setInt(3, offset);
             rs = stmt.executeQuery();
             while (rs.next()) {
                 principal = new JSONObject();

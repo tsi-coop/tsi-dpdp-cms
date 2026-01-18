@@ -106,7 +106,7 @@ public class JobManager implements ServletContextListener {
 
             try {
                 if ("CES".equalsIgnoreCase(type)) {
-                    executeCESJob(fiduciaryId);
+                    executeCESJob(fiduciaryId, subtype);
                 } else if ("EXPORT".equalsIgnoreCase(type)) {
                     executeExportJob(fiduciaryId, jobId, subtype, startDate, endDate);
                 }
@@ -117,12 +117,12 @@ public class JobManager implements ServletContextListener {
         }
     }
 
-    private void executeCESJob(UUID fiduciaryId) {
-        System.out.println("[JobManager] Executing Compliance Enforcement Run at "+ LocalDateTime.now()+" Pool Status:"+PoolDB.getPoolStatus());
-        this.enforce(fiduciaryId, SystemConfig.getAppConfig());
+    private void executeCESJob(UUID fiduciaryId, String target) {
+        System.out.println("[JobManager] Executing Compliance Enforcement Run at "+ LocalDateTime.now()+" Target:"+target+" Pool Status:"+PoolDB.getPoolStatus());
+        this.enforce(fiduciaryId, target);
     }
 
-    public void enforce(UUID fiduciaryId, Properties config) {
+    public void enforce(UUID fiduciaryId, String target) {
         JSONObject principal = null;
         CESService cesService = null;
 
@@ -133,7 +133,7 @@ public class JobManager implements ServletContextListener {
             boolean hasMore = true;
 
             while (hasMore) {
-                List<JSONObject> principals = cesService.getPrincipalsBatch(BATCH_SIZE, offset);
+                List<JSONObject> principals = cesService.getPrincipalsBatch(fiduciaryId, target, BATCH_SIZE, offset);
 
                 if (principals.isEmpty()) {
                     hasMore = false;
@@ -154,6 +154,7 @@ public class JobManager implements ServletContextListener {
             }
             //System.out.println("CES execution completed successfully at " + LocalDateTime.now());
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("Compliance Batch failed due to Database Error: " + e.getMessage(), e);
         }
     }
