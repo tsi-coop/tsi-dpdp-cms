@@ -17,7 +17,7 @@
 	</welcome-file-list>
 
 	<!--
-  Configuration for the Compliance Enforcement Service (CES) Listener.
+  Configuration for the Job Manager Listener.
   This ensures the background scheduler starts when the app is deployed.
 -->
 	<listener>

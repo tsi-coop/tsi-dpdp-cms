@@ -12,11 +12,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.sql.*;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
+import java.time.LocalTime;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +33,9 @@ public class JobManager implements ServletContextListener {
     private static final String EXPORT_DIR = System.getProperty("os.name").toLowerCase().contains("win") ? "c:/tmp/" : "/tmp/";
 
     private static final int BATCH_SIZE = 10; // Fixed number of principals to fetch at a time
+
+    // Track the last date a full CES run was scheduled to prevent duplicates
+    private LocalDate lastFullRunDate = LocalDate.now().minusDays(1);
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
@@ -57,9 +60,75 @@ public class JobManager implements ServletContextListener {
             }
 
             try {
+                // Check for midnight schedule
+                scheduleNightlyFullRun();
+
+                // Process Next Job
                 processNextPendingJob();
             } catch (Exception e) {
                 System.err.println("[JobManager Error] Loop failure: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Checks if it is past midnight and a job hasn't been scheduled for today yet.
+     * If so, fetches all active fiduciaries and inserts a CES FULL job for each.
+     */
+    private void scheduleNightlyFullRun() {
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+
+        // Check if we are past midnight (e.g., 00:00 to 00:05) and haven't run today
+        // The loop runs every 2 mins, so checking if hour is 0 is sufficient window.
+        if (now.getHour() == 0 && !today.equals(lastFullRunDate)) {
+            System.out.println("[JobManager] Initiating Nightly Full CES Run for: " + today);
+
+            PoolDB pool = null;
+            Connection conn = null;
+
+            try {
+                pool = new PoolDB();
+                conn = pool.getConnection();
+
+                // 1. Fetch all active Fiduciary IDs
+                List<UUID> activeFiduciaries = new ArrayList<>();
+                // Assuming 'status' column exists or similar active check, defaulting to all for now
+                String fidSql = "SELECT id FROM fiduciaries where status='ACTIVE'";
+                try (Statement stmt = conn.createStatement();
+                     ResultSet rs = stmt.executeQuery(fidSql)) {
+                    while (rs.next()) {
+                        activeFiduciaries.add((UUID) rs.getObject("id"));
+                    }
+                }
+
+                if (activeFiduciaries.isEmpty()) {
+                    System.out.println("[JobManager] No active fiduciaries found. Skipping scheduling.");
+                    lastFullRunDate = today;
+                    return;
+                }
+
+                // 2. Insert CES Job for each Fiduciary
+                String insertSql = "INSERT INTO jobs (id, job_type, subtype, status, fiduciary_id, created_at) VALUES (?, 'CES', 'FULL', 'PENDING', ?, NOW())";
+                int scheduledCount = 0;
+
+                try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
+                    for (UUID fid : activeFiduciaries) {
+                        pstmt.setObject(1, UUID.randomUUID());
+                        pstmt.setObject(2, fid);
+                        pstmt.addBatch();
+                        scheduledCount++;
+                    }
+                    pstmt.executeBatch();
+                }
+
+                lastFullRunDate = today; // Mark today as scheduled
+                System.out.println("[JobManager] Nightly jobs successfully queued for " + scheduledCount + " fiduciaries.");
+
+            } catch (SQLException e) {
+                System.err.println("[JobManager] Failed to schedule nightly job batch: " + e.getMessage());
+            } finally {
+                if (pool != null && conn != null) pool.cleanup(null, null, conn);
             }
         }
     }
