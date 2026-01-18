@@ -215,3 +215,24 @@ CREATE TABLE IF NOT EXISTS notifications (
     read_at TIMESTAMP WITH TIME ZONE, -- When recipient read it (for IN_APP)
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+--
+-- 13. Table to manage background compliance and export jobs
+--
+
+CREATE TABLE IF NOT EXISTS jobs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    fiduciary_id UUID NOT NULL,
+    job_type VARCHAR(20) NOT NULL, -- CES, EXPORT
+    subtype VARCHAR(50),           -- CONSENT, PRINCIPAL, GRIEVANCE, AUDIT (for EXPORT)
+    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, RUNNING, COMPLETED, FAILED
+    start_date DATE,               -- Filter for Exports
+    end_date DATE,                 -- Filter for Exports
+    error_message TEXT,
+    output_file_path TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_jobs_status ON jobs(status) WHERE status = 'PENDING';

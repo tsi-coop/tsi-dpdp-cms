@@ -3,6 +3,7 @@ package org.tsicoop.dpdpcms.framework;
 import com.networknt.schema.ValidationMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -13,6 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Enumeration;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.UUID;
@@ -21,22 +23,50 @@ public class InputProcessor {
     public final static String REQUEST_DATA = "input_json";
     public final static String AUTH_TOKEN = "auth_token";
 
-    public static void processInput(HttpServletRequest request, HttpServletResponse response){
-        String contentType = request.getContentType();
+    public static void processInput(HttpServletRequest request, HttpServletResponse response) {
         StringBuilder buffer = new StringBuilder();
         try {
+            // 1. Attempt to read from the input stream (POST body)
             BufferedReader reader = request.getReader();
             String line = null;
             while ((line = reader.readLine()) != null) {
-                //System.out.println("line"+line);
                 buffer.append(line);
                 buffer.append(System.lineSeparator());
             }
-            String data = buffer.toString();
-            //System.out.println(data);
+
+            String data = buffer.toString().trim();
+
+            // 2. Fallback: If data is empty, extract parameters and wrap in JSON
+            if (data.isEmpty()) {
+                JSONObject jsonParams = new JSONObject();
+                Enumeration<String> paramNames = request.getParameterNames();
+
+                while (paramNames.hasMoreElements()) {
+                    String name = paramNames.nextElement();
+                    String[] values = request.getParameterValues(name);
+
+                    if (values != null && values.length > 0) {
+                        // Handle single vs multiple values for the same parameter key
+                        if (values.length == 1) {
+                            jsonParams.put(name, values[0]);
+                        } else {
+                            JSONArray valArray = new JSONArray();
+                            for (String v : values) {
+                                valArray.add(v);
+                            }
+                            jsonParams.put(name, valArray);
+                        }
+                    }
+                }
+                data = jsonParams.toJSONString();
+            }
+
+            // 3. Persist the normalized JSON data as a request attribute
             request.setAttribute(REQUEST_DATA, data);
-        }catch (Exception e){
-            e.printStackTrace();
+
+        } catch (Exception e) {
+            System.err.println("InputProcessor critical failure: " + e.getMessage());
+            request.setAttribute(REQUEST_DATA, "{}");
         }
     }
 
@@ -181,9 +211,13 @@ public class InputProcessor {
 
         try {
             authorization = req.getHeader("Authorization");
-            strTok = new StringTokenizer(authorization, " ");
-            strTok.nextToken();
-            token = strTok.nextToken();
+            if(authorization == null){
+                token = req.getParameter("auth");
+            }else {
+                strTok = new StringTokenizer(authorization, " ");
+                strTok.nextToken();
+                token = strTok.nextToken();
+            }
             if (JWTUtil.isTokenValid(token)) {
                 tokenDetails = new JSONObject();
                 tokenDetails.put("email",JWTUtil.getEmailFromToken(token));

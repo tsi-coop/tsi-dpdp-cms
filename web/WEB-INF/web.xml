@@ -21,7 +21,7 @@
   This ensures the background scheduler starts when the app is deployed.
 -->
 	<listener>
-		<listener-class>org.tsicoop.dpdpcms.ces.CESContextListener</listener-class>
+		<listener-class>org.tsicoop.dpdpcms.job.JobManager</listener-class>
 	</listener>
 
 	<filter>

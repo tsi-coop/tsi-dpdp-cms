@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "end_date": {
+      "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
+    },
+    "job_type": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string"
+    },
+    "subtype": {
+      "type": "string"
+    },
+    "_func": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "end_date",
+    "fiduciary_id",
+    "job_type",
+    "start_date",
+    "subtype",
+    "_func"
+  ]
+}

@@ -18,7 +18,7 @@ import java.util.UUID;
 /**
  * CESService implements the compliance business logic.
  */
-class CESService {
+public class CESService {
 
     public CESService(){
     }

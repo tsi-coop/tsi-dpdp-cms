@@ -213,9 +213,11 @@ public class InterceptingFilter implements Filter {
             boolean validRequest = action.validate(method, req, res);
             if (validRequest) {
                 // Call the appropriate method on the REST service
-                if (method.equalsIgnoreCase("POST")) { // All our services use POST
+                if (method.equalsIgnoreCase("POST")) {
                     action.post(req, res);
-                } else {
+                } else  if (method.equalsIgnoreCase("GET")) {
+                    action.post(req, res);
+                }else {
                     // This should ideally not be reached if validate method correctly handles non-POST
                     res.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed");
                 }
