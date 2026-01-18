@@ -112,7 +112,13 @@ public class Job implements Action {
      */
     private void handleListJobs(UUID fiduciaryId, JSONObject input, HttpServletResponse res) throws SQLException {
         JSONArray jobs = new JSONArray();
-        String sql = "SELECT id, fiduciary_id, job_type, subtype, status, created_at FROM jobs where fiduciary_id=? ORDER BY created_at DESC LIMIT 20";
+        String jobType = (String) input.get("job_type");
+        String sql = null;
+        if(jobType != null){
+            sql = "SELECT id, fiduciary_id, job_type, subtype, status, created_at FROM jobs where fiduciary_id=? AND job_type='"+jobType+"' ORDER BY created_at DESC LIMIT 20";
+        }else {
+            sql = "SELECT id, fiduciary_id, job_type, subtype, status, created_at FROM jobs where fiduciary_id=? ORDER BY created_at DESC LIMIT 20";
+        }
 
         PoolDB pool = new PoolDB();
         Connection conn = null;

@@ -8,6 +8,9 @@
     },
     "_func": {
       "type": "string"
+    },
+    "job_type": {
+      "type": "string"
     }
   },
   "required": [

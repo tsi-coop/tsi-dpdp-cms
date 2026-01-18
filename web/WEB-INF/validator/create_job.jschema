@@ -23,10 +23,8 @@
     }
   },
   "required": [
-    "end_date",
     "fiduciary_id",
     "job_type",
-    "start_date",
     "subtype",
     "_func"
   ]
