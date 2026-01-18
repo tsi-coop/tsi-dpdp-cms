@@ -264,10 +264,10 @@
             <div>
                 <label for="new-status" class="block text-sm font-medium text-gray-700">Set Status To</label>
                 <select id="new-status" name="new_status" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="COMPLETED">Completed (Data Purged)</option>
-                    <option value="FAILED">Failed (Manual Review Needed)</option>
-                    <option value="UNDER_LEGAL_HOLD">Under Legal Hold</option>
+                    <option value="PURGE_IN_PROGRESS">In Progress</option>
+                    <option value="PURGE_COMPLETED">Completed (Data Purged)</option>
+                    <option value="PURGE_FAILED">Failed (Manual Review Needed)</option>
+                    <option value="LEGAL_HOLD_APPLIED">Under Legal Hold</option>
                 </select>
             </div>
             <div>
@@ -379,12 +379,12 @@
     function createStatusBadge(status) {
         let colorClass = '';
         switch (status) {
-            case 'PENDING': colorClass = 'bg-blue-100 text-blue-800'; break;
-            case 'IN_PROGRESS': colorClass = 'bg-yellow-100 text-yellow-800'; break;
-            case 'COMPLETED': colorClass = 'bg-green-100 text-green-800'; break;
-            case 'FAILED': colorClass = 'bg-red-100 text-red-800'; break;
+            case 'PURGE_INITIATED': colorClass = 'bg-blue-100 text-blue-800'; break;
+            case 'PURGE_IN_PROGRESS': colorClass = 'bg-yellow-100 text-yellow-800'; break;
+            case 'PURGE_COMPLETED': colorClass = 'bg-green-100 text-green-800'; break;
+            case 'PURGE_FAILED': colorClass = 'bg-red-100 text-red-800'; break;
             // Updated color for Legal Hold as requested
-            case 'UNDER_LEGAL_HOLD': colorClass = 'bg-orange-100 text-orange-800'; break;
+            case 'LEGAL_HOLD_APPLIED': colorClass = 'bg-orange-100 text-orange-800'; break;
             default: colorClass = 'bg-gray-100 text-gray-800';
         }
         return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status.replace(/_/g, ' ')}</span>`;
@@ -510,7 +510,7 @@
                  tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">No background enforcement jobs found.</td></tr>';
             } else {
                 cesJobs.forEach(job => {
-                     const statusColor = job.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600';
+                     const statusColor = job.status === 'PURGE_COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600';
                      tbody.innerHTML += `
                         <tr class="hover:bg-slate-50 border-b border-slate-50">
                             <td class="p-3 font-mono text-[11px] text-slate-500">...${job.id.slice(-8)}</td>

@@ -295,9 +295,9 @@ public class CESService {
     public JSONObject insertPurgeRequest(String userId,
                                          String fiduciaryId,
                                          String appId,
-                                         String triggerEvent) throws SQLException {
+                                         String status) throws SQLException {
         JSONObject response = new JSONObject();
-        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, app_id, trigger_event) " +
+        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, app_id, status) " +
                 "VALUES (?, ?, ?, ?) RETURNING id";
 
         PreparedStatement stmt = null;
@@ -313,7 +313,7 @@ public class CESService {
             stmt.setString(1, userId);
             stmt.setObject(2, UUID.fromString(fiduciaryId));
             stmt.setObject(3, UUID.fromString(appId));
-            stmt.setString(4, triggerEvent);
+            stmt.setString(4, status);
 
             rs = stmt.executeQuery();
             if (rs.next()) {
