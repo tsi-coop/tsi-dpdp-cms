@@ -158,7 +158,7 @@
                 const response = await fetch(API_URL_JOBS, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                    body: JSON.stringify({ "_func": "list_jobs", "fiduciary_id": FIDUCIARY_ID })
+                    body: JSON.stringify({ "_func": "list_jobs", "fiduciary_id": FIDUCIARY_ID, "job_type": "EXPORT"})
                 });
 
                 if (response.ok) {
