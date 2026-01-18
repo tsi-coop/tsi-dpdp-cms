@@ -149,7 +149,7 @@
         const FIDUCIARY_ID = localStorage.getItem('fiduciary_id') || 'fiduciary_hub_abc';
         const AUTH_TOKEN = localStorage.getItem('authToken');
         const USER_NAME = localStorage.getItem('username');
-
+        document.getElementById('username').textContent = USER_NAME || 'DPO User';
         // --- Core Functions ---
 
         async function loadJobs() {
