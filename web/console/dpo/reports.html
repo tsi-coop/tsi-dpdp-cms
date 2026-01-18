@@ -50,36 +50,37 @@
     </style>
 </head>
 
-<body class="flex">
+<body class="flex lg:p-0">
 
 <!-- Sidebar Navigation -->
-<aside class="sidebar hidden lg:block">
-    <div class="px-5 pb-6 border-b border-gray-200">
-        <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="policies.html" class="nav-link">Policies</a>
+            <a href="principals.html" class="nav-link">Principals</a>
+            <a href="compliance.html" class="nav-link">Compliance</a>
+            <a href="grievances.html" class="nav-link">Grievances</a>
+            <a href="audit.html" class="nav-link">Audit</a>
+            <a href="reports.html" class="nav-link active">Reports</a>
+        </nav>
     </div>
-    <nav class="flex flex-col space-y-1 mt-4 px-3">
-        <a href="dashboard.html" class="nav-link">Dashboard</a>
-        <a href="policies.html" class="nav-link">Policies</a>
-        <a href="principals.html" class="nav-link">Principals</a>
-        <a href="compliance.html" class="nav-link">Compliance</a>
-        <a href="grievances.html" class="nav-link">Grievances</a>
-        <a href="audit.html" class="nav-link">Audit</a>
-        <a href="reports.html" class="nav-link active">Reports</a>
-    </nav>
-    <div class="absolute bottom-0 w-full p-4 border-t border-gray-100">
-        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Authenticated As</div>
-        <div class="flex items-center gap-3 px-2">
-            <div class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-bold">S</div>
-            <div>
-                <p class="text-xs font-bold text-slate-800" id="username">Satish [DPO]</p>
-                <button onclick="handleLogout()" class="text-[10px] text-red-500 font-bold hover:underline">Logout</button>
-            </div>
+    <div class="p-3 border-t border-gray-200">
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
         </div>
     </div>
-</aside>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
 
 <!-- Main Content -->
-<main class="flex-1 lg:ml-[250px] p-8">
+<main class="flex-1 p-8">
     <header class="mb-8">
         <h1 class="text-2xl font-black text-slate-800 tracking-tight">Reporting & Bulk Exports</h1>
         <p class="text-sm text-slate-500">Submit background jobs for regulatory evidence and data portability dumps.</p>
@@ -147,6 +148,7 @@
         const API_URL_JOBS = '/api/v1/admin/job';
         const FIDUCIARY_ID = localStorage.getItem('fiduciary_id') || 'fiduciary_hub_abc';
         const AUTH_TOKEN = localStorage.getItem('authToken');
+        const USER_NAME = localStorage.getItem('username');
 
         // --- Core Functions ---
 
@@ -251,8 +253,9 @@
         }
 
         function handleLogout() {
-            localStorage.clear();
-            window.location.href = "index.html";
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('username');
+          window.location.href = "../index.html";
         }
 
         // --- Init ---
