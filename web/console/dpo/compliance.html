@@ -136,6 +136,10 @@
             justify-content: flex-end;
             gap: 10px;
         }
+
+        .status-pill {
+             font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 9999px; text-transform: uppercase;
+        }
     </style>
 </head>
 
@@ -178,13 +182,23 @@
 
 <!-- Main Content Area -->
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-xl font-semibold text-gray-800">Compliance Tracker</h1>
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-xl font-semibold text-gray-800">Compliance Enforcement</h1>
+        <div class="flex gap-3">
+            <button onclick="openCesJobsModal()" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition duration-150 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+                View Jobs
+            </button>
+            <button onclick="openNewCesJobModal()" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                Run Compliance Check
+            </button>
+        </div>
     </div>
 
     <!-- Purge Request List Card -->
     <div class="card">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">Purge Requests</h2>
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Enforcement Tracking</h2>
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
             <div class="flex gap-3">
                 <input type="text" id="search-input" placeholder="Search by User ID..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-xs">
@@ -193,7 +207,6 @@
                     <option value="PURGE_INITIATED">INITIATED</option>
                     <option value="PURGE_IN_PROGRESS">IN PROGRESS</option>
                     <option value="PURGE_COMPLETED">COMPLETED</option>
-                    <option value="PURGE_FAILED>FAILED</option>
                     <option value="LEGAL_HOLD_APPLIED">LEGAL HOLD</option>
                 </select>
             </div>
@@ -206,7 +219,6 @@
                 <tr class="table-header">
                     <th class="px-4 py-3 text-sm">Request ID</th>
                     <th class="px-4 py-3 text-sm">User ID</th>
-                    <th class="px-4 py-3 text-sm">App Name</th>
                     <th class="px-4 py-3 text-sm">Trigger Event</th>
                     <th class="px-4 py-3 text-sm">Initiated At</th>
                     <th class="px-4 py-3 text-sm">Status</th>
@@ -228,12 +240,13 @@
 <!-- Modal for Purge Request Detail and Fulfillment -->
 <div id="purge-modal-overlay" class="modal-overlay">
     <div class="modal-content">
+        <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl" onclick="closeModal('purge-modal-overlay')">&times;</button>
         <h2 class="text-2xl font-semibold primary-text mb-4">Manage Purge Request: <span id="modal-request-id" class="text-gray-600"></span></h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm mb-4">
             <div class="space-y-1">
                 <p><strong>User ID:</strong> <span id="detail-user-id"></span></p>
-                <p><strong>App Name:</strong> <span id="detail-app-name"></span></p>
+                <p><strong>Fiduciary ID:</strong> <span id="detail-fiduciary"></span></p>
                 <p><strong>Trigger Event:</strong> <span id="detail-trigger"></span></p>
             </div>
             <div class="space-y-1">
@@ -261,9 +274,78 @@
                 <label for="details-notes" class="block text-sm font-medium text-gray-700">Audit Details / Observations</label>
                 <textarea id="details-notes" name="details" rows="3" placeholder="Additional details regarding the purge execution..." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
             </div>
+            <div>
+                <label for="legal-exception" class="block text-sm font-medium text-gray-700">Legal Exception Summary (if Hold/Failed)</label>
+                <textarea id="legal-exception" name="legal_exception_summary" rows="2" placeholder="Reference statutory retention requirements if applicable..." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+            </div>
             <div class="modal-footer">
-                <button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+                <button type="button" onclick="closeModal('purge-modal-overlay')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
                 <button type="submit" id="update-request-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Fulfillment State</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: View CES Jobs -->
+<div id="ces-jobs-modal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl" onclick="closeModal('ces-jobs-modal')">&times;</button>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800">Background Enforcement Jobs</h2>
+            <button onclick="loadCesJobs()" class="text-xs text-teal-600 font-bold uppercase hover:underline">Refresh</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                    <th class="pb-2 px-2">Job ID</th>
+                    <th class="pb-2 px-2">Type</th>
+                    <th class="pb-2 px-2">Target</th>
+                    <th class="pb-2 px-2">Started</th>
+                    <th class="pb-2 px-2">Status</th>
+                </tr>
+                </thead>
+                <tbody id="ces-jobs-body" class="text-sm divide-y divide-slate-50"></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button type="button" onclick="closeModal('ces-jobs-modal')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: New CES Job -->
+<div id="new-ces-job-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl" onclick="closeModal('new-ces-job-modal')">&times;</button>
+        <h2 class="text-xl font-bold primary-text mb-4">Initiate Compliance Check</h2>
+        <form id="new-ces-job-form">
+            <div class="mb-4">
+                <span class="block text-sm font-bold text-gray-700 mb-2">Scope of Enforcement</span>
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="ces_scope" value="FULL" checked onchange="togglePrincipalInput(false)" class="text-teal-600 focus:ring-teal-500">
+                        <span class="text-sm text-gray-600">Full System Scan</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="ces_scope" value="PRINCIPAL" onchange="togglePrincipalInput(true)" class="text-teal-600 focus:ring-teal-500">
+                        <span class="text-sm text-gray-600">Single Data Principal</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="principal-input-container" class="mb-6 hidden">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Target User ID</label>
+                <input type="text" id="target-principal-id" class="w-full p-2 border border-slate-300 rounded-md text-sm" placeholder="e.g. data_principal_xyz789">
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded-md mb-6 border border-blue-100">
+                <p class="text-xs text-blue-700"><strong>Note:</strong> This will trigger the Compliance Enforcement Service (CES) to check for expired retention periods and pending erasure requests.</p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('new-ces-job-modal')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+                <button type="submit" id="start-ces-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Start Engine</button>
             </div>
         </form>
     </div>
@@ -272,7 +354,9 @@
 <script>
     // --- Configuration ---
     const API_URL_PURGE = '/api/v1/admin/compliance';
+    const API_URL_JOBS = '/api/v1/admin/job';
     const AUTH_TOKEN = localStorage.getItem('authToken');
+    const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';
 
@@ -283,8 +367,13 @@
         document.getElementById('sidebar-backdrop').classList.toggle('hidden');
     }
 
-    function closeModal() {
-        purgeModalOverlay.style.display = 'none';
+    function closeModal(modalId) {
+        if(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        } else {
+             // Fallback for older calls
+             document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        }
     }
 
     function createStatusBadge(status) {
@@ -294,7 +383,8 @@
             case 'IN_PROGRESS': colorClass = 'bg-yellow-100 text-yellow-800'; break;
             case 'COMPLETED': colorClass = 'bg-green-100 text-green-800'; break;
             case 'FAILED': colorClass = 'bg-red-100 text-red-800'; break;
-            case 'UNDER_LEGAL_HOLD': colorClass = 'bg-purple-100 text-purple-800'; break;
+            // Updated color for Legal Hold as requested
+            case 'UNDER_LEGAL_HOLD': colorClass = 'bg-orange-100 text-orange-800'; break;
             default: colorClass = 'bg-gray-100 text-gray-800';
         }
         return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status.replace(/_/g, ' ')}</span>`;
@@ -305,7 +395,6 @@
         row.innerHTML = `
             <td class="px-4 py-3 text-sm font-mono text-gray-600">...${req.id.slice(-8)}</td>
             <td class="px-4 py-3 text-sm text-gray-800">${req.user_id}</td>
-            <td class="px-4 py-3 text-sm text-gray-800">${req.app_name}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${req.trigger_event}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${new Date(req.initiated_at).toLocaleDateString()}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(req.status)}</td>
@@ -334,13 +423,11 @@
             });
 
             const data = await response.json();
-
             if (data.status === 401) {
                 alert("Auth Failed: " + (data.message || "Authentication required."));
                 handleLogout();
                 return;
             }
-
             const requests = data || [];
 
             tableBody.innerHTML = '';
@@ -364,26 +451,128 @@
                 body: JSON.stringify({ "_func": "get_purge_request", "id": id, "fiduciary_id": localStorage.getItem('fiduciary_id')})
             });
             const req = await response.json();
-            console.log(req);
+
             document.getElementById('modal-request-id').textContent = req.id;
             document.getElementById('detail-user-id').textContent = req.user_id;
-            document.getElementById('detail-app-name').textContent = req.app_name;
+            document.getElementById('detail-fiduciary').textContent = req.fiduciary_id;
             document.getElementById('detail-trigger').textContent = req.trigger_event;
             document.getElementById('detail-status').innerHTML = createStatusBadge(req.status);
             document.getElementById('detail-initiated').textContent = new Date(req.initiated_at).toLocaleString();
-            document.getElementById('detail-updated').textContent = req.last_updated_at != null ? new Date(req.last_updated_at).toLocaleString():"";
-            document.getElementById('detail-context').textContent = req.details || "";
+            document.getElementById('detail-updated').textContent = new Date(req.last_updated_at).toLocaleString();
+            document.getElementById('detail-context').textContent = req.details || "No additional context provided.";
 
             // Prefill form
             document.getElementById('new-status').value = req.status === 'PENDING' ? 'IN_PROGRESS' : req.status;
             document.getElementById('details-notes').value = req.details || '';
+            document.getElementById('legal-exception').value = req.legal_exception_summary || '';
 
             updateForm.setAttribute('data-id', id);
             purgeModalOverlay.style.display = 'flex';
-        } catch (e) { alert("Error fetching request details."+e.message); }
+        } catch (e) { alert("Error fetching request details."); }
     }
 
-    // Init
+    // --- CES JOB LOGIC ---
+
+    function openCesJobsModal() {
+        document.getElementById('ces-jobs-modal').style.display = 'flex';
+        loadCesJobs();
+    }
+
+    function openNewCesJobModal() {
+        document.getElementById('new-ces-job-modal').style.display = 'flex';
+    }
+
+    function togglePrincipalInput(show) {
+        const container = document.getElementById('principal-input-container');
+        if (show) container.classList.remove('hidden');
+        else container.classList.add('hidden');
+    }
+
+    async function loadCesJobs() {
+        const tbody = document.getElementById('ces-jobs-body');
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">Loading jobs...</td></tr>';
+
+        try {
+            const response = await fetch(API_URL_JOBS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_jobs", "fiduciary_id": FIDUCIARY_ID })
+            });
+
+            const data = await response.json();
+            const allJobs = data.data || data;
+
+            // Filter client-side for CES jobs if API returns all
+            const cesJobs = Array.isArray(allJobs) ? allJobs.filter(j => j.job_type === 'CES') : [];
+
+            tbody.innerHTML = '';
+            if (cesJobs.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">No background enforcement jobs found.</td></tr>';
+            } else {
+                cesJobs.forEach(job => {
+                     const statusColor = job.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600';
+                     tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 border-b border-slate-50">
+                            <td class="p-3 font-mono text-[11px] text-slate-500">...${job.id.slice(-8)}</td>
+                            <td class="p-3 font-bold text-xs text-slate-700">${job.job_type}</td>
+                            <td class="p-3 text-xs text-slate-600">${job.subtype || 'FULL_RUN'}</td>
+                            <td class="p-3 text-xs text-slate-500">${new Date(job.created_at).toLocaleString()}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor}">${job.status}</span></td>
+                        </tr>
+                     `;
+                });
+            }
+        } catch (e) {
+            console.error("Failed to load CES jobs", e);
+        }
+    }
+
+    document.getElementById('new-ces-job-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const scope = document.querySelector('input[name="ces_scope"]:checked').value;
+        let subtype = "FULL";
+
+        if (scope === 'PRINCIPAL') {
+            const pid = document.getElementById('target-principal-id').value.trim();
+            if (!pid) return alert("Please enter a Target User ID.");
+            subtype = `PRINCIPAL:${pid}`;
+        }
+
+        const btn = document.getElementById('start-ces-btn');
+        btn.disabled = true;
+        btn.textContent = "Scheduling...";
+
+        try {
+            const payload = {
+                "_func": "create_job",
+                "job_type": "CES",
+                "subtype": subtype,
+                "fiduciary_id": FIDUCIARY_ID
+            };
+
+            const response = await fetch(API_URL_JOBS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("Compliance Enforcement Job Initiated.");
+                closeModal('new-ces-job-modal');
+                openCesJobsModal(); // Switch to view jobs
+            } else {
+                alert("Failed to schedule job.");
+            }
+        } catch(err) {
+            alert("Network Error.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Start Engine";
+        }
+    });
+
+
+    // --- Init ---
     tableBody = document.getElementById('purge-table-body');
     countSpan = document.getElementById('request-count');
     searchInput = document.getElementById('search-input');
@@ -394,9 +583,7 @@
     document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
     document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
     statusFilter.addEventListener('change', loadPurgeRequests);
-    searchInput.addEventListener('input', () => { /* debounce logic if needed */ loadPurgeRequests(); });
-
-    loadPurgeRequests();
+    searchInput.addEventListener('input', () => { loadPurgeRequests(); });
 
     updateForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -411,7 +598,8 @@
                 "fiduciary_id": localStorage.getItem('fiduciary_id'),
                 "id": id,
                 "status": document.getElementById('new-status').value,
-                "details": document.getElementById('details-notes').value
+                "details": document.getElementById('details-notes').value,
+                "legal_exception_summary": document.getElementById('legal-exception').value
             };
 
             const response = await fetch(API_URL_PURGE, {
@@ -422,7 +610,7 @@
 
             if (response.ok) {
                 alert("Purge request status updated successfully.");
-                closeModal();
+                closeModal('purge-modal-overlay');
                 loadPurgeRequests();
             } else {
                 alert("Failed to update status.");
@@ -433,8 +621,14 @@
         }
     });
 
+    loadPurgeRequests();
+
     window.viewPurgeRequest = viewPurgeRequest;
     window.closeModal = closeModal;
+    window.openCesJobsModal = openCesJobsModal;
+    window.openNewCesJobModal = openNewCesJobModal;
+    window.togglePrincipalInput = togglePrincipalInput;
+    window.loadCesJobs = loadCesJobs;
     window.handleLogout = () => { localStorage.clear(); window.location.href = "../index.html"; };
 </script>
 </body>
