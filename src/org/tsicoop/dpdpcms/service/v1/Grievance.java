@@ -131,9 +131,8 @@ public class Grievance implements Action {
                     break;
 
                 case "list_grievances":
-                    String statusFilter = (String) input.get("status");
+                    String statusFilter = (String) input.get("status_filter");
                     String typeFilter = (String) input.get("type");
-                    String assignedDpoIdStr = (String) input.get("assigned_dpo_user_id"); // For DPO dashboard
 
                     String search = (String) input.get("search");
                     // fiduciaryId is required for listing grievances
@@ -144,7 +143,7 @@ public class Grievance implements Action {
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
 
-                    outputArray = listGrievancesFromDb(fiduciaryId, statusFilter, typeFilter, assignedDpoIdStr, search, page, limit);
+                    outputArray = listGrievancesFromDb(fiduciaryId, statusFilter, search, page, limit);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -398,7 +397,7 @@ public class Grievance implements Action {
      * @return JSONArray of grievance JSONObjects.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONArray listGrievancesFromDb(UUID fiduciaryId, String statusFilter, String typeFilter, String assignedDpoId, String search, int page, int limit) throws SQLException {
+    private JSONArray listGrievancesFromDb(UUID fiduciaryId, String statusFilter, String search, int page, int limit) throws SQLException {
         JSONArray grievancesArray = new JSONArray();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -409,13 +408,9 @@ public class Grievance implements Action {
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
-        if (statusFilter != null && !statusFilter.isEmpty()) {
+        if (statusFilter != null && !statusFilter.isEmpty() && !statusFilter.equalsIgnoreCase("ALL")) {
             sqlBuilder.append(" AND status = ?");
             params.add(statusFilter);
-        }
-        if (typeFilter != null && !typeFilter.isEmpty()) {
-            sqlBuilder.append(" AND type = ?");
-            params.add(typeFilter);
         }
         if (search != null && !search.isEmpty()) {
             sqlBuilder.append(" AND (subject ILIKE ? OR description ILIKE ? OR user_id ILIKE ?)");

@@ -212,14 +212,9 @@
                 <select id="status-filter" class="p-2 border border-gray-300 rounded-md text-sm">
                     <option value="NEW">Status: NEW</option>
                     <option value="IN_PROGRESS">Status: IN PROGRESS</option>
-                    <option value="PENDING_DPO">Status: PENDING DPO REVIEW</option>
-                    <option value="ALL">Status: ALL OPEN</option>
-                </select>
-                <select id="type-filter" class="p-2 border border-gray-300 rounded-md text-sm">
-                    <option value="">Type: All</option>
-                    <option value="ERASURE_REQUEST">Erasure Request</option>
-                    <option value="DATA_ACCESS_REQUEST">Data Access Request</option>
-                    <option value="GENERAL_COMPLAINT">General Complaint</option>
+                    <option value="RESOLVED">Status: RESOLVED</option>
+                    <option value="ESCALATED">Status: ESCALATED</option>
+                    <option value="ALL">Status: ALL</option>
                 </select>
             </div>
             <span id="grievance-count" class="text-sm text-gray-500">Loading...</span>
@@ -233,7 +228,6 @@
                     <th class="px-4 py-3 text-sm">Type</th>
                     <th class="px-4 py-3 text-sm">Subject</th>
                     <th class="px-4 py-3 text-sm">Submitted</th>
-                    <th class="px-4 py-3 text-sm">Assigned To</th>
                     <th class="px-4 py-3 text-sm">Status</th>
                     <th class="px-4 py-3 text-sm">Deadline</th>
                     <th class="px-4 py-3 text-sm">Actions</th>
@@ -266,12 +260,10 @@
                 <p><strong>Type:</strong> <span id="detail-type"></span></p>
                 <p><strong>Submitted By:</strong> <span id="detail-user-id"></span></p>
                 <p><strong>Submitted On:</strong> <span id="detail-date"></span></p>
-                <p><strong>Assigned DPO:</strong> <span id="detail-assigned"></span></p>
             </div>
             <div class="space-y-1">
                 <p><strong>Current Status:</strong> <span id="detail-status" class="font-bold"></span></p>
                 <p><strong>Deadline:</strong> <span id="detail-deadline" class="font-bold text-red-500"></span></p>
-                <p><strong>Fiduciary:</strong> <span id="detail-fiduciary"></span></p>
             </div>
         </div>
 
@@ -315,8 +307,8 @@
     document.getElementById('username').textContent = USER_NAME || 'DPO User';
 
     // --- Global DOM Element Variables ---
-    let sidebar, menuToggle, backdrop, grievanceModalOverlay, tableBody, countSpan, errorMessageP, searchInput, statusFilter, typeFilter;
-    let modalGrievanceId, detailType, detailUserId, detailDate, detailAssigned, detailStatus, detailDeadline, detailFiduciary, detailDescription, communicationLog;
+    let sidebar, menuToggle, backdrop, grievanceModalOverlay, tableBody, countSpan, errorMessageP, searchInput, statusFilter;
+    let modalGrievanceId, detailType, detailUserId, detailDate, detailAssigned, detailStatus, detailDeadline, detailFiduciary, detailDescription;
     let resolutionForm, newStatusSelect, resolutionDetailsInput;
     let FiduciaryList = {}; // Cache Fiduciary names
 
@@ -351,8 +343,9 @@
         return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status.replace(/_/g, ' ')}</span>`;
     }
 
-    function calculateDeadlineDisplay(deadline) {
+    function calculateDeadlineDisplay(deadline,status) {
         if (!deadline) return 'N/A';
+        if(status != 'OVERDUE') return 'N/A';
         const now = new Date();
         const due = new Date(deadline);
         const diffTime = due.getTime() - now.getTime();
@@ -370,13 +363,12 @@
         const status = isOverdue ? 'OVERDUE' : grievance.status;
 
         row.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${grievance.grievance_id || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${grievance.grievance_id.slice(-8)}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${grievance.type.replace(/_/g, ' ')}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${grievance.subject || 'N/A'}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${new Date(grievance.submission_timestamp).toLocaleDateString()}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${grievance.assigned_to_name || 'Unassigned'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(status)}</td>
-            <td class="px-4 py-3 text-sm font-semibold">${calculateDeadlineDisplay(grievance.due_date)}</td>
+            <td class="px-4 py-3 text-sm font-semibold">${calculateDeadlineDisplay(grievance.due_date,status)}</td>
             <td class="px-4 py-3 text-sm">
                 <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.grievance_id}','${grievance.fiduciary_id}')">View/Manage</button>
             </td>
@@ -426,7 +418,6 @@
                 "_func": "list_grievances",
                 "search": searchTerm,
                 "status_filter": statusFilter.value,
-                "type_filter": typeFilter.value,
                 "sort_by": "SUBMISSION_DATE_DESC",
                 "fiduciary_id":localStorage.getItem("fiduciary_id"),
                 "page": 1,
@@ -514,32 +505,14 @@
         document.getElementById('detail-type').textContent = grievance.type.replace(/_/g, ' ');
         document.getElementById('detail-user-id').textContent = grievance.user_id;
         document.getElementById('detail-date').textContent = new Date(grievance.submission_timestamp).toLocaleString();
-        document.getElementById('detail-assigned').textContent = grievance.assigned_to_name || 'Unassigned';
         document.getElementById('detail-status').innerHTML = createStatusBadge(grievance.status);
         document.getElementById('detail-deadline').textContent = new Date(grievance.due_date).toLocaleDateString();
-        document.getElementById('detail-fiduciary').textContent = getFiduciaryName(grievance.fiduciary_id);
         document.getElementById('detail-description').textContent = grievance.description;
 
         // Resolution Form Setup
         resolutionForm.setAttribute('data-grievance-id', grievance.grievance_id);
         resolutionForm.setAttribute('fiduciary-id', grievance.fiduciary_id);
         newStatusSelect.value = grievance.status; // Set current status
-
-        // Populate Communication Log
-        communicationLog.innerHTML = '';
-        if (grievance.communication_log && grievance.communication_log.length > 0) {
-            grievance.communication_log.forEach(log => {
-                const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry text-xs';
-                logEntry.innerHTML = `
-                    <p class="font-semibold">${log.sender} (${log.channel}) @ ${new Date(log.ts).toLocaleString()}:</p>
-                    <p class="ml-2 text-gray-700">${log.message}</p>
-                `;
-                communicationLog.appendChild(logEntry);
-            });
-        } else {
-            communicationLog.innerHTML = '<p class="text-gray-500">No communication log entries.</p>';
-        }
     }
 
      function handleLogout() {
@@ -560,10 +533,8 @@
     errorMessageP = document.getElementById('grievance-error-message');
     searchInput = document.getElementById('search-input');
     statusFilter = document.getElementById('status-filter');
-    typeFilter = document.getElementById('type-filter');
 
     grievanceModalOverlay = document.getElementById('grievance-modal-overlay');
-    communicationLog = document.getElementById('communication-log');
     resolutionForm = document.getElementById('resolution-form');
     newStatusSelect = document.getElementById('new-status');
     resolutionDetailsInput = document.getElementById('resolution-details');
@@ -589,7 +560,6 @@
 
     // Filters
     statusFilter.addEventListener('change', () => loadGrievances(searchInput.value.trim()));
-    typeFilter.addEventListener('change', () => loadGrievances(searchInput.value.trim()));
 
     // Search
     searchInput.addEventListener('keypress', function(event) {
