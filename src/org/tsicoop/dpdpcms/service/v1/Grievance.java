@@ -408,10 +408,15 @@ public class Grievance implements Action {
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
-        if (statusFilter != null && !statusFilter.isEmpty() && !statusFilter.equalsIgnoreCase("ALL")) {
+        if (statusFilter != null && !statusFilter.isEmpty() && statusFilter.equalsIgnoreCase("ALL")) {
+            sqlBuilder.append(" AND status != ?");
+            params.add("RESOLVED");
+        }
+        else if (statusFilter != null && !statusFilter.isEmpty()) {
             sqlBuilder.append(" AND status = ?");
             params.add(statusFilter);
         }
+
         if (search != null && !search.isEmpty()) {
             sqlBuilder.append(" AND (subject ILIKE ? OR description ILIKE ? OR user_id ILIKE ?)");
             params.add("%" + search + "%");

@@ -259,7 +259,7 @@
         }
 
         // Function to calculate days left until deadline
-        function calculateDaysLeft(deadline) {
+        function calculateDaysLeft(deadline,isOverdue) {
             if (!deadline) return 'N/A';
             const now = new Date();
             const due = new Date(deadline);
@@ -326,7 +326,8 @@
                 const payload = {
                     "_func": "list_grievances",
                     "fiduciary_id": localStorage.getItem('fiduciary_id'),
-                    "limit": 10
+                    "status_filter": 'ALL',
+                    "limit": 20
                 };
 
                 const response = await fetch(API_URL_GRIEVANCE, {
@@ -359,10 +360,10 @@
                             const typeDisplay = g.type.replace(/_/g, ' ');
 
                             row.innerHTML = `
-                                <td class="px-4 py-2 text-sm font-medium text-gray-900">${g.grievance_id}</td>
+                                <td class="px-4 py-2 text-sm font-medium text-gray-900">${g.grievance_id.slice(-8)}</td>
                                 <td class="px-4 py-2 text-sm text-gray-600">${typeDisplay}</td>
                                 <td class="px-4 py-2 text-sm text-gray-600">${new Date(g.submission_timestamp).toLocaleDateString()}</td>
-                                <td class="px-4 py-2 text-sm font-semibold">${calculateDaysLeft(g.due_date)}</td>
+                                <td class="px-4 py-2 text-sm font-semibold">${calculateDaysLeft(g.due_date,isOverdue)}</td>
                                 <td class="px-4 py-2 text-sm">${createStatusBadge(isOverdue ? 'OVERDUE' : g.status)}</td>
                             `;
                             grievanceTableBody.appendChild(row);

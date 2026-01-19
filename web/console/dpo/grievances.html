@@ -214,7 +214,7 @@
                     <option value="IN_PROGRESS">Status: IN PROGRESS</option>
                     <option value="RESOLVED">Status: RESOLVED</option>
                     <option value="ESCALATED">Status: ESCALATED</option>
-                    <option value="ALL">Status: ALL</option>
+                    <option value="ALL">Status: ALL (OPEN)</option>
                 </select>
             </div>
             <span id="grievance-count" class="text-sm text-gray-500">Loading...</span>
@@ -345,7 +345,6 @@
 
     function calculateDeadlineDisplay(deadline,status) {
         if (!deadline) return 'N/A';
-        if(status != 'OVERDUE') return 'N/A';
         const now = new Date();
         const due = new Date(deadline);
         const diffTime = due.getTime() - now.getTime();
