@@ -148,6 +148,15 @@
             padding-bottom: 8px;
             border-bottom: 1px dashed #cbd5e1;
         }
+
+        /* Print Logic */
+        @media print {
+            body * { visibility: hidden; }
+            #consent-detail-modal-overlay, #consent-detail-modal-overlay * { visibility: visible; }
+            #consent-detail-modal-overlay { position: absolute; left: 0; top: 0; width: 100%; display: block !important; background: white; }
+            .modal-footer, .sidebar, .mobile-header, header { display: none !important; }
+            .modal-content { box-shadow: none; border: none; width: 100%; max-width: none; }
+        }
     </style>
 </head>
 
@@ -169,26 +178,13 @@
             <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
-            <a href="dashboard.html" class="nav-link">
-                Dashboard
-            </a>
-            <!-- Compliance Menus -->
-            <a href="policies.html" class="nav-link">
-                Policies
-            </a>
-            <a href="principals.html" class="nav-link active">
-                Principals
-            </a>
-            <a href="compliance.html" class="nav-link">
-                Compliance
-            </a>
-            <a href="grievances.html" class="nav-link">
-                Grievances
-            </a>
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="policies.html" class="nav-link">Policies</a>
+            <a href="principals.html" class="nav-link active">Principals</a>
+            <a href="compliance.html" class="nav-link">Compliance</a>
+            <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="audit.html" class="nav-link">Audit</a>
-            <a href="reports.html" class="nav-link">
-                Reports
-            </a>
+            <a href="reports.html" class="nav-link">Reports</a>
         </nav>
     </div>
     <div class="p-3 border-t border-gray-200">
@@ -219,7 +215,7 @@
         <p id="search-message" class="mt-3 text-sm font-medium text-red-600 hidden">No principal found with that identifier.</p>
     </div>
 
-    <!-- Quick Status & Actions (New Section) -->
+    <!-- Quick Status & Actions -->
     <div id="principal-status-card" class="card mb-6 hidden flex flex-col md:flex-row justify-between items-center gap-4 border-l-4 border-teal-600">
         <div>
             <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest">Principal Compliance Status</h2>
@@ -231,7 +227,7 @@
         </button>
     </div>
 
-    <!-- Consent History List Card (Hidden until search result) -->
+    <!-- Consent History List Card -->
     <div class="card hidden" id="consent-history-card">
         <h2 class="text-xl font-semibold text-gray-700 mb-4">Consent History for: <span id="principal-display-id" class="accent-text"></span></h2>
 
@@ -266,19 +262,20 @@
 
             <h3 class="font-semibold text-lg mt-4 border-b pb-1">Consent Preferences by Purpose:</h3>
             <div id="granular-consent-details" class="space-y-3">
-                <!-- Dynamic granular consent data goes here -->
                 <p class="text-gray-500">Loading details...</p>
             </div>
 
             <h3 class="font-semibold text-lg mt-4 border-b pb-1">Provenance:</h3>
             <div id="provenance-details" class="policy-detail-card text-xs">
-                <!-- IP, User Agent, Policy Reference -->
             </div>
         </div>
 
         <div class="modal-footer">
+            <button type="button" onclick="window.print()" class="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-teal-700 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                Print Artifact
+            </button>
             <button type="button" id="close-detail-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close</button>
-            <!-- Erasure button moved to list screen per request -->
         </div>
     </div>
 </div>
@@ -304,7 +301,7 @@
         backdrop.classList.toggle('hidden');
     }
 
-    function showModal(id) {
+    function showModal() {
         consentDetailModalOverlay.style.display = 'flex';
     }
 
@@ -327,7 +324,7 @@
         return `<span class="px-3 py-1 text-xs font-bold rounded-full uppercase ${colorClass}">${s.replace(/_/g, ' ')}</span>`;
     }
 
-    function createHistoryRow(record,userId) {
+    function createHistoryRow(record, userId) {
         const row = document.createElement('tr');
         const isActive = record.is_active_consent;
 
@@ -339,7 +336,7 @@
             <td class="px-4 py-3 text-sm">${createStatusBadge(record.consent_status_general, isActive)}</td>
             <td class="px-4 py-3 text-sm font-bold text-slate-500">${isActive ? 'Yes' : 'No'}</td>
             <td class="px-4 py-3 text-sm">
-                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewConsentRecord('${userId}','${record.id}')">View Details</button>
+                <button class="text-indigo-600 hover:text-indigo-900 font-bold text-sm" onclick="viewConsentRecord('${userId}','${record.id}')">View Details</button>
             </td>
         `;
         return row;
@@ -347,11 +344,10 @@
 
     // --- Core Logic ---
 
-    // Function to load the consent history table
     async function loadConsentHistory(principalIdentifier) {
         consentHistoryCard.classList.add('hidden');
         principalStatusCard.classList.add('hidden');
-        consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Searching for principal ID: ${principalIdentifier}...</td></tr>`;
+        consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Searching...</td></tr>`;
         searchMessage.classList.add('hidden');
 
         try {
@@ -367,28 +363,14 @@
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) {
-                throw new Error(`API returned status ${response.status}`);
-            }
-
             const responseData = await response.json();
-
-            if (responseData.status === 401) {
-                alert("Auth Failed: " + (responseData.message || "Authentication required."));
-                handleLogout();
-                return;
-            }
-
             const records = responseData.data || responseData;
 
             if (Array.isArray(records) && records.length > 0) {
                 consentTableBody.innerHTML = '';
-
-                // EVALUATE LATEST RECORD FOR STATUS DISPLAY
                 const latest = records[0];
                 overallStatusBadge.innerHTML = createStatusBadge(latest.consent_status_general, latest.is_active_consent);
 
-                // Show Erasure button ONLY if latest mechanism is not Erasure Request
                 if (latest.consent_mechanism !== 'ERASURE_REQUEST') {
                     mainInitiateErasureBtn.classList.remove('hidden');
                     mainInitiateErasureBtn.onclick = () => initiateErasurePurge(principalIdentifier);
@@ -397,37 +379,28 @@
                 }
 
                 principalStatusCard.classList.remove('hidden');
-
                 records.forEach(record => {
-                    consentTableBody.appendChild(createHistoryRow(record,principalIdentifier));
+                    consentTableBody.appendChild(createHistoryRow(record, principalIdentifier));
                 });
                 principalDisplayId.textContent = principalIdentifier;
                 consentHistoryCard.classList.remove('hidden');
-
             } else {
-                consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No consent history found for this identifier.</td></tr>`;
-                searchMessage.textContent = `No consent history found for "${principalIdentifier}".`;
-                searchMessage.classList.remove('hidden');
+                consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No records found.</td></tr>`;
             }
-
         } catch (error) {
-            console.error("Error loading Consent History:", error);
-            searchMessage.textContent = `Error: Could not retrieve data. ${error.message}`;
-            searchMessage.classList.remove('hidden');
-            consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-600">Connection error. Please try again.</td></tr>`;
+            consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-600">Error loading data.</td></tr>`;
         }
     }
 
-    // Function to view granular details in the modal
     async function viewConsentRecord(userId, recordId) {
         showModal();
-        granularConsentDetails.innerHTML = `<p class="text-gray-500">Fetching details for record ${recordId}...</p>`;
+        granularConsentDetails.innerHTML = `<p class="text-gray-500">Fetching record ${recordId}...</p>`;
 
         try {
             const payload = {
                 "_func": "get_consent_record_details",
                 "record_id": recordId,
-                "fiduciary_id":localStorage.getItem("fiduciary_id")
+                "fiduciary_id": localStorage.getItem("fiduciary_id")
             };
 
             const response = await fetch(API_URL_CONSENT, {
@@ -439,27 +412,24 @@
             const record = await response.json();
 
             if (response.ok && record) {
-                // Populate Modal Headers
                 modalRecordId.textContent = userId;
                 modalRecordStatus.innerHTML = createStatusBadge(record.consent_status_general, record.is_active_consent);
 
-                // Populate Provenance Details
                 provenanceDetails.innerHTML = `
                     <p><strong>Policy Ref:</strong> ${record.policy_id} (v${record.policy_version})</p>
                     <p><strong>Time:</strong> ${new Date(record.timestamp).toLocaleString()} (${record.consent_mechanism})</p>
                     <p><strong>IP:</strong> ${record.ip_address || 'N/A'} | <strong>User Agent:</strong> ${record.user_agent || 'N/A'}</p>
                 `;
 
-                // Populate Granular Details
                 let detailsHtml = '';
-                const preferences = record.data_point_consents; // Assuming this is the JSONB object
+                const preferences = record.data_point_consents;
 
                 for (const purposeId in preferences) {
                     const purpose = preferences[purposeId].purpose_agreed_to;
                     const status = preferences[purposeId].consent_granted;
                     const statusBadge = status === true
-                        ? `<span class="text-green-600 font-medium">GRANTED</span>`
-                        : `<span class="text-red-600 font-medium">DENIED</span>`;
+                        ? `<span class="text-green-600 font-bold">GRANTED</span>`
+                        : `<span class="text-red-600 font-bold">DENIED</span>`;
 
                     detailsHtml += `
                         <div class="policy-detail-item">
@@ -469,108 +439,72 @@
                     `;
                 }
                 granularConsentDetails.innerHTML = detailsHtml || '<p class="text-gray-500">No granular purposes recorded.</p>';
-
-            } else {
-                 granularConsentDetails.innerHTML = `<p class="text-red-600">Error: Could not load granular record data.</p>`;
             }
-
         } catch (error) {
-            console.error("Error viewing consent record:", error);
-            granularConsentDetails.innerHTML = `<p class="text-red-600">Network error during detail fetch.</p>`;
+            granularConsentDetails.innerHTML = `<p class="text-red-600">Error fetching details.</p>`;
         }
     }
 
-    // Function to initiate erasure/purge process (placeholder)
     async function initiateErasurePurge(userId) {
-        if (confirm(`Confirm: Initiate full Data Erasure/Purge workflow for Data Principal ID ${userId}? This will terminate their data lifecycle across all systems.`)) {
+        if (confirm(`Confirm: Initiate full Data Erasure/Purge workflow for Data Principal ID ${userId}?`)) {
             try {
                 const response = await fetch(API_URL_CONSENT, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${AUTH_TOKEN}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                     body: JSON.stringify({
                         "_func": "erasure_request",
                         "user_id": userId,
-                        "language_selected": document.documentElement.lang || 'en',
-                        "reason": "Complete erasure requested by DPO.",
+                        "language_selected": "en",
+                        "reason": "DPO initiated erasure.",
                         "fiduciary_id": localStorage.getItem("fiduciary_id")
                     })
                 });
-
-                const responseData = await response.json();
-
-                if (response.ok && (responseData.success || responseData.id)) {
-                    alert("Erasure request submitted successfully! DPO action logged in audit trail.");
+                if (response.ok) {
+                    alert("Erasure request submitted.");
                     loadConsentHistory(userId);
-                } else {
-                    alert("Erasure request failed: " + (responseData.message || "Unknown error"));
                 }
-            } catch (e) {
-                alert("Network error during erasure: " + e.message);
-            }
+            } catch (e) { alert("Error initiating erasure."); }
         }
     }
 
-     function handleLogout() {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('username');
-      window.location.href = "../index.html";
+    function handleLogout() {
+        localStorage.clear();
+        window.location.href = "../index.html";
     }
 
-    // --- Event Listeners and Initialization ---
-
     document.addEventListener('DOMContentLoaded', async () => {
-        // --- Variable Assignments ---
         sidebar = document.getElementById('sidebar');
         menuToggle = document.getElementById('menu-toggle');
         backdrop = document.getElementById('sidebar-backdrop');
-
         principalSearchForm = document.getElementById('principal-search-form');
         principalIdInput = document.getElementById('principal-id-input');
         searchMessage = document.getElementById('search-message');
-
         consentHistoryCard = document.getElementById('consent-history-card');
         principalDisplayId = document.getElementById('principal-display-id');
         consentTableBody = document.getElementById('consent-table-body');
-
         consentDetailModalOverlay = document.getElementById('consent-detail-modal-overlay');
         closeDetailModalBtn = document.getElementById('close-detail-modal-btn');
-
         modalRecordId = document.getElementById('modal-record-id');
         modalRecordStatus = document.getElementById('modal-record-status');
         granularConsentDetails = document.getElementById('granular-consent-details');
         provenanceDetails = document.getElementById('provenance-details');
-
-        // New Card Elements
         principalStatusCard = document.getElementById('principal-status-card');
         overallStatusBadge = document.getElementById('overall-status-badge');
         mainInitiateErasureBtn = document.getElementById('main-initiate-erasure-btn');
 
-        // --- Event Listener Attachments ---
         menuToggle.addEventListener('click', toggleMenu);
         backdrop.addEventListener('click', toggleMenu);
         closeDetailModalBtn.addEventListener('click', closeModal);
 
-        // Handle Search Submission
         principalSearchForm.addEventListener('submit', function(event) {
             event.preventDefault();
             const identifier = principalIdInput.value.trim();
-            if (identifier) {
-                loadConsentHistory(identifier);
-            } else {
-                searchMessage.textContent = "Please enter a valid identifier.";
-                searchMessage.classList.remove('hidden');
-            }
+            if (identifier) loadConsentHistory(identifier);
         });
-
     });
 
     window.viewConsentRecord = viewConsentRecord;
-    window.initiateErasurePurge = initiateErasurePurge;
     window.toggleMenu = toggleMenu;
 </script>
 </body>
-
 </html>
