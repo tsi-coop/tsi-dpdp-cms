@@ -259,9 +259,9 @@
 <!-- Modal for Viewing Granular Consent Details -->
 <div id="consent-detail-modal-overlay" class="modal-overlay">
     <div class="modal-content">
-        <h2 class="text-2xl font-semibold primary-text mb-4">Granular Consent Details</h2>
+        <h2 class="text-2xl font-semibold primary-text mb-4">TSI DPDP CMS - Consent Artifact</h2>
         <div class="space-y-4 text-sm">
-            <p class="font-medium">Record ID: <code id="modal-record-id" class="text-gray-600"></code></p>
+            <p class="font-medium">Principal: <code id="modal-record-id" class="text-gray-600"></code></p>
             <p class="font-medium">Status: <span id="modal-record-status"></span></p>
 
             <h3 class="font-semibold text-lg mt-4 border-b pb-1">Consent Preferences by Purpose:</h3>
@@ -327,7 +327,7 @@
         return `<span class="px-3 py-1 text-xs font-bold rounded-full uppercase ${colorClass}">${s.replace(/_/g, ' ')}</span>`;
     }
 
-    function createHistoryRow(record) {
+    function createHistoryRow(record,userId) {
         const row = document.createElement('tr');
         const isActive = record.is_active_consent;
 
@@ -339,7 +339,7 @@
             <td class="px-4 py-3 text-sm">${createStatusBadge(record.consent_status_general, isActive)}</td>
             <td class="px-4 py-3 text-sm font-bold text-slate-500">${isActive ? 'Yes' : 'No'}</td>
             <td class="px-4 py-3 text-sm">
-                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewConsentRecord('${record.id}')">View Details</button>
+                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewConsentRecord('${userId}','${record.id}')">View Details</button>
             </td>
         `;
         return row;
@@ -399,7 +399,7 @@
                 principalStatusCard.classList.remove('hidden');
 
                 records.forEach(record => {
-                    consentTableBody.appendChild(createHistoryRow(record));
+                    consentTableBody.appendChild(createHistoryRow(record,principalIdentifier));
                 });
                 principalDisplayId.textContent = principalIdentifier;
                 consentHistoryCard.classList.remove('hidden');
@@ -419,7 +419,7 @@
     }
 
     // Function to view granular details in the modal
-    async function viewConsentRecord(recordId) {
+    async function viewConsentRecord(userId, recordId) {
         showModal();
         granularConsentDetails.innerHTML = `<p class="text-gray-500">Fetching details for record ${recordId}...</p>`;
 
@@ -440,7 +440,7 @@
 
             if (response.ok && record) {
                 // Populate Modal Headers
-                modalRecordId.textContent = record.id;
+                modalRecordId.textContent = userId;
                 modalRecordStatus.innerHTML = createStatusBadge(record.consent_status_general, record.is_active_consent);
 
                 // Populate Provenance Details
