@@ -343,16 +343,14 @@ public class Policy implements Action {
             sqlBuilder.append(" AND status = ?");
             params.add(statusFilter);
         }
+        if (search != null && !search.isEmpty()) {
+            sqlBuilder.append(" AND id LIKE ?");
+            params.add("%" + search + "%");
+        }
         if (fiduciaryIdFilter != null) {
             sqlBuilder.append(" AND fiduciary_id = ?");
             params.add(fiduciaryIdFilter);
         }
-        if (search != null && !search.isEmpty()) {
-            // Search within policy_content JSONB for name/description (example, can be complex)
-            sqlBuilder.append(" AND policy_content::text ILIKE ?"); // Simple text search for demo
-            params.add("%" + search + "%");
-        }
-
         sqlBuilder.append(" ORDER BY effective_date DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
@@ -551,10 +549,10 @@ public class Policy implements Action {
             conn.setAutoCommit(false); // Start transaction
 
             // 1. Deactivate any currently ACTIVE policy for this fiduciary and jurisdiction
-            pstmtDeactivate = conn.prepareStatement(deactivateSql);
+            /* pstmtDeactivate = conn.prepareStatement(deactivateSql);
             pstmtDeactivate.setObject(1, fiduciaryId);
             pstmtDeactivate.setString(2, jurisdiction);
-            pstmtDeactivate.executeUpdate();
+            pstmtDeactivate.executeUpdate();*/
 
             // 2. Activate the specified policy version
             pstmtActivate = conn.prepareStatement(activateSql);
