@@ -7,14 +7,11 @@
     <title>TSI DPDP CMS - DPO Dashboard</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../env.js"></script>
     <style>
         :root {
-            --tsi-primary: #006A67; /* Primary Dark Teal Color */
-            --tsi-accent: #008D8A; /* Slightly lighter for accents */
-            --background: #f4fbf9; /* Light, clean background */
+            --tsi-primary: #006A67;
+            --background: #f4fbf9;
             --card-bg: #FFFFFF;
-            --border: 20 5.9% 90%;
             --radius: 0.5rem;
         }
 
@@ -28,35 +25,44 @@
 
         .primary-bg { background-color: var(--tsi-primary); }
         .primary-text { color: var(--tsi-primary); }
-        .accent-text { color: var(--tsi-accent); }
-        .border-primary { border-color: var(--tsi-primary); }
 
-        /* --- Sidebar Styling --- */
+        /* --- Sidebar Styling Fix --- */
         .sidebar {
             width: 250px;
             background-color: #f8fafc;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
             padding-top: 20px;
             position: fixed;
+            top: 0;
+            left: 0;
             height: 100vh;
-            overflow-y: auto;
             z-index: 50;
+            border-right: 1px solid #e2e8f0;
             transition: transform 0.3s ease-in-out;
-            transform: translateX(-250px);
         }
 
-        .sidebar.open {
-            transform: translateX(0);
+        /* Responsive Sidebar behavior */
+        @media (max-width: 1023px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            body {
+                padding-left: 250px;
+            }
         }
 
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 10px 20px;
-            margin: 5px 0;
-            border-radius: 6px;
-            color: #4a5568;
-            transition: background-color 0.2s ease, color 0.2s ease;
+            padding: 10px 20px; margin: 5px 0;
+            border-radius: 6px; color: #4a5568;
+            transition: all 0.2s ease;
         }
 
         .nav-link:hover, .nav-link.active {
@@ -68,357 +74,267 @@
         .card {
             background-color: var(--card-bg);
             border-radius: var(--radius);
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
             padding: 20px;
             border: 1px solid #e2e8f0;
         }
 
-        .table-header {
-            background-color: #f1f5f9;
-            font-weight: 600;
-            color: #4a5568;
-            text-align: left;
-        }
-
-        /* --- Mobile Toggle Button --- */
-        .mobile-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            position: sticky;
-            top: 0;
+        /* Backdrop for mobile */
+        .sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
             z-index: 40;
+            display: none;
         }
-
-        @media (min-width: 1024px) {
-            .sidebar {
-                transform: translateX(0);
-            }
-            .mobile-header {
-                display: none;
-            }
-            body {
-                padding-left: 250px;
-            }
+        .sidebar-backdrop.active {
+            display: block;
         }
     </style>
 </head>
 
-<body class="flex lg:p-0">
+<body>
 
-<!-- Mobile Header/Toggle -->
-<div class="mobile-header lg:hidden">
-    <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+<!-- Mobile Header -->
+<div class="lg:hidden flex items-center justify-between p-4 bg-white border-b border-gray-200 sticky top-0 z-30">
+    <button onclick="toggleSidebar()" class="p-2 text-gray-600 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
     </button>
-    <span class="text-xl font-bold primary-text">DPO Console</span>
-    <div class="text-sm text-gray-500">DPO User</div>
+    <span class="font-bold primary-text">TSI DPDP CMS</span>
+    <div class="w-6"></div> <!-- Spacer -->
 </div>
 
+<div id="backdrop" class="sidebar-backdrop lg:hidden" onclick="toggleSidebar()"></div>
+
 <!-- Sidebar Navigation -->
-<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+<div id="sidebar" class="sidebar flex flex-col justify-between">
     <div>
-        <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+        <div class="px-5 pb-6 border-b border-gray-200 hidden lg:block">
             <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
-            <a href="dashboard.html" class="nav-link active">
-                Dashboard
-            </a>
-
-            <!-- Compliance Menus -->
-            <a href="policies.html" class="nav-link">
-                Policies
-            </a>
-            <a href="principals.html" class="nav-link">
-                Principals
-            </a>
-            <a href="compliance.html" class="nav-link">
-                Compliance
-            </a>
-            <a href="grievances.html" class="nav-link">
-                Grievances
-            </a>
-            <a href="audit.html" class="nav-link">Audit</a>
-            <a href="reports.html" class="nav-link">
-                Reports
-            </a>
+            <a href="dashboard.html" class="nav-link active">Dashboard</a>
+            <a href="policies.html" class="nav-link">Policies</a>
+            <a href="principals.html" class="nav-link">Principals</a>
+            <a href="compliance.html" class="nav-link">Compliance</a>
+            <a href="grievances.html" class="nav-link">Grievances</a>
+            <a href="audit_logs.html" class="nav-link">Audit</a>
+            <a href="reports.html" class="nav-link">Reports</a>
         </nav>
     </div>
     <div class="p-3 border-t border-gray-200">
-        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
-            <span id="username">DPO User</span>
-            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md flex justify-between items-center">
+            <span id="username" class="font-bold text-slate-700">DPO User</span>
+            <button onclick="handleLogout()" class="text-xs font-semibold text-red-500 hover:underline">Logout</button>
         </div>
     </div>
 </div>
 
-<!-- Backdrop for mobile menu -->
-<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
-
 <!-- Main Content Area -->
-<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-xl font-semibold text-gray-800">DPO Compliance Dashboard</h1>
-    </div>
+<main class="p-4 lg:p-8 overflow-y-auto">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">DPO Compliance Dashboard</h1>
 
-    <!-- Metric Widgets Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-
-        <!-- Widget 1: SLA Compliance Rate -->
-        <div id="metric-sla" class="card p-5 border-l-4 border-green-500 hover:shadow-md transition duration-200 cursor-pointer">
-            <p class="text-sm font-medium text-gray-500">Grievance SLA Compliance</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-sla-value">--</p>
-            <p class="text-xs text-gray-400 mt-2">Percentage resolved within regulatory timeframe.</p>
-        </div>
-
-        <!-- Widget 2: Pending Requests (Focus on time-sensitive) -->
-        <div id="metric-pending-requests" class="card p-5 border-l-4 border-yellow-500 hover:shadow-md transition duration-200 cursor-pointer">
-            <p class="text-sm font-medium text-gray-500">Pending DPO Action (Requests)</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-pending-requests-value">--</p>
-            <p class="text-xs text-gray-400 mt-2">Access, Correction, Erasure requests needing review.</p>
-        </div>
-
-        <!-- Widget 3: Active Policy Status -->
-        <div id="metric-policy-health" class="card p-5 border-l-4 border-indigo-500 hover:shadow-md transition duration-200 cursor-pointer">
-            <p class="text-sm font-medium text-gray-500">Policies Due for Review</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-policy-health-value">--</p>
-            <p class="text-xs text-gray-400 mt-2">Policies approaching mandatory renewal/review date.</p>
-        </div>
-
-        <!-- Widget 4: Purge Failures / Legal Holds -->
-        <div id="metric-purge-failures" class="card p-5 border-l-4 border-red-500 hover:shadow-md transition duration-200 cursor-pointer">
-            <p class="text-sm font-medium text-gray-500">Purge Failures (Critical)</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-purge-failures-value">--</p>
-            <p class="text-xs text-gray-400 mt-2">Failed erasure/retention events or active legal holds.</p>
+        <!-- Period Filter Dropdown -->
+        <div class="flex items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Filter Period:</span>
+            <select id="time-filter" onchange="loadDpoMetrics()" class="text-sm font-bold text-teal-700 bg-transparent outline-none cursor-pointer pr-2">
+                <!-- Populated via setupFilter script -->
+            </select>
         </div>
     </div>
 
-    <!-- Section: Pending Grievances Table -->
-    <div class="card mb-8">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">Urgent: Requests Approaching SLA Deadline</h2>
+    <!-- Consolidated Metric Widgets Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+
+        <!-- Widget 1: Active Policy -->
+        <div class="card p-4 border-t-4 border-teal-600 shadow-sm">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest"># Active Policy</p>
+            <p class="text-3xl font-black text-slate-800 mt-2" id="metric-active-policies">--</p>
+        </div>
+
+        <!-- Widget 2: Consents -->
+        <div class="card p-4 border-t-4 border-blue-600 shadow-sm">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest"># Consents</p>
+            <p class="text-3xl font-black text-slate-800 mt-2" id="metric-consents">--</p>
+        </div>
+
+        <!-- Widget 3: Data Principals -->
+        <div class="card p-4 border-t-4 border-indigo-600 shadow-sm">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest"># Data Principals</p>
+            <p class="text-3xl font-black text-slate-800 mt-2" id="metric-principals">--</p>
+        </div>
+
+        <!-- Widget 4: Purge Requests (Clubbed) -->
+        <div class="card p-4 border-t-4 border-amber-600 shadow-sm">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest"># Purge Requests</p>
+            <div class="flex items-baseline gap-2 mt-2">
+                <span class="text-3xl font-black text-slate-800" id="metric-purge-total">--</span>
+                <span class="text-[11px] font-bold text-amber-600" id="metric-purge-pending">(-- Pending)</span>
+            </div>
+        </div>
+
+        <!-- Widget 5: Grievances (Clubbed) -->
+        <div class="card p-4 border-t-4 border-orange-600 shadow-sm">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest"># Grievances</p>
+            <div class="flex items-baseline gap-2 mt-2">
+                <span class="text-3xl font-black text-slate-800" id="metric-grievances-total">--</span>
+                <span class="text-[11px] font-bold text-orange-600" id="metric-grievances-pending">(-- Pending)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Urgent Requests Table -->
+    <div class="card">
+        <h2 class="text-lg font-bold text-slate-700 mb-4 tracking-tight">Urgent: Pending DPO Action</h2>
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="w-full text-left">
                 <thead>
-                <tr class="table-header">
-                    <th class="px-4 py-3 text-sm">Grievance ID</th>
-                    <th class="px-4 py-3 text-sm">Type</th>
-                    <th class="px-4 py-3 text-sm">Submitted</th>
-                    <th class="px-4 py-3 text-sm">Deadline (Days Left)</th>
-                    <th class="px-4 py-3 text-sm">Status</th>
+                <tr class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">
+                    <th class="px-4 py-3">Request ID</th>
+                    <th class="px-4 py-3">Type</th>
+                    <th class="px-4 py-3">Submitted</th>
+                    <th class="px-4 py-3">Deadline</th>
+                    <th class="px-4 py-3">Status</th>
                 </tr>
                 </thead>
-                <tbody id="grievance-table-body" class="bg-white divide-y divide-gray-200">
-                <tr><td colspan="6" class="p-4 text-center text-gray-500">Loading pending grievances...</td></tr>
+                <tbody id="grievance-table-body" class="bg-white divide-y divide-slate-50 text-sm text-slate-600">
+                <tr><td colspan="5" class="p-8 text-center text-slate-400 italic">Syncing with compliance registry...</td></tr>
                 </tbody>
             </table>
         </div>
-        <p id="grievance-error-message" class="mt-4 text-sm text-red-600 hidden">
-            Failed to load grievance data.
-        </p>
     </div>
 
 </main>
 
 <script>
-        // --- Configuration ---
-        const API_URL_DPO_DASHBOARD = '/api/v1/admin/admindash';
-        const API_URL_GRIEVANCE = '/api/v1/grievance';
-        const AUTH_TOKEN = localStorage.getItem('authToken');
-        const USER_NAME = localStorage.getItem('username');
+    const API_URL_DASHBOARD = '/api/v1/admin/admindash';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
 
-        // Ensure username is displayed
-        if (document.getElementById('username')) {
-            document.getElementById('username').textContent = USER_NAME || 'DPO User';
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('backdrop').classList.toggle('active');
+    }
+
+    /**
+     * Initializes the Month Filter dropdown for current + 3 previous months.
+     */
+    function setupFilter() {
+        const filter = document.getElementById('time-filter');
+        const options = [];
+        const now = new Date();
+
+        for (let i = 0; i < 4; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const label = i === 0 ? "Current Month" : d.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            // Format first and last day strings (YYYY-MM-DD)
+            const firstDay = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+            const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+
+            options.push(`<option value="${firstDay}|${lastDay}">${label}</option>`);
         }
+        filter.innerHTML = options.join('');
+    }
 
-        // --- Global DOM Element Variables ---
-        let sidebar, menuToggle, backdrop;
-        let grievanceTableBody, grievanceErrorMessageP;
+    /**
+     * Fetches and renders the simplified metrics based on the selected time period.
+     */
+    async function loadDpoMetrics() {
+        const filterEl = document.getElementById('time-filter');
+        if (!filterEl.value) return;
 
+        const [start, end] = filterEl.value.split('|');
 
-        // --- Utility Functions ---
-        function toggleMenu() {
-            sidebar.classList.toggle('open');
-            backdrop.classList.toggle('hidden');
-        }
+        try {
+            const response = await fetch(API_URL_DASHBOARD, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({
+                    "_func": "get_dpo_metrics",
+                    "start_date": start,
+                    "end_date": end
+                })
+            });
 
-        function createStatusBadge(status) {
-            let colorClass = '';
-            switch (status) {
-                case 'NEW': colorClass = 'bg-blue-100 text-blue-800'; break;
-                case 'IN_PROGRESS': colorClass = 'bg-yellow-100 text-yellow-800'; break;
-                case 'RESOLVED': colorClass = 'bg-green-100 text-green-800'; break;
-                case 'OVERDUE': colorClass = 'bg-red-100 text-red-800'; break;
-                default: colorClass = 'bg-gray-100 text-gray-800';
+            const data = await response.json();
+
+            if (data.success && data.metrics) {
+                const m = data.metrics;
+                document.getElementById('metric-active-policies').textContent = m.active_policies || 0;
+                document.getElementById('metric-consents').textContent = m.total_consents || 0;
+                document.getElementById('metric-principals').textContent = m.data_principals || 0;
+
+                // Consolidated Purge Card
+                document.getElementById('metric-purge-total').textContent = m.purge_total || 0;
+                document.getElementById('metric-purge-pending').textContent = `(${m.purge_pending || 0} Pending)`;
+
+                // Consolidated Grievance Card
+                document.getElementById('metric-grievances-total').textContent = m.grievances_total || 0;
+                document.getElementById('metric-grievances-pending').textContent = `(${m.grievances_pending || 0} Pending)`;
             }
-            return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status}</span>`;
+        } catch (error) {
+            console.error("Metric load failure:", error);
+            document.querySelectorAll('[id^="metric-"]').forEach(el => el.textContent = 'Err');
         }
+    }
 
-        // Function to calculate days left until deadline
-        function calculateDaysLeft(deadline,isOverdue) {
-            if (!deadline) return 'N/A';
-            const now = new Date();
-            const due = new Date(deadline);
-            const diffTime = due.getTime() - now.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    /**
+     * Fetches the urgent pending grievances for the table view.
+     */
+    async function loadPendingGrievances() {
+        const tbody = document.getElementById('grievance-table-body');
+        try {
+            const response = await fetch(API_URL_DASHBOARD, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_pending_grievances", "limit": 10 })
+            });
 
-            if (diffDays < 0) return `<span class="text-red-600 font-bold">${Math.abs(diffDays)} Days Overdue</span>`;
-            if (diffDays <= 5) return `<span class="text-orange-600 font-bold">${diffDays} Days Left</span>`;
-            return `${diffDays} Days Left`;
-        }
-
-        // --- Data Loading Functions ---
-
-        async function loadDpoMetrics() {
-            try {
-                const payload = { "_func": "get_dpo_metrics" };
-
-                const response = await fetch(API_URL_DPO_DASHBOARD, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${AUTH_TOKEN}`
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (data.status === 401) {
-                    alert("Auth Failed: " + (data.message || "Authentication required."));
-                    handleLogout();
+            const grievances = await response.json();
+            if (Array.isArray(grievances)) {
+                if (grievances.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 italic">No urgent tasks requiring action.</td></tr>';
                     return;
                 }
 
-                // Assuming data structure: { success: true, metrics: { sla_compliance: 95.5, pending_requests: 5, policies_due_for_review: 2, critical_purge_failures: 0 } }
-                if (data.success && data.metrics) {
-                    const metrics = data.metrics;
-                    document.getElementById('metric-sla-value').textContent = metrics.sla_compliance ? `${metrics.sla_compliance}%` : 'N/A';
-                    document.getElementById('metric-pending-requests-value').textContent = metrics.pending_requests !== undefined ? metrics.pending_requests : 'N/A';
-                    document.getElementById('metric-policy-health-value').textContent = metrics.policies_due_for_review !== undefined ? metrics.policies_due_for_review : 'N/A';
-                    document.getElementById('metric-purge-failures-value').textContent = metrics.critical_purge_failures !== undefined ? metrics.critical_purge_failures : 'N/A';
-                } else {
-                    throw new Error(data.message || 'Metrics data missing.');
-                }
-            } catch (error) {
-                console.error("Error loading DPO metrics:", error);
-                document.getElementById('metric-sla-value').textContent = 'FAIL';
-                document.getElementById('metric-pending-requests-value').textContent = 'FAIL';
-                document.getElementById('metric-policy-health-value').textContent = 'FAIL';
-                document.getElementById('metric-purge-failures-value').textContent = 'FAIL';
+                tbody.innerHTML = grievances.map(g => {
+                    const isOverdue = g.days_left < 0;
+                    return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500">...${g.grievance_id.slice(-8)}</td>
+                            <td class="px-4 py-3 font-bold text-slate-700">${g.type.replace(/_/g, ' ')}</td>
+                            <td class="px-4 py-3 text-slate-500">${new Date(g.submission_timestamp).toLocaleDateString()}</td>
+                            <td class="px-4 py-3 font-semibold ${isOverdue ? 'text-red-600' : 'text-slate-600'}">
+                                ${isOverdue ? Math.abs(g.days_left) + ' days OVERDUE' : g.days_left + ' days left'}
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-700">${g.status}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             }
+        } catch (error) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-red-500">Failed to sync with registry.</td></tr>';
         }
+    }
 
-        async function loadPendingGrievances() {
-            grievanceTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Fetching urgent grievance data...</td></tr>`;
-            grievanceErrorMessageP.classList.add('hidden');
+    function handleLogout() {
+        localStorage.clear();
+        window.location.href = "../index.html";
+    }
 
-            try {
-                // Request only NEW, ACKNOWLEDGED, or IN_PROGRESS grievances, sorted by nearest deadline
-                const payload = {
-                    "_func": "list_grievances",
-                    "fiduciary_id": localStorage.getItem('fiduciary_id'),
-                    "status_filter": 'ALL',
-                    "limit": 20
-                };
+    window.onload = () => {
+        setupFilter();
+        loadDpoMetrics();
+        loadPendingGrievances();
 
-                const response = await fetch(API_URL_GRIEVANCE, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${AUTH_TOKEN}`
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}`);
-                }
-
-                const responseData = await response.json();
-                const grievances = responseData.data || responseData;
-
-                if (Array.isArray(grievances)) {
-                    grievanceTableBody.innerHTML = '';
-
-                    if (grievances.length === 0) {
-                         grievanceTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No urgent requests pending DPO review.</td></tr>`;
-                    } else {
-                        grievances.forEach(g => {
-                            const row = document.createElement('tr');
-
-                            // Check if deadline is overdue (for visual emphasis)
-                            const isOverdue = new Date(g.due_date) < new Date();
-                            const typeDisplay = g.type.replace(/_/g, ' ');
-
-                            row.innerHTML = `
-                                <td class="px-4 py-2 text-sm font-medium text-gray-900">${g.grievance_id.slice(-8)}</td>
-                                <td class="px-4 py-2 text-sm text-gray-600">${typeDisplay}</td>
-                                <td class="px-4 py-2 text-sm text-gray-600">${new Date(g.submission_timestamp).toLocaleDateString()}</td>
-                                <td class="px-4 py-2 text-sm font-semibold">${calculateDaysLeft(g.due_date,isOverdue)}</td>
-                                <td class="px-4 py-2 text-sm">${createStatusBadge(isOverdue ? 'OVERDUE' : g.status)}</td>
-                            `;
-                            grievanceTableBody.appendChild(row);
-                        });
-                    }
-                } else {
-                    throw new Error(responseData.message || 'Grievance data structure invalid.');
-                }
-            } catch (error) {
-                console.error("Error loading pending grievances:", error);
-                grievanceTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">Failed to load grievance data. Check API: ${error.message}</td></tr>`;
-                grievanceErrorMessageP.classList.remove('hidden');
-            }
-        }
-
-        function manageGrievance(id) {
-            // Placeholder function: In a real system, this would load a dedicated grievance modal or page.
-            alert(`Opening Grievance Management for ID: ${id}`);
-            // window.location.href = `grievance_detail.html?id=${id}`;
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('username');
-            window.location.href = "../index.html";
-        }
-
-
-        // --- Initialization ---
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Variable Assignments ---
-            sidebar = document.getElementById('sidebar');
-            menuToggle = document.getElementById('menu-toggle');
-            backdrop = document.getElementById('sidebar-backdrop');
-            grievanceTableBody = document.getElementById('grievance-table-body');
-            grievanceErrorMessageP = document.getElementById('grievance-error-message');
-
-
-            // --- Event Listener Attachments ---
-            menuToggle.addEventListener('click', toggleMenu);
-            backdrop.addEventListener('click', toggleMenu);
-
-            // --- Initialization Calls ---
-            loadDpoMetrics();
-            loadPendingGrievances();
-        });
-
-        // Expose functions globally so they can be called by inline attributes
-        window.manageGrievance = manageGrievance;
-        window.handleLogout = handleLogout;
-        window.toggleMenu = toggleMenu;
-
-    </script>
-
+        const storedUser = localStorage.getItem('username');
+        if (storedUser) document.getElementById('username').textContent = storedUser;
+    };
+</script>
 </body>
-
 </html>
