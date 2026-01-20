@@ -362,8 +362,8 @@
         const status = isOverdue ? 'OVERDUE' : grievance.status;
 
         row.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${grievance.grievance_id.slice(-8)}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${grievance.type.replace(/_/g, ' ')}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">...${grievance.grievance_id.slice(-8)}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${grievance.type.replace(/_/g, ' ')}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${grievance.subject || 'N/A'}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${new Date(grievance.submission_timestamp).toLocaleDateString()}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(status)}</td>
