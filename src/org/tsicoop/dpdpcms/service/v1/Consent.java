@@ -531,7 +531,7 @@ public class Consent implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         JSONObject retval = null;
-        String sql = "SELECT policy_content FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ? AND status = 'ACTIVE'";
+        String sql = "SELECT policy_content FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
