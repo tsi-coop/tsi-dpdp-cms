@@ -1,0 +1,187 @@
+{
+  "en": {
+    "title": "Vidya EdTech - Data & Privacy Policy",
+    "introduction": "At Vidya EdTech, we are dedicated to empowering learners through secure and transparent data processing. This policy details how we handle your personal information to provide high-quality digital learning experiences, in full compliance with the Digital Personal Data Protection Act (DPDP), 2023. Your education and privacy are our top priorities.",
+    "general_purpose_description": "We process data for Student Account Management, Learning Progress Tracking, Course Recommendations, and Academic Analytics.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_management",
+        "name": "Student Account & Profile",
+        "description": "To create your learning profile, enable course access, and manage subscriptions. This is essential for using the Vidya platform.",
+        "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
+        "data_categories_involved": ["full_name", "email_address", "grade_level", "school_name", "profile_photo"],
+        "recipients_or_third_parties": ["Identity Auth Services"],
+        "retention_policy": "Duration of active enrollment plus 5 years for academic record portability.",
+        "retention_duration_value": 5,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_DELETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_learning_tracking",
+        "name": "Learning Progress & Assessment",
+        "description": "To track your course completion, quiz scores, and time spent on modules to provide certificates and performance insights.",
+        "legal_basis": "Contractual Necessity",
+        "data_categories_involved": ["assessment_scores", "video_watch_time", "assignment_submissions"],
+        "recipients_or_third_parties": ["Cloud Hosting Partners"],
+        "retention_policy": "7 years for compliance with educational record standards.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COURSE_COMPLETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_ai_recommendations",
+        "name": "Personalized AI Recommendations",
+        "description": "Using your past learning behavior to suggest relevant supplementary materials and advanced courses.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": ["search_history", "interest_tags", "learning_patterns"],
+        "recipients_or_third_parties": ["AI Content Engine"],
+        "retention_policy": "Until consent is withdrawn or 2 years of inactivity.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "LAST_ACTIVE_SESSION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_scholarship_alerts",
+        "name": "Scholarship & Career Alerts",
+        "description": "To inform you about financial aid opportunities and career guidance sessions based on your profile.",
+        "legal_basis": "Consent",
+        "data_categories_involved": ["email_address", "mobile_number"],
+        "recipients_or_third_parties": [],
+        "retention_policy": "Until consent is withdrawn.",
+        "retention_duration_value": 0,
+        "retention_duration_unit": "PERPETUAL",
+        "retention_start_event": "CONSENT_GIVEN",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "grade_level", "name": "Grade/Standard", "description": "Educational level used to filter appropriate content." },
+      { "id": "assessment_scores", "name": "Academic Performance", "description": "Scores and feedback for quizzes and assignments." },
+      { "id": "learning_patterns", "name": "Usage Patterns", "description": "Behavioral data on how you interact with digital lessons." }
+    ],
+    "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your academic data, update your profile, withdraw consent for recommendations, and request data erasure after finishing your courses.",
+    "grievance_redressal_info": "For concerns, contact our DPO at: Email: privacy@vidyaedtech.in | Phone: +91 22 5544 3322 | Address: 5th Floor, Gyan Bhavan, Powai, Mumbai, Maharashtra.",
+    "buttons": {
+      "accept_all": "I Accept & Start Learning",
+      "reject_all_non_essential": "Essential Learning Only",
+      "manage_preferences": "Customize My Privacy",
+      "save_preferences": "Apply My Choices"
+    },
+    "links": {
+      "full_privacy_policy_text": "Detailed EdTech Privacy Policy",
+      "full_privacy_policy_url": "https://vidyaedtech.in/privacy",
+      "terms_of_service_text": "Learner Terms & Conditions",
+      "terms_of_service_url": "https://vidyaedtech.in/terms"
+    },
+    "important_note": "As an educational platform, we follow strict safety-by-design for minor users. Behavioral tracking for advertising is strictly prohibited for students under 18."
+  },
+  "hi": {
+    "title": "विद्या एडटेक - डेटा और गोपनीयता नीति",
+    "introduction": "विद्या एडटेक में, हम सुरक्षित और पारदर्शी डेटा प्रसंस्करण के माध्यम से शिक्षार्थियों को सशक्त बनाने के लिए समर्पित हैं। यह नीति बताती है कि हम डिजिटल सीखने के अनुभव प्रदान करने के लिए आपकी जानकारी का प्रबंधन कैसे करते हैं।",
+    "general_purpose_description": "हम छात्र खाता प्रबंधन, सीखने की प्रगति की ट्रैकिंग और व्यक्तिगत अनुशंसाओं के लिए डेटा संसाधित करते हैं।",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_management",
+        "name": "छात्र खाता और प्रोफाइल",
+        "description": "आपकी प्रोफाइल बनाने और पाठ्यक्रम तक पहुंच प्रदान करने के लिए। विद्या प्लेटफॉर्म का उपयोग करने के लिए यह अनिवार्य है।",
+        "legal_basis": "अनुबंधात्मक आवश्यकता",
+        "data_categories_involved": ["नाम", "ईमेल", "कक्षा", "स्कूल का नाम"],
+        "recipients_or_third_parties": ["पहचान सत्यापन सेवाएं"],
+        "retention_policy": "सक्रिय नामांकन की अवधि और उसके बाद 5 वर्ष।",
+        "retention_duration_value": 5,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_DELETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_learning_tracking",
+        "name": "सीखने की प्रगति और मूल्यांकन",
+        "description": "सर्टिफिकेट और प्रदर्शन रिपोर्ट प्रदान करने के लिए आपके स्कोर और समय की ट्रैकिंग।",
+        "legal_basis": "अनुबंधात्मक आवश्यकता",
+        "data_categories_involved": ["मूल्यांकन स्कोर", "वीडियो देखने का समय"],
+        "recipients_or_third_parties": [],
+        "retention_policy": "शैक्षिक मानकों के अनुसार 7 वर्ष।",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COURSE_COMPLETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "grade_level", "name": "कक्षा/स्तर", "description": "सही कंटेंट प्रदान करने के लिए शैक्षिक स्तर।" }
+    ],
+    "data_principal_rights_summary": "DPDP अधिनियम 2023 के तहत, आपको अपने डेटा तक पहुंचने, उसे सुधारने और सहमति वापस लेने का अधिकार है।",
+    "grievance_redressal_info": "किसी भी चिंता के लिए हमारे DPO से संपर्क करें: ईमेल: privacy@vidyaedtech.in | फोन: +91 22 5544 3322.",
+    "buttons": {
+      "accept_all": "स्वीकार करें और शुरू करें",
+      "reject_all_non_essential": "केवल आवश्यक",
+      "manage_preferences": "गोपनीयता सेटिंग्स",
+      "save_preferences": "विकल्प सुरक्षित करें"
+    },
+    "links": {
+      "full_privacy_policy_text": "विस्तृत गोपनीयता नीति",
+      "terms_of_service_text": "नियम और शर्तें"
+    },
+    "important_note": "हम 18 वर्ष से कम उम्र के छात्रों के लिए सख्त विज्ञापन-ट्रैकिंग निषेध का पालन करते हैं।"
+  },
+  "mr": {
+    "title": "विद्या एडटेक - डेटा आणि गोपनीयता धोरण",
+    "introduction": "विद्या एडटेक मध्ये, आम्ही सुरक्षित आणि पारदर्शक डेटा प्रक्रियेद्वारे विद्यार्थ्यांना सक्षम करण्यासाठी समर्पित आहोत. हे धोरण आम्ही तुमची माहिती डिजिटल शिक्षण सेवांसाठी कशी वापरतो हे स्पष्ट करते.",
+    "general_purpose_description": "आम्ही विद्यार्थी खाते व्यवस्थापन, शिकण्याच्या प्रगतीचा मागोवा आणि वैयक्तिक शिफारसींसाठी डेटा वापरतो.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_management",
+        "name": "विद्यार्थी खाते आणि प्रोफाइल",
+        "description": "तुमची प्रोफाइल तयार करण्यासाठी आणि अभ्यासक्रमात प्रवेश मिळवण्यासाठी. विद्या प्लॅटफॉर्म वापरण्यासाठी हे आवश्यक आहे.",
+        "legal_basis": "कराराची आवश्यकता",
+        "data_categories_involved": ["नाव", "ईमेल", "इयत्ता", "शाळेचे नाव"],
+        "recipients_or_third_parties": ["ओळख पडताळणी सेवा"],
+        "retention_policy": "सक्रिय प्रवेशाचा कालावधी आणि त्यानंतर ५ वर्षे.",
+        "retention_duration_value": 5,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_DELETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_learning_tracking",
+        "name": "शिकण्याची प्रगती आणि मूल्यमापन",
+        "description": "प्रमाणपत्रे आणि कामगिरी अहवाल देण्यासाठी तुमच्या गुणांचा मागोवा घेणे.",
+        "legal_basis": "कराराची आवश्यकता",
+        "data_categories_involved": ["मूल्यमापन गुण", "व्हिडिओ पाहण्याची वेळ"],
+        "recipients_or_third_parties": [],
+        "retention_policy": "शैक्षणिक मानकांनुसार ७ वर्षे.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COURSE_COMPLETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "grade_level", "name": "इयत्ता/पातळी", "description": "योग्य अभ्यासक्रम पुरवण्यासाठी शैक्षणिक स्तर." }
+    ],
+    "data_principal_rights_summary": "DPDP कायदा २०२३ नुसार, तुम्हाला तुमचा डेटा पाहण्याचा, दुरुस्त करण्याचा आणि संमती मागे घेण्याचा अधिकार आहे.",
+    "grievance_redressal_info": "तक्रारींसाठी आमच्या DPO शी संपर्क साधा: ईमेल: privacy@vidyaedtech.in | फोन: +९१ २२ ५५४४ ३३२२.",
+    "buttons": {
+      "accept_all": "स्वीकार करा आणि शिका",
+      "reject_all_non_essential": "केवळ आवश्यक",
+      "manage_preferences": "गोपनीयता व्यवस्थापन",
+      "save_preferences": "निवड जतन करा"
+    },
+    "links": {
+      "full_privacy_policy_text": "सविस्तर गोपनीयता धोरण",
+      "terms_of_service_text": "अटी आणि शर्ती"
+    },
+    "important_note": "१८ वर्षांखालील विद्यार्थ्यांसाठी आम्ही कोणत्याही प्रकारची जाहिरात-ट्रॅकिंग करत नाही."
+  }
+}

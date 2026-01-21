@@ -1,0 +1,173 @@
+{
+  "en": {
+    "title": "Apna Mart Retail - Data & Privacy Policy",
+    "introduction": "At Apna Mart, we are committed to processing your personal data transparently to provide a seamless shopping experience. This policy explains how we collect and use your data for retail services and loyalty programs, in full compliance with the Digital Personal Data Protection Act (DPDP), 2023.",
+    "general_purpose_description": "We process data for Account Management, Order Fulfillment, Loyalty Rewards, and Personalized Marketing.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_loyalty",
+        "name": "Account & Loyalty Management",
+        "description": "To manage your Apna Rewards account, track points, and provide member-exclusive discounts. This is essential for participating in our rewards program.",
+        "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
+        "data_categories_involved": ["full_name", "mobile_number", "email_address", "date_of_birth"],
+        "recipients_or_third_parties": ["Loyalty Software Provider"],
+        "retention_policy": "Duration of active membership plus 3 years.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_CLOSURE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_order_fulfillment",
+        "name": "Order Fulfillment & Delivery",
+        "description": "To process your purchases, manage payments, and deliver products to your doorstep.",
+        "legal_basis": "Contractual Necessity",
+        "data_categories_involved": ["delivery_address", "payment_details", "purchase_history"],
+        "recipients_or_third_parties": ["Logistics Partners", "Payment Gateways"],
+        "retention_policy": "Statutory retention of 7 years for tax and financial audit purposes.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "TRANSACTION_COMPLETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_personalized_offers",
+        "name": "Personalized Recommendations",
+        "description": "Analyzing your purchase patterns to suggest relevant products and send personalized festive offers.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": ["shopping_preferences", "browsing_history"],
+        "recipients_or_third_parties": ["Marketing Analytics Firm"],
+        "retention_policy": "Until consent is withdrawn or 2 years of inactivity.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "LAST_PURCHASE",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "mobile_number", "name": "Mobile Number", "description": "Primary identifier for account login and order updates." },
+      { "id": "delivery_address", "name": "Residential Address", "description": "Physical location for delivering goods." },
+      { "id": "purchase_history", "name": "Purchase History", "description": "Log of items bought to manage returns and rewards." }
+    ],
+    "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your data, correct it, withdraw consent for marketing, and request erasure after your financial obligations are settled.",
+    "grievance_redressal_info": "For concerns, contact our DPO at: Email: care@apnamart.in | Phone: +91 11 2233 4455 | Address: Plot 12, Retail Park, Gurugram, Haryana.",
+    "buttons": {
+      "accept_all": "I Accept & Shop Now",
+      "reject_all_non_essential": "Essentials Only",
+      "manage_preferences": "Privacy Settings",
+      "save_preferences": "Save Changes"
+    },
+    "links": {
+      "full_privacy_policy_text": "Detailed Privacy Policy",
+      "full_privacy_policy_url": "https://apnamart.in/privacy",
+      "terms_of_service_text": "Terms & Conditions",
+      "terms_of_service_url": "https://apnamart.in/terms"
+    },
+    "important_note": "Order and transaction data are retained for 7 years to comply with Indian tax laws."
+  },
+  "hi": {
+    "title": "अपना मार्ट रिटेल - डेटा और गोपनीयता नीति",
+    "introduction": "अपना मार्ट में, हम आपको एक बेहतर खरीदारी अनुभव प्रदान करने के लिए आपके व्यक्तिगत डेटा को पारदर्शी रूप से संसाधित करने के लिए प्रतिबद्ध हैं। यह नीति बताती है कि हम डिजिटल व्यक्तिगत डेटा संरक्षण अधिनियम (DPDP), 2023 के पूर्ण अनुपालन में खुदरा सेवाओं और लॉयल्टी कार्यक्रमों के लिए आपके डेटा का उपयोग कैसे करते हैं।",
+    "general_purpose_description": "हम खाता प्रबंधन, ऑर्डर पूर्ति, लॉयल्टी रिवॉर्ड्स और व्यक्तिगत मार्केटिंग के लिए डेटा संसाधित करते हैं।",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_loyalty",
+        "name": "खाता और लॉयल्टी प्रबंधन",
+        "description": "आपके अपना रिवॉर्ड्स खाते का प्रबंधन करने और पॉइंट ट्रैक करने के लिए। यह हमारे रिवॉर्ड्स प्रोग्राम में भाग लेने के लिए अनिवार्य है।",
+        "legal_basis": "अनुबंधात्मक आवश्यकता",
+        "data_categories_involved": ["नाम", "मोबाइल नंबर", "ईमेल", "जन्म तिथि"],
+        "recipients_or_third_parties": ["लॉयल्टी सॉफ्टवेयर प्रदाता"],
+        "retention_policy": "सक्रिय सदस्यता की अवधि और उसके बाद 3 वर्ष।",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_CLOSURE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_order_fulfillment",
+        "name": "ऑर्डर पूर्ति और डिलीवरी",
+        "description": "आपकी खरीदारी को संसाधित करने और उत्पादों को आपके घर तक पहुँचाने के लिए।",
+        "legal_basis": "अनुबंधात्मक आवश्यकता",
+        "data_categories_involved": ["डिलीवरी का पता", "भुगतान विवरण", "खरीद इतिहास"],
+        "recipients_or_third_parties": ["लॉजिस्टिक्स पार्टनर्स"],
+        "retention_policy": "टैक्स और ऑडिट उद्देश्यों के लिए 7 वर्ष का वैधानिक प्रतिधारण।",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "TRANSACTION_COMPLETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "mobile_number", "name": "मोबाइल नंबर", "description": "खाता लॉगिन और ऑर्डर अपडेट के लिए प्राथमिक पहचानकर्ता।" }
+    ],
+    "data_principal_rights_summary": "DPDP अधिनियम 2023 के तहत, आपको अपने डेटा तक पहुंचने, उसे सुधारने और सहमति वापस लेने का अधिकार है।",
+    "grievance_redressal_info": "किसी भी चिंता के लिए हमारे DPO से संपर्क करें: ईमेल: care@apnamart.in | फोन: +91 11 2233 4455.",
+    "buttons": {
+      "accept_all": "स्वीकार करें और खरीदारी करें",
+      "reject_all_non_essential": "केवल आवश्यक",
+      "manage_preferences": "गोपनीयता सेटिंग्स",
+      "save_preferences": "विकल्प सुरक्षित करें"
+    },
+    "links": {
+      "full_privacy_policy_text": "विस्तृत गोपनीयता नीति",
+      "terms_of_service_text": "नियम और शर्तें"
+    },
+    "important_note": "भारतीय कर कानूनों के अनुपालन के लिए लेनदेन डेटा 7 वर्षों तक रखा जाता है।"
+  },
+  "gu": {
+    "title": "અપના માર્ટ રિટેલ - ડેટા અને ગોપનીયતા નીતિ",
+    "introduction": "અપના માર્ટમાં, અમે તમને સીમલેસ શોપિંગ અનુભવ પ્રદાન કરવા માટે તમારા વ્યક્તિગત ડેટાને પારદર્શક રીતે પ્રોસેસ કરવા માટે પ્રતિબદ્ધ છીએ. આ નીતિ સમજાવે છે કે અમે ડિજિટલ પર્સનલ ડેટા પ્રોટેક્શન એક્ટ (DPDP), 2023 ના સંપૂર્ણ પાલનમાં રિટેલ સેવાઓ અને લોયલ્ટી પ્રોગ્રામ્સ માટે તમારા ડેટાનો ઉપયોગ કેવી રીતે કરીએ છીએ.",
+    "general_purpose_description": "અમે એકાઉન્ટ મેનેજમેન્ટ, ઓર્ડર પરિપૂર્ણતા, લોયલ્ટી રિવોર્ડ્સ અને વ્યક્તિગત માર્કેટિંગ માટે ડેટા પ્રોસેસ કરીએ છીએ.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_loyalty",
+        "name": "એકાઉન્ટ અને લોયલ્ટી મેનેજમેન્ટ",
+        "description": "તમારા અપના રિવોર્ડ્સ એકાઉન્ટને મેનેજ કરવા અને પોઈન્ટ્સ ટ્રેક કરવા માટે. અમારા રિવોર્ડ્સ પ્રોગ્રામમાં ભાગ લેવા માટે આ આવશ્યક છે.",
+        "legal_basis": "કરારની આવશ્યકતા",
+        "data_categories_involved": ["નામ", "મોબાઇલ નંબર", "ઇમેઇલ", "જન્મ તારીખ"],
+        "recipients_or_third_parties": ["લોયલ્ટી સોફ્ટવેર પ્રોવાઈડર"],
+        "retention_policy": "સક્રિય સભ્યપદનો સમયગાળો અને પછી 3 વર્ષ.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_CLOSURE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_order_fulfillment",
+        "name": "ઓર્ડર પરિપૂર્ણતા અને ડિલિવરી",
+        "description": "તમારી ખરીદી પ્રક્રિયા કરવા અને ઉત્પાદનો તમારા ઘર સુધી પહોંચાડવા માટે.",
+        "legal_basis": "કરારની આવશ્યકતા",
+        "data_categories_involved": ["ડિલિવરીનું સરનામું", "ચુકવણીની વિગતો", "ખરીદીનો ઇતિહાસ"],
+        "recipients_or_third_parties": ["લોજિસ્ટિક્સ ભાગીદારો"],
+        "retention_policy": "ટેક્સ અને ઓડિટ હેતુઓ માટે 7 વર્ષનો કાયદાકીય સંગ્રહ.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "TRANSACTION_COMPLETION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "mobile_number", "name": "મોબાઇલ નંબર", "description": "એકાઉન્ટ લોગિન અને ઓર્ડર અપડેટ્સ માટે પ્રાથમિક ઓળખકર્તા." }
+    ],
+    "data_principal_rights_summary": "DPDP એક્ટ 2023 હેઠળ, તમને તમારા ડેટાને એક્સેસ કરવાનો, તેને સુધારવાનો અને સંમતિ પાછી ખેંચવાનો અધિકાર છે.",
+    "grievance_redressal_info": "કોઈપણ ચિંતા માટે અમારા DPO નો સંપર્ક કરો: ઇમેઇલ: care@apnamart.in | ફોન: +91 11 2233 4455.",
+    "buttons": {
+      "accept_all": "સ્વીકારો અને ખરીદી શરૂ કરો",
+      "reject_all_non_essential": "માત્ર આવશ્યક",
+      "manage_preferences": "ગોપનીયતા સેટિંગ્સ",
+      "save_preferences": "પસંદગીઓ સાચવો"
+    },
+    "links": {
+      "full_privacy_policy_text": "વિગતવાર ગોપનીયતા નીતિ",
+      "terms_of_service_text": "નિયમો અને શરતો"
+    },
+    "important_note": "ભારતીય ટેક્સ કાયદાના પાલન માટે વ્યવહાર ડેટા 7 વર્ષ સુધી રાખવામાં આવે છે."
+  }
+}

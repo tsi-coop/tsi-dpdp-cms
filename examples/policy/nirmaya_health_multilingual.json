@@ -1,0 +1,151 @@
+{
+  "en": {
+    "title": "Nirmaya Healthcare Clinic - Data & Privacy Policy",
+    "introduction": "At Nirmaya Healthcare Clinic, we are committed to the secure and transparent processing of your personal and health data. This policy outlines how we handle your information to provide quality medical care, in strict compliance with the Digital Personal Data Protection Act (DPDP), 2023. Your privacy is a vital part of your well-being.",
+    "general_purpose_description": "We process data for Patient Registration, Medical Record Maintenance, Billing, Insurance Coordination, and Patient Experience Improvement.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_patient_management",
+        "name": "Patient Registration & Appointments",
+        "description": "To manage your clinical visits, schedule appointments, and maintain your basic profile. This is essential for providing healthcare services.",
+        "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
+        "data_categories_involved": ["full_name", "mobile_number", "email_address", "age", "gender", "address"],
+        "recipients_or_third_parties": ["Appointment Management System"],
+        "retention_policy": "Retained for the duration of your relationship with the clinic plus 3 years.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_DEACTIVATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_medical_records",
+        "name": "Electronic Health Records (EHR)",
+        "description": "To maintain your clinical history, lab reports, and prescriptions. This ensures continuity of care and medical accuracy.",
+        "legal_basis": "Legitimate Use / Healthcare Provision (DPDP Act, Section 7)",
+        "data_categories_involved": ["clinical_history", "test_results", "prescriptions", "blood_group", "allergies"],
+        "recipients_or_third_parties": ["Diagnostic Labs", "Pharmacy Partners"],
+        "retention_policy": "Statutory retention of 10 years as per clinical establishment norms.",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "LAST_VISIT",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_billing_payments",
+        "name": "Billing, Payments & Insurance",
+        "description": "To process treatment fees and coordinate with insurance providers for cashless claims.",
+        "legal_basis": "Contractual Necessity",
+        "data_categories_involved": ["billing_details", "insurance_id", "payment_method"],
+        "recipients_or_third_parties": ["Insurance Companies", "Payment Gateways"],
+        "retention_policy": "7 years for financial audit compliance.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "TRANSACTION_DATE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_wellness_updates",
+        "name": "Wellness Updates & Newsletters",
+        "description": "To send you health tips, clinic updates, and preventive care reminders.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": ["email_address", "mobile_number"],
+        "recipients_or_third_parties": [],
+        "retention_policy": "Until consent is withdrawn.",
+        "retention_duration_value": 0,
+        "retention_duration_unit": "PERPETUAL",
+        "retention_start_event": "CONSENT_GIVEN",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "full_name", "name": "Full Name", "description": "Legal name of the patient for identification." },
+      { "id": "clinical_history", "name": "Clinical History", "description": "Sensitive data regarding past illnesses and treatments." },
+      { "id": "blood_group", "name": "Blood Group", "description": "Critical health data for emergency care." }
+    ],
+    "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your medical records, correct errors, withdraw consent for optional services, and request data erasure after the statutory retention period.",
+    "grievance_redressal_info": "For concerns, contact our DPO at: Email: support@nirmayahealth.in | Phone: +91 80 4455 6677 | Address: 45, Niramaya Complex, Jayanagar, Bengaluru, Karnataka.",
+    "buttons": {
+      "accept_all": "I Accept & Continue",
+      "reject_all_non_essential": "Essential Only",
+      "manage_preferences": "Customize Preferences",
+      "save_preferences": "Save My Choices"
+    },
+    "links": {
+      "full_privacy_policy_text": "Detailed Privacy Policy",
+      "full_privacy_policy_url": "https://nirmayahealth.in/privacy",
+      "terms_of_service_text": "Patient Terms of Service",
+      "terms_of_service_url": "https://nirmayahealth.in/terms"
+    },
+    "important_note": "Medical data is classified as sensitive. We maintain high-grade encryption for all Electronic Health Records. Your core registration data is mandatory for treatment."
+  },
+  "kn": {
+    "title": "ನಿರ್ಮಯ ಹೆಲ್ತ್‌ಕೇರ್ ಕ್ಲಿನಿಕ್ - ಡೇಟಾ ಮತ್ತು ಗೌಪ್ಯತಾ ನೀತಿ",
+    "introduction": "ನಿರ್ಮಯ ಹೆಲ್ತ್‌ಕೇರ್ ಕ್ಲಿನಿಕ್‌ನಲ್ಲಿ, ನಿಮ್ಮ ವೈಯಕ್ತಿಕ ಮತ್ತು ಆರೋಗ್ಯದ ಮಾಹಿತಿಯನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಮತ್ತು ಪಾರದರ್ಶಕವಾಗಿ ಬಳಸಲು ನಾವು ಬದ್ಧರಾಗಿದ್ದೇವೆ. ಡಿಜಿಟಲ್ ವೈಯಕ್ತಿಕ ಡೇಟಾ ರಕ್ಷಣೆ ಕಾಯ್ದೆ (DPDP), 2023 ರ ಅಡಿಯಲ್ಲಿ ನಿಮ್ಮ ಮಾಹಿತಿಯನ್ನು ನಾವು ಹೇಗೆ ನಿರ್ವಹಿಸುತ್ತೇವೆ ಎಂಬುದನ್ನು ಈ ನೀತಿಯು ವಿವರಿಸುತ್ತದೆ.",
+    "general_purpose_description": "ರೋಗಿಗಳ ನೋಂದಣಿ, ವೈದ್ಯಕೀಯ ದಾಖಲೆಗಳ ನಿರ್ವಹಣೆ, ಬಿಲ್ಲಿಂಗ್ ಮತ್ತು ವಿಮಾ ಸಮನ್ವಯಕ್ಕಾಗಿ ನಾವು ಡೇಟಾವನ್ನು ಬಳಸುತ್ತೇವೆ.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_patient_management",
+        "name": "ರೋಗಿಗಳ ನೋಂದಣಿ ಮತ್ತು ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಳು",
+        "description": "ನಿಮ್ಮ ಚಿಕಿತ್ಸೆಯ ಭೇಟಿಗಳನ್ನು ನಿರ್ವಹಿಸಲು ಮತ್ತು ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ನಿಗದಿಪಡಿಸಲು ಈ ಮಾಹಿತಿ ಅಗತ್ಯವಿದೆ.",
+        "legal_basis": "ಒಪ್ಪಂದದ ಅಗತ್ಯತೆ (DPDP ಕಾಯ್ದೆ, ಸೆಕ್ಷನ್ 7(b))",
+        "data_categories_involved": ["ಹೆಸರು", "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ", "ಇಮೇಲ್", "ವಯಸ್ಸು", "ಲಿಂಗ", "ವಿಳಾಸ"],
+        "recipients_or_third_parties": ["ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಮ್ಯಾನೇಜ್‌ಮೆಂಟ್ ಸಿಸ್ಟಮ್"],
+        "retention_policy": "ಕ್ಲಿನಿಕ್ ಜೊತೆಗಿನ ನಿಮ್ಮ ಸಂಬಂಧದ ಅವಧಿ ಮುಗಿದ ನಂತರ 3 ವರ್ಷಗಳವರೆಗೆ ಇರಿಸಿಕೊಳ್ಳಲಾಗುವುದು.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_DEACTIVATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_medical_records",
+        "name": "ವೈದ್ಯಕೀಯ ದಾಖಲೆಗಳ ನಿರ್ವಹಣೆ (EHR)",
+        "description": "ನಿಮ್ಮ ವೈದ್ಯಕೀಯ ಇತಿಹಾಸ, ಲ್ಯಾಬ್ ವರದಿಗಳು ಮತ್ತು ಔಷಧಿ ಚೀಟಿಗಳನ್ನು ನಿರ್ವಹಿಸಲು ಇದು ಅಗತ್ಯ.",
+        "legal_basis": "ವೈದ್ಯಕೀಯ ಸೇವೆ ಒದಗಿಸುವಿಕೆ (DPDP ಕಾಯ್ದೆ, ಸೆಕ್ಷನ್ 7)",
+        "data_categories_involved": ["ಚಿಕಿತ್ಸೆಯ ಇತಿಹಾಸ", "ಪರೀಕ್ಷಾ ವರದಿಗಳು", "ಔಷಧಿ ಪಟ್ಟಿ", "ರಕ್ತದ ಗುಂಪು"],
+        "recipients_or_third_parties": ["ಡಯಾಗ್ನೋಸ್ಟಿಕ್ ಲ್ಯಾಬ್ಸ್", "ಫಾರ್ಮಸಿ ಪಾಲುದಾರರು"],
+        "retention_policy": "ವೈದ್ಯಕೀಯ ನಿಯಮಗಳ ಪ್ರಕಾರ 10 ವರ್ಷಗಳವರೆಗೆ ಕಡ್ಡಾಯವಾಗಿ ಇರಿಸಿಕೊಳ್ಳಲಾಗುವುದು.",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "LAST_VISIT",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_billing_payments",
+        "name": "ಬಿಲ್ಲಿಂಗ್ ಮತ್ತು ವಿಮೆ",
+        "description": "ಚಿಕಿತ್ಸೆಯ ಶುಲ್ಕ ಮತ್ತು ವಿಮಾ ಹಕ್ಕುಗಳನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲು.",
+        "legal_basis": "ಒಪ್ಪಂದದ ಅಗತ್ಯತೆ",
+        "data_categories_involved": ["ಬಿಲ್ಲಿಂಗ್ ವಿವರಗಳು", "ವಿಮೆ ಐಡಿ"],
+        "recipients_or_third_parties": ["ವಿಮಾ ಕಂಪನಿಗಳು", "ಪಾವತಿ ಗೇಟ್‌ವೇಗಳು"],
+        "retention_policy": "ಹಣಕಾಸು ಲೆಕ್ಕಪರಿಶೋಧನೆಗಾಗಿ 7 ವರ್ಷಗಳು.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "TRANSACTION_DATE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "full_name", "name": "ಪೂರ್ಣ ಹೆಸರು", "description": "ರೋಗಿಯ ಗುರುತಿಗಾಗಿ ಕಾನೂನುಬದ್ಧ ಹೆಸರು." },
+      { "id": "clinical_history", "name": "ವೈದ್ಯಕೀಯ ಇತಿಹಾಸ", "description": "ಹಳೆಯ ಕಾಯಿಲೆಗಳು ಮತ್ತು ಚಿಕಿತ್ಸೆಗಳ ಬಗ್ಗೆ ಸೂಕ್ಷ್ಮ ಮಾಹಿತಿ." }
+    ],
+    "data_principal_rights_summary": "DPDP ಕಾಯ್ದೆ 2023 ರ ಅಡಿಯಲ್ಲಿ, ನಿಮ್ಮ ವೈದ್ಯಕೀಯ ದಾಖಲೆಗಳನ್ನು ಪಡೆಯುವ, ತಪ್ಪುಗಳನ್ನು ಸರಿಪಡಿಸುವ ಮತ್ತು ಡೇಟಾ ಅಳಿಸಲು ವಿನಂತಿಸುವ ಹಕ್ಕನ್ನು ನೀವು ಹೊಂದಿದ್ದೀರಿ.",
+    "grievance_redressal_info": "ದೂರುಗಳಿದ್ದಲ್ಲಿ, ನಮ್ಮ ಡೇಟಾ ಸಂರಕ್ಷಣಾ ಅಧಿಕಾರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ: ಇಮೇಲ್: support@nirmayahealth.in | ಫೋನ್: +91 80 4455 6677.",
+    "buttons": {
+      "accept_all": "ಒಪ್ಪಿಕೊಳ್ಳಿ ಮತ್ತು ಮುಂದುವರಿಯಿರಿ",
+      "reject_all_non_essential": "ಅಗತ್ಯವಿರುವವು ಮಾತ್ರ",
+      "manage_preferences": "ಆದ್ಯತೆಗಳನ್ನು ಬದಲಿಸಿ",
+      "save_preferences": "ಆಯ್ಕೆಗಳನ್ನು ಉಳಿಸಿ"
+    },
+    "links": {
+      "full_privacy_policy_text": "ಸಂಪೂರ್ಣ ಗೌಪ್ಯತಾ ನೀತಿ",
+      "terms_of_service_text": "ರೋಗಿಗಳ ಸೇವಾ ನಿಯಮಗಳು"
+    },
+    "important_note": "ನಿಮ್ಮ ವೈದ್ಯಕೀಯ ಮಾಹಿತಿಯು ಸೂಕ್ಷ್ಮ ಡೇಟಾ ಎಂದು ಪರಿಗಣಿಸಲ್ಪಟ್ಟಿದೆ. ನಾವು ಅತ್ಯಂತ ಸುರಕ್ಷಿತವಾದ ಎನ್‌ಕ್ರಿಪ್ಶನ್ ಅನ್ನು ಬಳಸುತ್ತೇವೆ."
+  }
+}

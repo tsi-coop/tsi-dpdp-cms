@@ -1,0 +1,189 @@
+{
+  "en": {
+    "title": "Varam Microcredit - Data & Privacy Policy",
+    "introduction": "At Varam Microcredit, we are committed to the secure and transparent processing of your personal and financial data. This policy outlines how we handle your information to provide micro-finance services, in strict compliance with the Digital Personal Data Protection Act (DPDP), 2023. Your financial trust is our priority.",
+    "general_purpose_description": "We process data for KYC Verification, Credit Assessment, Loan Disbursement, Recovery Management, and Regulatory Reporting.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_kyc_identity",
+        "name": "KYC & Identity Verification",
+        "description": "To verify your identity and prevent fraud using government-issued identifiers. This is a mandatory regulatory requirement for financial services.",
+        "legal_basis": "Statutory Obligation (PMLA & DPDP Act)",
+        "data_categories_involved": ["full_name", "pan_card", "masked_aadhaar", "photo", "voter_id"],
+        "recipients_or_third_parties": ["CERSAI", "Verification Agencies"],
+        "retention_policy": "Statutory retention of 5 years after account closure as per RBI norms.",
+        "retention_duration_value": 5,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_CLOSURE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_credit_scoring",
+        "name": "Credit Assessment & Scoring",
+        "description": "To evaluate your creditworthiness and determine loan eligibility based on financial history.",
+        "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
+        "data_categories_involved": ["income_details", "bank_statements", "existing_loan_info", "employment_status"],
+        "recipients_or_third_parties": ["Credit Bureaus (CIBIL, Equifax)"],
+        "retention_policy": "Duration of the loan evaluation plus 2 years for internal audit.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "LOAN_REJECTION_OR_CLOSURE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_loan_servicing",
+        "name": "Loan Disbursement & Collections",
+        "description": "To transfer funds to your bank account and manage the repayment cycle, including field visits if required.",
+        "legal_basis": "Contractual Necessity",
+        "data_categories_involved": ["bank_account_no", "ifsc_code", "current_location", "contact_number"],
+        "recipients_or_third_parties": ["Banking Partners", "Collection Agencies"],
+        "retention_policy": "Until the loan is fully repaid plus 7 years for financial record-keeping.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "FINAL_SETTLEMENT",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_marketing_offers",
+        "name": "Promotional Offers & New Products",
+        "description": "To inform you about new loan products, insurance top-ups, and financial literacy programs.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": ["mobile_number", "email_address"],
+        "recipients_or_third_parties": [],
+        "retention_policy": "Until consent is withdrawn.",
+        "retention_duration_value": 0,
+        "retention_duration_unit": "PERPETUAL",
+        "retention_start_event": "CONSENT_GIVEN",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "pan_card", "name": "PAN Number", "description": "Used for credit bureau checks and income verification." },
+      { "id": "bank_account_no", "name": "Bank Account Details", "description": "Required for automated loan disbursement and EMI NACH setups." },
+      { "id": "masked_aadhaar", "name": "Masked Aadhaar", "description": "Identity proof with Aadhaar numbers partially hidden for security." }
+    ],
+    "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your loan data, correct inaccuracies, withdraw consent for marketing, and request data erasure after all statutory and financial obligations are met.",
+    "grievance_redressal_info": "For concerns, contact our Nodal Officer / DPO at: Email: compliance@varamcredit.in | Phone: +91 44 2233 4455 | Address: 10, Artha Towers, Mount Road, Chennai, Tamil Nadu.",
+    "buttons": {
+      "accept_all": "I Agree to Terms & Continue",
+      "reject_all_non_essential": "Decline Optional Processing",
+      "manage_preferences": "Customize My Privacy",
+      "save_preferences": "Confirm Choices"
+    },
+    "links": {
+      "full_privacy_policy_text": "Detailed Fintech Privacy Policy",
+      "full_privacy_policy_url": "https://varamcredit.in/privacy",
+      "terms_of_service_text": "Loan Agreement Terms",
+      "terms_of_service_url": "https://varamcredit.in/terms"
+    },
+    "important_note": "Financial data and KYC documents are protected with banking-grade encryption. Core data required for loan processing and statutory reporting cannot be withdrawn while a loan is active."
+  },
+  "ta": {
+    "title": "வரம் மைக்ரோக्रेडिट - தரவு மற்றும் தனியுரிமைக் கொள்கை",
+    "introduction": "வரம் மைக்ரோக्रेडिटில், உங்கள் தனிப்பட்ட மற்றும் நிதித் தரவை பாதுகாப்பாகவும் வெளிப்படையாகவும் கையாளுவதில் நாங்கள் உறுதியாக உள்ளோம். 2023 டிஜிட்டல் தனிப்பட்ட தரவுப் பாதுகாப்புச் சட்டத்திற்கு (DPDP) இணங்க, மைக்ரோ-ஃபைனான்ஸ் சேவைகளை வழங்க உங்கள் தகவலை நாங்கள் எப்படிப் பயன்படுத்துகிறோம் என்பதை இந்தக் கொள்கை விளக்குகிறது.",
+    "general_purpose_description": "கே.ஒய்.சி (KYC) சரிபார்ப்பு, கடன் மதிப்பீடு, கடன் வழங்கல் மற்றும் வசூல் மேலாண்மை ஆகியவற்றுக்காக நாங்கள் தரவைச் சேகரிக்கிறோம்.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_kyc_identity",
+        "name": "கே.ஒய்.சி மற்றும் அடையாளச் சரிபார்ப்பு",
+        "description": "அரசு வழங்கிய அடையாள அட்டைகள் மூலம் உங்கள் அடையாளத்தை உறுதிப்படுத்த. நிதிச் சேவைகளுக்கு இது கட்டாயத் தேவையாகும்.",
+        "legal_basis": "சட்டப்பூர்வ கடமை (PMLA & DPDP சட்டம்)",
+        "data_categories_involved": ["பெயர்", "பான் கார்டு", "ஆதார் எண்", "புகைப்படம்"],
+        "recipients_or_third_parties": ["சரிபார்ப்பு முகமைகள்"],
+        "retention_policy": "கணக்கு மூடப்பட்ட பிறகு 5 ஆண்டுகளுக்குப் பராமரிக்கப்படும்.",
+        "retention_duration_value": 5,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_CLOSURE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_loan_servicing",
+        "name": "கடன் வழங்கல் மற்றும் வசூல்",
+        "description": "உங்கள் வங்கித் கணக்கிற்குப் பணத்தைப் பரிமாற்றம் செய்யவும், திருப்பிச் செலுத்துதலை நிர்வகிக்கவும்.",
+        "legal_basis": "ஒப்பந்தத் தேவை",
+        "data_categories_involved": ["வங்கி கணக்கு எண்", "ஐ.எப்.எஸ்.சி (IFSC) குறியீடு", "தொடர்பு எண்"],
+        "recipients_or_third_parties": ["வங்கி கூட்டாளர்கள்"],
+        "retention_policy": "கடன் முழுமையாகத் திருப்பிச் செலுத்தப்பட்ட பிறகு 7 ஆண்டுகள்.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "FINAL_SETTLEMENT",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "pan_card", "name": "பான் எண்", "description": "வருமானச் சரிபார்ப்புக்காகப் பயன்படுத்தப்படுகிறது." },
+      { "id": "bank_account_no", "name": "வங்கி விவரங்கள்", "description": "கடனை வழங்க இது அவசியமானது." }
+    ],
+    "data_principal_rights_summary": "DPDP சட்டம் 2023-ன் கீழ், உங்கள் தரவை அணுகவும், திருத்தவும் மற்றும் அவசியமற்ற சேவைகளுக்கான ஒப்புதலைத் திரும்பப் பெறவும் உங்களுக்கு உரிமை உண்டு.",
+    "grievance_redressal_info": "புகார்களுக்கு, எங்கள் அதிகாரியைத் தொடர்பு கொள்ளவும்: மின்னஞ்சல்: compliance@varamcredit.in | போன்: +91 44 2233 4455.",
+    "buttons": {
+      "accept_all": "ஏற்றுக்கொண்டு தொடரவும்",
+      "reject_all_non_essential": "விருப்பமானவற்றை நிராகரிக்கவும்",
+      "manage_preferences": "தனியுரிமை அமைப்புகள்",
+      "save_preferences": "தேர்வுகளைச் சேமிக்கவும்"
+    },
+    "links": {
+      "full_privacy_policy_text": "முழுமையான தனியுரிமைக் கொள்கை",
+      "terms_of_service_text": "கடன் ஒப்பந்த விதிகள்"
+    },
+    "important_note": "உங்கள் நிதித் தரவு பாதுகாப்பானது. கடன் செயல்பாட்டில் இருக்கும்போது முக்கியத் தரவைத் திரும்பப் பெற முடியாது."
+  },
+  "ml": {
+    "title": "വരം മൈക്രോക്രെഡിറ്റ് - ഡാറ്റാ ആൻഡ് പ്രൈവസി പോളിസി",
+    "introduction": "വരം മൈക്രോക്രെഡിറ്റിൽ, നിങ്ങളുടെ വ്യക്തിഗതവും സാമ്പത്തികവുമായ വിവരങ്ങൾ സുരക്ഷിതമായും സുതാര്യമായും കൈകാര്യം ചെയ്യാൻ ഞങ്ങൾ ബാധ്യസ്ഥരാണ്. ഡിജിറ്റൽ പേഴ്സണൽ ഡാറ്റ പ്രൊട്ടക്ഷൻ ആക്ട് (DPDP), 2023 പ്രകാരം മൈക്രോ ഫിനാൻസ് സേവനങ്ങൾ നൽകുന്നതിനായി നിങ്ങളുടെ വിവരങ്ങൾ ഞങ്ങൾ എങ്ങനെ ഉപയോഗിക്കുന്നു എന്ന് ഈ നയം വിശദീകരിക്കുന്നു.",
+    "general_purpose_description": "KYC വെരിഫിക്കേഷൻ, ക്രെഡിറ്റ് അസ്സസ്‌മെന്റ്, ലോൺ വിതരണം, റെഗുലേറ്ററി റിപ്പോർട്ടിംഗ് എന്നിവയ്ക്കായി ഞങ്ങൾ വിവരങ്ങൾ ഉപയോഗിക്കുന്നു.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_kyc_identity",
+        "name": "KYC & ഐഡന്റിറ്റി വെരിഫിക്കേഷൻ",
+        "description": "നിങ്ങളുടെ വ്യക്തിത്വം സ്ഥിരീകരിക്കുന്നതിനും തട്ടിപ്പുകൾ തടയുന്നതിനും. സാമ്പത്തിക സേവനങ്ങൾക്ക് ഇത് നിർബന്ധമാണ്.",
+        "legal_basis": "നിയമപരമായ ബാധ്യത (PMLA & DPDP ആക്ട്)",
+        "data_categories_involved": ["പേര്", "പാൻ കാർഡ്", "ആധാർ", "ഫോട്ടോ"],
+        "recipients_or_third_parties": ["വെരിഫിക്കേഷൻ ഏജൻസികൾ"],
+        "retention_policy": "അക്കൗണ്ട് ക്ലോസ് ചെയ്ത ശേഷം 5 വർഷം വരെ സൂക്ഷിക്കും.",
+        "retention_duration_value": 5,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "ACCOUNT_CLOSURE",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_loan_servicing",
+        "name": "ലോൺ വിതരണവും കളക്ഷനും",
+        "description": "നിങ്ങളുടെ ബാങ്ക് അക്കൗണ്ടിലേക്ക് പണം കൈമാറുന്നതിനും തിരിച്ചടവ് നിയന്ത്രിക്കുന്നതിനും.",
+        "legal_basis": "കരാർ പ്രകാരമുള്ള ആവശ്യം",
+        "data_categories_involved": ["ബാങ്ക് അക്കൗണ്ട് നമ്പർ", "IFSC കോഡ്", "കോൺടാക്റ്റ് നമ്പർ"],
+        "recipients_or_third_parties": ["ബാങ്കിംഗ് പാർട്ണർമാർ"],
+        "retention_policy": "ലോൺ പൂർണ്ണമായി തിരിച്ചടച്ച ശേഷം 7 വർഷം.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "FINAL_SETTLEMENT",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "pan_card", "name": "പാൻ നമ്പർ", "description": "ക്രെഡിറ്റ് ഹിസ്റ്ററി പരിശോധിക്കാൻ ഉപയോഗിക്കുന്നു." },
+      { "id": "bank_account_no", "name": "ബാങ്ക് വിവരങ്ങൾ", "description": "പണം കൈമാറുന്നതിന് ഇത് ആവശ്യമാണ്." }
+    ],
+    "data_principal_rights_summary": "DPDP നിയമം 2023 പ്രകാരം, നിങ്ങളുടെ ഡാറ്റ പരിശോധിക്കാനും തെറ്റുകൾ തിരുത്താനും ഡാറ്റ നീക്കം ചെയ്യാൻ അഭ്യർത്ഥിക്കാനും നിങ്ങൾക്ക് അവകാശമുണ്ട്.",
+    "grievance_redressal_info": "പരാതികൾക്കായി ഞങ്ങളുടെ ഓഫീസറെ ബന്ധപ്പെടുക: ഇമെയിൽ: compliance@varamcredit.in | ഫോൺ: +91 44 2233 4455.",
+    "buttons": {
+      "accept_all": "അംഗീകരിച്ചു മുന്നോട്ട് പോകുക",
+      "reject_all_non_essential": "നിർബന്ധമല്ലാത്തവ ഒഴിവാക്കുക",
+      "manage_preferences": "പ്രൈവസി ക്രമീകരണങ്ങൾ",
+      "save_preferences": "തിരഞ്ഞെടുപ്പുകൾ സേവ് ചെയ്യുക"
+    },
+    "links": {
+      "full_privacy_policy_text": "വിശദമായ പ്രൈവസി പോളിസി",
+      "terms_of_service_text": "ലോൺ കരാർ വ്യവസ്ഥകൾ"
+    },
+    "important_note": "നിങ്ങളുടെ സാമ്പത്തിക വിവരങ്ങൾ സുരക്ഷിതമാണ്. നിലവിൽ ലോൺ ഉണ്ടെങ്കിൽ വിവരങ്ങൾ പിൻവലിക്കാൻ സാധിക്കില്ല."
+  }
+}

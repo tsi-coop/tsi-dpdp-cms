@@ -1,0 +1,122 @@
+{
+  "en": {
+    "title": "Employee Data & Privacy Policy",
+    "introduction": "At our organization, we respect the privacy of our employees (Data Principals). This policy outlines how we process your personal data for employment-related purposes, ensuring transparency and security in accordance with the Digital Personal Data Protection Act (DPDP), 2023. Your professional data is handled with the highest standard of confidentiality.",
+    "general_purpose_description": "We process employee data for Payroll administration, Statutory compliance, Insurance benefits, and Performance management.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_payroll_tax",
+        "name": "Payroll, Taxation & Compliance",
+        "description": "To process monthly salaries, deduct professional tax, and manage Provident Fund (PF) and ESI contributions. This is a mandatory requirement for employment.",
+        "legal_basis": "Contractual Necessity / Statutory Obligation",
+        "data_categories_involved": ["full_name", "bank_account_details", "pan_number", "aadhaar_number", "salary_details"],
+        "recipients_or_third_parties": ["Tax Authorities", "Banking Partners", "EPFO"],
+        "retention_policy": "Statutory retention of 10 years after resignation/termination for audit purposes.",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_employee_benefits",
+        "name": "Health Insurance & Benefits",
+        "description": "To enroll employees and their dependents in group health insurance and manage wellness programs.",
+        "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
+        "data_categories_involved": ["dependent_details", "health_declaration", "contact_information"],
+        "recipients_or_third_parties": ["Insurance Provider", "TPA"],
+        "retention_policy": "Duration of active employment plus 2 years.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_performance_training",
+        "name": "Performance Review & Skill Development",
+        "description": "To evaluate work performance, track training progress, and determine promotions or increments.",
+        "legal_basis": "Legitimate Use / Employment (DPDP Act, Section 7(i))",
+        "data_categories_involved": ["performance_appraisals", "training_records", "attendance_logs"],
+        "recipients_or_third_parties": ["HR Management Software"],
+        "retention_policy": "Retained during the tenure of employment plus 5 years.",
+        "retention_duration_value": 5,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      { "id": "salary_details", "name": "Compensation Data", "description": "Details of basic pay, allowances, and bonuses." },
+      { "id": "attendance_logs", "name": "Attendance & Leave", "description": "Records of time-in/time-out and leaves availed." },
+      { "id": "dependent_details", "name": "Family Information", "description": "Names and relations of family members for insurance coverage." }
+    ],
+    "data_principal_rights_summary": "As an employee, you have the right to access your employment records, correct any inaccuracies, and raise grievances regarding data handling. Requests for erasure are subject to statutory retention requirements for financial and labor law compliance.",
+    "grievance_redressal_info": "For any concerns, please contact the HR Compliance / Data Protection Officer at: Email: hr-compliance@company.com | Internal Extension: 555. Your concerns will be addressed within 30 days.",
+    "buttons": {
+      "accept_all": "I Acknowledge & Accept",
+      "reject_all_non_essential": "Essential Only",
+      "manage_preferences": "View Preferences",
+      "save_preferences": "Confirm Choices"
+    },
+    "links": {
+      "full_privacy_policy_text": "Internal HR Privacy Handbook",
+      "full_privacy_policy_url": "https://intranet.company.com/privacy",
+      "terms_of_service_text": "Employment Agreement",
+      "terms_of_service_url": "https://intranet.company.com/terms"
+    },
+    "important_note": "Provision of PAN, Aadhaar, and Bank details is mandatory for salary processing and statutory social security contributions."
+  },
+  "hi": {
+    "title": "कर्मचारी डेटा और गोपनीयता नीति",
+    "introduction": "हमारे संगठन में, हम अपने कर्मचारियों (डेटा प्रिंसिपल्स) की गोपनीयता का सम्मान करते हैं। यह नीति बताती है कि हम डिजिटल व्यक्तिगत डेटा संरक्षण अधिनियम (DPDP), 2023 के अनुसार रोजगार से संबंधित उद्देश्यों के लिए आपके व्यक्तिगत डेटा को कैसे संसाधित करते हैं।",
+    "general_purpose_description": "हम पेरोल प्रशासन, वैधानिक अनुपालन, बीमा लाभ और प्रदर्शन प्रबंधन के लिए कर्मचारी डेटा संसाधित करते हैं।",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_payroll_tax",
+        "name": "पेरोल, कराधान और अनुपालन",
+        "description": "मासिक वेतन संसाधित करने, टैक्स काटने और भविष्य निधि (PF) और ESI योगदान का प्रबंधन करने के लिए। यह रोजगार के लिए एक अनिवार्य आवश्यकता है।",
+        "legal_basis": "अनुबंधात्मक आवश्यकता / वैधानिक बाध्यता",
+        "data_categories_involved": ["पूरा नाम", "बैंक खाता विवरण", "पैन नंबर", "आधार नंबर", "वेतन विवरण"],
+        "recipients_or_third_parties": ["कर अधिकारी", "बैंकिंग भागीदार", "EPFO"],
+        "retention_policy": "ऑडिट उद्देश्यों के लिए इस्तीफे/छंटनी के बाद 10 वर्ष का वैधानिक प्रतिधारण।",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_employee_benefits",
+        "name": "स्वास्थ्य बीमा और लाभ",
+        "description": "कर्मचारियों और उनके आश्रितों को समूह स्वास्थ्य बीमा में नामांकित करने के लिए।",
+        "legal_basis": "अनुबंधात्मक आवश्यकता",
+        "data_categories_involved": ["आश्रितों का विवरण", "स्वास्थ्य घोषणा", "संपर्क जानकारी"],
+        "recipients_or_third_parties": ["बीमा प्रदाता"],
+        "retention_policy": "सक्रिय रोजगार की अवधि और उसके बाद 2 वर्ष।",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      }
+    ],
+    "data_categories_details": [
+      { "id": "salary_details", "name": "मुआवजा डेटा", "description": "मूल वेतन, भत्तों और बोनस का विवरण।" }
+    ],
+    "data_principal_rights_summary": "एक कर्मचारी के रूप में, आपको अपने रोजगार रिकॉर्ड तक पहुंचने, किसी भी त्रुटि को सुधारने और डेटा हैंडलिंग के संबंध में शिकायत दर्ज करने का अधिकार है।",
+    "grievance_redressal_info": "किसी भी चिंता के लिए, कृपया एचआर अनुपालन / डेटा संरक्षण अधिकारी से संपर्क करें: ईमेल: hr-compliance@company.com।",
+    "buttons": {
+      "accept_all": "मैं स्वीकार करता हूँ",
+      "reject_all_non_essential": "केवल आवश्यक",
+      "manage_preferences": "वरीयताएं देखें",
+      "save_preferences": "विकल्पों की पुष्टि करें"
+    },
+    "links": {
+      "full_privacy_policy_text": "आंतरिक एचआर गोपनीयता पुस्तिका",
+      "terms_of_service_text": "रोजगार समझौता"
+    },
+    "important_note": "वेतन प्रसंस्करण और वैधानिक योगदान के लिए पैन, आधार और बैंक विवरण प्रदान करना अनिवार्य है।"
+  }
+}
