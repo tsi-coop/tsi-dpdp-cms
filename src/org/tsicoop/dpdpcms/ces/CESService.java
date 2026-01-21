@@ -305,23 +305,26 @@ public class CESService {
                                          String appId,
                                          String status) throws SQLException {
         JSONObject response = new JSONObject();
-        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, app_id, status) " +
-                "VALUES (?, ?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, app_id, app_name, status) " +
+                "VALUES (?, ?, ?, ?, ?) RETURNING id";
 
         PreparedStatement stmt = null;
         ResultSet rs = null;
         PoolDB pool = null;
         Connection conn = null;
+        String appName = null;
 
         try {
             pool = new PoolDB();
             conn = pool.getConnection();
+
             stmt = conn.prepareStatement(sql);
 
             stmt.setString(1, userId);
             stmt.setObject(2, UUID.fromString(fiduciaryId));
             stmt.setObject(3, UUID.fromString(appId));
-            stmt.setString(4, status);
+            stmt.setString(4, appName);
+            stmt.setString(5, status);
 
             rs = stmt.executeQuery();
             if (rs.next()) {

@@ -196,6 +196,7 @@ CREATE TABLE IF NOT EXISTS purge_requests (
     user_id VARCHAR(255) NOT NULL, -- Data Principal ID whose data is to be purged
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
     app_id UUID REFERENCES apps(id),
+    app_name VARCHAR(255) NOT NULL DEFAULT '',
     trigger_event VARCHAR(100) NOT NULL, -- e.g., "ConsentWithdrawal", "RetentionPolicyExpiry", "ErasureRequest"
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- PENDING, IN_PROGRESS, COMPLETED, FAILED, UNDER_LEGAL_HOLD
     initiated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
