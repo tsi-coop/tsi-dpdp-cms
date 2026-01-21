@@ -77,10 +77,9 @@ public class Audit implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_ACCEPTED, output);
                     break;
 
-                case "list_audit_logs":
+                case "list_audit_logs": // Used in DPO Audit screen
                     String search = (String) input.get("search");
                     String fidFilter = (String) input.get("fiduciary_id");
-                    String stypeFilter = (String) input.get("service_type_filter");
                     String actFilter = (String) input.get("action_filter");
 
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
@@ -90,8 +89,7 @@ public class Audit implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "fiduciary_id is required for listing logs.", req.getRequestURI());
                         return;
                     }
-
-                    outputArray = listAuditLogsFromDb(search, UUID.fromString(fidFilter), stypeFilter, actFilter, page, limit);
+                    outputArray = listAuditLogsFromDb(search, UUID.fromString(fidFilter), actFilter, page, limit);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -164,14 +162,17 @@ public class Audit implements Action {
         return new JSONObject() {{ put("success", true); }};
     }
 
-    private JSONArray listAuditLogsFromDb(String search, UUID fiduciaryId, String serviceType, String action, int page, int limit) throws SQLException {
+    private JSONArray listAuditLogsFromDb(String search, UUID fiduciaryId, String action, int page, int limit) throws SQLException {
         JSONArray logs = new JSONArray();
         StringBuilder sql = new StringBuilder("SELECT * FROM audit_logs WHERE fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
-        if (serviceType != null && !serviceType.isEmpty()) {
-            sql.append(" AND service_type = ?"); params.add(serviceType);
+        if (fiduciaryId != null){
+            sql.append(" AND service_type IN ('SYSTEM','APP')");
+        }
+        else if(fiduciaryId == null){
+            sql.append(" AND service_type IN ('USER')");
         }
         if (action != null && !action.isEmpty()) {
             sql.append(" AND audit_action = ?"); params.add(action);
