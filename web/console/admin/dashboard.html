@@ -174,14 +174,7 @@
       <p class="text-xs text-gray-400 mt-2">Apps for injestion / processing.</p>
     </div>
 
-    <!-- Widget 3: Pending Grievances -->
-    <div id="metric-grievances" class="card p-5 border-l-4 border-yellow-500 hover:shadow-md transition duration-200 cursor-pointer">
-      <p class="text-sm font-medium text-gray-500">Pending Grievances</p>
-      <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-grievances-value">--</p>
-      <p class="text-xs text-gray-400 mt-2">DP requests needing resolution (SLA check).</p>
-    </div>
-
-    <!-- Widget 4: Purge Compliance Health -->
+    <!-- Widget 3: Purge Compliance Health -->
     <div id="metric-purge" class="card p-5 border-l-4 border-red-500 hover:shadow-md transition duration-200 cursor-pointer">
       <p class="text-sm font-medium text-gray-500">Purge Operations Failed</p>
       <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-purge-value">--</p>
@@ -238,7 +231,6 @@
             // Initializing with placeholders
             document.getElementById('metric-fiduciaries-value').textContent = '...';
             document.getElementById('metric-processors-value').textContent = '...';
-            document.getElementById('metric-grievances-value').textContent = '...';
             document.getElementById('metric-purge-value').textContent = '...';
 
             try {
@@ -270,7 +262,6 @@
                     const metrics = data.metrics;
                     document.getElementById('metric-fiduciaries-value').textContent = metrics.active_fiduciaries !== undefined ? metrics.active_fiduciaries : 'N/A';
                     document.getElementById('metric-processors-value').textContent = metrics.active_processors !== undefined ? metrics.active_processors : 'N/A';
-                    document.getElementById('metric-grievances-value').textContent = metrics.pending_grievances !== undefined ? metrics.pending_grievances : 'N/A';
                     document.getElementById('metric-purge-value').textContent = metrics.failed_purges !== undefined ? metrics.failed_purges : 'N/A';
                 } else {
                     throw new Error(data.message || 'Metrics data missing.');
@@ -279,7 +270,6 @@
                 console.error("Error loading dashboard metrics:", error);
                 document.getElementById('metric-fiduciaries-value').textContent = 'FAIL';
                 document.getElementById('metric-processors-value').textContent = 'FAIL';
-                document.getElementById('metric-grievances-value').textContent = 'FAIL';
                 document.getElementById('metric-purge-value').textContent = 'FAIL';
             }
         }
@@ -290,7 +280,7 @@
 
             try {
                 const payload = {
-                    "_func": "list_recent_audit_logs",
+                    "_func": "list_access_logs",
                     "limit": 10 // Get last 10 activities
                 };
 

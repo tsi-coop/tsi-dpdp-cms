@@ -11,6 +11,7 @@ import org.json.simple.JSONObject;
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 /**
  * AdminDash handles compliance metrics with time-filtering capabilities.
@@ -30,17 +31,54 @@ public class AdminDash implements Action {
             }
 
             switch (func.toLowerCase()) {
+                case "get_admin_metrics":
+                    OutputProcessor.send(res, 200, getAdminMetrics());
+                    break;
                 case "get_dpo_metrics":
                     OutputProcessor.send(res, 200, getDpoMetrics(input));
                     break;
                 case "list_pending_grievances":
                     OutputProcessor.send(res, 200, listPendingGrievances(input));
                     break;
+                case "list_access_logs":
+                    OutputProcessor.send(res, 200, new Audit().listAuditLogsFromDb(null, null, null, 1, 20));
+                    break;
                 default:
                     OutputProcessor.errorResponse(res, 400, "Bad Request", "Unknown function", req.getRequestURI());
             }
         } catch (Exception e) {
             OutputProcessor.errorResponse(res, 500, "Internal Error", e.getMessage(), req.getRequestURI());
+        }
+    }
+
+    /**
+     * Retrieves global system-wide metrics for high-level administration.
+     */
+    private JSONObject getAdminMetrics() throws SQLException {
+        JSONObject metrics = new JSONObject();
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+
+        try {
+            conn = pool.getConnection();
+            metrics.put("active_fiduciaries", getSimpleCount(conn, pool, "SELECT COUNT(*) FROM fiduciaries WHERE status IN ('ACTIVE', 'PENDING')"));
+            metrics.put("active_processors", getSimpleCount(conn, pool, "SELECT COUNT(*) FROM apps WHERE status = 'ACTIVE'"));
+            metrics.put("failed_purges", getSimpleCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE status = 'FAILED'"));
+        } finally {
+            if (pool != null && conn != null) pool.cleanup(null, null, conn);
+        }
+        return new JSONObject() {{ put("success", true); put("metrics", metrics); }};
+    }
+
+    private int getSimpleCount(Connection conn, PoolDB pool, String sql) throws SQLException {
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+            return rs.next() ? rs.getInt(1) : 0;
+        } finally {
+            if (pool != null) pool.cleanup(rs, pstmt, null);
         }
     }
 

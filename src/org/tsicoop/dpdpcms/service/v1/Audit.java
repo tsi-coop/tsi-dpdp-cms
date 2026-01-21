@@ -162,7 +162,7 @@ public class Audit implements Action {
         return new JSONObject() {{ put("success", true); }};
     }
 
-    private JSONArray listAuditLogsFromDb(String search, UUID fiduciaryId, String action, int page, int limit) throws SQLException {
+    protected JSONArray listAuditLogsFromDb(String search, UUID fiduciaryId, String action, int page, int limit) throws SQLException {
         JSONArray logs = new JSONArray();
         StringBuilder sql = new StringBuilder("SELECT * FROM audit_logs WHERE fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
