@@ -184,16 +184,15 @@
 
   <!-- Recent Activity / Audit Log Snapshot -->
   <div class="card mb-8">
-    <h2 class="text-xl font-semibold text-gray-700 mb-4">Recent Audit Activity</h2>
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Recent User Activity</h2>
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead>
         <tr class="table-header">
           <th class="px-4 py-3 text-sm">Timestamp</th>
-          <th class="px-4 py-3 text-sm">Actor</th>
+          <th class="px-4 py-3 text-sm">User</th>
           <th class="px-4 py-3 text-sm">Action Type</th>
-          <th class="px-4 py-3 text-sm">Entity ID</th>
-          <th class="px-4 py-3 text-sm">Status</th>
+          <th class="px-4 py-3 text-sm">Details</th>
         </tr>
         </thead>
         <tbody id="audit-activity-body" class="bg-white divide-y divide-gray-200">
@@ -312,10 +311,9 @@
 
                             row.innerHTML = `
                                 <td class="px-4 py-2 text-sm text-gray-600">${new Date(activity.timestamp).toLocaleString()}</td>
-                                <td class="px-4 py-2 text-sm text-gray-600">${activity.actor_user_id || 'SYSTEM'}</td>
-                                <td class="px-4 py-2 text-sm text-gray-900">${activity.action_type || 'N/A'}</td>
-                                <td class="px-4 py-2 text-sm text-gray-600">${activity.entity_type || 'N/A'} (...${(activity.entity_id || '0000').slice(-4)})</td>
-                                <td class="px-4 py-2 text-sm font-medium ${statusColor}">${activity.status || 'FAIL'}</td>
+                                <td class="px-4 py-2 text-sm text-gray-600">${activity.user_id || 'SYSTEM'}</td>
+                                <td class="px-4 py-2 text-sm text-gray-900">${activity.audit_action || 'N/A'}</td>
+                                <td class="px-4 py-2 text-sm text-gray-600">${activity.context_details || 'N/A'}</td>
                             `;
                             auditActivityBody.appendChild(row);
                         });

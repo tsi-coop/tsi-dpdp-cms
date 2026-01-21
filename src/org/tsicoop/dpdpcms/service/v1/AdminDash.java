@@ -11,6 +11,8 @@ import org.json.simple.JSONObject;
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,7 +43,7 @@ public class AdminDash implements Action {
                     OutputProcessor.send(res, 200, listPendingGrievances(input));
                     break;
                 case "list_access_logs":
-                    OutputProcessor.send(res, 200, new Audit().listAuditLogsFromDb(null, null, null, 1, 20));
+                    OutputProcessor.send(res, 200, listAuditLogsFromDb());
                     break;
                 default:
                     OutputProcessor.errorResponse(res, 400, "Bad Request", "Unknown function", req.getRequestURI());
@@ -49,6 +51,40 @@ public class AdminDash implements Action {
         } catch (Exception e) {
             OutputProcessor.errorResponse(res, 500, "Internal Error", e.getMessage(), req.getRequestURI());
         }
+    }
+
+    protected JSONArray listAuditLogsFromDb() throws SQLException {
+        JSONArray logs = new JSONArray();
+        StringBuilder sql = new StringBuilder("SELECT * FROM audit_logs WHERE service_type IN ('USER') ORDER BY timestamp DESC LIMIT 20");
+
+
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql.toString());
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                JSONObject log = new JSONObject();
+                log.put("id", rs.getObject("id").toString());
+                log.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
+                log.put("user_id", rs.getString("user_id"));
+                log.put("service_type", rs.getString("service_type"));
+                log.put("service_id", rs.getString("service_id"));
+                log.put("audit_action", rs.getString("audit_action"));
+
+                // Parse details if they look like JSON, otherwise return as string
+                String details = rs.getString("context_details");
+                log.put("context_details", details);
+                logs.add(log);
+            }
+        }catch (Exception e){}
+        finally{
+            pool.cleanup(rs,pstmt,conn);
+        }
+        return logs;
     }
 
     /**
