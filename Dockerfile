@@ -1,6 +1,9 @@
 # Use an official Jetty base image with Java 17
 FROM jetty:jdk17
 
+# Set timezone non-interactively
+ENV TZ=Asia/Kolkata
+
 # Set environment variables for Jetty/Application (optional, but good practice)
 ENV JETTY_BASE /var/lib/jetty
 ENV JETTY_HOME /usr/local/jetty

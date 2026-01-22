@@ -380,10 +380,6 @@ public class User implements Action {
         if(login) {
             new Audit().logEventAsync(identifier, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId), "LOGIN_SUCCESS", "-");
         }
-        else {
-            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "USER", UUID.fromString(userId), "LOGIN_FAILURE", (String) result.get("error_details"));
-        }
-
         return result;
     }
 

@@ -14,7 +14,7 @@
         "retention_policy": "Retained for the duration of your relationship with the clinic plus 3 years.",
         "retention_duration_value": 3,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_DEACTIVATION",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -28,7 +28,7 @@
         "retention_policy": "Statutory retention of 10 years as per clinical establishment norms.",
         "retention_duration_value": 10,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "LAST_VISIT",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": true,
         "is_sensitive": true
       },
@@ -42,7 +42,7 @@
         "retention_policy": "7 years for financial audit compliance.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "TRANSACTION_DATE",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -54,8 +54,8 @@
         "data_categories_involved": ["email_address", "mobile_number"],
         "recipients_or_third_parties": [],
         "retention_policy": "Until consent is withdrawn.",
-        "retention_duration_value": 0,
-        "retention_duration_unit": "PERPETUAL",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
         "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": false,
         "is_sensitive": false
@@ -97,7 +97,7 @@
         "retention_policy": "ಕ್ಲಿನಿಕ್ ಜೊತೆಗಿನ ನಿಮ್ಮ ಸಂಬಂಧದ ಅವಧಿ ಮುಗಿದ ನಂತರ 3 ವರ್ಷಗಳವರೆಗೆ ಇರಿಸಿಕೊಳ್ಳಲಾಗುವುದು.",
         "retention_duration_value": 3,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_DEACTIVATION",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -111,7 +111,7 @@
         "retention_policy": "ವೈದ್ಯಕೀಯ ನಿಯಮಗಳ ಪ್ರಕಾರ 10 ವರ್ಷಗಳವರೆಗೆ ಕಡ್ಡಾಯವಾಗಿ ಇರಿಸಿಕೊಳ್ಳಲಾಗುವುದು.",
         "retention_duration_value": 10,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "LAST_VISIT",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": true,
         "is_sensitive": true
       },
@@ -125,8 +125,22 @@
         "retention_policy": "ಹಣಕಾಸು ಲೆಕ್ಕಪರಿಶೋಧನೆಗಾಗಿ 7 ವರ್ಷಗಳು.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "TRANSACTION_DATE",
+        "retention_start_event": "CONSENT_GIVEN",
         "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_wellness_updates",
+        "name": "ಕ್ಷೇಮ ಅಪ್‌ಡೇಟ್‌ಗಳು ಮತ್ತು ಸುದ್ದಿಸಂಚಯಗಳು",
+        "description": "ನಿಮಗೆ ಆರೋಗ್ಯ ಸಲಹೆಗಳು, ಕ್ಲಿನಿಕ್ ಅಪ್‌ಡೇಟ್‌ಗಳು ಮತ್ತು ತಡೆಗಟ್ಟುವ ಆರೈಕೆಯ ಜ್ಞಾಪನೆಗಳನ್ನು ಕಳುಹಿಸಲು.",
+        "legal_basis": "ಒಪ್ಪಿಗೆ (DPDP ಕಾಯ್ದೆ, ಸೆಕ್ಷನ್ 6(1)(a))",
+        "data_categories_involved": ["email_address", "mobile_number"],
+        "recipients_or_third_parties": [],
+        "retention_policy": "ಒಪ್ಪಿಗೆಯನ್ನು ಹಿಂತೆಗೆದುಕೊಳ್ಳುವವರೆಗೆ.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CONSENT_GIVEN",
+        "is_mandatory_for_service": false,
         "is_sensitive": false
       }
     ],

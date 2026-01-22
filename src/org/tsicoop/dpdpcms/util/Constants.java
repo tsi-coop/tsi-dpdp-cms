@@ -26,6 +26,11 @@ public class Constants {
     public static final String EVENT_PURGE_FAILED = "PURGE_FAILED";
     public static final String EVENT_LEGAL_HOLD_APPLIED = "LEGAL_HOLD_APPLIED"; // Section 8(1) Exception
 
+    // -- Purge Trigger Event
+
+    public static final String PURGE_TRIGGER_ERASURE = "ErasureRequest";
+    public static final String PURGE_TRIGGER_EXPIRY = "RetentionPolicyExpiry";
+
     // --- Notification Types ---
     public static final String NOTIF_EXPIRY_REMINDER = "EXPIRY_NOTIFICATION"; // Pre-expiry alert
     public static final String NOTIF_PURGE_INIT = "PURGE_INIT_NOTIFICATION";

@@ -457,7 +457,7 @@ public class Consent implements Action {
             pstmt.setString(4, policyVersion);
             pstmt.setString(5, action);
             pstmt.setString(6, action);
-            pstmt.setString(7, currentConsents.toJSONString()); // Store the new DENIED state
+            pstmt.setString(7, currentConsents.toJSONString());
 
             if (pstmt.executeUpdate() == 0) {
                 throw new SQLException("Creating withdrawal record failed.");
@@ -496,9 +496,9 @@ public class Consent implements Action {
 
         // --- log audit event
         if(erasure){
-            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_ERASURE_REQUEST, reason);
+            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_ERASURE_REQUEST, currentConsents.toJSONString());
         }else{
-            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_CONSENT_WITHDRAWN, reason);
+            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_CONSENT_WITHDRAWN, currentConsents.toJSONString());
         }
         return result;
     }

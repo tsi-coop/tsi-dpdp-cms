@@ -228,7 +228,6 @@ public class JobManager implements ServletContextListener {
         }
     }
 
-
     private void executeExportJob(UUID fiduciaryId, UUID jobId, String subtype, Date start, Date end) throws Exception {
         System.out.println("[JobManager] Executing Export: " + subtype);
         String sql = "";

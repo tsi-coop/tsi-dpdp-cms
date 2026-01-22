@@ -87,7 +87,7 @@ public class CESService {
         JSONObject recent = getRecentConsent(principalId);
         if(recent == null) return;
         Timestamp createdAt = (Timestamp) recent.get("created_at");
-            //System.out.println("Processing:"+principalId);
+        //System.out.println("Processing:"+principalId);
         mechanism = (String) recent.get("mechanism");
         if (mechanism.equalsIgnoreCase(Constants.ACTION_ERASURE_REQUEST)) {
             if(createdAt.after(lastCESRun)){
@@ -170,6 +170,7 @@ public class CESService {
                         insertPurgeRequest( principalId,
                                             fiduciaryId,
                                             appid,
+                                            Constants.PURGE_TRIGGER_ERASURE,
                                             Constants.EVENT_PURGE_INITIATED);
                         // Send purge notification to data processor
                         insertNotification( "APP",
@@ -281,7 +282,9 @@ public class CESService {
                         // Create Purge Request
                         insertPurgeRequest( principalId,
                                 fiduciaryId,
-                                appid, Constants.EVENT_PURGE_INITIATED);
+                                appid,
+                                Constants.PURGE_TRIGGER_EXPIRY,
+                                Constants.EVENT_PURGE_INITIATED);
                         // Send purge notification to data processor
                         insertNotification( "APP",
                                 appid,
@@ -303,9 +306,10 @@ public class CESService {
     public JSONObject insertPurgeRequest(String userId,
                                          String fiduciaryId,
                                          String appId,
+                                         String triggerEvent,
                                          String status) throws SQLException {
         JSONObject response = new JSONObject();
-        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, app_id, app_name, status) " +
+        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, app_id, trigger_event, status) " +
                 "VALUES (?, ?, ?, ?, ?) RETURNING id";
 
         PreparedStatement stmt = null;
@@ -323,7 +327,7 @@ public class CESService {
             stmt.setString(1, userId);
             stmt.setObject(2, UUID.fromString(fiduciaryId));
             stmt.setObject(3, UUID.fromString(appId));
-            stmt.setString(4, appName);
+            stmt.setString(4, triggerEvent);
             stmt.setString(5, status);
 
             rs = stmt.executeQuery();
