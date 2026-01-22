@@ -13,9 +13,7 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.sql.*;
 import java.sql.Date;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -228,8 +226,10 @@ public class JobManager implements ServletContextListener {
         }
     }
 
+
+
     private void executeExportJob(UUID fiduciaryId, UUID jobId, String subtype, Date start, Date end) throws Exception {
-        System.out.println("[JobManager] Executing Export: " + subtype);
+        System.out.println("[JobManager] Executing Export: " + subtype+"-"+start+"-"+end);
         String sql = "";
 
         // Define SQL based on subtype
@@ -249,7 +249,6 @@ public class JobManager implements ServletContextListener {
             default:
                 throw new Exception("Unknown Export Subtype: " + subtype);
         }
-
         File outFile = new File(EXPORT_DIR + jobId + ".csv");
         PoolDB pool = new PoolDB();
         Connection conn = null;
@@ -285,7 +284,10 @@ public class JobManager implements ServletContextListener {
                 }
                 pw.println();
             }
-        }finally {
+        }catch(Exception e) {
+            e.printStackTrace();
+        }finally
+        {
             pool.cleanup(rs,pstmt,conn);
             if(pw!=null)pw.close();
         }

@@ -92,8 +92,8 @@ public class Job implements Action {
             pstmt.setString(4, subtype != null ? subtype.toUpperCase() : null);
 
             // Convert String dates from frontend to SQL Dates
-            pstmt.setDate(5, (startDate != null && !startDate.isEmpty()) ? Date.valueOf(startDate) : null);
-            pstmt.setDate(6, (endDate != null && !endDate.isEmpty()) ? Date.valueOf(endDate) : null);
+            pstmt.setDate(5, convert(startDate));
+            pstmt.setDate(6, convert(endDate));
 
             pstmt.executeUpdate();
 
@@ -105,6 +105,13 @@ public class Job implements Action {
         }finally {
             pool.cleanup(null,pstmt,conn);
         }
+    }
+
+    private java.sql.Date convert(String startDate) {
+        if (startDate != null && !startDate.isEmpty()) {
+            return java.sql.Date.valueOf(startDate);
+        }
+        return null;
     }
 
     /**
