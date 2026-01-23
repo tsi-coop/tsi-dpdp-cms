@@ -313,7 +313,7 @@ public class Compliance implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, a.name FROM purge_requests pr, apps a WHERE pr.app_id=a.id and pr.fiduciary_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT pr.id, pr.user_id, pr.purpose_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, a.name FROM purge_requests pr, apps a WHERE pr.app_id=a.id and pr.fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
@@ -351,6 +351,7 @@ public class Compliance implements Action {
                 JSONObject request = new JSONObject();
                 request.put("id", rs.getString("id"));
                 request.put("user_id", rs.getString("user_id"));
+                request.put("purpose_id", rs.getString("purpose_id"));
                 request.put("fiduciary_id", rs.getString("fiduciary_id"));
                 request.put("app_id", rs.getString("app_id"));
                 request.put("app_name", rs.getString("name"));
@@ -378,7 +379,7 @@ public class Compliance implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        String sql = "SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, a.name FROM purge_requests pr, apps a WHERE pr.app_id=a.id and pr.id=?";
+        String sql = "SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.purpose_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, a.name FROM purge_requests pr, apps a WHERE pr.app_id=a.id and pr.id=?";
 
         try {
             conn = pool.getConnection();
@@ -391,6 +392,7 @@ public class Compliance implements Action {
                 purgeob.put("id", rs.getString("id"));
                 purgeob.put("user_id", rs.getString("user_id"));
                 purgeob.put("fiduciary_id", rs.getString("fiduciary_id"));
+                purgeob.put("purpose_id", rs.getString("purpose_id"));
                 purgeob.put("app_id", rs.getString("app_id"));
                 purgeob.put("app_name", rs.getString("name"));
                 purgeob.put("trigger_event", rs.getString("trigger_event"));

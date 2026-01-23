@@ -219,6 +219,7 @@
                 <tr class="table-header">
                     <th class="px-4 py-3 text-sm">Request ID</th>
                     <th class="px-4 py-3 text-sm">User ID</th>
+                    <th class="px-4 py-3 text-sm">Purpose ID</th>
                     <th class="px-4 py-3 text-sm">Trigger Event</th>
                     <th class="px-4 py-3 text-sm">Target App</th>
                     <th class="px-4 py-3 text-sm">Initiated At</th>
@@ -248,12 +249,12 @@
             <div class="space-y-1">
                 <p><strong>Principal:</strong> <span id="detail-user-id"></span></p>
                 <p><strong>Target App:</strong> <span id="modal-app-name"></span></p>
-                <p><strong>Trigger Event:</strong> <span id="detail-trigger"></span></p>
+                <p><strong>Purpose:</strong> <span id="detail-purpose-id"></span></p>
             </div>
             <div class="space-y-1">
                 <p><strong>Current Status:</strong> <span id="detail-status" class="font-bold"></span></p>
                 <p><strong>Initiated At:</strong> <span id="detail-initiated"></span></p>
-                <p><strong>Last Updated:</strong> <span id="detail-updated"></span></p>
+                <p><strong>Trigger Event:</strong> <span id="detail-trigger"></span></p>
             </div>
         </div>
 
@@ -392,6 +393,7 @@
         row.innerHTML = `
             <td class="px-4 py-3 text-sm font-mono text-gray-600">...${req.id.slice(-8)}</td>
             <td class="px-4 py-3 text-sm text-gray-800">${req.user_id}</td>
+            <td class="px-4 py-3 text-sm text-gray-800">${req.purpose_id}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${req.trigger_event}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${req.app_name}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${new Date(req.initiated_at).toLocaleDateString()}</td>
@@ -452,12 +454,11 @@
 
             document.getElementById('modal-app-name').textContent = req.app_name;
             document.getElementById('detail-user-id').textContent = req.user_id;
+            document.getElementById('detail-purpose-id').textContent = req.purpose_id;
             document.getElementById('detail-trigger').textContent = req.trigger_event;
             document.getElementById('detail-status').innerHTML = createStatusBadge(req.status);
             document.getElementById('detail-initiated').textContent = new Date(req.initiated_at).toLocaleString();
-            document.getElementById('detail-updated').textContent = new Date(req.last_updated_at).toLocaleString();
             document.getElementById('detail-context').textContent = req.details || "No additional context provided.";
-
             // Prefill form
             document.getElementById('new-status').value = req.status === 'PENDING' ? 'IN_PROGRESS' : req.status;
             document.getElementById('details-notes').value = req.details || '';

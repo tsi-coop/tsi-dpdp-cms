@@ -258,6 +258,9 @@ public class JobManager implements ServletContextListener {
             case "PRINCIPAL":
                 sql = "SELECT user_id as principal, created_at, last_consent_mechanism as last_action, last_ces_run FROM data_principal WHERE fiduciary_id=? AND created_at BETWEEN ? AND ?";
                 break;
+            case "COMPLIANCE":
+                sql = "SELECT pr.user_id, pr.purpose_id, a.name, pr.trigger_event, pr.status, pr.initiated_at, pr.details FROM purge_requests pr, apps a WHERE pr.app_id=a.id and pr.fiduciary_id=? AND pr.initiated_at BETWEEN ? AND ?";
+                break;
             case "GRIEVANCE":
                 sql = "SELECT user_id as principal, type, subject, description, submission_timestamp, status, resolution_details FROM grievances WHERE fiduciary_id=? AND submission_timestamp BETWEEN ? AND ?";
                 break;
