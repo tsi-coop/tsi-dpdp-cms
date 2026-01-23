@@ -206,7 +206,7 @@ async function invokeBackendConsentAPI(preferences, mechanism) {
     const payload = {
         _func: 'record_consent',
         user_id: userId,
-        fiduciary_id: currentPolicy.fiduciary_id || localStorage.getItem('fiduciary_id'),
+        fiduciary_id: currentPolicy.fiduciary_id || localStorage.getItem('cc_fiduciary_id'),
         policy_id: currentPolicy.policy_id || POLICY_ID,
         policy_version: currentPolicy.version || "1.0",
         timestamp: new Date().toISOString(),

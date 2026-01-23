@@ -298,7 +298,7 @@ async function saveConsentState(preferences, mechanism) {
     localStorage.setItem('tsi_dpdp_cms_anon_id', userId);
 
     try {
-        const fiduciaryId = currentPolicy ? currentPolicy.fiduciary_id : (localStorage.getItem('fiduciary_id') || 'fiduciary_hub_abc');
+        const fiduciaryId = currentPolicy ? currentPolicy.fiduciary_id : (localStorage.getItem('cc_fiduciary_id') || 'fiduciary_hub_abc');
 
         const payload = {
             _func: 'record_consent',
@@ -474,7 +474,7 @@ function initiateLinkPrincipalFlow() {
         btn.textContent = "Posting to Registry...";
 
         try {
-            const fiduciaryId = currentPolicy ? currentPolicy.fiduciary_id : (localStorage.getItem('fiduciary_id') || 'fiduciary_hub_abc');
+            const fiduciaryId = currentPolicy ? currentPolicy.fiduciary_id : (localStorage.getItem('cc_fiduciary_id') || 'fiduciary_hub_abc');
 
             const payload = {
                 _func: "link_user",
@@ -573,12 +573,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+
 document.getElementById('save-credentials-btn').onclick = () => {
     const key = document.getElementById('api-key').value.trim();
     const secret = document.getElementById('api-secret').value.trim();
     const policyId = document.getElementById('policy-id').value.trim();
 
     if (key && secret && policyId) {
+
+        // 1. Clear the main consent artifact
+        localStorage.removeItem(config.tsi_dpdp_cms_localstoragekey);
+
+        // 2. Clear identity trackers (Anonymous ID and Linked Principal ID)
+        localStorage.removeItem('tsi_dpdp_cms_anon_id');
+        localStorage.removeItem('tsi_dpdp_cms_principal_id');
+        localStorage.removeItem('cc_fiduciary_id');
+
         config.tsi_dpdp_cms_apikey = key;
         config.tsi_dpdp_cms_apisecret = secret;
         config.tsi_dpdp_cms_policyid = policyId;
