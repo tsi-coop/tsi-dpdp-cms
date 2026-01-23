@@ -226,7 +226,25 @@ public class JobManager implements ServletContextListener {
         }
     }
 
+    /**
+     * Returns a java.sql.Date representing the next day of the given date.
+     * Uses the local time zone via Calendar.
+     * * @param currentDate The starting java.sql.Date
+     * @return java.sql.Date representing (currentDate + 1 day)
+     */
 
+    public static java.sql.Date getNextDate(java.sql.Date currentDate) {
+        if (currentDate == null) {
+            return null;
+        }
+
+        // Use Calendar to handle month/year transitions (e.g., Dec 31 to Jan 1)
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.setTime(currentDate);
+        cal.add(java.util.Calendar.DATE, 1);
+
+        return new java.sql.Date(cal.getTimeInMillis());
+    }
 
     private void executeExportJob(UUID fiduciaryId, UUID jobId, String subtype, Date start, Date end) throws Exception {
         System.out.println("[JobManager] Executing Export: " + subtype+"-"+start+"-"+end);
@@ -256,6 +274,7 @@ public class JobManager implements ServletContextListener {
         ResultSet rs = null;
         PrintWriter pw = null;
         ResultSetMetaData meta = null;
+        end =  getNextDate(end); // to make sure that the current
 
         try {
             conn = pool.getConnection();
