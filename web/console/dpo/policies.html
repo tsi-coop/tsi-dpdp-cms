@@ -380,7 +380,8 @@
         const actionsHtml = `
             <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="viewPolicy('${policy.id}', '${policy.fiduciary_id}')">View</button>
             ${isDraft ? `<button class="text-orange-600 hover:text-orange-800 font-medium text-sm mr-2" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}')">Edit</button>` : ''}
-            ${isDraft ? `<button class="text-green-600 hover:text-green-800 font-medium text-sm" onclick="publishPolicy('${policy.id}', '${policy.fiduciary_id}')">Publish</button>` : ''}
+            ${isDraft ? `<button class="text-green-600 hover:text-green-800 font-medium text-sm mr-2" onclick="publishPolicy('${policy.id}', '${policy.fiduciary_id}')">Publish</button>` : ''}
+            <button class="text-red-600 hover:text-red-800 font-medium text-sm" onclick="deletePolicy('${policy.id}', '${policy.fiduciary_id}')">Delete</button>
         `;
 
         row.innerHTML = `
@@ -456,6 +457,38 @@
                 loadPolicies();
             }
         } catch (e) { alert("Publish failed."); }
+    }
+
+    /**
+     * Sends a request to permanently delete the policy from the registry.
+     */
+    async function deletePolicy(policyId, fiduciaryId) {
+        if (!confirm(`Confirm: Permanent Deletion of Policy ID [${policyId}]? This action cannot be undone.`)) return;
+
+        try {
+            const response = await fetch(API_URL_POLICY, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=UTF-8',
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify({
+                    "_func": "delete_policy",
+                    "policy_id": policyId,
+                    "fiduciary_id": fiduciaryId
+                })
+            });
+
+            if (response.ok) {
+                alert("Policy deleted successfully.");
+                loadPolicies();
+            } else {
+                alert("Error deleting policy: " + (responseData.message || "Operation rejected by server."));
+            }
+        } catch (error) {
+            console.error("Deletion failed:", error);
+            alert("Network error: Could not process policy deletion.");
+        }
     }
 
     function showModal(title, isEdit = false) {
@@ -569,6 +602,7 @@
     window.viewPolicy = viewPolicy;
     window.editPolicy = editPolicy;
     window.publishPolicy = publishPolicy;
+    window.deletePolicy = deletePolicy; // REGISTER THE NEW FUNCTION GLOBALLY
     window.closeModal = closeModal;
 </script>
 </body>
