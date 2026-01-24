@@ -54,9 +54,9 @@
         "data_categories_involved": ["email_address", "mobile_number"],
         "recipients_or_third_parties": [],
         "retention_policy": "Until consent is withdrawn.",
-        "retention_duration_value": 2,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "COLLECTION",
+        "retention_duration_value": 0,
+        "retention_duration_unit": "MINUTES",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
@@ -137,9 +137,9 @@
         "data_categories_involved": ["email_address", "mobile_number"],
         "recipients_or_third_parties": [],
         "retention_policy": "ಒಪ್ಪಿಗೆಯನ್ನು ಹಿಂತೆಗೆದುಕೊಳ್ಳುವವರೆಗೆ.",
-        "retention_duration_value": 2,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "COLLECTION",
+        "retention_duration_value": 0,
+        "retention_duration_unit": "MINUTES",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
