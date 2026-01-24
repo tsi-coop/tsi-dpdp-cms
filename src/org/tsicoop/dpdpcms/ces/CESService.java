@@ -36,8 +36,9 @@ public class CESService {
         if(target == null || target.equalsIgnoreCase("FULL")) {
             sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal WHERE fiduciary_id=? ORDER BY user_id LIMIT ? OFFSET ?";
         }else{
-            sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal WHERE fiduciary_id=? AND user_id='"+target+"' ORDER BY user_id LIMIT ? OFFSET ?";
+            sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal WHERE fiduciary_id=? AND user_id='"+target+"' LIMIT ? OFFSET ?";
         }
+        //System.out.println(sql);
         PreparedStatement stmt = null;
         ResultSet rs = null;
         JSONObject principal = null;
@@ -54,13 +55,17 @@ public class CESService {
             rs = stmt.executeQuery();
             while (rs.next()) {
                 principal = new JSONObject();
+                System.out.println("Processing:"+rs.getString("user_id"));
                 principal.put("user_id", rs.getString("user_id"));
                 principal.put("fiduciary_id", rs.getString("fiduciary_id"));
                 principal.put("last_consent_mechanism", rs.getString("last_consent_mechanism"));
                 principal.put("last_ces_run", rs.getTimestamp("last_ces_run")!=null?rs.getTimestamp("last_ces_run"):Timestamp.from(Instant.EPOCH));
                 principals.add(principal);
             }
-        }finally {
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        finally {
             pool.cleanup(rs,stmt,conn);
         }
         return principals;

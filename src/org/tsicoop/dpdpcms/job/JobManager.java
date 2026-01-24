@@ -192,7 +192,6 @@ public class JobManager implements ServletContextListener {
     public void enforce(UUID fiduciaryId, String target) {
         JSONObject principal = null;
         CESService cesService = null;
-
         try {
             cesService = new CESService();
             // 1. Iterate through all active data principals in batches

@@ -88,8 +88,8 @@ public class Job implements Action {
             UUID jobId = UUID.randomUUID();
             pstmt.setObject(1, jobId);
             pstmt.setObject(2, fiduciaryId);
-            pstmt.setString(3, jobType != null ? jobType.toUpperCase() : "EXPORT");
-            pstmt.setString(4, subtype != null ? subtype.toUpperCase() : null);
+            pstmt.setString(3, jobType != null ? jobType : "EXPORT");
+            pstmt.setString(4, subtype != null ? subtype : null);
 
             // Convert String dates from frontend to SQL Dates
             pstmt.setDate(5, convert(startDate));

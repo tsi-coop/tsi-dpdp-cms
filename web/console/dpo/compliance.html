@@ -529,7 +529,7 @@
         if (scope === 'PRINCIPAL') {
             const pid = document.getElementById('target-principal-id').value.trim();
             if (!pid) return alert("Please enter a Target User ID.");
-            subtype = `PRINCIPAL:${pid}`;
+            subtype = `${pid}`;
         }
 
         const btn = document.getElementById('start-ces-btn');
