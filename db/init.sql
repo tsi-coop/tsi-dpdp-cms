@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     user_id VARCHAR(255) NOT NULL,
-    service_type VARCHAR(100) NOT NULL, -- e.g., APP, SYSTEM, USER
+    service_type VARCHAR(100) NOT NULL, -- e.g., APP, SYSTEM, DPO
     service_id UUID, -- ID of the affected entity (UUID or other string ID)
     audit_action VARCHAR(100) NOT NULL, -- e.g., POLICY_PUBLISHED, CONSENT_GIVEN, CONSENT_WITHDRAWN, ERASURE_REQUEST
     context_details TEXT -- relevant data/changes
