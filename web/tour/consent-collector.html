@@ -447,10 +447,7 @@ function initiateLinkPrincipalFlow() {
         <div style="text-align: left;">
             <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">Linking associates your anonymous choices with your verified account for portable rights management.</p>
 
-            <label style="display:block; font-size:0.8rem; font-weight:700; margin-bottom:5px; color:#475569; text-transform:uppercase;">Full Name</label>
-            <input type="text" id="link-user-name" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px; margin-bottom:20px;" placeholder="John Doe">
-
-            <label style="display:block; font-size:0.8rem; font-weight:700; margin-bottom:5px; color:#475569; text-transform:uppercase;">Email Address</label>
+            <label style="display:block; font-size:0.8rem; font-weight:700; margin-bottom:5px; color:#475569; text-transform:uppercase;">Data Principal - User Id/Email</label>
             <input type="email" id="link-user-email" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;" placeholder="john@example.com">
 
             <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 20px;">
@@ -465,9 +462,8 @@ function initiateLinkPrincipalFlow() {
     displayCustomModal("Link Data Principal", body, action);
 
     document.getElementById('submit-link-btn').onclick = async () => {
-        const name = document.getElementById('link-user-name').value.trim();
         const email = document.getElementById('link-user-email').value.trim();
-        if (!name || !email) return alert("Full Name and Email are mandatory for linking.");
+        if (!email) return alert("User Id/ Email mandatory for linking.");
 
         const btn = document.getElementById('submit-link-btn');
         btn.disabled = true;

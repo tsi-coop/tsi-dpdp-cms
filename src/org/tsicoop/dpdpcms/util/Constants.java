@@ -13,8 +13,14 @@ public class Constants {
     public static final String ACTION_LINK_USER = "LINK_USER";
     public static final String ACTION_CONSENT_WITHDRAWN = "CONSENT_WITHDRAWN";
     public static final String ACTION_ERASURE_REQUEST = "ERASURE_REQUEST";
+
+    public static final String ACTION_CONSENT_VALIDATION = "CONSENT_VALIDATION";
     public static final String ACTION_CORRECTION_REQUEST = "CORRECTION_REQUEST"; // Section 12 requirement
     public static final String ACTION_GRIEVANCE_SUBMITTED = "GRIEVANCE_SUBMITTED"; // Section 13 requirement
+
+    // Consent Validation Status
+    public static final String VALIDATION_SUCCESS = "VALIDATION_SUCCESS";
+    public static final String VALIDATION_FAILED = "VALIDATION_FAILED";
 
     // --- Lifecycle Events (Triggered by CES / Internal System) ---
     public static final String EVENT_CESSATION = "CESSATION";

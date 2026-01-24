@@ -290,6 +290,7 @@ public class Compliance implements Action {
         } finally {
             pool.cleanup(null, pstmt, conn);
         }
+        //System.out.println("updated:"+updated);
         if(updated) {
             if(appId != null){
                 serviceType = Constants.SERVICE_TYPE_APP;
@@ -297,7 +298,9 @@ public class Compliance implements Action {
             else{
                 serviceType = Constants.SERVICE_TYPE_USER;
             }
+            //System.out.println("serviceType:"+serviceType);
             new Audit().logEventAsync(userId, fiduciaryId, serviceType, loginUserId, confirmationStatus, details);
+            //System.out.println("Audit post done");
         }
     }
 

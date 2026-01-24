@@ -344,10 +344,16 @@ public class Consent implements Action {
             pool.cleanup(null,null,conn);
         }
 
+        JSONObject auditContext = new JSONObject();
+        auditContext.put("action", Constants.ACTION_CONSENT_VALIDATION);
+        auditContext.put("principal", userId);
+        auditContext.put("purpose", requiredPurposeId);
         if (granted != null && granted) {
-            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_VALIDATED", userId + "-"+requiredPurposeId);
+            auditContext.put("status", Constants.VALIDATION_SUCCESS);
+            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_VALIDATED", auditContext.toJSONString());
         } else {
-            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_DENIED", userId + "-"+requiredPurposeId);
+            auditContext.put("status", Constants.VALIDATION_FAILED);
+            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_DENIED", auditContext.toJSONString());
         }
         return result;
     }
@@ -824,6 +830,10 @@ public class Consent implements Action {
         }
 
         // Audit Log: Log the link user event
-        new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , Constants.ACTION_LINK_USER, anonymousUserId+"-"+authenticatedUserId);
+        JSONObject auditContext = new JSONObject();
+        auditContext.put("action", Constants.ACTION_LINK_USER);
+        auditContext.put("anonymoud_id", anonymousUserId);
+        auditContext.put("principal", authenticatedUserId);
+        new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , Constants.ACTION_LINK_USER, auditContext.toJSONString());
     }
 }

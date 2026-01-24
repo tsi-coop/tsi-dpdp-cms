@@ -4,6 +4,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.PoolDB;
+import org.tsicoop.dpdpcms.service.v1.App;
 import org.tsicoop.dpdpcms.service.v1.Audit;
 import org.tsicoop.dpdpcms.util.Constants;
 
@@ -179,7 +180,13 @@ public class CESService {
                                             fiduciaryId,
                                             Constants.NOTIF_PURGE_INIT);
                         // log audit event
-                        new Audit().logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", "ERASURE_REQUEST"+"-"+appid+"-"+purposeId);
+                        JSONObject auditContext = new JSONObject();
+                        auditContext.put("principal", principalId);
+                        auditContext.put("trigger", Constants.PURGE_TRIGGER_ERASURE);
+                        auditContext.put("app", new App().getAppName(UUID.fromString(appid), UUID.fromString(fiduciaryId)));
+                        auditContext.put("purpose",purposeId);
+
+                        new Audit().logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", auditContext.toJSONString());
                     }
                 }
             }
@@ -293,7 +300,13 @@ public class CESService {
                                 fiduciaryId,
                                 Constants.NOTIF_PURGE_INIT);
                         // log audit event
-                        new Audit().logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , Constants.EVENT_PURGE_INITIATED, "RETENTION_EXPIRY"+"-"+appid+"-"+purposeId);
+                        // log audit event
+                        JSONObject auditContext = new JSONObject();
+                        auditContext.put("principal", principalId);
+                        auditContext.put("trigger", Constants.PURGE_TRIGGER_EXPIRY);
+                        auditContext.put("app", new App().getAppName(UUID.fromString(appid), UUID.fromString(fiduciaryId)));
+                        auditContext.put("purpose",purposeId);
+                        new Audit().logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , Constants.EVENT_PURGE_INITIATED, auditContext.toJSONString());
                     }
                 }
             }

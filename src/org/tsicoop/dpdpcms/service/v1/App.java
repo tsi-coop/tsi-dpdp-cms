@@ -379,6 +379,38 @@ public class App implements Action {
     }
 
     /**
+     * Retrieves a single app by ID and fiduciary ID from the database.
+     * @return An Optional containing the app JSONObject if found, otherwise empty.
+     * @throws SQLException if a database access error occurs.
+     */
+    public String getAppName(UUID appId, UUID fiduciaryId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        String sql = "SELECT name FROM apps WHERE id = ? AND fiduciary_id = ?";
+        String name = "";
+
+        // To do: Cache Check
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, appId);
+            pstmt.setObject(2, fiduciaryId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                name =  rs.getString("name");
+            }
+        } catch (Exception e) {
+            throw new SQLException("Failed to retrieve content from DB for app: " + e.getMessage(), e);
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return name;
+    }
+
+
+    /**
      * Saves a new app to the database.
      * @return JSONObject containing the new app's details.
      * @throws SQLException if a database access error occurs.
