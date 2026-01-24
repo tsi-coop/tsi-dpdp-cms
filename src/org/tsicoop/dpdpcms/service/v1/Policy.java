@@ -14,10 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern; // Not strictly needed for PolicyService, but kept for consistency with template
 
 /**
@@ -271,11 +268,139 @@ public class Policy implements Action {
      */
     @Override
     public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
+        boolean valid = false;
+
         if (!"POST".equalsIgnoreCase(method)) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "Only POST method is supported for Policy Management operations.", req.getRequestURI());
             return false;
         }
-        return InputProcessor.validate(req, res); // This validates content-type and basic body parsing
+        boolean validbasics = InputProcessor.validate(req, res); // This validates content-type and basic body parsing
+        if(validbasics){
+            valid = validateFinerPolicyDetails(req, res);
+        }
+        return valid;
+    }
+
+    /**
+     * Validates the policy logic using the request and response objects.
+     * Collates business rule violations and sends a 400 response if invalid.
+     */
+    public boolean validateFinerPolicyDetails(HttpServletRequest req, HttpServletResponse res) {
+
+        try {
+            JSONObject input = InputProcessor.getInput(req);
+            String func = (String) input.get("_func");
+            if(!func.equalsIgnoreCase("create_policy") && !func.equalsIgnoreCase("update_policy")) {
+                return true;
+            }
+            else {
+                JSONObject policyContent = (JSONObject) input.get("policy_content");
+
+                if (policyContent == null || policyContent.isEmpty()) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Validation Error", "The 'policy_content' object is required.", req.getRequestURI());
+                    return false;
+                }
+
+                // Call the internal validator which returns a JSONObject
+                JSONObject result = validatePolicyContent(policyContent);
+
+                if (!(Boolean) result.get("isValid")) {
+                    JSONArray errors = (JSONArray) result.get("errors");
+                    // Collate all errors into a formatted string similar to JSON Schema validation output
+                    String collatedErrors = "Policy Logic Violations: [" + String.join(" | ", errors) + "]";
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", collatedErrors, req.getRequestURI());
+                    return false;
+                }
+            }
+            }catch(Exception e){
+            e.printStackTrace();
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid JSON input: " + e.getMessage(), req.getRequestURI());
+        }
+        return true;
+    }
+
+    /**
+     * Internal logic to validate policy structure and referential integrity.
+     * @param policyContent The 'policy_content' object from the request.
+     * @return JSONObject containing {"isValid": boolean, "errors": JSONArray}
+     */
+    public static JSONObject validatePolicyContent(JSONObject policyContent) {
+        JSONObject result = new JSONObject();
+        JSONArray errors = new JSONArray();
+        result.put("isValid", true);
+        result.put("errors", errors);
+
+        Set<String> languages = policyContent.keySet();
+        Map<String, Set<String>> languageToPurposeIds = new HashMap<>();
+
+        for (String lang : languages) {
+            JSONObject langData = (JSONObject) policyContent.get(lang);
+
+            // 1. Gather defined categories for referential integrity check
+            JSONArray categories = (JSONArray) langData.get("data_categories_details");
+            Set<String> definedCategoryIds = new HashSet<>();
+            if (categories != null) {
+                for (Object obj : categories) {
+                    JSONObject cat = (JSONObject) obj;
+                    definedCategoryIds.add((String) cat.get("id"));
+                }
+            }
+
+            // 2. Validate Purposes within this language
+            JSONArray purposes = (JSONArray) langData.get("data_processing_purposes");
+            Set<String> currentLangPurposeIds = new HashSet<>();
+
+            if (purposes != null) {
+                for (int i = 0; i < purposes.size(); i++) {
+                    JSONObject purpose = (JSONObject) purposes.get(i);
+                    String pid = (String) purpose.get("id");
+
+                    // Rule: ID Uniqueness within language
+                    if (!currentLangPurposeIds.add(pid)) {
+                        errors.add(String.format("[%s] Duplicate purpose ID: %s", lang, pid));
+                        result.put("isValid", false);
+                    }
+
+                    // Rule: Involved data categories must be a subset of defined categories
+                   /* JSONArray involved = (JSONArray) purpose.get("data_categories_involved");
+                    if (involved != null) {
+                        for (Object invObj : involved) {
+                            String invId = (String) invObj;
+                            if (!definedCategoryIds.contains(invId)) {
+                                errors.add(String.format("[%s] Purpose '%s' involves undefined category: %s", lang, pid, invId));
+                                result.put("isValid", false);
+                            }
+                        }
+                    }*/
+
+                    // Rule: Retention Start Event Domain
+                    String startEvent = (String) purpose.get("retention_start_event");
+                    if (startEvent != null && !startEvent.equals("COLLECTION") && !startEvent.equals("CESSATION")) {
+                        errors.add(String.format("[%s] Purpose '%s' has invalid start event: %s. Must be COLLECTION or CESSATION.", lang, pid, startEvent));
+                        result.put("isValid", false);
+                    }
+                }
+            } else {
+                errors.add(String.format("[%s] Missing 'data_processing_purposes' array.", lang));
+                result.put("isValid", false);
+            }
+            languageToPurposeIds.put(lang, currentLangPurposeIds);
+        }
+
+        // 3. Rule: Cross-Language Parity (All languages must have identical purpose IDs)
+        if (languages.size() > 1) {
+            Iterator<Map.Entry<String, Set<String>>> it = languageToPurposeIds.entrySet().iterator();
+            Map.Entry<String, Set<String>> first = it.next();
+            while (it.hasNext()) {
+                Map.Entry<String, Set<String>> current = it.next();
+                if (!first.getValue().equals(current.getValue())) {
+                    errors.add(String.format("Language Parity Failure: Purpose IDs in '%s' do not match '%s'.", current.getKey(), first.getKey()));
+                    result.put("isValid", false);
+                }
+            }
+        }
+
+        return result;
     }
 
     // --- Helper Methods for Policy Management ---

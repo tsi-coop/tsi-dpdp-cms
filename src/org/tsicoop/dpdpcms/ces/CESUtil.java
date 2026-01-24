@@ -140,7 +140,7 @@ public class CESUtil {
     }
 
     public static void main(String[] args){
-        JSONObject policy = CESUtil.readJSON("C:\\work\\tsi-dpdp-cms\\tests\\policy\\tsi_digital_hub_en.json");
+        JSONObject policy = CESUtil.readJSON("C:\\work\\tsi-dpdp-cms\\tests\\policy\\tsi_digital_hub_member_v1.json");
         JSONArray consentsIn = CESUtil.readJSONArray("C:\\work\\tsi-dpdp-cms\\tests\\consent\\sample_consents.json");
         JSONArray consentsOut = CESUtil.appendConsentExpiry(policy, consentsIn, "CONSENT_WITHDRAWN");
         System.out.println(consentsOut);

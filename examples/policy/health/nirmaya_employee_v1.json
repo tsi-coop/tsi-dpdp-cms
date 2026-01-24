@@ -14,7 +14,7 @@
         "retention_policy": "Statutory retention of 10 years after resignation/termination for audit purposes.",
         "retention_duration_value": 10,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": true
       },
@@ -28,7 +28,7 @@
         "retention_policy": "Duration of active employment plus 2 years.",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": true
       },
@@ -42,7 +42,7 @@
         "retention_policy": "Retained during the tenure of employment plus 5 years.",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       }
@@ -83,7 +83,7 @@
         "retention_policy": "ऑडिट उद्देश्यों के लिए इस्तीफे/छंटनी के बाद 10 वर्ष का वैधानिक प्रतिधारण।",
         "retention_duration_value": 10,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": true
       },
@@ -97,9 +97,29 @@
         "retention_policy": "सक्रिय रोजगार की अवधि और उसके बाद 2 वर्ष।",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "EMPLOYMENT_TERMINATION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": true
+      },
+      {
+        "id": "purpose_performance_training",
+        "name": "कार्य प्रदर्शन समीक्षा और कौशल विकास",
+        "description": "कार्य प्रदर्शन का मूल्यांकन करने, प्रशिक्षण की प्रगति को ट्रैक करने और पदोन्नति या वेतन वृद्धि निर्धारित करने के लिए।",
+        "legal_basis": "वैध उपयोग / रोजगार (डीपीडीपी अधिनियम, धारा 7(i))",
+        "data_categories_involved": [
+          "प्रदर्शन मूल्यांकन",
+          "प्रशिक्षण रिकॉर्ड",
+          "उपस्थिति लॉग"
+        ],
+        "recipients_or_third_parties": [
+          "HR प्रबंधन सॉफ्टवेयर"
+        ],
+        "retention_policy": "रोजगार की अवधि और उसके बाद 5 वर्षों तक सुरक्षित रखा जाएगा।",
+        "retention_duration_value": 5,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
       }
     ],
     "data_categories_details": [

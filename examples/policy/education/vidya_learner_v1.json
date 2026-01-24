@@ -14,7 +14,7 @@
         "retention_policy": "Duration of active enrollment plus 5 years for academic record portability.",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_DELETION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -28,7 +28,7 @@
         "retention_policy": "7 years for compliance with educational record standards.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "COURSE_COMPLETION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -42,7 +42,7 @@
         "retention_policy": "Until consent is withdrawn or 2 years of inactivity.",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "LAST_ACTIVE_SESSION",
+        "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       },
@@ -54,9 +54,9 @@
         "data_categories_involved": ["email_address", "mobile_number"],
         "recipients_or_third_parties": [],
         "retention_policy": "Until consent is withdrawn.",
-        "retention_duration_value": 0,
-        "retention_duration_unit": "PERPETUAL",
-        "retention_start_event": "CONSENT_GIVEN",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
@@ -97,7 +97,7 @@
         "retention_policy": "सक्रिय नामांकन की अवधि और उसके बाद 5 वर्ष।",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_DELETION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -111,8 +111,45 @@
         "retention_policy": "शैक्षिक मानकों के अनुसार 7 वर्ष।",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "COURSE_COMPLETION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_ai_recommendations",
+        "name": "व्यक्तिगत एआई अनुशंसाएं",
+        "description": "प्रासंगिक पूरक सामग्री और उन्नत पाठ्यक्रमों का सुझाव देने के लिए आपके पिछले सीखने के व्यवहार का उपयोग करना।",
+        "legal_basis": "सहमति (डीपीडीपी अधिनियम, धारा 6(1)(a))",
+        "data_categories_involved": [
+          "खोज इतिहास",
+          "रुचि टैग",
+          "सीखने के पैटर्न"
+        ],
+        "recipients_or_third_parties": [
+          "एआई कंटेंट इंजन"
+        ],
+        "retention_policy": "सहमति वापस लेने तक या 2 साल की निष्क्रियता तक।",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_scholarship_alerts",
+        "name": "छात्रवृत्ति और करियर अलर्ट",
+        "description": "आपकी प्रोफ़ाइल के आधार पर आपको वित्तीय सहायता के अवसरों और करियर मार्गदर्शन सत्रों के बारे में सूचित करने के लिए।",
+        "legal_basis": "सहमति",
+        "data_categories_involved": [
+          "ईमेल पता",
+          "मोबाइल नंबर"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "सहमति वापस लेने तक।",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
         "is_sensitive": false
       }
     ],
@@ -132,56 +169,5 @@
       "terms_of_service_text": "नियम और शर्तें"
     },
     "important_note": "हम 18 वर्ष से कम उम्र के छात्रों के लिए सख्त विज्ञापन-ट्रैकिंग निषेध का पालन करते हैं।"
-  },
-  "mr": {
-    "title": "विद्या एडटेक - डेटा आणि गोपनीयता धोरण",
-    "introduction": "विद्या एडटेक मध्ये, आम्ही सुरक्षित आणि पारदर्शक डेटा प्रक्रियेद्वारे विद्यार्थ्यांना सक्षम करण्यासाठी समर्पित आहोत. हे धोरण आम्ही तुमची माहिती डिजिटल शिक्षण सेवांसाठी कशी वापरतो हे स्पष्ट करते.",
-    "general_purpose_description": "आम्ही विद्यार्थी खाते व्यवस्थापन, शिकण्याच्या प्रगतीचा मागोवा आणि वैयक्तिक शिफारसींसाठी डेटा वापरतो.",
-    "data_processing_purposes": [
-      {
-        "id": "purpose_account_management",
-        "name": "विद्यार्थी खाते आणि प्रोफाइल",
-        "description": "तुमची प्रोफाइल तयार करण्यासाठी आणि अभ्यासक्रमात प्रवेश मिळवण्यासाठी. विद्या प्लॅटफॉर्म वापरण्यासाठी हे आवश्यक आहे.",
-        "legal_basis": "कराराची आवश्यकता",
-        "data_categories_involved": ["नाव", "ईमेल", "इयत्ता", "शाळेचे नाव"],
-        "recipients_or_third_parties": ["ओळख पडताळणी सेवा"],
-        "retention_policy": "सक्रिय प्रवेशाचा कालावधी आणि त्यानंतर ५ वर्षे.",
-        "retention_duration_value": 5,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_DELETION",
-        "is_mandatory_for_service": true,
-        "is_sensitive": false
-      },
-      {
-        "id": "purpose_learning_tracking",
-        "name": "शिकण्याची प्रगती आणि मूल्यमापन",
-        "description": "प्रमाणपत्रे आणि कामगिरी अहवाल देण्यासाठी तुमच्या गुणांचा मागोवा घेणे.",
-        "legal_basis": "कराराची आवश्यकता",
-        "data_categories_involved": ["मूल्यमापन गुण", "व्हिडिओ पाहण्याची वेळ"],
-        "recipients_or_third_parties": [],
-        "retention_policy": "शैक्षणिक मानकांनुसार ७ वर्षे.",
-        "retention_duration_value": 7,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "COURSE_COMPLETION",
-        "is_mandatory_for_service": true,
-        "is_sensitive": false
-      }
-    ],
-    "data_categories_details": [
-      { "id": "grade_level", "name": "इयत्ता/पातळी", "description": "योग्य अभ्यासक्रम पुरवण्यासाठी शैक्षणिक स्तर." }
-    ],
-    "data_principal_rights_summary": "DPDP कायदा २०२३ नुसार, तुम्हाला तुमचा डेटा पाहण्याचा, दुरुस्त करण्याचा आणि संमती मागे घेण्याचा अधिकार आहे.",
-    "grievance_redressal_info": "तक्रारींसाठी आमच्या DPO शी संपर्क साधा: ईमेल: privacy@vidyaedtech.in | फोन: +९१ २२ ५५४४ ३३२२.",
-    "buttons": {
-      "accept_all": "स्वीकार करा आणि शिका",
-      "reject_all_non_essential": "केवळ आवश्यक",
-      "manage_preferences": "गोपनीयता व्यवस्थापन",
-      "save_preferences": "निवड जतन करा"
-    },
-    "links": {
-      "full_privacy_policy_text": "सविस्तर गोपनीयता धोरण",
-      "terms_of_service_text": "अटी आणि शर्ती"
-    },
-    "important_note": "१८ वर्षांखालील विद्यार्थ्यांसाठी आम्ही कोणत्याही प्रकारची जाहिरात-ट्रॅकिंग करत नाही."
   }
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Generated schema for Root",
+  "title": "DPDP Policy Validation Schema",
   "type": "object",
   "properties": {
     "_func": {
@@ -20,60 +20,131 @@
     },
     "policy_content": {
       "type": "object",
-      "properties": {
-        "en": {
-          "type": "object",
-          "properties": {
-            "title": {
-              "type": "string"
-            },
-            "data_processing_purposes": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "id": {
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "introduction": {
+            "type": "string"
+          },
+          "general_purpose_description": {
+            "type": "string"
+          },
+          "data_processing_purposes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "legal_basis": {
+                  "type": "string"
+                },
+                "data_categories_involved": {
+                  "type": "array",
+                  "items": {
                     "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "legal_basis": {
-                    "type": "string"
-                  },
-                  "is_mandatory_for_service": {
-                    "type": "boolean"
                   }
                 },
-                "required": [
-                  "id",
-                  "name",
-                  "description",
-                  "legal_basis",
-                  "is_mandatory_for_service"
-                ]
-              }
+                "recipients_or_third_parties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "retention_policy": {
+                  "type": "string"
+                },
+                "retention_duration_value": {
+                  "type": "integer"
+                },
+                "retention_duration_unit": {
+                  "type": "string",
+                  "enum": [
+                    "YEARS",
+                    "MONTHS",
+                    "DAYS",
+                    "HOURS",
+                    "MINUTES",
+                    "SECONDS"
+                  ]
+                },
+                "retention_start_event": {
+                  "type": "string",
+                  "enum": [
+                    "COLLECTION",
+                    "CESSATION"
+                  ]
+                },
+                "is_mandatory_for_service": {
+                  "type": "boolean"
+                },
+                "is_sensitive": {
+                  "type": "boolean"
+                },
+                "deprecated": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "description",
+                "legal_basis",
+                "data_categories_involved",
+                "recipients_or_third_parties",
+                "retention_policy",
+                "retention_duration_value",
+                "retention_duration_unit",
+                "retention_start_event",
+                "is_mandatory_for_service",
+                "is_sensitive"
+              ]
             }
           },
-          "required": [
-            "title",
-            "data_processing_purposes"
-          ]
-        }
-      },
-      "required": [
-        "en"
-      ]
+          "data_categories_details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "title",
+          "data_processing_purposes",
+          "data_categories_details"
+        ]
+      }
     }
   },
   "required": [
     "_func",
     "policy_id",
     "fiduciary_id",
-    "jurisdiction",
     "policy_content"
   ]
 }

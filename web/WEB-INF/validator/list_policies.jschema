@@ -26,8 +26,6 @@
     "_func",
     "status",
     "search",
-    "fiduciary_id_filter",
-    "page",
-    "limit"
+    "fiduciary_id_filter"
   ]
 }
