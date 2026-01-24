@@ -295,13 +295,10 @@ public class Compliance implements Action {
                 serviceType = Constants.SERVICE_TYPE_APP;
             }
             else{
-                serviceType = Constants.SERVICE_TYPE_SYSTEM;
+                serviceType = Constants.SERVICE_TYPE_DPO;
             }
             JSONObject auditContext = new JSONObject();
             auditContext.put("details",details);
-            if(loginUserId!=null){
-                auditContext.put("posted_by","DPO");
-            }
             new Audit().logEventAsync(userId, fiduciaryId, serviceType, loginUserId, confirmationStatus, details);
         }
     }

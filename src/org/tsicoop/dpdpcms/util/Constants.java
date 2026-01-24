@@ -54,6 +54,8 @@ public class Constants {
 
     public static final String SERVICE_TYPE_SYSTEM = "SYSTEM";
 
+    public static final String SERVICE_TYPE_DPO = "DPO";
+
     // Grievance Status
     public static final String GRIEVANCE_NEW = "NEW";
     public static final String GRIEVANCE_IN_PROGRESS = "IN_PROGRESS";
