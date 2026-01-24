@@ -290,17 +290,19 @@ public class Compliance implements Action {
         } finally {
             pool.cleanup(null, pstmt, conn);
         }
-        //System.out.println("updated:"+updated);
         if(updated) {
             if(appId != null){
                 serviceType = Constants.SERVICE_TYPE_APP;
             }
             else{
-                serviceType = Constants.SERVICE_TYPE_USER;
+                serviceType = Constants.SERVICE_TYPE_SYSTEM;
             }
-            //System.out.println("serviceType:"+serviceType);
+            JSONObject auditContext = new JSONObject();
+            auditContext.put("details",details);
+            if(loginUserId!=null){
+                auditContext.put("posted_by","DPO");
+            }
             new Audit().logEventAsync(userId, fiduciaryId, serviceType, loginUserId, confirmationStatus, details);
-            //System.out.println("Audit post done");
         }
     }
 
