@@ -14,7 +14,7 @@
         "retention_policy": "Statutory retention of 5 years after account closure as per RBI norms.",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_CLOSURE",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": true
       },
@@ -27,8 +27,8 @@
         "recipients_or_third_parties": ["Credit Bureaus (CIBIL, Equifax)"],
         "retention_policy": "Duration of the loan evaluation plus 2 years for internal audit.",
         "retention_duration_value": 2,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "LOAN_REJECTION_OR_CLOSURE",
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -42,7 +42,7 @@
         "retention_policy": "Until the loan is fully repaid plus 7 years for financial record-keeping.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "FINAL_SETTLEMENT",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -54,9 +54,9 @@
         "data_categories_involved": ["mobile_number", "email_address"],
         "recipients_or_third_parties": [],
         "retention_policy": "Until consent is withdrawn.",
-        "retention_duration_value": 0,
-        "retention_duration_unit": "PERPETUAL",
-        "retention_start_event": "CONSENT_GIVEN",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
@@ -97,22 +97,68 @@
         "retention_policy": "கணக்கு மூடப்பட்ட பிறகு 5 ஆண்டுகளுக்குப் பராமரிக்கப்படும்.",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_CLOSURE",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": true
       },
       {
+        "id": "purpose_credit_scoring",
+        "name": "கடன் மதிப்பீடு மற்றும் மதிப்பெண்",
+        "description": "நிதி வரலாற்றின் அடிப்படையில் உங்கள் கடன் தகுதியை மதிப்பீடு செய்யவும் மற்றும் கடன் தகுதியை தீர்மானிக்கவும்.",
+        "legal_basis": "ஒப்பந்தத் தேவை (டிபிடிபி சட்டம், பிரிவு 7(b))",
+        "data_categories_involved": [
+          "வருமான விவரங்கள்",
+          "வங்கி அறிக்கைகள்",
+          "தற்போதைய கடன் விவரங்கள்",
+          "வேலைவாய்ப்பு நிலை"
+        ],
+        "recipients_or_third_parties": [
+          "கடன் தகவல் பணியகங்கள் (CIBIL, Equifax)"
+        ],
+        "retention_policy": "கடன் மதிப்பீட்டு காலம் மற்றும் உள் தணிக்கைக்காக கூடுதலாக 2 மாதங்கள்.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
         "id": "purpose_loan_servicing",
         "name": "கடன் வழங்கல் மற்றும் வசூல்",
-        "description": "உங்கள் வங்கித் கணக்கிற்குப் பணத்தைப் பரிமாற்றம் செய்யவும், திருப்பிச் செலுத்துதலை நிர்வகிக்கவும்.",
+        "description": "பணத்தை உங்கள் வங்கி கணக்கிற்கு மாற்றவும் மற்றும் திருப்பிச் செலுத்தும் சுழற்சியை நிர்வகிக்கவும் (தேவைப்பட்டால் கள ஆய்வுகள் உட்பட).",
         "legal_basis": "ஒப்பந்தத் தேவை",
-        "data_categories_involved": ["வங்கி கணக்கு எண்", "ஐ.எப்.எஸ்.சி (IFSC) குறியீடு", "தொடர்பு எண்"],
-        "recipients_or_third_parties": ["வங்கி கூட்டாளர்கள்"],
-        "retention_policy": "கடன் முழுமையாகத் திருப்பிச் செலுத்தப்பட்ட பிறகு 7 ஆண்டுகள்.",
+        "data_categories_involved": [
+          "வங்கி கணக்கு எண்",
+          "IFSC குறியீடு",
+          "தற்போதைய இருப்பிடம்",
+          "தொடர்பு எண்"
+        ],
+        "recipients_or_third_parties": [
+          "வங்கி கூட்டாளர்கள்",
+          "வசூல் முகமைகள்"
+        ],
+        "retention_policy": "கடன் முழுமையாக திருப்பிச் செலுத்தப்படும் வரை மற்றும் நிதி பதிவு பராமரிப்புக்காக கூடுதலாக 7 ஆண்டுகள்.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "FINAL_SETTLEMENT",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_marketing_offers",
+        "name": "விளம்பர சலுகைகள் மற்றும் புதிய தயாரிப்புகள்",
+        "description": "புதிய கடன் தயாரிப்புகள், காப்பீட்டு டாப்-அப்கள் மற்றும் நிதி அறிவு திட்டங்கள் பற்றி உங்களுக்கு தெரிவிக்க.",
+        "legal_basis": "ஒப்புதல் (டிபிடிபி சட்டம், பிரிவு 6(1)(a))",
+        "data_categories_involved": [
+          "கைபேசி எண்",
+          "மின்னஞ்சல் முகவரி"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "ஒப்புதல் திரும்பப் பெறப்படும் வரை.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
         "is_sensitive": false
       }
     ],
@@ -133,57 +179,5 @@
       "terms_of_service_text": "கடன் ஒப்பந்த விதிகள்"
     },
     "important_note": "உங்கள் நிதித் தரவு பாதுகாப்பானது. கடன் செயல்பாட்டில் இருக்கும்போது முக்கியத் தரவைத் திரும்பப் பெற முடியாது."
-  },
-  "ml": {
-    "title": "വരം മൈക്രോക്രെഡിറ്റ് - ഡാറ്റാ ആൻഡ് പ്രൈവസി പോളിസി",
-    "introduction": "വരം മൈക്രോക്രെഡിറ്റിൽ, നിങ്ങളുടെ വ്യക്തിഗതവും സാമ്പത്തികവുമായ വിവരങ്ങൾ സുരക്ഷിതമായും സുതാര്യമായും കൈകാര്യം ചെയ്യാൻ ഞങ്ങൾ ബാധ്യസ്ഥരാണ്. ഡിജിറ്റൽ പേഴ്സണൽ ഡാറ്റ പ്രൊട്ടക്ഷൻ ആക്ട് (DPDP), 2023 പ്രകാരം മൈക്രോ ഫിനാൻസ് സേവനങ്ങൾ നൽകുന്നതിനായി നിങ്ങളുടെ വിവരങ്ങൾ ഞങ്ങൾ എങ്ങനെ ഉപയോഗിക്കുന്നു എന്ന് ഈ നയം വിശദീകരിക്കുന്നു.",
-    "general_purpose_description": "KYC വെരിഫിക്കേഷൻ, ക്രെഡിറ്റ് അസ്സസ്‌മെന്റ്, ലോൺ വിതരണം, റെഗുലേറ്ററി റിപ്പോർട്ടിംഗ് എന്നിവയ്ക്കായി ഞങ്ങൾ വിവരങ്ങൾ ഉപയോഗിക്കുന്നു.",
-    "data_processing_purposes": [
-      {
-        "id": "purpose_kyc_identity",
-        "name": "KYC & ഐഡന്റിറ്റി വെരിഫിക്കേഷൻ",
-        "description": "നിങ്ങളുടെ വ്യക്തിത്വം സ്ഥിരീകരിക്കുന്നതിനും തട്ടിപ്പുകൾ തടയുന്നതിനും. സാമ്പത്തിക സേവനങ്ങൾക്ക് ഇത് നിർബന്ധമാണ്.",
-        "legal_basis": "നിയമപരമായ ബാധ്യത (PMLA & DPDP ആക്ട്)",
-        "data_categories_involved": ["പേര്", "പാൻ കാർഡ്", "ആധാർ", "ഫോട്ടോ"],
-        "recipients_or_third_parties": ["വെരിഫിക്കേഷൻ ഏജൻസികൾ"],
-        "retention_policy": "അക്കൗണ്ട് ക്ലോസ് ചെയ്ത ശേഷം 5 വർഷം വരെ സൂക്ഷിക്കും.",
-        "retention_duration_value": 5,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_CLOSURE",
-        "is_mandatory_for_service": true,
-        "is_sensitive": true
-      },
-      {
-        "id": "purpose_loan_servicing",
-        "name": "ലോൺ വിതരണവും കളക്ഷനും",
-        "description": "നിങ്ങളുടെ ബാങ്ക് അക്കൗണ്ടിലേക്ക് പണം കൈമാറുന്നതിനും തിരിച്ചടവ് നിയന്ത്രിക്കുന്നതിനും.",
-        "legal_basis": "കരാർ പ്രകാരമുള്ള ആവശ്യം",
-        "data_categories_involved": ["ബാങ്ക് അക്കൗണ്ട് നമ്പർ", "IFSC കോഡ്", "കോൺടാക്റ്റ് നമ്പർ"],
-        "recipients_or_third_parties": ["ബാങ്കിംഗ് പാർട്ണർമാർ"],
-        "retention_policy": "ലോൺ പൂർണ്ണമായി തിരിച്ചടച്ച ശേഷം 7 വർഷം.",
-        "retention_duration_value": 7,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "FINAL_SETTLEMENT",
-        "is_mandatory_for_service": true,
-        "is_sensitive": false
-      }
-    ],
-    "data_categories_details": [
-      { "id": "pan_card", "name": "പാൻ നമ്പർ", "description": "ക്രെഡിറ്റ് ഹിസ്റ്ററി പരിശോധിക്കാൻ ഉപയോഗിക്കുന്നു." },
-      { "id": "bank_account_no", "name": "ബാങ്ക് വിവരങ്ങൾ", "description": "പണം കൈമാറുന്നതിന് ഇത് ആവശ്യമാണ്." }
-    ],
-    "data_principal_rights_summary": "DPDP നിയമം 2023 പ്രകാരം, നിങ്ങളുടെ ഡാറ്റ പരിശോധിക്കാനും തെറ്റുകൾ തിരുത്താനും ഡാറ്റ നീക്കം ചെയ്യാൻ അഭ്യർത്ഥിക്കാനും നിങ്ങൾക്ക് അവകാശമുണ്ട്.",
-    "grievance_redressal_info": "പരാതികൾക്കായി ഞങ്ങളുടെ ഓഫീസറെ ബന്ധപ്പെടുക: ഇമെയിൽ: compliance@varamcredit.in | ഫോൺ: +91 44 2233 4455.",
-    "buttons": {
-      "accept_all": "അംഗീകരിച്ചു മുന്നോട്ട് പോകുക",
-      "reject_all_non_essential": "നിർബന്ധമല്ലാത്തവ ഒഴിവാക്കുക",
-      "manage_preferences": "പ്രൈവസി ക്രമീകരണങ്ങൾ",
-      "save_preferences": "തിരഞ്ഞെടുപ്പുകൾ സേവ് ചെയ്യുക"
-    },
-    "links": {
-      "full_privacy_policy_text": "വിശദമായ പ്രൈവസി പോളിസി",
-      "terms_of_service_text": "ലോൺ കരാർ വ്യവസ്ഥകൾ"
-    },
-    "important_note": "നിങ്ങളുടെ സാമ്പത്തിക വിവരങ്ങൾ സുരക്ഷിതമാണ്. നിലവിൽ ലോൺ ഉണ്ടെങ്കിൽ വിവരങ്ങൾ പിൻവലിക്കാൻ സാധിക്കില്ല."
   }
 }

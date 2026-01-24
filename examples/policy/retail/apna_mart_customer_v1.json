@@ -14,7 +14,7 @@
         "retention_policy": "Duration of active membership plus 3 years.",
         "retention_duration_value": 3,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_CLOSURE",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -28,7 +28,7 @@
         "retention_policy": "Statutory retention of 7 years for tax and financial audit purposes.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "TRANSACTION_COMPLETION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -42,7 +42,7 @@
         "retention_policy": "Until consent is withdrawn or 2 years of inactivity.",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "LAST_PURCHASE",
+        "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
@@ -83,7 +83,7 @@
         "retention_policy": "सक्रिय सदस्यता की अवधि और उसके बाद 3 वर्ष।",
         "retention_duration_value": 3,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_CLOSURE",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
         "is_sensitive": false
       },
@@ -97,8 +97,27 @@
         "retention_policy": "टैक्स और ऑडिट उद्देश्यों के लिए 7 वर्ष का वैधानिक प्रतिधारण।",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
-        "retention_start_event": "TRANSACTION_COMPLETION",
+        "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_personalized_offers",
+        "name": "व्यक्तिगत अनुशंसाएं",
+        "description": "आपके खरीदारी के पैटर्न का विश्लेषण करके प्रासंगिक उत्पादों का सुझाव देना और व्यक्तिगत उत्सव प्रस्ताव भेजना।",
+        "legal_basis": "सहमति (डीपीडीपी अधिनियम, धारा 6(1)(a))",
+        "data_categories_involved": [
+          "खरीदारी की प्राथमिकताएं",
+          "ब्राउज़िंग इतिहास"
+        ],
+        "recipients_or_third_parties": [
+          "मार्केटिंग एनालिटिक्स फर्म"
+        ],
+        "retention_policy": "सहमति वापस लेने तक या 2 साल की निष्क्रियता तक।",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
         "is_sensitive": false
       }
     ],
@@ -118,56 +137,5 @@
       "terms_of_service_text": "नियम और शर्तें"
     },
     "important_note": "भारतीय कर कानूनों के अनुपालन के लिए लेनदेन डेटा 7 वर्षों तक रखा जाता है।"
-  },
-  "gu": {
-    "title": "અપના માર્ટ રિટેલ - ડેટા અને ગોપનીયતા નીતિ",
-    "introduction": "અપના માર્ટમાં, અમે તમને સીમલેસ શોપિંગ અનુભવ પ્રદાન કરવા માટે તમારા વ્યક્તિગત ડેટાને પારદર્શક રીતે પ્રોસેસ કરવા માટે પ્રતિબદ્ધ છીએ. આ નીતિ સમજાવે છે કે અમે ડિજિટલ પર્સનલ ડેટા પ્રોટેક્શન એક્ટ (DPDP), 2023 ના સંપૂર્ણ પાલનમાં રિટેલ સેવાઓ અને લોયલ્ટી પ્રોગ્રામ્સ માટે તમારા ડેટાનો ઉપયોગ કેવી રીતે કરીએ છીએ.",
-    "general_purpose_description": "અમે એકાઉન્ટ મેનેજમેન્ટ, ઓર્ડર પરિપૂર્ણતા, લોયલ્ટી રિવોર્ડ્સ અને વ્યક્તિગત માર્કેટિંગ માટે ડેટા પ્રોસેસ કરીએ છીએ.",
-    "data_processing_purposes": [
-      {
-        "id": "purpose_account_loyalty",
-        "name": "એકાઉન્ટ અને લોયલ્ટી મેનેજમેન્ટ",
-        "description": "તમારા અપના રિવોર્ડ્સ એકાઉન્ટને મેનેજ કરવા અને પોઈન્ટ્સ ટ્રેક કરવા માટે. અમારા રિવોર્ડ્સ પ્રોગ્રામમાં ભાગ લેવા માટે આ આવશ્યક છે.",
-        "legal_basis": "કરારની આવશ્યકતા",
-        "data_categories_involved": ["નામ", "મોબાઇલ નંબર", "ઇમેઇલ", "જન્મ તારીખ"],
-        "recipients_or_third_parties": ["લોયલ્ટી સોફ્ટવેર પ્રોવાઈડર"],
-        "retention_policy": "સક્રિય સભ્યપદનો સમયગાળો અને પછી 3 વર્ષ.",
-        "retention_duration_value": 3,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "ACCOUNT_CLOSURE",
-        "is_mandatory_for_service": true,
-        "is_sensitive": false
-      },
-      {
-        "id": "purpose_order_fulfillment",
-        "name": "ઓર્ડર પરિપૂર્ણતા અને ડિલિવરી",
-        "description": "તમારી ખરીદી પ્રક્રિયા કરવા અને ઉત્પાદનો તમારા ઘર સુધી પહોંચાડવા માટે.",
-        "legal_basis": "કરારની આવશ્યકતા",
-        "data_categories_involved": ["ડિલિવરીનું સરનામું", "ચુકવણીની વિગતો", "ખરીદીનો ઇતિહાસ"],
-        "recipients_or_third_parties": ["લોજિસ્ટિક્સ ભાગીદારો"],
-        "retention_policy": "ટેક્સ અને ઓડિટ હેતુઓ માટે 7 વર્ષનો કાયદાકીય સંગ્રહ.",
-        "retention_duration_value": 7,
-        "retention_duration_unit": "YEARS",
-        "retention_start_event": "TRANSACTION_COMPLETION",
-        "is_mandatory_for_service": true,
-        "is_sensitive": false
-      }
-    ],
-    "data_categories_details": [
-      { "id": "mobile_number", "name": "મોબાઇલ નંબર", "description": "એકાઉન્ટ લોગિન અને ઓર્ડર અપડેટ્સ માટે પ્રાથમિક ઓળખકર્તા." }
-    ],
-    "data_principal_rights_summary": "DPDP એક્ટ 2023 હેઠળ, તમને તમારા ડેટાને એક્સેસ કરવાનો, તેને સુધારવાનો અને સંમતિ પાછી ખેંચવાનો અધિકાર છે.",
-    "grievance_redressal_info": "કોઈપણ ચિંતા માટે અમારા DPO નો સંપર્ક કરો: ઇમેઇલ: care@apnamart.in | ફોન: +91 11 2233 4455.",
-    "buttons": {
-      "accept_all": "સ્વીકારો અને ખરીદી શરૂ કરો",
-      "reject_all_non_essential": "માત્ર આવશ્યક",
-      "manage_preferences": "ગોપનીયતા સેટિંગ્સ",
-      "save_preferences": "પસંદગીઓ સાચવો"
-    },
-    "links": {
-      "full_privacy_policy_text": "વિગતવાર ગોપનીયતા નીતિ",
-      "terms_of_service_text": "નિયમો અને શરતો"
-    },
-    "important_note": "ભારતીય ટેક્સ કાયદાના પાલન માટે વ્યવહાર ડેટા 7 વર્ષ સુધી રાખવામાં આવે છે."
   }
 }
