@@ -44,7 +44,7 @@ public class CESUtil {
                 ZonedDateTime expiryDate;
 
                 if (Constants.ACTION_CONSENT_GIVEN.equals(action)) {
-                    if (Constants.EVENT_CONSENT_GIVEN.equals(startEvent)) {
+                    if (Constants.EVENT_COLLECTION.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
                     } else {
                         // If given but policy event is different, leave null or default
@@ -52,18 +52,18 @@ public class CESUtil {
                     }
                 } else if (Constants.ACTION_CONSENT_WITHDRAWN.equals(action)) {
                     consent.put("consent_granted",false);
-                    if (Constants.EVENT_CONSENT_WITHDRAWN.equals(startEvent)) {
+                    if (Constants.EVENT_CESSATION.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
-                    } else if (Constants.EVENT_CONSENT_GIVEN.equals(startEvent)) {
+                    } else if (Constants.EVENT_COLLECTION.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
                     } else {
                         expiryDate = null;
                     }
                 } else if (Constants.ACTION_ERASURE_REQUEST.equals(action)) {
                     consent.put("consent_granted",false);
-                    if (Constants.EVENT_CONSENT_WITHDRAWN.equals(startEvent)) {
+                    if (Constants.EVENT_CESSATION.equals(startEvent)) {
                         expiryDate = calculateExpiry(now, durationValue, durationUnit);
-                    } else if (Constants.EVENT_CONSENT_GIVEN.equals(startEvent)) {
+                    } else if (Constants.EVENT_COLLECTION.equals(startEvent)) {
                         expiryDate = now;
                     } else {
                         expiryDate = null;

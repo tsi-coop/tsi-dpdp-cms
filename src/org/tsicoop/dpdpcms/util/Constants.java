@@ -17,8 +17,8 @@ public class Constants {
     public static final String ACTION_GRIEVANCE_SUBMITTED = "GRIEVANCE_SUBMITTED"; // Section 13 requirement
 
     // --- Lifecycle Events (Triggered by CES / Internal System) ---
-    public static final String EVENT_CONSENT_WITHDRAWN = "CONSENT_WITHDRAWN";
-    public static final String EVENT_CONSENT_GIVEN = "CONSENT_GIVEN";
+    public static final String EVENT_CESSATION = "CESSATION";
+    public static final String EVENT_COLLECTION = "COLLECTION";
     public static final String EVENT_RETENTION_REACHED = "RETENTION_PERIOD_REACHED";
     public static final String EVENT_PURGE_INITIATED = "PURGE_INITIATED";
     public static final String EVENT_PURGE_IN_PROGRESS = "PURGE_IN_PROGRESS";
