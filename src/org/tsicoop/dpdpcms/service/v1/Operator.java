@@ -1,6 +1,5 @@
 package org.tsicoop.dpdpcms.service.v1; // Package changed as requested
 
-import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available in the new package structure
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,7 +34,7 @@ import java.util.regex.Pattern;
  * will need to be adjusted to match your 'backend_users', 'backend_roles', 'backend_user_roles'
  * and the JSONB permissions column in 'backend_roles'.
  */
-public class User implements Action {
+public class Operator implements Action {
 
     private final PasswordHasher passwordHasher = new PasswordHasher();
 
@@ -121,14 +120,6 @@ public class User implements Action {
                         return;
                     }
 
-                    // In a real system, you'd add authorization check here:
-                    // Only an Admin/DPO (with specific permission) or a valid password reset token holder should call this.
-                    // AuthContext authContext = (AuthContext) req.getAttribute("authContext");
-                    // if (authContext == null || !authContext.hasPermission("user:reset_password")) { // Example permission
-                    //    OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Not authorized to reset user password.", req.getRequestURI());
-                    //    return;
-                    // }
-
                     output = resetUserPassword(emailToReset, newPassword);
                     if (output.containsKey("error")) {
                         int statusCode = (Integer) output.get("status_code");
@@ -143,7 +134,7 @@ public class User implements Action {
                     // Handle potential nulls or incorrect types for page/limit
                     int userPage = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int userLimit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
-                    outputArray = listUsersFromDb(userStatusFilter, userSearch, userPage, userLimit);
+                    outputArray = listOperatorsFromDb(userStatusFilter, userSearch, userPage, userLimit);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -291,7 +282,7 @@ public class User implements Action {
         boolean login = false;
 
         // Query by username or email
-        String sql = "SELECT u.id, u.username, u.email, u.password_hash, u.status, u.mfa_enabled, u.role, u.fiduciary_id, f.name FROM users u LEFT OUTER JOIN fiduciaries f ON u.fiduciary_id = f.id WHERE (u.username = ? OR u.email = ?)";
+        String sql = "SELECT u.id, u.name, u.email, u.password_hash, u.status, u.mfa_enabled, u.role, u.fiduciary_id, f.name FROM operators u LEFT OUTER JOIN fiduciaries f ON u.fiduciary_id = f.id WHERE (u.name = ? OR u.email = ?)";
 
         try {
             conn = pool.getConnection();
@@ -302,7 +293,7 @@ public class User implements Action {
 
             if (rs.next()) {
                 userId = rs.getString("id");
-                String username = rs.getString("username");
+                String username = rs.getString("name");
                 String email = rs.getString("email");
                 String storedHashedPassword = rs.getString("password_hash");
                 String status = rs.getString("status");
@@ -399,9 +390,9 @@ public class User implements Action {
         PoolDB pool = new PoolDB();
 
         // Find the user by email
-        String checkSql = "SELECT id, status FROM users WHERE email = ? AND deleted_at IS NULL";
+        String checkSql = "SELECT id, status FROM operators WHERE email = ? AND deleted_at IS NULL";
         // Update password and set status to ACTIVE if it was PENDING_PASSWORD_SETUP or similar
-        String updateSql = "UPDATE users SET password_hash = ?, status = 'ACTIVE', last_updated_at = NOW() WHERE id = ?";
+        String updateSql = "UPDATE operators SET password_hash = ?, status = 'ACTIVE', last_updated_at = NOW() WHERE id = ?";
 
         try {
             conn = pool.getConnection();
@@ -447,7 +438,7 @@ public class User implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE users SET last_login_at = NOW() WHERE id = ?"; // Use 'id' as PK
+        String sql = "UPDATE operators SET last_login_at = NOW() WHERE id = ?"; // Use 'id' as PK
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -510,11 +501,11 @@ public class User implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT COUNT(*) FROM users WHERE (1=0"); // Start with 1=0 to easily append OR clauses
+        StringBuilder sqlBuilder = new StringBuilder("SELECT COUNT(*) FROM operators WHERE (1=0"); // Start with 1=0 to easily append OR clauses
         List<Object> params = new ArrayList<>();
 
         if (username != null && !username.isEmpty()) {
-            sqlBuilder.append(" OR username = ?");
+            sqlBuilder.append(" OR name = ?");
             params.add(username);
         }
         if (email != null && !email.isEmpty()) {
@@ -542,18 +533,18 @@ public class User implements Action {
     }
 
     /**
-     * Retrieves a list of users from the database with optional filtering and pagination.
+     * Retrieves a list of operators from the database with optional filtering and pagination.
      * @return JSONArray of user JSONObjects.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONArray listUsersFromDb(String statusFilter, String search, int page, int limit) throws SQLException {
+    private JSONArray listOperatorsFromDb(String statusFilter, String search, int page, int limit) throws SQLException {
         JSONArray usersArray = new JSONArray();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, username, email, status, fiduciary_id, last_login_at, created_at, last_updated_at, role FROM users WHERE 1=1");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, email, status, fiduciary_id, last_login_at, created_at, last_updated_at, role FROM operators WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
@@ -581,7 +572,7 @@ public class User implements Action {
             while (rs.next()) {
                 JSONObject user = new JSONObject();
                 user.put("user_id", rs.getString("id"));
-                user.put("username", rs.getString("username"));
+                user.put("username", rs.getString("name"));
                 user.put("email", rs.getString("email"));
                 user.put("status", rs.getString("status"));
                 user.put("fiduciary_id", rs.getString("fiduciary_id"));
@@ -608,7 +599,7 @@ public class User implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, username, email, password_hash, status, fiduciary_id, last_login_at, created_at, last_updated_at, role FROM users WHERE id = ?";
+        String sql = "SELECT id, name, email, password_hash, status, fiduciary_id, last_login_at, created_at, last_updated_at, role FROM operators WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -617,7 +608,7 @@ public class User implements Action {
             if (rs.next()) {
                 JSONObject user = new JSONObject();
                 user.put("user_id", rs.getString("id"));
-                user.put("username", rs.getString("username"));
+                user.put("username", rs.getString("name"));
                 user.put("email", rs.getString("email"));
                 // user.put("password_hash", rs.getString("password_hash")); // Do NOT expose password hash via API
                 user.put("status", rs.getString("status"));
@@ -646,7 +637,7 @@ public class User implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         // Use RETURNING user_id to get the generated UUID
-        String sql = "INSERT INTO users (id, username, email, password_hash, role, status, fiduciary_id, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?,NOW(), NOW()) RETURNING id";
+        String sql = "INSERT INTO operators (id, name, email, password_hash, role, status, fiduciary_id, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?,NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -692,10 +683,10 @@ public class User implements Action {
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("UPDATE users SET last_updated_at = NOW()");
+        StringBuilder sqlBuilder = new StringBuilder("UPDATE operators SET last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
 
-        if (username != null && !username.isEmpty()) { sqlBuilder.append(", username = ?"); params.add(username); }
+        if (username != null && !username.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(username); }
         if (email != null && !email.isEmpty()) { sqlBuilder.append(", email = ?"); params.add(email); }
         if (hashedPassword != null && !hashedPassword.isEmpty()) { sqlBuilder.append(", password_hash = ?"); params.add(hashedPassword); }
         if (role != null) { sqlBuilder.append(", role = ?"); params.add(role); }
@@ -730,7 +721,7 @@ public class User implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "DELETE FROM users WHERE id = ?";
+        String sql = "DELETE FROM operators WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);

@@ -169,7 +169,7 @@ public class Audit implements Action {
         params.add(fiduciaryId);
 
         if (fiduciaryId != null){
-            sql.append(" AND service_type IN ('SYSTEM','APP')");
+            sql.append(" AND service_type IN ('SYSTEM','APP','DPO')");
         }
         else if(fiduciaryId == null){
             sql.append(" AND service_type IN ('DPO')");

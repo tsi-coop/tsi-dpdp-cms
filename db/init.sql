@@ -29,12 +29,12 @@ CREATE TABLE IF NOT EXISTS fiduciaries (
 );
 
 --
--- 2. Table: users (Must be created after roles, before fiduciaries, processors, etc.)
+-- 2. Table: operators (Must be created after roles, before fiduciaries, processors, etc.)
 -- CMS internal users: DPOs, Admins, Auditors, Operators
 --
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS operators (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username VARCHAR(100) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255), -- Can be NULL initially for first-time setup
     mfa_secret VARCHAR(255), -- For TOTP
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS grievances (
     description TEXT NOT NULL,
     submission_timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     status VARCHAR(50) NOT NULL DEFAULT 'NEW', -- NEW, IN_PROGRESS, RESOLVED, CLOSED, ESCALATED
-    assigned_dpo_user_id UUID REFERENCES users(id),
+    assigned_dpo_user_id UUID REFERENCES operators(id),
     resolution_details TEXT,
     resolution_timestamp TIMESTAMP WITH TIME ZONE,
     communication_log JSONB,

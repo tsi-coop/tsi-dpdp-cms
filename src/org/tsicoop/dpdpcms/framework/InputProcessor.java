@@ -156,7 +156,7 @@ public class InputProcessor {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = null;
-        String sql = "SELECT id FROM users WHERE email=?";
+        String sql = "SELECT id FROM operators WHERE email=?";
 
         authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
         if(authToken == null) return null;

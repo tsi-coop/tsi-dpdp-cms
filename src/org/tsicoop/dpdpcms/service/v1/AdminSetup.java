@@ -107,7 +107,7 @@ public class AdminSetup implements Action {
      * Checks if any user is currently assigned the Super Admin role.
      */
     private boolean isAdminUserExists(Connection conn) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM users where role=?";
+        String sql = "SELECT COUNT(*) FROM operators where role=?";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, SUPER_ADMIN_ROLE_NAME);
@@ -124,7 +124,7 @@ public class AdminSetup implements Action {
      * Inserts the new user into the 'users' table.
      */
     private UUID createUser(Connection conn, String email, String name, String hashedPassword) throws SQLException {
-        String sql = "INSERT INTO users (id, username, email, password_hash, status, created_at, last_updated_at,role) VALUES (uuid_generate_v4(), ?, ?, ?, 'ACTIVE', NOW(), NOW(),?) RETURNING id";
+        String sql = "INSERT INTO operators (id, name, email, password_hash, status, created_at, last_updated_at,role) VALUES (uuid_generate_v4(), ?, ?, ?, 'ACTIVE', NOW(), NOW(),?) RETURNING id";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, name); // Use email as username for initial setup
