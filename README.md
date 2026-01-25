@@ -22,6 +22,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [DPO Console - Video Demo](https://youtu.be/QPXHg4bQhf8)
 
+[Roadmap - Solving Consent Fatigue via Portable Consent Artifacts (PCA)](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following software installed on your development machine or server:
