@@ -20,6 +20,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [Consent Enforcement Service - Video Demo](https://youtu.be/_i9znxthbOA)
 
+[DPO Console - Video Demo](https://youtu.be/QPXHg4bQhf8)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following software installed on your development machine or server:
