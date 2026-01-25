@@ -18,6 +18,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
+[Consent Enforcement Service - Video Demo](https://youtu.be/_i9znxthbOA)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following software installed on your development machine or server:
