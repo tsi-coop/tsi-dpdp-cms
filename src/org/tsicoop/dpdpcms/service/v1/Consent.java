@@ -832,7 +832,7 @@ public class Consent implements Action {
         // Audit Log: Log the link user event
         JSONObject auditContext = new JSONObject();
         auditContext.put("action", Constants.ACTION_LINK_USER);
-        auditContext.put("anonymoud_id", anonymousUserId);
+        auditContext.put("anonymous_id", anonymousUserId);
         auditContext.put("principal", authenticatedUserId);
         new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , Constants.ACTION_LINK_USER, auditContext.toJSONString());
     }

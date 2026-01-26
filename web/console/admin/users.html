@@ -167,18 +167,12 @@
       <a href="#" class="nav-link active">
         CMS Users
       </a>
-      <!--<a href="lifecycle.html" class="nav-link">
-        Lifecycle
-      </a>-->
       <a href="apikeys.html" class="nav-link">
         API Keys
       </a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
-    <!--<a href="system_config.html" class="nav-link">
-      System Config
-    </a>-->
     <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
       <span id="username" class="font-bold text-slate-700">Admin User</span>
       <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
@@ -200,7 +194,7 @@
 
   <!-- User List Card -->
   <div class="card">
-     <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-between items-center mb-4">
       <input type="text" id="search-input" placeholder="Search by Name or Email..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
       <span id="user-count" class="text-sm text-gray-500">Loading...</span>
     </div>
@@ -272,15 +266,14 @@
         </div>
       </div>
 
-      <!-- Section 3: Fiduciary Association (NEW FIELD) -->
+      <!-- Section 3: Fiduciary Association -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="fiduciary-select" class="block text-sm font-medium text-gray-700">Associated Data Fiduciary</label>
           <select id="fiduciary-select" name="fiduciary_id" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
             <option value="">-- No Fiduciary Assigned (Global) --</option>
-            <!-- Options populated dynamically by JS -->
           </select>
-          <p class="mt-1 text-xs text-gray-500">Links user access/scope to a specific Fiduciary (e.g., DPOs, Operators).</p>
+          <p class="mt-1 text-xs text-gray-500">Links user access/scope to a specific Fiduciary.</p>
         </div>
       </div>
 
@@ -294,7 +287,6 @@
         <p class="mt-1 text-xs text-gray-500">MFA setup is required for DPO/Admin roles on first login.</p>
       </div>
 
-
       <div class="modal-footer">
         <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
         <button type="submit" id="save-user-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save CMS User</button>
@@ -304,20 +296,15 @@
 </div>
 
 <script>
-    // --- Configuration ---
     const API_URL_USERS = '/api/v1/admin/operator';
     const API_URL_FIDUCIARIES_LIST = '/api/v1/admin/fiduciary';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const USER_NAME = localStorage.getItem('username');
-    // set user name
     document.getElementById('username').textContent = USER_NAME;
 
-    // --- Global DOM Element Variables ---
     let sidebar, menuToggle, backdrop, userModalOverlay, addUserBtn, closeModalBtn, userForm, tableBody, countSpan, errorMessageP, searchInput;
     let userIdHidden, userFullNameInput, userEmailInput, userRoleSelect, userPasswordInput, userStatusSelect,fiduciarySelect;
     let FiduciaryList = {};
-
-    // --- Helper Functions ---
 
     function toggleMenu() {
         sidebar.classList.toggle('open');
@@ -328,24 +315,14 @@
         document.getElementById('modal-title').textContent = title;
         userForm.reset();
         userIdHidden.value = '';
-
         document.getElementById('save-user-btn').textContent = isEdit ? 'Update User' : 'Save CMS User';
-
-        // Hide password field note during edit
         document.getElementById('password-note').style.display = isEdit ? 'block' : 'none';
-
-        // Disable email/name fields during edit for simpler payload
         userEmailInput.disabled = isEdit;
         userFullNameInput.disabled = isEdit;
-
-        // Clear password on edit unless user is actively setting a new one
         userPasswordInput.value = '';
         userPasswordInput.placeholder = isEdit ? 'Leave blank to keep current password' : 'Secure Password';
-
-        // Reset Fiduciary dropdown to default
-        fiduciarySelect.disabled = isEdit; // Prevent changing fiduciary association on edit
+        fiduciarySelect.disabled = isEdit;
         fiduciarySelect.value = '';
-
         userModalOverlay.style.display = 'flex';
     }
 
@@ -370,41 +347,24 @@
         return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status}</span>`;
     }
 
-    function createMfaBadge(status) {
-        let colorClass = '';
-        let text = '';
-        switch (status) {
-            case 'ENROLLED':
-                colorClass = 'bg-green-100 text-green-800';
-                text = 'Enrolled';
-                break;
-            case 'PENDING':
-                colorClass = 'bg-yellow-100 text-yellow-800';
-                text = 'Pending';
-                break;
-            case 'DISABLED':
-                colorClass = 'bg-red-100 text-red-800';
-                text = 'Disabled';
-                break;
-            default:
-                colorClass = 'bg-gray-100 text-gray-800';
-                text = 'N/A';
-        }
-        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${text}</span>`;
-    }
-
-
     function createUserRow(user) {
         const row = document.createElement('tr');
 
-        const showDeactivate = user.status === 'ACTIVE' || user.status === 'PENDING_MFA';
+        // Check if user is an ADMIN to hide actions
+        const isAdmin = user.role === 'ADMIN';
+        const showDeactivate = !isAdmin && (user.status === 'ACTIVE' || user.status === 'PENDING_MFA');
 
-        const actionsHtml = `
-            <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editUser('${user.user_id}')">Edit</button>
-            ${showDeactivate ?
-                `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateUser('${user.user_id}')">Deactivate</button>`
-                : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
-        `;
+        let actionsHtml = '';
+        if (isAdmin) {
+            actionsHtml = `<span class="text-gray-400 text-xs italic">System Protected</span>`;
+        } else {
+            actionsHtml = `
+                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editUser('${user.user_id}')">Edit</button>
+                ${showDeactivate ?
+                    `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateUser('${user.user_id}')">Deactivate</button>`
+                    : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
+            `;
+        }
 
         row.innerHTML = `
             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${user.username || 'N/A'}</td>
@@ -419,100 +379,53 @@
         return row;
     }
 
-
-    // --- Core Logic ---
-
-    // Fetch Fiduciaries and populate cache and dropdown
     async function fetchFiduciariesForDropdown() {
         try {
-            const payload = {
-            "_func": "list_fiduciaries",
-            "status": "ACTIVE",
-            "search": "",
-            "page": 1,
-            "limit": 50
-            };
+            const payload = { "_func": "list_fiduciaries", "status": "ACTIVE", "search": "", "page": 1, "limit": 50 };
             const response = await fetch(API_URL_FIDUCIARIES_LIST, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
-
-            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list for dropdown.");
-
+            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list.");
             const responseData = await response.json();
-
-            if (responseData.status === 401) {
-              alert("Auth Failed: " + (responseData.message || "Authentication required."));
-              handleLogout();
-              return;
-            }
+            if (responseData.status === 401) { handleLogout(); return; }
             const fiduciaries = responseData.data || responseData;
-
             fiduciarySelect.innerHTML = '<option value="">-- No Fiduciary Assigned (Global) --</option>';
             fiduciaries.forEach(f => {
                 const option = document.createElement('option');
                 option.value = f.fiduciary_id;
                 option.textContent = f.name;
                 fiduciarySelect.appendChild(option);
-                // Cache the fiduciary for lookup in the main table
                 FiduciaryList[f.fiduciary_id] = f;
             });
-        } catch (error) {
-            console.error("Error fetching Fiduciaries for dropdown:", error);
-        }
+        } catch (error) { console.error(error); }
     }
 
     async function loadUsers(searchTerm = "") {
         tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading CMS User data...</td></tr>`;
         errorMessageP.classList.add('hidden');
-
         try {
-            const listPayload = {
-                "_func": "list_users",
-                "search": searchTerm,
-                "page": 1,
-                "limit": 50
-            };
-
+            const listPayload = { "_func": "list_users", "search": searchTerm, "page": 1, "limit": 50 };
             const response = await fetch(API_URL_USERS, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${AUTH_TOKEN}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(listPayload)
             });
-
-            if (!response.ok) {
-                throw new Error(`API returned status ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`API returned status ${response.status}`);
             const responseData = await response.json();
-
-            // Assuming responseData structure is: [{...}, {...}] or { success: true, data: [...] }
             const users = responseData.data || responseData;
-
             if (Array.isArray(users)) {
                 tableBody.innerHTML = '';
-
                 if (users.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No CMS Users found matching criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No CMS Users found.</td></tr>`;
                 } else {
-                    users.forEach(user => {
-                        tableBody.appendChild(createUserRow(user));
-                    });
+                    users.forEach(user => tableBody.appendChild(createUserRow(user)));
                     countSpan.textContent = `Showing 1 - ${users.length} of ${users.length} Total`;
                 }
-            } else {
-                throw new Error(responseData.message || 'API returned unexpected structure.');
             }
-
         } catch (error) {
-            console.error("Error loading CMS Users:", error);
-            tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">
-                Error connecting to the CMS API. Ensure the service is running and the token is valid.
-            </td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">Error connecting to the CMS API.</td></tr>`;
             errorMessageP.classList.remove('hidden');
             countSpan.textContent = '0 Total';
         }
@@ -521,33 +434,19 @@
     async function fetchUserDetails(userId) {
         try {
             const payload = { "_func": "get_user", "user_id": userId };
-
             const response = await fetch(API_URL_USERS, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
-
-            if (!response.ok) throw new Error(`Failed to fetch details for user ${userId}. Status: ${response.status}`);
-
             const responseData = await response.json();
-
-            if (responseData.user_id) {
-                return responseData;
-            } else {
-                throw new Error(responseData.message || 'User details not found.');
-            }
-        } catch (error) {
-            console.error("Error fetching User details:", error);
-            alert(`Failed to load details for editing: ${error.message}`);
-            return null;
-        }
+            return responseData.user_id ? responseData : null;
+        } catch (error) { return null; }
     }
 
     async function editUser(id) {
         showModal('Edit CMS User', true);
         const user = await fetchUserDetails(id);
-
         if (user) {
             userIdHidden.value = user.user_id;
             userFullNameInput.value = user.username || '';
@@ -555,38 +454,20 @@
             userRoleSelect.value = user.role_name || 'OPERATOR';
             userStatusSelect.value = user.status || 'ACTIVE';
             fiduciarySelect.value = user.fiduciary_id || '';
-
-            // Password field is cleared and has placeholder logic in showModal
-        } else {
-            closeModal();
-        }
+        } else { closeModal(); }
     }
 
-    // Handle Deactivate
     async function deactivateUser(id) {
-        if (confirm(`Are you sure you want to DEACTIVATE CMS User ID ${id}? This will immediately suspend all login access.`)) {
+        if (confirm(`Are you sure you want to DEACTIVATE CMS User ID ${id}?`)) {
             try {
                 const payload = { "_func": "deactivate_user", "user_id": id, "status": "INACTIVE" };
-
                 const response = await fetch(API_URL_USERS, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                     body: JSON.stringify(payload)
                 });
-
-                if (response.ok) {
-                    alert(`CMS User ID ${id} successfully deactivated.`);
-                    loadUsers();
-                } else {
-                    const responseData = await response.json();
-                    const errorMsg = responseData.message || responseData.error.message || `Status: ${response.status}`;
-                    alert(`Failed to deactivate User ID ${id}: ${errorMsg}`);
-                }
-
-            } catch (error) {
-                console.error("Error during deactivation API call:", error);
-                alert("Network error: Could not communicate with the API during deactivation.");
-            }
+                if (response.ok) { loadUsers(); }
+            } catch (error) { console.error(error); }
         }
     }
 
@@ -596,9 +477,6 @@
         window.location.href = "../index.html";
     }
 
-    // --- Event Listeners and Initialization ---
-
-    // --- Variable Assignments ---
     sidebar = document.getElementById('sidebar');
     menuToggle = document.getElementById('menu-toggle');
     backdrop = document.getElementById('sidebar-backdrop');
@@ -610,8 +488,6 @@
     countSpan = document.getElementById('user-count');
     errorMessageP = document.getElementById('user-error-message');
     searchInput = document.getElementById('search-input');
-
-    // Form Fields for Edit/Add
     userIdHidden = document.getElementById('user-id-hidden');
     userFullNameInput = document.getElementById('user-full-name');
     userEmailInput = document.getElementById('user-email');
@@ -620,37 +496,25 @@
     userStatusSelect = document.getElementById('user-status-select');
     fiduciarySelect = document.getElementById('fiduciary-select');
 
-
-    // --- Event Listener Attachments ---
     menuToggle.addEventListener('click', toggleMenu);
     backdrop.addEventListener('click', toggleMenu);
     addUserBtn.addEventListener('click', () => showModal('Add New CMS User'));
     closeModalBtn.addEventListener('click', closeModal);
 
-    // --- Search Functionality ---
-    searchInput.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            const searchTerm = searchInput.value.trim();
-            loadUsers(searchTerm);
-        }
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); loadUsers(searchInput.value.trim()); }
     });
 
-    // --- Initialization Call ---
     fetchFiduciariesForDropdown();
     loadUsers();
 
-     userForm.addEventListener('submit', async function(event) {
+    userForm.addEventListener('submit', async function(event) {
         event.preventDefault();
-
         const formData = new FormData(userForm);
         const data = Object.fromEntries(formData.entries());
-
         const isEditing = !!data.userId;
-        const func = isEditing ? "update_user" : "create_user";
-
         const payload = {
-            "_func": func,
+            "_func": isEditing ? "update_user" : "create_user",
             "user_id": data.userId,
             "username": data.name,
             "email": data.email,
@@ -658,66 +522,33 @@
             "fiduciary_id":data.fiduciary_id,
             "status": data.status
         };
+        if (data.password && data.password.length >= 12) payload.password = data.password;
+        else if (!isEditing) { alert("Password min 12 chars."); return; }
 
-        // Handle password only if provided, and only for creation/reset on edit
-        if (data.password && data.password.length >= 12) {
-             payload.password = data.password;
-        } else if (!isEditing) {
-            // Password required for creation
-            alert("Password is required and must be at least 12 characters long for new users.");
-            return;
-        }
-
-        // Clean up payload for update
         if (isEditing) {
-            delete payload.email; // Email is immutable/read-only on update
-            if (!payload.password) {
-                 // Do not send password field if it was left blank during edit
-                 delete payload.password;
-            }
-        } else {
-            delete payload.user_id; // Remove ID for creation
-        }
-
+            delete payload.email;
+            if (!payload.password) delete payload.password;
+        } else delete payload.user_id;
 
         try {
-            document.getElementById('save-user-btn').textContent = isEditing ? 'Updating...' : 'Saving...';
-            document.getElementById('save-user-btn').disabled = true;
-
+            const btn = document.getElementById('save-user-btn');
+            btn.textContent = 'Processing...'; btn.disabled = true;
             const response = await fetch(API_URL_USERS, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${AUTH_TOKEN}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify(payload)
             });
-
-            if (response.ok) {
-                alert(`User ${isEditing ? 'updated' : 'added'} successfully!`);
-                closeModal();
-                loadUsers();
-            } else {
-                const responseData = await response.json();
-                const errorMsg = responseData.message;
-                alert(`Failed to ${isEditing ? 'update' : 'add'} User: ${errorMsg}`);
-            }
-
-        } catch (error) {
-            console.error(`Error ${isEditing ? 'updating' : 'creating'} User:`, error);
-            alert("Network error: Could not connect to API.");
-        } finally {
+            if (response.ok) { closeModal(); loadUsers(); }
+            else { const res = await response.json(); alert(res.message); }
+        } catch (error) { console.error(error); } finally {
             document.getElementById('save-user-btn').textContent = isEditing ? 'Update User' : 'Save CMS User';
             document.getElementById('save-user-btn').disabled = false;
         }
     });
 
-    // Expose functions globally so they can be called by inline onclick attributes
     window.editUser = editUser;
     window.deactivateUser = deactivateUser;
-    window.toggleMenu = toggleMenu; // Mobile menu
-
+    window.toggleMenu = toggleMenu;
 </script>
 </body>
-
 </html>
