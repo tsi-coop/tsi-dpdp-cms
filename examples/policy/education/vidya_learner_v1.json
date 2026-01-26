@@ -16,7 +16,8 @@
         "retention_duration_unit": "YEARS",
         "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
-        "is_sensitive": false
+        "is_sensitive": false,
+        "requires_parental_consent": true
       },
       {
         "id": "purpose_learning_tracking",
@@ -30,7 +31,8 @@
         "retention_duration_unit": "YEARS",
         "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
-        "is_sensitive": false
+        "is_sensitive": false,
+        "requires_parental_consent": true
       },
       {
         "id": "purpose_ai_recommendations",
@@ -44,7 +46,8 @@
         "retention_duration_unit": "YEARS",
         "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
-        "is_sensitive": false
+        "is_sensitive": false,
+        "requires_parental_consent": true
       },
       {
         "id": "purpose_scholarship_alerts",
@@ -58,7 +61,8 @@
         "retention_duration_unit": "YEARS",
         "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
-        "is_sensitive": false
+        "is_sensitive": false,
+        "requires_parental_consent": true
       }
     ],
     "data_categories_details": [
@@ -99,7 +103,8 @@
         "retention_duration_unit": "YEARS",
         "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
-        "is_sensitive": false
+        "is_sensitive": false,
+        "requires_parental_consent": true
       },
       {
         "id": "purpose_learning_tracking",
@@ -113,7 +118,8 @@
         "retention_duration_unit": "YEARS",
         "retention_start_event": "CESSATION",
         "is_mandatory_for_service": true,
-        "is_sensitive": false
+        "is_sensitive": false,
+        "requires_parental_consent": true
       },
       {
         "id": "purpose_ai_recommendations",
@@ -133,7 +139,8 @@
         "retention_duration_unit": "YEARS",
         "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
-        "is_sensitive": false
+        "is_sensitive": false,
+        "requires_parental_consent": true
       },
       {
         "id": "purpose_scholarship_alerts",
@@ -150,7 +157,8 @@
         "retention_duration_unit": "YEARS",
         "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
-        "is_sensitive": false
+        "is_sensitive": false,
+        "requires_parental_consent": true
       }
     ],
     "data_categories_details": [

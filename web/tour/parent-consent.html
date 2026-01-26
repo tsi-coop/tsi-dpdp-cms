@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vidya EdTech - Verifiable Parental Consent</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67;
+            --vidya-accent: #f59e0b; /* Amber for learning focus */
+            --background: #f8fafc;
+        }
+        body { font-family: ui-sans-serif, system-ui, sans-serif; background-color: var(--background); color: #334155; }
+        .stepper-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 700; transition: all 0.3s ease; }
+        .stepper-active { background-color: var(--tsi-primary); color: white; }
+        .stepper-inactive { background-color: #e2e8f0; color: #94a3b8; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; padding: 2.5rem; }
+        .input-field { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; margin-top: 6px; outline: none; transition: border-color 0.2s; }
+        .input-field:focus { border-color: var(--tsi-primary); box-shadow: 0 0 0 3px rgba(0, 106, 103, 0.1); }
+        .btn-primary { background-color: var(--tsi-primary); color: white; padding: 14px; border-radius: 12px; font-weight: 700; width: 100%; transition: transform 0.1s; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
+        /* Modal Style for Error/Success */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: white; padding: 2rem; border-radius: 1rem; max-width: 400px; width: 90%; text-align: center; }
+
+        /* Configuration Modal */
+        .credentials-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95); display: flex;
+            justify-content: center; align-items: center; z-index: 3000;
+        }
+        .credentials-content {
+            background: white; padding: 40px; border-radius: 24px;
+            width: 420px; text-align: left; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .credentials-content h2 { margin-top: 0; color: #006A67; font-size: 1.5rem; font-weight: 800; }
+        .credentials-content label { display:block; font-weight:700; font-size: 0.7rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .credentials-content input {
+            width: 100%; padding: 12px; margin-bottom: 20px;
+            border: 1px solid #cbd5e1; border-radius: 12px; box-sizing: border-box;
+            font-family: monospace; font-size: 0.85rem;
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<!-- Tour Setup Modal -->
+<div id="credentials-modal" class="credentials-modal">
+    <div class="credentials-content">
+        <h2 style="margin-bottom: 8px;">Tour Configuration</h2>
+        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 25px; line-height: 1.5;">Connect this Vidya EdTech demo to your CMS backend by entering your API credentials below.</p>
+
+        <label>X-API-Key</label>
+        <input type="text" id="api-key-input" placeholder="UUID Key">
+
+        <label>X-API-Secret</label>
+        <input type="password" id="api-secret-input" placeholder="Secret Token">
+
+        <label>Policy ID</label>
+        <input type="text" id="policy-id-input" placeholder="e.g. VIDYA_LEARNER_POLICY_V1">
+
+        <button id="save-credentials-btn" class="btn-primary">Initialize Onboarding Tour</button>
+    </div>
+</div>
+
+<div class="min-h-screen flex flex-col items-center justify-center p-6">
+
+    <!-- Branding Header -->
+    <div class="mb-8 text-center">
+        <div class="flex items-center justify-center gap-3 mb-2">
+            <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white font-black text-xl italic">V</div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Vidya EdTech</h1>
+        </div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Verifiable Parental Consent Gateway</p>
+    </div>
+
+    <!-- Stepper Navigation -->
+    <div class="flex items-center gap-4 mb-10">
+        <div id="step-1-indicator" class="stepper-circle stepper-active">1</div>
+        <div class="w-8 h-0.5 bg-slate-200"></div>
+        <div id="step-2-indicator" class="stepper-circle stepper-inactive">2</div>
+        <div class="w-8 h-0.5 bg-slate-200"></div>
+        <div id="step-3-indicator" class="stepper-circle stepper-inactive">3</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="card w-full max-w-lg relative overflow-hidden">
+
+        <!-- STEP 1: LEARNER & GUARDIAN DETAILS -->
+        <section id="phase-identity" class="fade-in">
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Registration Context</h2>
+            <p class="text-sm text-slate-500 mb-6 leading-relaxed">As per Section 9 of the DPDP Act, we require verifiable consent from a parent or guardian for learners under 18.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Learner (Student) Name</label>
+                    <input type="text" id="student-name" class="input-field" placeholder="e.g. Rahul Sharma">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Learner ID (Email)</label>
+                    <input type="email" id="student-email" class="input-field" placeholder="rahul@example.com">
+                </div>
+                <div class="pt-4 border-t border-slate-100">
+                    <label class="text-[10px] font-black text-amber-600 uppercase tracking-widest">Guardian Name</label>
+                    <input type="text" id="guardian-name" class="input-field" placeholder="e.g. Priya Sharma">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-amber-600 uppercase tracking-widest">Guardian Mobile (for OTP)</label>
+                    <input type="tel" id="guardian-mobile" class="input-field" placeholder="+91 XXXXX XXXXX">
+                </div>
+                <button onclick="transitionToOtp()" class="btn-primary mt-6">Send Verification OTP</button>
+            </div>
+        </section>
+
+        <!-- STEP 2: OTP VERIFICATION -->
+        <section id="phase-otp" class="hidden fade-in text-center">
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Verify Guardian Identity</h2>
+            <p class="text-sm text-slate-500 mb-8">We've sent a code to the parent's mobile. Enter the 6-digit code below.</p>
+
+            <div class="flex justify-center gap-2 mb-8">
+                <input type="text" maxlength="6" id="otp-input" class="w-48 text-center text-2xl font-black tracking-[0.5em] p-3 border-2 border-slate-200 rounded-xl focus:border-teal-600 outline-none" placeholder="------">
+            </div>
+
+            <p class="text-[10px] text-slate-400 italic mb-6">Demo Hint: Use 123456</p>
+            <button onclick="verifyOtpAndLoadPolicy()" class="btn-primary">Verify & Review Policy</button>
+            <button onclick="switchPhase('identity')" class="mt-4 text-xs font-bold text-slate-400 hover:text-slate-600">Edit Details</button>
+        </section>
+
+        <!-- STEP 3: CONSENT REVIEW (The Registry Hook) -->
+        <section id="phase-consent" class="hidden fade-in">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-800">Privacy Permissions</h2>
+                <span class="bg-teal-50 text-teal-700 text-[10px] font-black px-2 py-1 rounded uppercase border border-teal-100">Section 9 Compliant</span>
+            </div>
+
+            <div id="policy-content" class="space-y-4 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+                <!-- Dynamically populated from backend -->
+                <div class="animate-pulse space-y-4">
+                    <div class="h-20 bg-slate-100 rounded-xl"></div>
+                    <div class="h-20 bg-slate-100 rounded-xl"></div>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-slate-100">
+                <button id="final-consent-btn" onclick="executeRegistrySync()" class="btn-primary">I Authorize Processing</button>
+                <p class="text-[9px] text-slate-400 mt-4 text-center leading-relaxed">By clicking authorize, you provide cryptographically verifiable consent as the legal guardian of the learner. You can withdraw this at any time via the Vidya Privacy Dashboard.</p>
+            </div>
+        </section>
+
+        <!-- STEP 4: SUCCESS -->
+        <section id="phase-success" class="hidden fade-in text-center py-10">
+            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h2 class="text-2xl font-black text-slate-900 mb-2">Onboarding Complete</h2>
+            <p class="text-sm text-slate-500 mb-8">Identity linked and parental consent artifact recorded in the national registry.</p>
+            <button onclick="window.location.href='user-dashboard.html'" class="btn-primary">Go to Learner Dashboard</button>
+        </section>
+    </div>
+</div>
+
+<!-- Modal Overlay -->
+<div id="msg-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
+        <p id="modal-body" class="text-sm text-slate-600 mb-6"></p>
+        <button onclick="document.getElementById('msg-modal').style.display='none'" class="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold text-sm">Dismiss</button>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const API_BASE = 'http://localhost:8080/api/v1/client/consent';
+    const POLICY_API = 'http://localhost:8080/api/v1/client/policy';
+
+    // Credentials initialized to null, populated via modal
+    let X_API_KEY = null;
+    let X_API_SECRET = null;
+    let POLICY_ID = null;
+
+    let currentPolicy = null;
+    let verificationLogId = null;
+    let learnerChoices = {};
+
+    // UI Helpers
+    function switchPhase(phaseId) {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById('phase-' + phaseId).classList.remove('hidden');
+
+        // Update Indicators
+        const step = phaseId === 'identity' ? 1 : (phaseId === 'otp' ? 2 : 3);
+        for(let i=1; i<=3; i++) {
+            const el = document.getElementById(`step-${i}-indicator`);
+            el.className = `stepper-circle ${i <= step ? 'stepper-active' : 'stepper-inactive'}`;
+        }
+    }
+
+    function showModal(title, body) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-body').textContent = body;
+        document.getElementById('msg-modal').style.display = 'flex';
+    }
+
+    // Phase 1 -> 2
+    function transitionToOtp() {
+        const name = document.getElementById('student-name').value.trim();
+        const email = document.getElementById('student-email').value.trim();
+        const pMobile = document.getElementById('guardian-mobile').value.trim();
+
+        if(!name || !email || !pMobile) return alert("Please complete all learner and guardian fields.");
+
+        // Simulation: Cache details
+        localStorage.setItem('temp_learner_email', email);
+        localStorage.setItem('temp_learner_name', name);
+        localStorage.setItem('temp_guardian_name', document.getElementById('guardian-name').value);
+        localStorage.setItem('temp_guardian_mobile', pMobile);
+
+        switchPhase('otp');
+    }
+
+    // Phase 2 -> 3
+    async function verifyOtpAndLoadPolicy() {
+        const otp = document.getElementById('otp-input').value;
+        if(otp !== '123456') return alert("Invalid Verification Code. (Try 123456)");
+
+        switchPhase('consent');
+        await loadVidyaPolicy();
+    }
+
+    async function loadVidyaPolicy() {
+        try {
+            const res = await fetch(POLICY_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': X_API_KEY, 'X-API-Secret': X_API_SECRET },
+                body: JSON.stringify({ "_func": "get_policy", "policy_id": POLICY_ID })
+            });
+            const data = await res.json();
+            const content = typeof data.policy_content === 'string' ? JSON.parse(data.policy_content) : data.policy_content;
+            currentPolicy = content.en; // Defaulting to English
+
+            renderPurposes(currentPolicy.data_processing_purposes);
+        } catch (e) {
+            showModal("Registry Error", "Could not fetch the learner policy. Check connectivity and credentials.");
+        }
+    }
+
+    function renderPurposes(purposes) {
+        const container = document.getElementById('policy-content');
+        container.innerHTML = '';
+
+        purposes.forEach(p => {
+            const requiresVPC = p.requires_parental_consent === true;
+            const div = document.createElement('div');
+            div.className = "p-4 bg-slate-50 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:border-amber-200";
+
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="max-w-[85%]">
+                        <p class="font-bold text-slate-800 text-sm">${p.name}</p>
+                        <p class="text-[10px] text-slate-500 mt-1">${p.description}</p>
+                    </div>
+                    <input type="checkbox" id="check-${p.id}" ${p.is_mandatory_for_service ? 'checked disabled' : 'checked'}
+                        class="w-5 h-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500">
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <span class="text-[8px] font-black uppercase bg-white border px-1.5 py-0.5 rounded text-slate-400">Retention: ${p.retention_duration_value} ${p.retention_duration_unit}</span>
+                    ${requiresVPC ? '<span class="text-[8px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-100 px-1.5 py-0.5 rounded">VPC REQUIRED</span>' : ''}
+                </div>
+            `;
+            container.appendChild(div);
+            learnerChoices[p.id] = true;
+        });
+    }
+
+    async function executeRegistrySync() {
+        const btn = document.getElementById('final-consent-btn');
+        btn.disabled = true;
+        btn.textContent = "Updating Registry...";
+
+        try {
+            const studentEmail = localStorage.getItem('temp_learner_email');
+            const guardianName = localStorage.getItem('temp_guardian_name');
+            const guardianMobile = localStorage.getItem('temp_guardian_mobile');
+            const anonymousId = localStorage.getItem('tsi_dpdp_cms_anon_id') || `anon_${Date.now()}`;
+
+            // 1. Record Parental Verification Artifact
+            const vpcRes = await fetch(API_BASE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': X_API_KEY, 'X-API-Secret': X_API_SECRET },
+                body: JSON.stringify({
+                    "_func": "record_parent_consent",
+                    "child_principal_id": studentEmail,
+                    "guardian_principal_id": guardianMobile,
+                    "verification_mechanism": "INTERNAL_OTP",
+                    "provider_name": "VIDYA_AUTH_ENGINE",
+                    "verification_ref_id": "otp_tx_" + Math.random().toString(36).substr(2, 9),
+                    "proof_metadata": { "guardian_name": guardianName, "timestamp": new Date().toISOString() }
+                })
+            });
+            const vpcData = await vpcRes.json();
+            verificationLogId = vpcData.verification_log_id;
+
+            // 2. Link Identity (Consolidation with MINOR metadata)
+            await fetch(API_BASE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': X_API_KEY, 'X-API-Secret': X_API_SECRET },
+                body: JSON.stringify({
+                    "_func": "link_user",
+                    "anonymous_user_id": anonymousId,
+                    "authenticated_user_id": studentEmail,
+                    "age_category": "MINOR",
+                    "guardian_id": guardianMobile,
+                    "verification_status": "VERIFIED"
+                })
+            });
+
+            // 3. Record Actual Consent (Atomic Link to Verification Log)
+            const finalChoices = [];
+            currentPolicy.data_processing_purposes.forEach(p => {
+                const checked = document.getElementById(`check-${p.id}`).checked;
+                finalChoices.push({
+                    "data_point_id": p.id,
+                    "consent_granted": checked,
+                    "purpose_agreed_to": p.name
+                });
+            });
+
+            await fetch(API_BASE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': X_API_KEY, 'X-API-Secret': X_API_SECRET },
+                body: JSON.stringify({
+                    "_func": "record_consent",
+                    "user_id": studentEmail,
+                    "policy_id": POLICY_ID,
+                    "verification_log_id": verificationLogId,
+                    "data_point_consents": finalChoices,
+                    "user_agent": navigator.userAgent
+                })
+            });
+
+            localStorage.setItem('dp_user_id', studentEmail);
+            switchPhase('success');
+
+        } catch (e) {
+            console.error(e);
+            showModal("Sync Failure", "The registry could not verify the parental artifact. Please try again.");
+            btn.disabled = false;
+            btn.textContent = "Retry Authorization";
+        }
+    }
+
+    // --- App Bootstrap ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Clear old session trackers if initiating a new tour
+        if(!localStorage.getItem('tsi_dpdp_cms_anon_id')) {
+            localStorage.setItem('tsi_dpdp_cms_anon_id', 'anon_vidya_' + Math.random().toString(36).substr(2, 9));
+        }
+
+        const storedKey = localStorage.getItem('x_api_key');
+        const storedSecret = localStorage.getItem('x_api_secret');
+        const storedPolicy = localStorage.getItem('policy_id');
+
+        if (!storedKey || !storedSecret || !storedPolicy) {
+            document.getElementById('credentials-modal').style.display = 'flex';
+        } else {
+            X_API_KEY = storedKey;
+            X_API_SECRET = storedSecret;
+            POLICY_ID = storedPolicy;
+            document.getElementById('credentials-modal').style.display = 'none';
+        }
+    });
+
+    document.getElementById('save-credentials-btn').onclick = () => {
+        const key = document.getElementById('api-key-input').value.trim();
+        const secret = document.getElementById('api-secret-input').value.trim();
+        const pId = document.getElementById('policy-id-input').value.trim();
+
+        if (key && secret && pId) {
+            localStorage.setItem('x_api_key', key);
+            localStorage.setItem('x_api_secret', secret);
+            localStorage.setItem('policy_id', pId);
+
+            X_API_KEY = key;
+            X_API_SECRET = secret;
+            POLICY_ID = pId;
+
+            document.getElementById('credentials-modal').style.display = 'none';
+        } else {
+            alert("All configuration fields are required to start the tour.");
+        }
+    };
+</script>
+</body>
+</html>
