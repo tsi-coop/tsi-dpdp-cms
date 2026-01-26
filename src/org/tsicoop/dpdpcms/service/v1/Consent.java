@@ -96,7 +96,7 @@ public class Consent implements Action {
                     String policyVersion = "";
                     String timestampStr = (String) input.get("timestamp");
                     String jurisdiction = "IN";
-                    String languageSelected = (String) input.get("language_selected");
+                    String languageSelected = input.get("language_selected")!=null?(String) input.get("language_selected"):"en";
                     String consentStatusGeneral = "CONSENT_GIVEN";
                     String consentMechanism = "CONSENT_GIVEN";
                     String ipAddressStr = (String) req.getRemoteAddr();

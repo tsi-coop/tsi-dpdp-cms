@@ -23,12 +23,6 @@
     },
     "proof_metadata": {
       "type": "object"
-    },
-    "fiduciary_id": {
-      "type": "string"
-    },
-    "user_id": {
-      "type": "string"
     }
   },
   "required": [
@@ -38,8 +32,6 @@
     "verification_mechanism",
     "provider_name",
     "verification_ref_id",
-    "proof_metadata",
-    "fiduciary_id",
-    "user_id"
+    "proof_metadata"
   ]
 }

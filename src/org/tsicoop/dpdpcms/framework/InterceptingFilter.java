@@ -40,7 +40,8 @@ public class InterceptingFilter implements Filter {
             "list_purge_requests",
             "update_purge_status",
             "list_notifications",
-            "mark_notification_read"
+            "mark_notification_read",
+            "record_parent_consent"
             // Add other client-facing functions as needed
     ));
 

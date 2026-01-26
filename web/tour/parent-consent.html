@@ -289,6 +289,7 @@
             const guardianName = localStorage.getItem('temp_guardian_name');
             const guardianMobile = localStorage.getItem('temp_guardian_mobile');
             const anonymousId = localStorage.getItem('tsi_dpdp_cms_anon_id') || `anon_${Date.now()}`;
+            const timestamp = new Date().toISOString();
 
             // 1. Record Parental Verification Artifact
             const vpcRes = await fetch(API_BASE, {
@@ -301,7 +302,7 @@
                     "verification_mechanism": "INTERNAL_OTP",
                     "provider_name": "VIDYA_AUTH_ENGINE",
                     "verification_ref_id": "otp_tx_" + Math.random().toString(36).substr(2, 9),
-                    "proof_metadata": { "guardian_name": guardianName, "timestamp": new Date().toISOString() }
+                    "proof_metadata": { "guardian_name": guardianName, "timestamp": timestamp }
                 })
             });
             const vpcData = await vpcRes.json();
@@ -328,7 +329,8 @@
                 finalChoices.push({
                     "data_point_id": p.id,
                     "consent_granted": checked,
-                    "purpose_agreed_to": p.name
+                    "purpose_agreed_to": p.name,
+                    "timestamp_updated": timestamp // FIX: Add required property to satisfy backend validation
                 });
             });
 
