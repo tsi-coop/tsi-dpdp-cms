@@ -252,7 +252,7 @@ public class JobManager implements ServletContextListener {
         // Define SQL based on subtype
         switch (subtype.toUpperCase()) {
             case "CONSENT":
-                sql = "SELECT user_id as principal, policy_id, jurisdiction, language_selected as language, consent_mechanism as action, ip_address, user_agent, data_point_consents as consents, is_active_consent as active, created_at, last_updated_at FROM consent_records WHERE fiduciary_id=? AND timestamp BETWEEN ? AND ?";
+                sql = "SELECT user_id as principal, policy_id, jurisdiction, language_selected as language, consent_mechanism as action, ip_address, user_agent, data_point_consents as consents, is_active_consent as active, created_at, last_updated_at, verification_log_id FROM consent_records WHERE fiduciary_id=? AND timestamp BETWEEN ? AND ?";
                 break;
             case "PRINCIPAL":
                 sql = "SELECT user_id as principal, created_at, last_consent_mechanism as last_action, last_ces_run FROM data_principal WHERE fiduciary_id=? AND created_at BETWEEN ? AND ?";
@@ -265,6 +265,9 @@ public class JobManager implements ServletContextListener {
                 break;
             case "AUDIT":
                 sql = "SELECT timestamp, user_id as principal, audit_action as action, context_details FROM audit_logs WHERE fiduciary_id=? AND timestamp BETWEEN ? AND ?";
+                break;
+            case "PARENT_CONSENT":
+                sql = "SELECT verified_at, child_principal_id as principal, guardian_principal_id as guardian, verification_mechanism, provider_name, verification_ref_id, proof_metadata FROM parental_verification_logs WHERE fiduciary_id=? AND verified_at BETWEEN ? AND ?";
                 break;
             default:
                 throw new Exception("Unknown Export Subtype: " + subtype);
