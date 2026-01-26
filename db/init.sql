@@ -102,13 +102,12 @@ CREATE TABLE IF NOT EXISTS consent_records (
     is_active_consent BOOLEAN NOT NULL DEFAULT TRUE, -- Flag for current active consent
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    verification_log_id UUID,
     FOREIGN KEY (policy_id, policy_version) REFERENCES consent_policies(id, version)
 );
 
--- FIX: Define the partial unique index separately after table creation
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_consent
 ON consent_records (user_id, fiduciary_id) WHERE is_active_consent IS TRUE;
-
 
 --
 -- 6. Table: audit_logs (Can be created now, references users)
@@ -171,6 +170,9 @@ CREATE TABLE IF NOT EXISTS data_principal (
     user_id VARCHAR(255) PRIMARY KEY , -- Data Principal's ID
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
     last_consent_mechanism VARCHAR(100),
+    age_category VARCHAR(20) DEFAULT 'ADULT', -- ADULT, MINOR
+    guardian_id VARCHAR(255),                 -- Links to Guardian's Principal ID
+    verification_status VARCHAR(20) DEFAULT 'NOT_VERIFIED',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_ces_run TIMESTAMP
 );
@@ -237,3 +239,30 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 
 CREATE INDEX idx_jobs_status ON jobs(status) WHERE status = 'PENDING';
+
+--
+-- 14. Creating a dedicated table for Verification Artifacts
+-- This allows developers to store mechanism-specific proofs (OTP logs, VC Hashes, KYC IDs)
+--
+CREATE TABLE IF NOT EXISTS parental_verification_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    child_principal_id VARCHAR(255) NOT NULL,
+    guardian_principal_id VARCHAR(255) NOT NULL,
+    verification_mechanism VARCHAR(50) NOT NULL, -- e.g., 'AADHAAR_VC', 'OTP_LINKING', 'KYC_PROVIDER'
+    provider_name VARCHAR(100),                  -- e.g., 'UIDAI', 'DIGIO', 'INTERNAL_AUTH'
+    verification_ref_id VARCHAR(255),            -- External transaction ID or Hash
+    proof_metadata JSONB,                        -- Stores ZKP response, OTP session info, etc.
+    verified_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    fiduciary_id UUID NOT NULL
+);
+
+-- Index for relationship lookups
+CREATE INDEX idx_guardian_child ON parental_verification_logs(guardian_principal_id, child_principal_id);
+
+-- SEPARATE CONSTRAINT: Establishing the legal link to the verification logs outside the column addition.
+-- This ensures the relational integrity is defined as a discrete schema artifact via the 'REFERENCES' clause.
+ALTER TABLE consent_records ADD CONSTRAINT fk_consent_parental_log FOREIGN KEY (verification_log_id) REFERENCES parental_verification_logs(id);
+
+-- SEPARATE INDEX: Descriptive index for the parental log reference.
+-- Specifically facilitates high-performance joins with the 'parental_verification_logs' table.
+CREATE INDEX IF NOT EXISTS idx_consent_parental_log_link ON consent_records(verification_log_id);
