@@ -51,7 +51,7 @@
 </head>
 <body>
 
-<!-- Tour Setup Modal -->
+<!-- Tour Setup Modal (Authorization Page) -->
 <div id="credentials-modal" class="credentials-modal">
     <div class="credentials-content">
         <h2 style="margin-bottom: 8px;">Tour Configuration</h2>
@@ -330,7 +330,7 @@
                     "data_point_id": p.id,
                     "consent_granted": checked,
                     "purpose_agreed_to": p.name,
-                    "timestamp_updated": timestamp // FIX: Add required property to satisfy backend validation
+                    "timestamp_updated": timestamp
                 });
             });
 
@@ -360,7 +360,7 @@
 
     // --- App Bootstrap ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Clear old session trackers if initiating a new tour
+        // Always generate a fresh anonymous session tracker on refresh if not present
         if(!localStorage.getItem('tsi_dpdp_cms_anon_id')) {
             localStorage.setItem('tsi_dpdp_cms_anon_id', 'anon_vidya_' + Math.random().toString(36).substr(2, 9));
         }
@@ -369,13 +369,21 @@
         const storedSecret = localStorage.getItem('x_api_secret');
         const storedPolicy = localStorage.getItem('policy_id');
 
-        if (!storedKey || !storedSecret || !storedPolicy) {
-            document.getElementById('credentials-modal').style.display = 'flex';
-        } else {
+        // FORCE DISPLAY: Always show the authorization/credentials modal on page load or refresh
+        document.getElementById('credentials-modal').style.display = 'flex';
+
+        // CONVENIENCE: Pre-fill fields if they exist in storage so the user just needs to click "Initialize"
+        if (storedKey) {
+            document.getElementById('api-key-input').value = storedKey;
             X_API_KEY = storedKey;
+        }
+        if (storedSecret) {
+            document.getElementById('api-secret-input').value = storedSecret;
             X_API_SECRET = storedSecret;
+        }
+        if (storedPolicy) {
+            document.getElementById('policy-id-input').value = storedPolicy;
             POLICY_ID = storedPolicy;
-            document.getElementById('credentials-modal').style.display = 'none';
         }
     });
 
