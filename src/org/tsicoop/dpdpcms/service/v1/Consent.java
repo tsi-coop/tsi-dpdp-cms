@@ -102,6 +102,9 @@ public class Consent implements Action {
                     String ipAddressStr = (String) req.getRemoteAddr();
                     String userAgent = (String) input.get("user_agent");
                     JSONArray dataPointConsents = (JSONArray) input.get("data_point_consents");
+                    String verificationLogIdStr = (String) input.get("verification_log_id");
+                    UUID verificationLogId = (verificationLogIdStr != null && !verificationLogIdStr.isEmpty()) ? UUID.fromString(verificationLogIdStr) : null;
+
 
                     // Basic validation
                     if (userId == null || userId.isEmpty()
@@ -126,9 +129,12 @@ public class Consent implements Action {
                                                                                     Constants.ACTION_CONSENT_GIVEN);
 
                         output = recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
-                                consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, appId);
+                                consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, appId, verificationLogId);
                         OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     }
+                    break;
+                case "record_parent_consent":
+                    handleRecordParentalVerification(input, fiduciaryId, appId, res);
                     break;
                 case "get_active_consent":
                     if (userId == null || userId.isEmpty() || fiduciaryId == null) {
@@ -168,6 +174,9 @@ public class Consent implements Action {
                 case "link_user": // Used to link anonymous ID to authenticated ID
                     String anonymousUserId = (String) input.get("anonymous_user_id");
                     String authenticatedUserId = (String) input.get("authenticated_user_id");
+                    String ageCategory = (String) input.get("age_category");
+                    String guardianId = (String) input.get("guardian_id");
+                    String vStatus = (String) input.get("verification_status");
 
                     if (anonymousUserId == null || anonymousUserId.isEmpty() || authenticatedUserId == null || authenticatedUserId.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Both 'anonymous_user_id' and 'authenticated_user_id' are required for 'link_user'.", req.getRequestURI());
@@ -178,7 +187,7 @@ public class Consent implements Action {
                         return;
                     }
 
-                    linkUserConsentRecords(anonymousUserId, authenticatedUserId, fiduciaryId, appId);
+                    linkUserConsentRecords(anonymousUserId, authenticatedUserId, fiduciaryId, appId, ageCategory, guardianId, vStatus);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "User consent records linked successfully."); }});
                     break;
 
@@ -244,6 +253,61 @@ public class Consent implements Action {
         } catch (Exception e) {
             e.printStackTrace();
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred: " + e.getMessage(), req.getRequestURI());
+        }
+    }
+
+    private void handleRecordParentalVerification(JSONObject input, UUID fiduciaryId, UUID appId, HttpServletResponse res) throws SQLException {
+        String childId = (String) input.get("child_principal_id");
+        String guardianId = (String) input.get("guardian_principal_id");
+        String mechanism = (String) input.get("verification_mechanism");
+        String provider = (String) input.get("provider_name");
+        String refId = (String) input.get("verification_ref_id");
+        Object proofObj = input.get("proof_metadata");
+        String proofMetadata = (proofObj instanceof JSONObject) ? ((JSONObject) proofObj).toJSONString() : (String) proofObj;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        UUID logId = null;
+
+        String sql = "INSERT INTO parental_verification_logs (id, child_principal_id, guardian_principal_id, verification_mechanism, provider_name, verification_ref_id, proof_metadata, fiduciary_id) " +
+                "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?::jsonb, ?) RETURNING id";
+
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, childId);
+            pstmt.setString(2, guardianId);
+            pstmt.setString(3, mechanism);
+            pstmt.setString(4, provider);
+            pstmt.setString(5, refId);
+            pstmt.setString(6, proofMetadata != null ? proofMetadata : "{}");
+            pstmt.setObject(7, fiduciaryId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                logId = (UUID) rs.getObject(1);
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+        finally {
+            pool.cleanup(rs,pstmt,conn);
+        }
+
+        if (logId != null){
+            JSONObject auditContext = new JSONObject();
+            auditContext.put("action", Constants.ACTION_PARENTAL_CONSENT);
+            auditContext.put("principal", childId);
+            auditContext.put("guardian", guardianId);
+            auditContext.put("proof_metadata", proofMetadata);
+            new Audit().logEventAsync(childId, fiduciaryId, "APP", appId , Constants.ACTION_PARENTAL_CONSENT, auditContext.toJSONString());
+
+            JSONObject out = new JSONObject();
+            out.put("success", true);
+            out.put("verification_log_id", logId.toString());
+            OutputProcessor.send(res, HttpServletResponse.SC_CREATED, out);
+        }else{
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Parental Consent Failed","");
         }
     }
 
@@ -563,7 +627,7 @@ public class Consent implements Action {
                                          Timestamp timestamp, String jurisdiction, String languageSelected,
                                          String consentStatusGeneral, String consentMechanism,
                                          String ipAddress, String userAgent, JSONArray dataPointConsents,
-                                         UUID appId) throws SQLException {
+                                         UUID appId, UUID verificationLogId) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmtDeactivate = null;
@@ -573,7 +637,7 @@ public class Consent implements Action {
         boolean recorded = false;
 
         String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
-        String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, TRUE, NOW(), NOW()) RETURNING id";
+        String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at, verification_log_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, TRUE, NOW(), NOW(),?) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -599,6 +663,7 @@ public class Consent implements Action {
             pstmtInsert.setString(10, ipAddress);
             pstmtInsert.setString(11, userAgent);
             pstmtInsert.setString(12, dataPointConsents.toJSONString());
+            pstmtInsert.setObject(13, verificationLogId);
 
             int affectedRows = pstmtInsert.executeUpdate();
             if (affectedRows == 0) {
@@ -784,12 +849,15 @@ public class Consent implements Action {
      * This operation is transactional.
      * @throws SQLException if a database access error occurs.
      */
-    private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID fiduciaryId, UUID appId) throws SQLException {
+    private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID fiduciaryId, UUID appId,
+                                        String ageCategory, String guardianId, String verificationStatus) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtUpdateConsent = null;
         PreparedStatement pstmtDeactivate = null;
         PoolDB pool = new PoolDB();
         String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
+        String effectiveAge = (ageCategory != null) ? ageCategory : "ADULT";
+        String effectiveVStatus = (verificationStatus != null) ? verificationStatus : "NOT_VERIFIED";
 
         try {
             conn = pool.getConnection();
@@ -808,12 +876,20 @@ public class Consent implements Action {
             pstmtUpdateConsent.setString(2, anonymousUserId);
             pstmtUpdateConsent.executeUpdate();
 
-            // Upsert Data Principal Record
-            String upsertDataPrincipalSql = "INSERT INTO data_principal (user_id, fiduciary_id) VALUES (?,?) ON CONFLICT (user_id) DO NOTHING";
-            pstmtUpdateConsent = conn.prepareStatement(upsertDataPrincipalSql);
-            pstmtUpdateConsent.setString(1, authenticatedUserId);
-            pstmtUpdateConsent.setObject(2, fiduciaryId);
-            pstmtUpdateConsent.executeUpdate();
+            // 3. Upsert Data Principal with Minor Metadata
+            String upsertSql = "INSERT INTO data_principal (user_id, fiduciary_id, age_category, guardian_id, verification_status) " +
+                    "VALUES (?, ?, ?, ?, ?) " +
+                    "ON CONFLICT (user_id) DO UPDATE SET " +
+                    "age_category = EXCLUDED.age_category, guardian_id = EXCLUDED.guardian_id, verification_status = EXCLUDED.verification_status";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(upsertSql)) {
+                pstmt.setString(1, authenticatedUserId);
+                pstmt.setObject(2, fiduciaryId);
+                pstmt.setString(3, effectiveAge);
+                pstmt.setString(4, guardianId);
+                pstmt.setString(5, effectiveVStatus);
+                pstmt.executeUpdate();
+            }
 
             conn.commit(); // Commit transaction
         } catch (SQLException e) {

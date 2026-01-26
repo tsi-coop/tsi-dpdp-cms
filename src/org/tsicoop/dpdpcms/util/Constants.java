@@ -11,6 +11,7 @@ public class Constants {
     // --- Action Types (Triggered by Apps or Users) ---
     public static final String ACTION_CONSENT_GIVEN = "CONSENT_GIVEN";
     public static final String ACTION_LINK_USER = "LINK_USER";
+    public static final String ACTION_PARENTAL_CONSENT = "PARENTAL_CONSENT";
     public static final String ACTION_CONSENT_WITHDRAWN = "CONSENT_WITHDRAWN";
     public static final String ACTION_ERASURE_REQUEST = "ERASURE_REQUEST";
 
