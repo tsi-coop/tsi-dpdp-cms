@@ -213,3 +213,5 @@ Step 5: Consent Verifier - Test real-time API validation used by Data Processors
 Step 6: Enforcement Logic - View the visual logic for technical data deletion, retention policies, and audit trails.
 
 Step 7: System Integration - Comprehensive API specifications for Data Fiduciaries and Processors to integrate CMS logic into their backend technical stacks.
+
+Step 8: Verifiable Parental Consent – Experience the verifiable parental consent workflow with OTP-based guardian identification for learners under 18.
