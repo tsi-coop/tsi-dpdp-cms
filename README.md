@@ -214,4 +214,4 @@ Step 6: Enforcement Logic - View the visual logic for technical data deletion, r
 
 Step 7: System Integration - Comprehensive API specifications for Data Fiduciaries and Processors to integrate CMS logic into their backend technical stacks.
 
-Step 8: Verifiable Parental Consent – Experience the verifiable parental consent workflow with OTP-based guardian identification for learners under 18.
+Step 8: Verifiable Parental Consent - Experience the verifiable parental consent workflow with OTP-based guardian identification for learners under 18.
