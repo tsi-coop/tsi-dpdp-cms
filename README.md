@@ -22,7 +22,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [DPO Console - Video Demo](https://youtu.be/QPXHg4bQhf8)
 
-[Solving Consent Fatigue via Portable Consent Artifacts (PCA) - Roadmap](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
+[Solving Consent Fatigue via Portable Consent Artifacts (PCA) - A Proposal](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
 
 ## Prerequisites
 
@@ -217,3 +217,5 @@ Follow the Guided Journey:
 8. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks.
 
 9. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
+
+10. DPDP Wallet Demo: Experience portable privacy. First learn about the [DPDP Wallet concept](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via), then download your PCA from the User Dashboard to manage your processing rights independently.
