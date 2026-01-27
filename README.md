@@ -200,18 +200,20 @@ http://localhost:8080/tour
 
 Follow the Guided Journey:
 
-Step 1: System Setup - Initialize your environment and configure master admin credentials.
+1. System Setup: Initialize your environment and configure master admin credentials.
 
-Step 2: Org Configuration - Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies.
+2. Org Configuration: Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies.
 
-Step 3: Consent Collection - Experience the "Notice and Capture" workflow from a Data Principal's perspective.
+3. Consent Collector: Experience the notice and capture workflow from a Data Principal's perspective.
 
-Step 4: User Dashboard - Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
+4. User Dashboard: Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
 
-Step 5: Consent Verifier - Test real-time API validation used by Data Processors to ensure purpose-limited processing.
+5. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
 
-Step 6: Enforcement Logic - View the visual logic for technical data deletion, retention policies, and audit trails along with a video demo.
+6. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity.
 
-Step 7: System Integration - Comprehensive API specifications for Data Fiduciaries and Processors to integrate CMS logic into their backend technical stacks.
+7. DPO Console Tour: Comprehensive video walkthrough of the administrative console for managing compliance workflows.
 
-Step 8: Verifiable Parental Consent - Experience the verifiable parental consent workflow with OTP-based guardian identification for learners under 18.
+8. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks.
+
+9. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
