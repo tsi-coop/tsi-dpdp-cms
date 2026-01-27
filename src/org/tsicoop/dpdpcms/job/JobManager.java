@@ -17,6 +17,7 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 @WebListener
 public class JobManager implements ServletContextListener {
 
-    private ExecutorService executor;
+    private ScheduledExecutorService scheduler;
     private volatile boolean running = true;
     private static final String EXPORT_DIR = System.getProperty("os.name").toLowerCase().contains("win") ? "c:/tmp/" : "/tmp/";
 
@@ -43,31 +44,23 @@ public class JobManager implements ServletContextListener {
         File dir = new File(EXPORT_DIR);
         if (!dir.exists()) dir.mkdirs();
 
-        executor = Executors.newSingleThreadExecutor();
-        executor.submit(this::pollAndExecute);
+        // Single thread is enough to prevent concurrent DB lock contention
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        // Schedule the polling task every 2 minutes
+        scheduler.scheduleAtFixedRate(this::checkAndExecuteJobs, 1, 2, TimeUnit.MINUTES);
     }
 
-    private void pollAndExecute() {
-        while (running) {
-           try {
-                // Sleep for 2 minutes as requested
-                TimeUnit.MINUTES.sleep(2);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-
-            try {
-                // Check for midnight schedule
-                scheduleNightlyFullRun();
-
-                // Process Next Job
-                processNextPendingJob();
-            } catch (Exception e) {
-                System.err.println("[JobManager Error] Loop failure: " + e.getMessage());
-            }
+    private void checkAndExecuteJobs() {
+        try {
+            scheduleNightlyFullRun();
+            processNextPendingJob();
+        } catch (Exception e) {
+            System.err.println("[JobManager] Periodic run failed: " + e.getMessage());
         }
     }
+
+
 
     /**
      * Checks if it is past midnight and a job hasn't been scheduled for today yet.
@@ -351,8 +344,8 @@ public class JobManager implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         running = false;
-        if (executor != null) {
-            executor.shutdownNow();
+        if (scheduler != null) {
+            scheduler.shutdownNow();
         }
     }
 }
