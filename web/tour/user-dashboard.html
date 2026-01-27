@@ -7,6 +7,8 @@
   <title>TSI DPDP CMS - User Dashboard</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Include QR Code library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
         /* Base Styling consistent with Collector */
         body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; background-color: #f4fbf9; color: #333; }
@@ -118,8 +120,19 @@
       <div>
         <h2 class="text-xl font-bold text-slate-800" id="profile-name">Principal Session</h2>
         <p class="text-sm text-slate-500 mt-1" id="profile-user-id">Principal ID: --</p>
+        <div class="mt-4">
+          <span class="status-badge bg-teal-100 text-teal-700 border-teal-200">Authenticated</span>
+        </div>
       </div>
-      <span class="status-badge bg-teal-100 text-teal-700 border-teal-200">Authenticated</span>
+
+      <!-- Wallet Export / QR Area (Top Right) -->
+      <div class="flex flex-col items-center gap-2">
+        <div id="qrcode-container" class="p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm"></div>
+        <button onclick="downloadPCA()" class="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PCA
+        </button>
+      </div>
     </div>
   </div>
 
@@ -180,7 +193,7 @@
       </div>
       <div>
         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Detailed Description</label>
-        <textarea id="grievance-description" rows="4" required placeholder="Explain your request..." class="w-full p-3 border border-slate-200 rounded-lg text-sm"></textarea>
+        <textarea id="grievance-description" rows="4" required placeholder="Explain your request..." class="w-full p-3 border profile border-slate-200 rounded-lg text-sm"></textarea>
       </div>
       <div class="flex justify-end gap-3 mt-6">
         <button type="button" onclick="document.getElementById('submit-grievance-modal').style.display='none'" class="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-800">Cancel</button>
@@ -239,7 +252,6 @@
     function formatTimestamp(iso) { return iso ? new Date(iso).toLocaleString() : 'N/A'; }
 
     function getStatusBadge(status) {
-        // Normalize status strings
         const s = (status || '').toUpperCase();
         const colors = {
             'ACTIVE': 'bg-green-50 text-green-700 border-green-100',
@@ -254,13 +266,59 @@
         return `<span class="status-badge ${colors[s] || 'bg-slate-50 text-slate-600 border-slate-100'}">${s.replace(/_/g, ' ')}</span>`;
     }
 
+    // --- Wallet & PCA Support ---
+
+    function generatePCAArtifact() {
+        const userId = localStorage.getItem(LOCAL_USER_ID_KEY);
+        const latest = consentHistoryCache.length > 0 ? consentHistoryCache[0] : null;
+
+        return {
+            v: "1.0",
+            uid: userId,
+            fid: latest ? latest.fiduciary_id : "N/A", // FIX: Extract Fiduciary ID from the result
+            sync_url: `${API_BASE_URL}/client/wallet/sync`,
+            token: "SECURE_JWT_TOKEN_" + Math.random().toString(36).substr(2, 9),
+            consents: latest ? latest.data_point_consents : {},
+            policy_ref: latest ? `${latest.policy_id}-v${latest.policy_version}` : "N/A",
+            generated_at: new Date().toISOString()
+        };
+    }
+
+    function updateQR() {
+        const container = document.getElementById('qrcode-container');
+        container.innerHTML = "";
+        const artifact = generatePCAArtifact();
+
+        new QRCode(container, {
+            text: JSON.stringify(artifact),
+            width: 80,
+            height: 80,
+            colorDark : "#006A67",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.M
+        });
+    }
+
+    function downloadPCA() {
+        const artifact = generatePCAArtifact();
+        const blob = new Blob([JSON.stringify(artifact, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `TSI_Consent_Artifact_${artifact.uid}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     // --- Core API Functions ---
 
     async function fetchConsentHistory(userId) {
         try {
             const response = await fetch(`${API_BASE_URL}/client/consent`, {
                 method: 'POST',
-                headers: getHeaders(),
+                headers: { ...getHeaders(), 'X-Func': 'list_consent_history' },
                 body: JSON.stringify({
                     "_func": "list_consent_history",
                     "user_id": userId,
@@ -268,7 +326,7 @@
                 })
             });
             const data = await response.json();
-            return Array.isArray(data) ? data : [];
+            return Array.isArray(data) ? data : (data.data || []);
         } catch (e) { return []; }
     }
 
@@ -276,14 +334,14 @@
         try {
             const response = await fetch(`${API_BASE_URL}/client/grievance`, {
                 method: 'POST',
-                headers: getHeaders(),
+                headers: { ...getHeaders(), 'X-Func': 'list_user_grievances' },
                 body: JSON.stringify({
                     "_func": "list_user_grievances",
                     "user_id": userId
                 })
             });
             const data = await response.json();
-            return Array.isArray(data) ? data : [];
+            return Array.isArray(data) ? data : (data.data || []);
         } catch (e) { return []; }
     }
 
@@ -355,7 +413,6 @@
 
         const latest = history[0];
         const mechanism = latest.consent_mechanism;
-        // Business logic for disabling buttons
         const canWithdraw = mechanism !== 'CONSENT_WITHDRAWN' && mechanism !== 'ERASURE_REQUEST';
         const canErasure = mechanism !== 'ERASURE_REQUEST';
 
@@ -393,8 +450,6 @@
         `;
 
         history.forEach(rec => {
-            // Intelligent status determination:
-            // Use backend status if available, otherwise derive from mechanism
             let displayStatus = rec.status;
             if (!displayStatus || displayStatus === 'ACTIVE') {
                 if (rec.consent_mechanism === 'CONSENT_WITHDRAWN') displayStatus = 'WITHDRAWN';
@@ -477,20 +532,13 @@
 
             let granular = '';
             const prefs = rec.data_point_consents || {};
-
-            // FIX: Identify if this specific audit record represents a global revocation
             const isWithdrawal = rec.consent_mechanism === 'CONSENT_WITHDRAWN' || rec.status === 'WITHDRAWN';
             const isErasure = rec.consent_mechanism === 'ERASURE_REQUEST' || rec.status === 'ERASURE_REQUEST';
 
             for (const key in prefs) {
                 const item = prefs[key];
-
-                // Intelligent label determination for the popup details
-                // If record type is withdrawal/erasure, we force the display to reflect the revocation
                 let effectivelyGranted = item.consent_granted;
-                if (isWithdrawal || isErasure) {
-                    effectivelyGranted = false;
-                }
+                if (isWithdrawal || isErasure) effectivelyGranted = false;
 
                 let statusText = effectivelyGranted ? '✓ GRANTED' : '✕ DENIED';
                 if (isWithdrawal) statusText = '✕ WITHDRAWN';
@@ -513,7 +561,7 @@
             `;
 
             document.getElementById('detail-modal-overlay').style.display = 'flex';
-        } catch (e) { alert("Details retrieval failed. Please check connectivity."); }
+        } catch (e) { alert("Details retrieval failed."); }
     }
 
     async function loadDashboardData(userId) {
@@ -525,6 +573,7 @@
         grievanceCache = grievances;
 
         setActiveTab('consent');
+        updateQR(); // Generate QR for the wallet export using extracted Fiduciary ID
     }
 
     function setActiveTab(tabId) {

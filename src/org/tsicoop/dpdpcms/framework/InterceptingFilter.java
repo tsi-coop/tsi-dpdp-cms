@@ -4,6 +4,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONObject; // For parsing input in validateRequestFunc
+import org.tsicoop.dpdpcms.service.v1.Wallet;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -77,6 +78,18 @@ public class InterceptingFilter implements Filter {
         res.setHeader("Access-Control-Max-Age", "3600");
         res.setCharacterEncoding("UTF-8");
         res.setContentType("application/json");
+
+        // Security Context Routing
+        // The Wallet Sync endpoint uses scoped tokens instead of master API keys.
+        // We bypass the standard key validation for this specific path.
+        // To do: Dont directly reference Wallet class here
+        if (uri.contains("/client/wallet/sync")) {
+            // Forward to Wallet Service logic
+            // The Wallet service handles its own 'validateSyncToken' logic internally
+            InputProcessor.processInput(req, res);
+            new Wallet().post(req, res);
+            return;
+        }
 
         // Handle OPTIONS preflight requests for CORS
         if ("OPTIONS".equalsIgnoreCase(method)) {
