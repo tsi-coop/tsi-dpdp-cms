@@ -218,6 +218,7 @@ public class Grievance implements Action {
         }
 
         // Audit Log: Instrument after cleanup. Audit user is the principal (principalId).
+        // Added resolution details
         if (success) {
             new Audit().logEventAsync(principalId, fiduciaryId, serviceType, serviceId, "GRIEVANCE_STATUS_UPDATED", "New Status: " + newStatus+" Details: "+resolutionDetails);
         }
