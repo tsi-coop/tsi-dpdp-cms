@@ -21,24 +21,13 @@ import java.util.regex.Pattern; // Not strictly needed for PolicyService, but ke
  * PolicyService class for managing Consent Policies.
  * All operations are exposed via the POST method, using a '_func' attribute
  * in the JSON request body to specify the desired operation.
- *
- * This class serves as the backend service for the Policy Definition and Retrieval modules
- * of the DPDP Consent Management System.
- *
- * NOTE ON DATABASE SCHEMA ASSUMPTIONS:
- * - Table is named 'consent_policies'.
- * - Primary Key is composite: (id, version).
- * - Columns: id (VARCHAR), version (VARCHAR), fiduciary_id (UUID), effective_date (TIMESTAMPZ),
- * status (VARCHAR), jurisdiction (VARCHAR), policy_content (JSONB), created_at (TIMESTAMPZ),
- * created_by_user_id (UUID), last_updated_at (TIMESTAMPZ), last_updated_by_user_id (UUID),
- * deleted_at (TIMESTAMPZ), deleted_by_user_id (UUID).
- * - Assumes 'users' table exists for FK references to created_by_user_id etc.
  */
 public class Policy implements Action {
 
     // Regex for basic validation (not exhaustive for all fields, but for consistency)
     private static final Pattern POLICY_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{3,255}$");
     private static final Pattern VERSION_PATTERN = Pattern.compile("^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"); // e.g., 1.0, 1.0.1
+    private static final UUID ADMIN_FID_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     /**
      * Handles all Policy Management operations via a single POST endpoint.
@@ -132,20 +121,12 @@ public class Policy implements Action {
 
                 case "create_policy":
                     JSONObject policyContent = (JSONObject) input.get("policy_content");
-                    String effectiveDateStr = (String) input.get("effective_date");
 
                     if (policyIdStr == null || policyIdStr.isEmpty() || fiduciaryId == null || jurisdiction == null || jurisdiction.isEmpty() || policyContent == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (policy_id, fiduciary_id, jurisdiction, policy_content) for 'create_policy'.", req.getRequestURI());
                         return;
                     }
-                   /* if (!POLICY_ID_PATTERN.matcher(policyIdStr).matches()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid policy_id format.", req.getRequestURI());
-                        return;
-                    }
-                    if (!VERSION_PATTERN.matcher(versionStr).matches()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid version format (e.g., 1.0, 1.0.1).", req.getRequestURI());
-                        return;
-                    }*/
+
                     Timestamp effectiveDate = Timestamp.from(Instant.now());
 
                     if (policyExists(policyIdStr, versionStr)) {
@@ -236,7 +217,7 @@ public class Policy implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Policy with ID '" + policyIdStr + "' not found.", req.getRequestURI());
                         return;
                     }
-                    deletePolicyFromDb(policyIdStr, versionStr);
+                    deletePolicyFromDb(fiduciaryId, policyIdStr, versionStr);
                     OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
                     break;
                 default:
@@ -312,7 +293,7 @@ public class Policy implements Action {
                     return false;
                 }
             }
-            }catch(Exception e){
+        }catch(Exception e){
             e.printStackTrace();
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid JSON input: " + e.getMessage(), req.getRequestURI());
         }
@@ -360,18 +341,6 @@ public class Policy implements Action {
                         errors.add(String.format("[%s] Duplicate purpose ID: %s", lang, pid));
                         result.put("isValid", false);
                     }
-
-                    // Rule: Involved data categories must be a subset of defined categories
-                   /* JSONArray involved = (JSONArray) purpose.get("data_categories_involved");
-                    if (involved != null) {
-                        for (Object invObj : involved) {
-                            String invId = (String) invObj;
-                            if (!definedCategoryIds.contains(invId)) {
-                                errors.add(String.format("[%s] Purpose '%s' involves undefined category: %s", lang, pid, invId));
-                                result.put("isValid", false);
-                            }
-                        }
-                    }*/
 
                     // Rule: Retention Start Event Domain
                     String startEvent = (String) purpose.get("retention_start_event");
@@ -427,12 +396,9 @@ public class Policy implements Action {
     }
 
     /**
-     * Checks if a fiduciary exists. (Placeholder - ideally call FiduciaryService)
+     * Checks if a fiduciary exists.
      */
     private boolean fiduciaryExists(UUID fiduciaryId) throws SQLException {
-        // In a microservices architecture, this would typically involve an API call
-        // to the FiduciaryService to check if the fiduciaryId is valid.
-        // For this example, we'll do a direct DB check.
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -450,9 +416,7 @@ public class Policy implements Action {
     }
 
     /**
-     * Retrieves a list of policies from the database with optional filtering and pagination.
-     * @return JSONArray of policy JSONObjects (summary, not full content).
-     * @throws SQLException if a database access error occurs.
+     * Retrieves a list of policies from the database.
      */
     private JSONArray listPoliciesFromDb(String statusFilter, String search, UUID fiduciaryIdFilter, int page, int limit) throws SQLException {
         JSONArray policiesArray = new JSONArray();
@@ -506,11 +470,6 @@ public class Policy implements Action {
         return policiesArray;
     }
 
-    /**
-     * Retrieves a single policy by ID and version from the database.
-     * @return An Optional containing the policy JSONObject if found, otherwise empty.
-     * @throws SQLException if a database access error occurs.
-     */
     protected Optional<JSONObject> getPolicyFromDb(String policyId, String version) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -531,25 +490,20 @@ public class Policy implements Action {
                 policy.put("effective_date", rs.getTimestamp("effective_date").toInstant().toString());
                 policy.put("status", rs.getString("status"));
                 policy.put("jurisdiction", rs.getString("jurisdiction"));
-                policy.put("policy_content", rs.getString("policy_content")); // Parse JSONB to String
+                policy.put("policy_content", rs.getString("policy_content"));
                 policy.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 policy.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
                 return Optional.of(policy);
             }
         } catch (Exception e) {
-            throw new SQLException("Failed to parse policy_content JSON from DB: " + e.getMessage(), e);
+            throw new SQLException("Failed to parse policy_content: " + e.getMessage(), e);
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
         return Optional.empty();
     }
 
-    /**
-     * Retrieves the active policy for a given fiduciary and jurisdiction.
-     * @return An Optional containing the policy JSONObject if found, otherwise empty.
-     * @throws SQLException if a database access error occurs.
-     */
-    protected  Optional<JSONObject> getActivePolicyFromDb(UUID fiduciaryId, String jurisdiction) throws SQLException {
+    protected Optional<JSONObject> getActivePolicyFromDb(UUID fiduciaryId, String jurisdiction) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -575,24 +529,20 @@ public class Policy implements Action {
                 return Optional.of(policy);
             }
         } catch (ParseException e) {
-            throw new SQLException("Failed to parse policy_content JSON from DB: " + e.getMessage(), e);
+            throw new SQLException("Failed to parse policy_content: " + e.getMessage(), e);
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
         return Optional.empty();
     }
 
-    /**
-     * Saves a new policy to the database (status DRAFT).
-     * @return JSONObject containing the new policy's details.
-     * @throws SQLException if a database access error occurs.
-     */
     private JSONObject savePolicyToDb(String policyId, String version, UUID fiduciaryId, Timestamp effectiveDate, String jurisdiction, JSONObject policyContent, String status) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
         String sql = "INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, NOW(),NOW())";
+        boolean success = false;
 
         try {
             conn = pool.getConnection();
@@ -603,7 +553,7 @@ public class Policy implements Action {
             pstmt.setTimestamp(4, effectiveDate);
             pstmt.setString(5, status);
             pstmt.setString(6, jurisdiction);
-            pstmt.setString(7, policyContent.toJSONString()); // Pass JSON as String, cast to JSONB
+            pstmt.setString(7, policyContent.toJSONString());
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -613,21 +563,24 @@ public class Policy implements Action {
             output.put("policy_id", policyId);
             output.put("version", version);
             output.put("message", "Policy created successfully.");
+            success = true;
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+
+        // Instrument audit log only after connection is returned to pool
+        // Audit log revised: user name "DPO", service_id is fiduciaryId, contextDetails has ID alone
+        if (success) {
+            new Audit().logEventAsync("DPO", fiduciaryId, "DPO", fiduciaryId, "POLICY_CREATED", "ID: " + policyId);
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
     }
 
-    /**
-     * Updates an existing policy in the database (only DRAFT policies can be updated).
-     * @return JSONObject indicating success.
-     * @throws SQLException if a database access error occurs.
-     */
     private JSONObject updatePolicyInDb(String policyId, UUID fiduciaryId, JSONObject policyContent) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
+        boolean success = false;
 
         StringBuilder sqlBuilder = new StringBuilder("UPDATE consent_policies SET last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
@@ -647,83 +600,80 @@ public class Policy implements Action {
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
-                throw new SQLException("Updating policy failed, policy not found or not in DRAFT status, or no changes made.");
+                throw new SQLException("Updating policy failed, not found or not in DRAFT status.");
             }
+            success = true;
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+
+        // Instrument audit log only after connection is returned to pool
+        // Audit log revised: user name "DPO", service_id is fiduciaryId, contextDetails has ID alone
+        if (success) {
+            new Audit().logEventAsync("DPO", (fiduciaryId != null ? fiduciaryId : ADMIN_FID_UUID), "DPO", (fiduciaryId != null ? fiduciaryId : ADMIN_FID_UUID), "POLICY_UPDATED", "ID: " + policyId);
         }
         return new JSONObject() {{ put("success", true); put("message", "Policy updated successfully."); }};
     }
 
-    /**
-     * Publishes a policy, setting its status to ACTIVE and deactivating previous active versions.
-     * This operation is transactional.
-     * @throws SQLException if a database access error occurs.
-     */
     private void publishPolicyInDb(String policyId, String version, UUID fiduciaryId, String jurisdiction) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtDeactivate = null;
         PreparedStatement pstmtActivate = null;
         PoolDB pool = new PoolDB();
+        boolean success = false;
 
-        String deactivateSql = "UPDATE consent_policies SET status = 'ARCHIVED', last_updated_at = NOW() WHERE fiduciary_id = ? AND jurisdiction = ? AND status = 'ACTIVE'";
         String activateSql = "UPDATE consent_policies SET status = 'ACTIVE', last_updated_at = NOW() WHERE id = ? AND version = ?";
 
         try {
             conn = pool.getConnection();
-            conn.setAutoCommit(false); // Start transaction
+            conn.setAutoCommit(false);
 
-            // 1. Deactivate any currently ACTIVE policy for this fiduciary and jurisdiction
-            /* pstmtDeactivate = conn.prepareStatement(deactivateSql);
-            pstmtDeactivate.setObject(1, fiduciaryId);
-            pstmtDeactivate.setString(2, jurisdiction);
-            pstmtDeactivate.executeUpdate();*/
-
-            // 2. Activate the specified policy version
             pstmtActivate = conn.prepareStatement(activateSql);
             pstmtActivate.setString(1, policyId);
             pstmtActivate.setString(2, version);
             int affectedRows = pstmtActivate.executeUpdate();
             if (affectedRows == 0) {
-                throw new SQLException("Publishing policy failed, target policy not found or not in DRAFT/INACTIVE status.");
+                throw new SQLException("Publishing policy failed, target policy not found.");
             }
 
-            conn.commit(); // Commit transaction
-
+            conn.commit();
+            success = true;
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
+            if (conn != null) conn.rollback();
             throw e;
         } finally {
             pool.cleanup(null, pstmtDeactivate, null);
             pool.cleanup(null, pstmtActivate, conn);
         }
+
+        // Instrument audit log only after connection is returned to pool
+        // Audit log revised: user name "DPO", service_id is fiduciaryId, contextDetails has ID alone
+        if (success) {
+            new Audit().logEventAsync("DPO", fiduciaryId, "DPO", fiduciaryId, "POLICY_PUBLISHED", "ID: " + policyId);
+        }
     }
 
-    /**
-     * Deletes a policy version from the database (soft delete).
-     * @throws SQLException if a database access error occurs.
-     */
-    private void deletePolicyFromDb(String policyId, String version) throws SQLException {
+    private void deletePolicyFromDb(UUID fiduciaryId, String policyId, String version) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
         String sql = "UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ?";
+        boolean success = false;
+
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, policyId);
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Deleting policy failed, policy not found.");
-            }
+            pstmt.executeUpdate();
+            success = true;
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+
+        // Instrument audit log only after connection is returned to pool
+        // Audit log revised: user name "DPO", service_id is fiduciaryId, contextDetails has ID alone
+        if (success) {
+            new Audit().logEventAsync("DPO", fiduciaryId, "DPO", fiduciaryId, "POLICY_DELETED", "ID: " + policyId);
         }
     }
 }
