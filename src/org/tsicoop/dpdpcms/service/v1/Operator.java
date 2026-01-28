@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 
 /**
  * Operator class for managing CMS backend users and recovery keys.
- * Refactored to include 'fiduciary_id' in successful login response.
+ * Refactored to perform audit logging after pool.cleanup and use 'DPO' as actor.
  */
 public class Operator implements Action {
 
@@ -80,9 +80,6 @@ public class Operator implements Action {
         }
     }
 
-    /**
-     * Authenticates operator and returns session token, role, username, and fiduciary_id.
-     */
     private void handleLogin(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         String identifier = (String) input.get("identifier");
         String password = (String) input.get("password");
@@ -91,6 +88,12 @@ public class Operator implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
+
+        boolean success = false;
+        UUID userUid = null;
+        UUID fidUid = null;
+        String role = null;
+        String operatorName = null;
 
         try {
             conn = pool.getConnection();
@@ -101,32 +104,31 @@ public class Operator implements Action {
 
             if (rs.next() && "ACTIVE".equals(rs.getString("status"))) {
                 if (passwordHasher.verifyPassword(password, rs.getString("password_hash"))) {
-                    final String operatorName = rs.getString("name");
-                    final String role = rs.getString("role");
+                    operatorName = rs.getString("name");
+                    role = rs.getString("role");
                     final String token = JWTUtil.generateToken(rs.getString("email"), identifier, role);
-                    final UUID userUid = (UUID) rs.getObject("id");
-
-                    // Retrieve Fiduciary ID (defaults to system admin if null)
-                    final Object fidObj = rs.getObject("fiduciary_id");
-                    final String fidIdStr = fidObj != null ? fidObj.toString() : ADMIN_FID_UUID.toString();
-                    final UUID fidUid = fidObj != null ? (UUID) fidObj : ADMIN_FID_UUID;
+                    userUid = (UUID) rs.getObject("id");
+                    fidUid = rs.getObject("fiduciary_id") != null ? (UUID) rs.getObject("fiduciary_id") : ADMIN_FID_UUID;
 
                     JSONObject out = new JSONObject();
                     out.put("success", true);
                     out.put("token", token);
                     out.put("role", role);
                     out.put("username", operatorName);
-                    out.put("fiduciary_id", fidIdStr); // Added as requested
+                    out.put("fiduciary_id", fidUid.toString());
                     OutputProcessor.send(res, 200, out);
-
-                    // Log Audit Event
-                    new Audit().logEventAsync(identifier, fidUid, "DPO", userUid, "LOGIN_SUCCESS", "Role: " + role);
-                    return;
+                    success = true;
                 }
             }
-            OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
+            if (!success) {
+                OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
+            }
         } finally {
             pool.cleanup(rs, pstmt, conn);
+        }
+
+        if (success) {
+            new Audit().logEventAsync("DPO", fidUid, "DPO", userUid, "LOGIN_SUCCESS", "Email: " + identifier + " | Role: " + role);
         }
     }
 
@@ -180,6 +182,8 @@ public class Operator implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
+        boolean success = false;
+        UUID newId = null;
 
         try {
             String sql = "INSERT INTO operators (id, name, email, password_hash, role, status, fiduciary_id, created_at, last_updated_at) " +
@@ -195,18 +199,23 @@ public class Operator implements Action {
 
             rs = pstmt.executeQuery();
             if (rs.next()) {
-                UUID newId = (UUID) rs.getObject(1);
-                new Audit().logEventAsync(mail, fid, "DPO", newId, "USER_CREATED", "Assigned Role: " + role);
+                newId = (UUID) rs.getObject(1);
                 OutputProcessor.send(res, 201, new JSONObject() {{ put("success", true); }});
+                success = true;
             }
         } finally {
             pool.cleanup(rs, pstmt, conn);
+        }
+
+        if (success) {
+            new Audit().logEventAsync("DPO", fid, "DPO", newId, "USER_CREATED", "Email: " + mail + " | Role: " + role);
         }
     }
 
     private void handleUpdateUser(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID uid = UUID.fromString((String) input.get("user_id"));
         String user = (String) input.get("username");
+        String mail = (String) input.get("email");
         String pass = (String) input.get("password");
         String fidStr = (String) input.get("fiduciary_id");
         UUID fid = (fidStr != null && !fidStr.isEmpty()) ? UUID.fromString(fidStr) : ADMIN_FID_UUID;
@@ -219,6 +228,7 @@ public class Operator implements Action {
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
+        boolean success = false;
 
         try {
             String sql = "UPDATE operators SET name = ?, fiduciary_id = ?, last_updated_at = NOW() " +
@@ -236,21 +246,27 @@ public class Operator implements Action {
             pstmt.setObject(paramIdx, uid);
 
             if (pstmt.executeUpdate() > 0) {
-                new Audit().logEventAsync("SYSTEM", fid, "DPO", uid, "USER_UPDATED", "Metadata/Auth modified");
                 OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
+                success = true;
             } else {
                 OutputProcessor.errorResponse(res, 403, "Forbidden", "Modifying system accounts is restricted.", req.getRequestURI());
             }
         } finally {
             pool.cleanup(null, pstmt, conn);
         }
+
+        if (success) {
+            new Audit().logEventAsync("DPO", fid, "DPO", uid, "USER_UPDATED", "Email: " + (mail != null ? mail : "N/A"));
+        }
     }
 
     private void handleDeactivateUser(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID uid = UUID.fromString((String) input.get("user_id"));
+        String mail = (String) input.get("email");
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
+        boolean success = false;
 
         try {
             conn = pool.getConnection();
@@ -258,13 +274,17 @@ public class Operator implements Action {
             pstmt.setObject(1, uid);
 
             if (pstmt.executeUpdate() > 0) {
-                new Audit().logEventAsync("SYSTEM", ADMIN_FID_UUID, "DPO", uid, "USER_DEACTIVATED", "Status set to INACTIVE");
                 OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
+                success = true;
             } else {
                 OutputProcessor.errorResponse(res, 403, "Forbidden", "Cannot deactivate system administrator.", req.getRequestURI());
             }
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+
+        if (success) {
+            new Audit().logEventAsync("DPO", ADMIN_FID_UUID, "DPO", uid, "USER_DEACTIVATED", "Email: " + (mail != null ? mail : "N/A"));
         }
     }
 
@@ -310,6 +330,9 @@ public class Operator implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
+        boolean success = false;
+        UUID userId = null;
+        UUID fidId = null;
 
         try {
             conn = pool.getConnection();
@@ -321,39 +344,45 @@ public class Operator implements Action {
 
             if (rs.next()) {
                 String storedHash = rs.getString("recovery_key_hash");
-                UUID userId = (UUID) rs.getObject("id");
-                UUID fidId = rs.getObject("fiduciary_id") != null ? (UUID) rs.getObject("fiduciary_id") : ADMIN_FID_UUID;
+                userId = (UUID) rs.getObject("id");
+                fidId = rs.getObject("fiduciary_id") != null ? (UUID) rs.getObject("fiduciary_id") : ADMIN_FID_UUID;
 
                 if (storedHash != null && passwordHasher.verifyPassword(passphrase, storedHash)) {
-                    // Update and clear key
                     try (PreparedStatement uPstmt = conn.prepareStatement("UPDATE operators SET password_hash = ?, recovery_key_hash = NULL, last_updated_at = NOW() WHERE id = ?")) {
                         uPstmt.setString(1, passwordHasher.hashPassword(newPassword));
                         uPstmt.setObject(2, userId);
                         uPstmt.executeUpdate();
                     }
                     conn.commit();
-                    new Audit().logEventAsync(email, fidId, "DPO", userId, "PASSWORD_RECOVERY_SUCCESS", "Reset via Master Key");
                     OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
-                    return;
+                    success = true;
                 }
             }
-            conn.rollback();
-            OutputProcessor.errorResponse(res, 401, "Unauthorized", "Reset transaction failed.", req.getRequestURI());
+            if (!success) {
+                conn.rollback();
+                OutputProcessor.errorResponse(res, 401, "Unauthorized", "Reset transaction failed.", req.getRequestURI());
+            }
         } catch (Exception e) {
             if (conn != null) conn.rollback();
             throw e;
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
+
+        if (success) {
+            new Audit().logEventAsync("DPO", fidId, "DPO", userId, "PASSWORD_RECOVERY_SUCCESS", "Email: " + email);
+        }
     }
 
     private void handleGenerateRecoveryKey(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID userId = UUID.fromString((String) input.get("user_id"));
+        String mail = (String) input.get("email");
         String plainKey = PassphraseGenerator.generate();
 
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
+        boolean success = false;
 
         try {
             conn = pool.getConnection();
@@ -362,11 +391,15 @@ public class Operator implements Action {
             pstmt.setObject(2, userId);
 
             if (pstmt.executeUpdate() > 0) {
-                new Audit().logEventAsync("SYSTEM", ADMIN_FID_UUID, "DPO", userId, "RECOVERY_KEY_ROTATED", "Key generated by Administrator");
                 OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); put("passphrase", plainKey); }});
+                success = true;
             }
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+
+        if (success) {
+            new Audit().logEventAsync("DPO", ADMIN_FID_UUID, "DPO", userId, "RECOVERY_KEY_ROTATED", "Email: " + (mail != null ? mail : "N/A"));
         }
     }
 
