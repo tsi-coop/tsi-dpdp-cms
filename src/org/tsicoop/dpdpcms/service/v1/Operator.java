@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 
 /**
  * Operator class for managing CMS backend users and recovery keys.
- * Refactored to use explicit try-catch-finally blocks with pool.cleanup.
+ * Refactored to include 'fiduciary_id' in successful login response.
  */
 public class Operator implements Action {
 
@@ -80,6 +80,9 @@ public class Operator implements Action {
         }
     }
 
+    /**
+     * Authenticates operator and returns session token, role, username, and fiduciary_id.
+     */
     private void handleLogin(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         String identifier = (String) input.get("identifier");
         String password = (String) input.get("password");
@@ -102,15 +105,21 @@ public class Operator implements Action {
                     final String role = rs.getString("role");
                     final String token = JWTUtil.generateToken(rs.getString("email"), identifier, role);
                     final UUID userUid = (UUID) rs.getObject("id");
-                    final UUID fidUid = rs.getObject("fiduciary_id") != null ? (UUID) rs.getObject("fiduciary_id") : ADMIN_FID_UUID;
+
+                    // Retrieve Fiduciary ID (defaults to system admin if null)
+                    final Object fidObj = rs.getObject("fiduciary_id");
+                    final String fidIdStr = fidObj != null ? fidObj.toString() : ADMIN_FID_UUID.toString();
+                    final UUID fidUid = fidObj != null ? (UUID) fidObj : ADMIN_FID_UUID;
 
                     JSONObject out = new JSONObject();
                     out.put("success", true);
                     out.put("token", token);
                     out.put("role", role);
                     out.put("username", operatorName);
+                    out.put("fiduciary_id", fidIdStr); // Added as requested
                     OutputProcessor.send(res, 200, out);
 
+                    // Log Audit Event
                     new Audit().logEventAsync(identifier, fidUid, "DPO", userUid, "LOGIN_SUCCESS", "Role: " + role);
                     return;
                 }
