@@ -98,6 +98,7 @@ public class Operator implements Action {
         UUID fidUid = null;
         String role = null;
         String operatorName = null;
+        JSONObject out = null;
 
         try {
             conn = pool.getConnection();
@@ -115,26 +116,25 @@ public class Operator implements Action {
                     userUid = (UUID) rs.getObject("id");
                     fidUid = rs.getObject("fiduciary_id") != null ? (UUID) rs.getObject("fiduciary_id") : ADMIN_FID_UUID;
 
-                    JSONObject out = new JSONObject();
+                    out = new JSONObject();
                     out.put("success", true);
                     out.put("token", token);
                     out.put("role", role);
                     out.put("username", operatorName);
                     out.put("fiduciary_id", fidUid.toString());
-                    OutputProcessor.send(res, 200, out);
                     success = true;
                 }
-            }
-            if (!success) {
-                OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
             }
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
-
         if (success) {
             // Service type is ADMIN, Service Id is the user being authenticated (since loginUserId is null)
-            new Audit().logEventAsync(principalEmail, fidUid, "ADMIN", userUid, "LOGIN_SUCCESS", "Operator Access Granted");
+            new Audit().logEventAsync(identifier, fidUid, "ADMIN", userUid, "LOGIN_SUCCESS", "Operator Access Granted");
+            OutputProcessor.send(res, 200, out);
+        }else{
+            new Audit().logEventAsync(identifier, fidUid, "ADMIN", userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
+            OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
         }
     }
 

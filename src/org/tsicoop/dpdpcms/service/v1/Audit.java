@@ -13,98 +13,66 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Audit Service for managing immutable DPDP compliance logs.
- * Supports asynchronous logging and standardized search for the DPO Audit Explorer.
- * * Schema: id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details.
+ * Refactored to use in-memory caching and batch writing via JobManager.
  */
 public class Audit implements Action {
 
-    // Thread pool for background logging to minimize latency on core business logic
-    private static final ExecutorService auditExecutor = Executors.newFixedThreadPool(2);
+    // Thread-safe in-memory cache for incoming audit events
+    private static final Queue<AuditEntry> auditCache = new ConcurrentLinkedQueue<>();
+
+    /**
+     * DTO to hold audit data in memory before batch writing.
+     */
+    private static class AuditEntry {
+        String userId;
+        UUID fiduciaryId;
+        String serviceType;
+        UUID serviceId;
+        String auditAction;
+        String contextDetails;
+
+        AuditEntry(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) {
+            this.userId = userId;
+            this.fiduciaryId = fiduciaryId;
+            this.serviceType = serviceType;
+            this.serviceId = serviceId;
+            this.auditAction = auditAction;
+            this.contextDetails = contextDetails;
+        }
+    }
 
     @Override
     public void post(HttpServletRequest req, HttpServletResponse res) {
-        JSONObject input = null;
-        JSONObject output = null;
-        JSONArray outputArray = null;
-
         try {
             req.setCharacterEncoding("UTF-8");
-            input = InputProcessor.getInput(req);
+            JSONObject input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
 
             if (func == null || func.trim().isEmpty()) {
-                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute.", req.getRequestURI());
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing _func.", req.getRequestURI());
                 return;
             }
 
             switch (func.toLowerCase()) {
                 case "log_event":
-                    // Extract fields matching the finalized schema
-                    String userId = (String) input.get("user_id");
-                    String fidStr = (String) input.get("fiduciary_id");
-                    String serviceType = (String) input.get("service_type"); // APP, SYSTEM, USER
-                    String sidStr = (String) input.get("service_id");
-                    String action = (String) input.get("audit_action");
-
-                    // context_details can be passed as an object or raw string
-                    Object contextObj = input.get("context_details");
-                    String details = (contextObj instanceof JSONObject) ? ((JSONObject)contextObj).toJSONString() : (String)contextObj;
-
-                    if (userId == null || fidStr == null || serviceType == null || action == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required audit fields.", req.getRequestURI());
-                        return;
-                    }
-
-                    UUID fiduciaryId = UUID.fromString(fidStr);
-                    UUID serviceId = (sidStr != null && !sidStr.isEmpty()) ? UUID.fromString(sidStr) : null;
-
-                    // Perform the database insertion asynchronously
-                    logEventAsync(userId, fiduciaryId, serviceType, serviceId, action, details);
-
-                    output = new JSONObject();
-                    output.put("success", true);
-                    output.put("message", "Audit event queued.");
-                    OutputProcessor.send(res, HttpServletResponse.SC_ACCEPTED, output);
+                    handleLogRequest(input, res, req);
                     break;
 
-                case "list_audit_logs": // Used in DPO Audit screen
-                    String search = (String) input.get("search");
-                    String fidFilter = (String) input.get("fiduciary_id");
-                    String actFilter = (String) input.get("action_filter");
-
-                    int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
-                    int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 50;
-
-                    if (fidFilter == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "fiduciary_id is required for listing logs.", req.getRequestURI());
-                        return;
-                    }
-                    outputArray = listAuditLogsFromDb(search, UUID.fromString(fidFilter), actFilter, page, limit);
-                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                case "list_audit_logs":
+                    handleListLogs(input, res, req);
                     break;
 
                 case "get_audit_log":
-                    String logIdStr = (String) input.get("id");
-                    if (logIdStr == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Log ID is required.", req.getRequestURI());
-                        return;
-                    }
-                    Optional<JSONObject> logEntry = getAuditLogEntryFromDb(UUID.fromString(logIdStr));
-                    if (logEntry.isPresent()) {
-                        OutputProcessor.send(res, HttpServletResponse.SC_OK, logEntry.get());
-                    } else {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Audit log not found.", req.getRequestURI());
-                    }
+                    handleGetLog(input, res, req);
                     break;
 
                 default:
@@ -112,54 +80,114 @@ public class Audit implements Action {
                     break;
             }
 
-        } catch (SQLException e) {
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", e.getMessage(), req.getRequestURI());
-        } catch (ParseException e) {
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "JSON Error", e.getMessage(), req.getRequestURI());
         } catch (Exception e) {
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Error", e.getMessage(), req.getRequestURI());
+            OutputProcessor.errorResponse(res, 500, "Internal Error", e.getMessage(), req.getRequestURI());
         }
     }
 
-    @Override
-    public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
-        return "POST".equalsIgnoreCase(method) && InputProcessor.validate(req, res);
+    private void handleLogRequest(JSONObject input, HttpServletResponse res, HttpServletRequest req) {
+        String userId = (String) input.get("user_id");
+        String fidStr = (String) input.get("fiduciary_id");
+        String serviceType = (String) input.get("service_type");
+        String sidStr = (String) input.get("service_id");
+        String action = (String) input.get("audit_action");
+
+        Object contextObj = input.get("context_details");
+        String details = (contextObj instanceof JSONObject) ? ((JSONObject)contextObj).toJSONString() : (String)contextObj;
+
+        if (userId == null || fidStr == null || serviceType == null || action == null) {
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "Missing parameters.", req.getRequestURI());
+            return;
+        }
+
+        UUID fiduciaryId = UUID.fromString(fidStr);
+        UUID serviceId = (sidStr != null && !sidStr.isEmpty()) ? UUID.fromString(sidStr) : null;
+
+        // Push to memory cache instead of immediate DB write or ExecutorService
+        logEventAsync(userId, fiduciaryId, serviceType, serviceId, action, details);
+
+        JSONObject output = new JSONObject();
+        output.put("success", true);
+        output.put("message", "Audit event buffered in memory cache.");
+        OutputProcessor.send(res, 202, output);
     }
 
     /**
-     * Queues a log task for asynchronous execution.
+     * Buffers a log event into the in-memory queue.
      */
     public void logEventAsync(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) {
-        auditExecutor.submit(() -> {
-            try {
-                logEventToDb(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails);
-            } catch (SQLException e) {
-                System.err.println("CRITICAL: Async Audit Failure for Principal " + userId + ": " + e.getMessage());
-            }
-        });
+        auditCache.add(new AuditEntry(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails));
     }
 
-    public JSONObject logEventToDb(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) throws SQLException {
+    /**
+     * Batch writes all buffered logs from the memory cache to the database.
+     * Intended to be called by JobManager periodically.
+     */
+    public void logEvents() {
+        if (auditCache.isEmpty()) return;
+
+        List<AuditEntry> batch = new ArrayList<>();
+        AuditEntry entry;
+        // Drain current queue into a local list for processing
+        while ((entry = auditCache.poll()) != null) {
+            batch.add(entry);
+            if (batch.size() >= 500) break; // Limit batch size per transaction
+        }
+
+        if (batch.isEmpty()) return;
+
         String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details) " +
                 "VALUES (uuid_generate_v4(), ?, NOW(), ?, ?, ?, ?, ?)";
-        PreparedStatement pstmt = null;
+
+        PoolDB pool = null;
         Connection conn = null;
-        PoolDB pool = new PoolDB();
+        PreparedStatement pstmt = null;
+
         try {
+            pool = new PoolDB();
             conn = pool.getConnection();
+            conn.setAutoCommit(false);
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, fiduciaryId);
-            pstmt.setString(2, userId);
-            pstmt.setString(3, serviceType);
-            pstmt.setObject(4, serviceId);
-            pstmt.setString(5, auditAction);
-            pstmt.setString(6, contextDetails);
-            pstmt.executeUpdate();
-        }catch (Exception e){}
-        finally{
-            pool.cleanup(null,pstmt,conn);
+
+            for (AuditEntry log : batch) {
+                pstmt.setObject(1, log.fiduciaryId);
+                pstmt.setString(2, log.userId);
+                pstmt.setString(3, log.serviceType);
+                pstmt.setObject(4, log.serviceId);
+                pstmt.setString(5, log.auditAction);
+                pstmt.setString(6, log.contextDetails);
+                pstmt.addBatch();
+            }
+
+            pstmt.executeBatch();
+            conn.commit();
+            System.out.println("[Audit] Successfully persisted " + batch.size() + " logs to database.");
+        } catch (SQLException e) {
+            System.err.println("CRITICAL: Failed to write audit batch: " + e.getMessage());
+            // Fail-safe: Put failed entries back into the cache for retry in next run
+            for (AuditEntry failed : batch) {
+                auditCache.add(failed);
+            }
+        } finally {
+            pool.cleanup(null, pstmt, conn);
         }
-        return new JSONObject() {{ put("success", true); }};
+    }
+
+    private void handleListLogs(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String search = (String) input.get("search");
+        String fidFilter = (String) input.get("fiduciary_id");
+        String actFilter = (String) input.get("action_filter");
+
+        if (fidFilter == null) {
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "fiduciary_id required.", req.getRequestURI());
+            return;
+        }
+
+        int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
+        int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 50;
+
+        JSONArray outputArray = listAuditLogsFromDb(search, UUID.fromString(fidFilter), actFilter, page, limit);
+        OutputProcessor.send(res, 200, outputArray);
     }
 
     protected JSONArray listAuditLogsFromDb(String search, UUID fiduciaryId, String action, int page, int limit) throws SQLException {
@@ -168,12 +196,6 @@ public class Audit implements Action {
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
-        if (fiduciaryId != null){
-            sql.append(" AND service_type IN ('SYSTEM','APP','DPO')");
-        }
-        else if(fiduciaryId == null){
-            sql.append(" AND service_type IN ('DPO')");
-        }
         if (action != null && !action.isEmpty()) {
             sql.append(" AND audit_action = ?"); params.add(action);
         }
@@ -190,10 +212,10 @@ public class Audit implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
+
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql.toString());
-
             for (int i = 0; i < params.size(); i++) {
                 pstmt.setObject(i + 1, params.get(i));
             }
@@ -205,30 +227,43 @@ public class Audit implements Action {
                 log.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
                 log.put("user_id", rs.getString("user_id"));
                 log.put("service_type", rs.getString("service_type"));
-                log.put("service_id", rs.getString("service_id"));
+                log.put("service_id", rs.getString("service_id") != null ? rs.getString("service_id") : "");
                 log.put("audit_action", rs.getString("audit_action"));
-
-                // Parse details if they look like JSON, otherwise return as string
-                String details = rs.getString("context_details");
-                log.put("context_details", details);
+                log.put("context_details", rs.getString("context_details"));
                 logs.add(log);
             }
-        }catch (Exception e){}
-        finally{
-            pool.cleanup(rs,pstmt,conn);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
         }
         return logs;
     }
 
+    private void handleGetLog(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String logIdStr = (String) input.get("id");
+        if (logIdStr == null) {
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "Log ID required.", req.getRequestURI());
+            return;
+        }
+
+        Optional<JSONObject> logEntry = getAuditLogEntryFromDb(UUID.fromString(logIdStr));
+        if (logEntry.isPresent()) {
+            OutputProcessor.send(res, 200, logEntry.get());
+        } else {
+            OutputProcessor.errorResponse(res, 404, "Not Found", "Audit log not found.", req.getRequestURI());
+        }
+    }
+
     private Optional<JSONObject> getAuditLogEntryFromDb(UUID id) throws SQLException {
-        String sql = "SELECT * FROM audit_logs WHERE id = ?";
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        try{
+
+        try {
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
+            pstmt = conn.prepareStatement("SELECT * FROM audit_logs WHERE id = ?");
             pstmt.setObject(1, id);
             rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -237,7 +272,7 @@ public class Audit implements Action {
                 log.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
                 log.put("user_id", rs.getString("user_id"));
                 log.put("service_type", rs.getString("service_type"));
-                log.put("service_id", rs.getString("service_id"));
+                log.put("service_id", rs.getString("service_id") != null ? rs.getString("service_id") : "");
                 log.put("audit_action", rs.getString("audit_action"));
 
                 String details = rs.getString("context_details");
@@ -248,10 +283,14 @@ public class Audit implements Action {
                 }
                 return Optional.of(log);
             }
-        }catch(Exception e){}
-        finally{
-            pool.cleanup(rs,pstmt,conn);
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
         }
         return Optional.empty();
+    }
+
+    @Override
+    public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
+        return "POST".equalsIgnoreCase(method) && InputProcessor.validate(req, res);
     }
 }

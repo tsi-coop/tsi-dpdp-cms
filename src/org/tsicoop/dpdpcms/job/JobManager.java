@@ -7,6 +7,7 @@ import org.json.simple.JSONObject;
 import org.tsicoop.dpdpcms.ces.CESService;
 import org.tsicoop.dpdpcms.framework.PoolDB;
 import org.tsicoop.dpdpcms.framework.SystemConfig;
+import org.tsicoop.dpdpcms.service.v1.Audit;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -55,6 +56,7 @@ public class JobManager implements ServletContextListener {
         try {
             scheduleNightlyFullRun();
             processNextPendingJob();
+            new Audit().logEvents();
         } catch (Exception e) {
             System.err.println("[JobManager] Periodic run failed: " + e.getMessage());
         }
@@ -344,6 +346,7 @@ public class JobManager implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         running = false;
+        new Audit().logEvents();
         if (scheduler != null) {
             scheduler.shutdownNow();
         }

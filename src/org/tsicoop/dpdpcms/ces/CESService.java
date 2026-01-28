@@ -191,7 +191,7 @@ public class CESService {
                         auditContext.put("app", new App().getAppName(UUID.fromString(appid), UUID.fromString(fiduciaryId)));
                         auditContext.put("purpose",purposeId);
 
-                        new Audit().logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", auditContext.toJSONString());
+                        new Audit().logEventAsync(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", auditContext.toJSONString());
                     }
                 }
             }
@@ -311,7 +311,7 @@ public class CESService {
                         auditContext.put("trigger", Constants.PURGE_TRIGGER_EXPIRY);
                         auditContext.put("app", new App().getAppName(UUID.fromString(appid), UUID.fromString(fiduciaryId)));
                         auditContext.put("purpose",purposeId);
-                        new Audit().logEventToDb(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , Constants.EVENT_PURGE_INITIATED, auditContext.toJSONString());
+                        new Audit().logEventAsync(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , Constants.EVENT_PURGE_INITIATED, auditContext.toJSONString());
                     }
                 }
             }

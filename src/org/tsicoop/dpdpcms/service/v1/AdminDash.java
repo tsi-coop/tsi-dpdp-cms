@@ -55,9 +55,7 @@ public class AdminDash implements Action {
 
     protected JSONArray listAuditLogsFromDb() throws SQLException {
         JSONArray logs = new JSONArray();
-        StringBuilder sql = new StringBuilder("SELECT * FROM audit_logs WHERE service_type IN ('ADMIN') ORDER BY timestamp DESC LIMIT 5");
-
-
+        StringBuilder sql = new StringBuilder("SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 5");
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
