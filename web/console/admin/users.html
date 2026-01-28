@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,549 +7,292 @@
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-        :root {
-            --tsi-primary: #006A67; /* Primary Dark Teal Color */
-            --tsi-accent: #008D8A; /* Slightly lighter for accents */
-            --background: #f4fbf9; /* Light, clean background */
-            --card-bg: #FFFFFF;
-            --border: 20 5.9% 90%;
-            --radius: 0.5rem;
-        }
-
-        body {
-            background-color: var(--background);
-            font-family: ui-sans-serif, system-ui, sans-serif;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-        }
-
+        :root { --tsi-primary: #006A67; --radius: 0.5rem; }
+        body { background-color: #f4fbf9; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; min-height: 100vh; }
+        .sidebar { width: 250px; background-color: #f8fafc; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05); padding-top: 20px; position: fixed; height: 100vh; overflow-y: auto; z-index: 50; transition: transform 0.3s ease-in-out; transform: translateX(-250px); border-right: 1px solid #e2e8f0; }
+        @media (min-width: 1024px) { .sidebar { transform: translateX(0); } body { padding-left: 250px; } }
+        .nav-link { display: flex; align-items: center; padding: 10px 20px; margin: 5px 0; border-radius: 6px; color: #4a5568; transition: all 0.2s ease; }
+        .nav-link:hover, .nav-link.active { background-color: #e5f5f4; color: var(--tsi-primary); font-weight: 600; }
+        .card { background-color: white; border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px; border: 1px solid #e2e8f0; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 32px; border-radius: 1rem; max-width: 500px; width: 95%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         .primary-bg { background-color: var(--tsi-primary); }
-        .primary-text { color: var(--tsi-primary); }
-        .accent-text { color: var(--tsi-accent); }
-        .border-primary { border-color: var(--tsi-primary); }
-
-        /* --- Sidebar Styling --- */
-        .sidebar {
-            width: 250px;
-            background-color: #f8fafc;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-            padding-top: 20px;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            z-index: 50;
-            transition: transform 0.3s ease-in-out;
-            transform: translateX(-250px);
-        }
-
-        .sidebar.open {
-            transform: translateX(0);
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 10px 20px;
-            margin: 5px 0;
-            border-radius: 6px;
-            color: #4a5568;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background-color: #e5f5f4;
-            color: var(--tsi-primary);
-            font-weight: 600;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: var(--radius);
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            padding: 20px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .table-header {
-            background-color: #f1f5f9;
-            font-weight: 600;
-            color: #4a5568;
-            text-align: left;
-        }
-
-        /* --- Mobile Toggle Button --- */
-        .mobile-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            position: sticky;
-            top: 0;
-            z-index: 40;
-        }
-
-        @media (min-width: 1024px) {
-            .sidebar {
-                transform: translateX(0);
-            }
-            .mobile-header {
-                display: none;
-            }
-            body {
-                padding-left: 250px;
-            }
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: var(--radius);
-            max-width: 600px;
-            width: 95%;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-
-        .modal-footer {
-            margin-top: 20px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-    </style>
+  </style>
 </head>
 
 <body class="flex lg:p-0">
 
-<!-- Mobile Header/Toggle -->
-<div class="mobile-header lg:hidden">
-  <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-  </button>
-  <span class="text-xl font-bold primary-text">CMS Users</span>
-  <div class="text-sm text-gray-500">Admin User</div>
-</div>
-
-<!-- Sidebar Navigation -->
+<!-- Restored Sidebar Navigation from Original Upload -->
 <div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
   <div>
-    <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
-      <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
-    </div>
+    <div class="px-5 pb-6 border-b border-gray-200"><span class="text-xl font-bold text-[#006A67]">TSI DPDP CMS</span></div>
     <nav class="flex flex-col space-y-1 mt-4 px-3">
-      <a href="dashboard.html" class="nav-link">
-        Dashboard
-      </a>
-      <a href="fiduciaries.html" class="nav-link">
-        Fiduciaries
-      </a>
-      <a href="apps.html" class="nav-link">
-        Apps
-      </a>
-      <a href="#" class="nav-link active">
-        CMS Users
-      </a>
-      <a href="apikeys.html" class="nav-link">
-        API Keys
-      </a>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="fiduciaries.html" class="nav-link">Fiduciaries</a>
+      <a href="apps.html" class="nav-link">Apps</a>
+      <a href="#" class="nav-link active">CMS Users</a>
+      <a href="apikeys.html" class="nav-link">API Keys</a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
     <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
-      <span id="username" class="font-bold text-slate-700">Admin User</span>
+      <span id="username-display" class="font-bold text-slate-700">Admin User</span>
       <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
     </div>
   </div>
 </div>
 
-<!-- Backdrop for mobile menu -->
-<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
-
-<!-- Main Content Area -->
-<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
-  <div class="flex justify-between items-center mb-6">
+<main class="flex-1 p-4 lg:p-8">
+  <div class="flex justify-between items-center mb-8">
     <h1 class="text-2xl font-black text-slate-800 tracking-tight">CMS User Management</h1>
-    <button id="add-user-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150">
-      + Add New CMS User
-    </button>
+    <button onclick="showUserModal('Add New CMS User')" class="primary-bg text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 shadow-md transition-all">+ Add CMS User</button>
   </div>
 
-  <!-- User List Card -->
   <div class="card">
-    <div class="flex justify-between items-center mb-4">
-      <input type="text" id="search-input" placeholder="Search by Name or Email..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-sm">
-      <span id="user-count" class="text-sm text-gray-500">Loading...</span>
+    <div class="flex justify-between items-center mb-6">
+      <input type="text" id="search-input" placeholder="Search by Name or Email..." class="p-2.5 border border-gray-300 rounded-lg text-sm w-full max-w-sm outline-none focus:ring-2 focus:ring-teal-600">
+      <span id="user-count" class="text-sm font-medium text-gray-500">Loading...</span>
     </div>
 
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
+      <table class="min-w-full divide-y divide-gray-100">
         <thead>
-        <tr class="table-header">
-          <th class="px-4 py-3 text-sm">Name</th>
-          <th class="px-4 py-3 text-sm">Email</th>
-          <th class="px-4 py-3 text-sm">Role</th>
-          <th class="px-4 py-3 text-sm">Associated Fiduciary</th>
-          <th class="px-4 py-3 text-sm">Status</th>
-          <th class="px-4 py-3 text-sm">Actions</th>
+        <tr class="bg-gray-50 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">
+          <th class="px-4 py-4">Name</th>
+          <th class="px-4 py-4">Role</th>
+          <th class="px-4 py-4">Fiduciary</th>
+          <th class="px-4 py-4">Status</th>
+          <th class="px-4 py-4">Actions</th>
         </tr>
         </thead>
-        <tbody id="user-table-body" class="bg-white divide-y divide-gray-200">
-        <!-- Data will be dynamically inserted here -->
-        <tr>
-          <td colspan="6" class="p-4 text-center text-gray-500">
-            Loading CMS User data...
-          </td>
-        </tr>
+        <tbody id="user-table-body" class="bg-white divide-y divide-gray-100 text-sm">
+        <!-- Populated via JS -->
         </tbody>
       </table>
     </div>
-
-    <p id="user-error-message" class="mt-4 text-sm text-red-600 hidden">
-      Failed to load data. Please check the API connection and token.
-    </p>
   </div>
 </main>
 
-<!-- Modal for Adding/Editing CMS User -->
-<div id="user-modal-overlay" class="modal-overlay">
+<!-- Modal: User Entry/Edit Form -->
+<div id="user-modal" class="modal-overlay">
   <div class="modal-content">
-    <h2 id="modal-title" class="text-lg font-bold text-slate-700 mb-4 tracking-tight">Add New CMS User</h2>
+    <h2 id="modal-title" class="text-xl font-black text-slate-800 mb-6 tracking-tight">Add New CMS User</h2>
     <form id="user-form" class="space-y-4">
-
-      <!-- Hidden Field to store User ID during edit -->
-      <input type="hidden" id="user-id-hidden" name="userId" value="">
-
-      <!-- Section 1: User Identity -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label for="user-full-name" class="block text-sm font-medium text-gray-700">Full Name</label>
-          <input type="text" id="user-full-name" name="name" required placeholder="e.g., Jane Doe" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-        </div>
-        <div>
-          <label for="user-email" class="block text-sm font-medium text-gray-700">Email Address</label>
-          <input type="email" id="user-email" name="email" required placeholder="user@tsicoop.com" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-        </div>
+      <input type="hidden" id="user-id-hidden">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Full Name</label><input type="text" id="user-name" name="name" required class="w-full p-2 border rounded-lg text-sm"></div>
+        <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</label><input type="email" id="user-email" name="email" required class="w-full p-2 border rounded-lg text-sm"></div>
       </div>
-
-      <!-- Section 2: Security and Roles -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-2 gap-4">
         <div>
-          <label for="user-role-select" class="block text-sm font-medium text-gray-700">CMS Role</label>
-          <select id="user-role-select" name="role" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-            <option value="DPO">Data Protection Officer (DPO)</option>
-            <!--
-            <option value="OPERATOR">Operator</option>
-            <option value="AUDITOR">Auditor</option>
-            -->
+          <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Role</label>
+          <select id="user-role" name="role" class="w-full p-2 border rounded-lg text-sm">
+            <!-- Only DPO role as requested -->
+            <option value="DPO">DPO</option>
           </select>
         </div>
-        <div>
-          <label for="user-password" class="block text-sm font-medium text-gray-700">Initial Password (Min 12 Chars)</label>
-          <input type="password" id="user-password" name="password" minlength="12" placeholder="Secure Password" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-          <p class="mt-1 text-xs text-gray-500" id="password-note">Leave blank if editing user; Password is required for creation.</p>
-        </div>
+        <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Initial Password</label><input type="password" id="user-password" name="password" placeholder="Min 12 chars" class="w-full p-2 border rounded-lg text-sm"></div>
       </div>
-
-      <!-- Section 3: Fiduciary Association -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label for="fiduciary-select" class="block text-sm font-medium text-gray-700">Associated Data Fiduciary</label>
-          <select id="fiduciary-select" name="fiduciary_id" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-            <option value="">-- No Fiduciary Assigned (Global) --</option>
-          </select>
-          <p class="mt-1 text-xs text-gray-500">Links user access/scope to a specific Fiduciary.</p>
-        </div>
-      </div>
-
-      <!-- Section 4: Status -->
       <div>
-        <label for="user-status-select" class="block text-sm font-medium text-gray-700">Account Status</label>
-        <select id="user-status-select" name="status" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="INACTIVE">INACTIVE</option>
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Associated Fiduciary</label>
+        <select id="fiduciary-select" name="fiduciary_id" class="w-full p-2 border rounded-lg text-sm">
+          <option value="">-- Global Access --</option>
         </select>
-        <p class="mt-1 text-xs text-gray-500">MFA setup is required for DPO/Admin roles on first login.</p>
       </div>
-
-      <div class="modal-footer">
-        <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
-        <button type="submit" id="save-user-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save CMS User</button>
+      <div class="flex justify-end gap-3 mt-6">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 text-sm font-bold text-gray-500">Cancel</button>
+        <button type="submit" class="bg-[#006A67] text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg">Save User</button>
       </div>
     </form>
   </div>
 </div>
 
-<script>
-    const API_URL_USERS = '/api/v1/admin/operator';
-    const API_URL_FIDUCIARIES_LIST = '/api/v1/admin/fiduciary';
-    const AUTH_TOKEN = localStorage.getItem('authToken');
-    const USER_NAME = localStorage.getItem('username');
-    document.getElementById('username').textContent = USER_NAME;
+<!-- Modal: Recovery Key One-Time Display -->
+<div id="recovery-modal" class="modal-overlay">
+  <div class="modal-content text-center">
+    <h2 class="text-xl font-black text-slate-800 mb-4 tracking-tight">Master Recovery Key</h2>
+    <p class="text-xs text-slate-500 mb-6 leading-relaxed">This is a one-time "Break-Glass" secret generated for the user. Share this securely via internal channels. Only a hash is stored in the CMS registry.</p>
 
-    let sidebar, menuToggle, backdrop, userModalOverlay, addUserBtn, closeModalBtn, userForm, tableBody, countSpan, errorMessageP, searchInput;
-    let userIdHidden, userFullNameInput, userEmailInput, userRoleSelect, userPasswordInput, userStatusSelect,fiduciarySelect;
+    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 font-mono text-sm font-bold text-teal-700 flex justify-between items-center group">
+      <span id="plain-passphrase">---- ---- ---- ---- ----</span>
+      <button onclick="copyPassphrase()" class="text-[10px] font-black text-slate-400 hover:text-teal-600 uppercase tracking-tighter">Copy</button>
+    </div>
+
+    <div class="p-3 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-bold border border-amber-100 mb-8 uppercase tracking-tight">
+      Warning: Generating a new key invalidates any existing recovery phrase.
+    </div>
+
+    <button onclick="closeModals()" class="w-full py-3 bg-[#006A67] text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg">Key Shared Successfully</button>
+  </div>
+</div>
+
+<script>
+    const API_USERS = '/api/v1/admin/operator';
+    const API_FIDUCIARIES = '/api/v1/admin/fiduciary';
+    const TOKEN = localStorage.getItem('authToken');
     let FiduciaryList = {};
 
-    function toggleMenu() {
-        sidebar.classList.toggle('open');
-        backdrop.classList.toggle('hidden');
-    }
+    document.getElementById('username-display').textContent = localStorage.getItem('username') || 'Admin User';
 
-    function showModal(title, isEdit = false) {
-        document.getElementById('modal-title').textContent = title;
-        userForm.reset();
-        userIdHidden.value = '';
-        document.getElementById('save-user-btn').textContent = isEdit ? 'Update User' : 'Save CMS User';
-        document.getElementById('password-note').style.display = isEdit ? 'block' : 'none';
-        userEmailInput.disabled = isEdit;
-        userFullNameInput.disabled = isEdit;
-        userPasswordInput.value = '';
-        userPasswordInput.placeholder = isEdit ? 'Leave blank to keep current password' : 'Secure Password';
-        fiduciarySelect.disabled = isEdit;
-        fiduciarySelect.value = '';
-        userModalOverlay.style.display = 'flex';
-    }
-
-    function closeModal() {
-        userModalOverlay.style.display = 'none';
-    }
-
-    function getFiduciaryName(id) {
-        if (!id) return 'Global Access';
-        const fiduciary = FiduciaryList[id];
-        return fiduciary ? fiduciary.name : `Fiduciary ID: ${id}`;
-    }
-
-    function createStatusBadge(status) {
-        let colorClass = '';
-        switch (status) {
-            case 'ACTIVE': colorClass = 'bg-green-100 text-green-800'; break;
-            case 'INACTIVE': colorClass = 'bg-red-100 text-red-800'; break;
-            case 'PENDING_MFA': colorClass = 'bg-yellow-100 text-yellow-800'; break;
-            default: colorClass = 'bg-gray-100 text-gray-800';
-        }
-        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status}</span>`;
-    }
-
-    function createUserRow(user) {
-        const row = document.createElement('tr');
-
-        // Check if user is an ADMIN to hide actions
-        const isAdmin = user.role === 'ADMIN';
-        const showDeactivate = !isAdmin && (user.status === 'ACTIVE' || user.status === 'PENDING_MFA');
-
-        let actionsHtml = '';
-        if (isAdmin) {
-            actionsHtml = `<span class="text-gray-400 text-xs italic">System Protected</span>`;
-        } else {
-            actionsHtml = `
-                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editUser('${user.user_id}')">Edit</button>
-                ${showDeactivate ?
-                    `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateUser('${user.user_id}')">Deactivate</button>`
-                    : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
-            `;
-        }
-
-        row.innerHTML = `
-            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${user.username || 'N/A'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${user.email || 'N/A'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${user.role || 'N/A'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(user.fiduciary_id)}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(user.status)}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm">
-                ${actionsHtml}
-            </td>
-        `;
-        return row;
-    }
-
-    async function fetchFiduciariesForDropdown() {
+    /**
+     * Loads Fiduciaries for mapping IDs to names in the table and dropdown.
+     */
+    async function fetchFiduciaries() {
         try {
-            const payload = { "_func": "list_fiduciaries", "status": "ACTIVE", "search": "", "page": 1, "limit": 50 };
-            const response = await fetch(API_URL_FIDUCIARIES_LIST, {
+            const res = await fetch(API_FIDUCIARIES, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify(payload)
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+                body: JSON.stringify({ "_func": "list_fiduciaries" })
             });
-            if (!response.ok) throw new Error("Failed to fetch Fiduciaries list.");
-            const responseData = await response.json();
-            if (responseData.status === 401) { handleLogout(); return; }
-            const fiduciaries = responseData.data || responseData;
-            fiduciarySelect.innerHTML = '<option value="">-- No Fiduciary Assigned (Global) --</option>';
-            fiduciaries.forEach(f => {
-                const option = document.createElement('option');
-                option.value = f.fiduciary_id;
-                option.textContent = f.name;
-                fiduciarySelect.appendChild(option);
-                FiduciaryList[f.fiduciary_id] = f;
+            const data = await res.json();
+            const list = data.data || data;
+
+            const select = document.getElementById('fiduciary-select');
+            select.innerHTML = '<option value="">-- Global Access --</option>';
+
+            list.forEach(f => {
+                FiduciaryList[f.fiduciary_id] = f.name;
+                const opt = document.createElement('option');
+                opt.value = f.fiduciary_id;
+                opt.textContent = f.name;
+                select.appendChild(opt);
             });
-        } catch (error) { console.error(error); }
+        } catch (e) { console.error("Fiduciary load failed", e); }
     }
 
-    async function loadUsers(searchTerm = "") {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading CMS User data...</td></tr>`;
-        errorMessageP.classList.add('hidden');
+    async function loadUsers(search = "") {
         try {
-            const listPayload = { "_func": "list_users", "search": searchTerm, "page": 1, "limit": 50 };
-            const response = await fetch(API_URL_USERS, {
+            const res = await fetch(API_USERS, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify(listPayload)
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+                body: JSON.stringify({ "_func": "list_users", "search": search })
             });
-            if (!response.ok) throw new Error(`API returned status ${response.status}`);
-            const responseData = await response.json();
-            const users = responseData.data || responseData;
-            if (Array.isArray(users)) {
-                tableBody.innerHTML = '';
-                if (users.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No CMS Users found.</td></tr>`;
-                } else {
-                    users.forEach(user => tableBody.appendChild(createUserRow(user)));
-                    countSpan.textContent = `Showing 1 - ${users.length} of ${users.length} Total`;
-                }
-            }
-        } catch (error) {
-            tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">Error connecting to the CMS API.</td></tr>`;
-            errorMessageP.classList.remove('hidden');
-            countSpan.textContent = '0 Total';
-        }
-    }
+            const users = await res.json();
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = users.map(u => {
+                const isAdmin = u.role === 'ADMIN';
+                const fiduciaryName = FiduciaryList[u.fiduciary_id] || u.fiduciary_id || 'Global Access';
 
-    async function fetchUserDetails(userId) {
-        try {
-            const payload = { "_func": "get_user", "user_id": userId };
-            const response = await fetch(API_URL_USERS, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify(payload)
-            });
-            const responseData = await response.json();
-            return responseData.user_id ? responseData : null;
-        } catch (error) { return null; }
+                return `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-4 font-bold text-slate-700">${u.username}</td>
+                    <td class="px-4 py-4 text-xs font-black text-slate-400 uppercase">${u.role}</td>
+                    <td class="px-4 py-4 text-xs text-slate-500">${fiduciaryName}</td>
+                    <td class="px-4 py-4"><span class="px-3 py-1 text-[10px] font-black rounded-full bg-green-100 text-green-700 uppercase">${u.status}</span></td>
+                    <td class="px-4 py-4 flex gap-3">
+                        ${!isAdmin ? `<button onclick="editUser('${u.user_id}')" class="text-indigo-600 font-bold hover:underline text-xs">Edit</button>` : ''}
+                        <button onclick="requestRecoveryKey('${u.user_id}')" class="text-amber-600 font-black hover:underline text-[10px] uppercase tracking-tighter">Recovery Key</button>
+                        ${!isAdmin ? `<button onclick="deactivateUser('${u.user_id}')" class="text-red-500 font-bold hover:underline text-xs">Deactivate</button>` : ''}
+                        ${isAdmin ? `<span class="text-[9px] font-black text-slate-300 uppercase tracking-tighter italic self-center">System Protected</span>` : ''}
+                    </td>
+                </tr>
+            `}).join('');
+            document.getElementById('user-count').textContent = `Total: ${users.length} Operators`;
+        } catch (e) { console.error("Load failed", e); }
     }
 
     async function editUser(id) {
-        showModal('Edit CMS User', true);
-        const user = await fetchUserDetails(id);
-        if (user) {
-            userIdHidden.value = user.user_id;
-            userFullNameInput.value = user.username || '';
-            userEmailInput.value = user.email || '';
-            userRoleSelect.value = user.role_name || 'OPERATOR';
-            userStatusSelect.value = user.status || 'ACTIVE';
-            fiduciarySelect.value = user.fiduciary_id || '';
-        } else { closeModal(); }
+        showUserModal('Edit CMS User', true);
+        try {
+            const res = await fetch(API_USERS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+                body: JSON.stringify({ "_func": "get_user", "user_id": id })
+            });
+            const u = await res.json();
+            document.getElementById('user-id-hidden').value = u.user_id;
+            document.getElementById('user-name').value = u.username;
+            document.getElementById('user-email').value = u.email;
+            document.getElementById('fiduciary-select').value = u.fiduciary_id || '';
+        } catch (e) { alert("Load Failed"); }
     }
 
     async function deactivateUser(id) {
-        if (confirm(`Are you sure you want to DEACTIVATE CMS User ID ${id}?`)) {
-            try {
-                const payload = { "_func": "deactivate_user", "user_id": id, "status": "INACTIVE" };
-                const response = await fetch(API_URL_USERS, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                    body: JSON.stringify(payload)
-                });
-                if (response.ok) { loadUsers(); }
-            } catch (error) { console.error(error); }
-        }
+        if (!confirm("Are you sure you want to deactivate this operator?")) return;
+        try {
+            const res = await fetch(API_USERS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+                body: JSON.stringify({ "_func": "deactivate_user", "user_id": id })
+            });
+            if (res.ok) loadUsers();
+        } catch (e) { alert("Action failed"); }
     }
 
-    function handleLogout() {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('username');
-        window.location.href = "../index.html";
+    async function requestRecoveryKey(userId) {
+        if (!confirm("Initiate Master Recovery Key generation? This will rotate the existing key for this operator.")) return;
+
+        try {
+            const res = await fetch(API_USERS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+                body: JSON.stringify({ "_func": "generate_recovery_key", "user_id": userId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('plain-passphrase').textContent = data.passphrase;
+                document.getElementById('recovery-modal').style.display = 'flex';
+            } else { alert("Failed to generate key: " + data.message); }
+        } catch (e) { alert("Registry communication error."); }
     }
 
-    sidebar = document.getElementById('sidebar');
-    menuToggle = document.getElementById('menu-toggle');
-    backdrop = document.getElementById('sidebar-backdrop');
-    userModalOverlay = document.getElementById('user-modal-overlay');
-    addUserBtn = document.getElementById('add-user-btn');
-    closeModalBtn = document.getElementById('close-modal-btn');
-    userForm = document.getElementById('user-form');
-    tableBody = document.getElementById('user-table-body');
-    countSpan = document.getElementById('user-count');
-    errorMessageP = document.getElementById('user-error-message');
-    searchInput = document.getElementById('search-input');
-    userIdHidden = document.getElementById('user-id-hidden');
-    userFullNameInput = document.getElementById('user-full-name');
-    userEmailInput = document.getElementById('user-email');
-    userRoleSelect = document.getElementById('user-role-select');
-    userPasswordInput = document.getElementById('user-password');
-    userStatusSelect = document.getElementById('user-status-select');
-    fiduciarySelect = document.getElementById('fiduciary-select');
+    function copyPassphrase() {
+        const text = document.getElementById('plain-passphrase').innerText;
+        const dummy = document.createElement("textarea");
+        document.body.appendChild(dummy);
+        dummy.value = text;
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+        alert("Copied to clipboard!");
+    }
 
-    menuToggle.addEventListener('click', toggleMenu);
-    backdrop.addEventListener('click', toggleMenu);
-    addUserBtn.addEventListener('click', () => showModal('Add New CMS User'));
-    closeModalBtn.addEventListener('click', closeModal);
+    function showUserModal(title, isEdit = false) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('user-form').reset();
+        document.getElementById('user-id-hidden').value = '';
+        document.getElementById('user-modal').style.display = 'flex';
+    }
 
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); loadUsers(searchInput.value.trim()); }
-    });
-
-    fetchFiduciariesForDropdown();
-    loadUsers();
-
-    userForm.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        const formData = new FormData(userForm);
+    document.getElementById('user-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
-        const isEditing = !!data.userId;
+        const isEdit = !!document.getElementById('user-id-hidden').value;
+
         const payload = {
-            "_func": isEditing ? "update_user" : "create_user",
-            "user_id": data.userId,
+            "_func": isEdit ? "update_user" : "create_user",
+            "user_id": document.getElementById('user-id-hidden').value,
             "username": data.name,
             "email": data.email,
             "role": data.role,
-            "fiduciary_id":data.fiduciary_id,
-            "status": data.status
+            "fiduciary_id": data.fiduciary_id,
+            "password": data.password
         };
-        if (data.password && data.password.length >= 12) payload.password = data.password;
-        else if (!isEditing) { alert("Password min 12 chars."); return; }
 
-        if (isEditing) {
-            delete payload.email;
-            if (!payload.password) delete payload.password;
-        } else delete payload.user_id;
+        const res = await fetch(API_USERS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+            body: JSON.stringify(payload)
+        });
 
-        try {
-            const btn = document.getElementById('save-user-btn');
-            btn.textContent = 'Processing...'; btn.disabled = true;
-            const response = await fetch(API_URL_USERS, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify(payload)
-            });
-            if (response.ok) { closeModal(); loadUsers(); }
-            else { const res = await response.json(); alert(res.message); }
-        } catch (error) { console.error(error); } finally {
-            document.getElementById('save-user-btn').textContent = isEditing ? 'Update User' : 'Save CMS User';
-            document.getElementById('save-user-btn').disabled = false;
-        }
-    });
+        if (res.ok) { closeModals(); loadUsers(); }
+        else { alert("Failed to save."); }
+    };
 
-    window.editUser = editUser;
-    window.deactivateUser = deactivateUser;
-    window.toggleMenu = toggleMenu;
+    function closeModals() {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+    }
+
+    function handleLogout() {
+        localStorage.clear();
+        window.location.href = "../index.html";
+    }
+
+    window.onload = async () => {
+        await fetchFiduciaries();
+        loadUsers();
+    };
 </script>
 </body>
 </html>

@@ -6,20 +6,12 @@
     "_func": {
       "type": "string"
     },
-    "status": {
+    "user_id": {
       "type": "string"
-    },
-    "search": {
-      "type": "string"
-    },
-    "page": {
-      "type": "number"
-    },
-    "limit": {
-      "type": "number"
     }
   },
   "required": [
-    "_func"
+    "_func",
+    "user_id"
   ]
 }

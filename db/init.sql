@@ -37,8 +37,7 @@ CREATE TABLE IF NOT EXISTS operators (
     name VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255), -- Can be NULL initially for first-time setup
-    mfa_secret VARCHAR(255), -- For TOTP
-    mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    recovery_key_hash VARCHAR(255),
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE, PENDING_MFA_SETUP
     role VARCHAR(20) NOT NULL,
     fiduciary_id UUID REFERENCES fiduciaries(id),
