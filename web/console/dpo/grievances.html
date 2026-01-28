@@ -369,7 +369,7 @@
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(status)}</td>
             <td class="px-4 py-3 text-sm font-semibold">${calculateDeadlineDisplay(grievance.due_date,status)}</td>
             <td class="px-4 py-3 text-sm">
-                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.grievance_id}','${grievance.fiduciary_id}')">View/Manage</button>
+                <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.grievance_id}')">View/Manage</button>
             </td>
         `;
         return row;
@@ -465,9 +465,9 @@
     }
 
     // Function to fetch a single Grievance record
-    async function fetchGrievanceDetails(grievanceId,fiduciaryId) {
+    async function fetchGrievanceDetails(grievanceId) {
         try {
-            const payload = { "_func": "get_grievance", "grievance_id": grievanceId, "fiduciary_id": fiduciaryId };
+            const payload = { "_func": "get_grievance", "grievance_id": grievanceId, "fiduciary_id": localStorage.getItem('fiduciary_id')};
             console.log(payload);
 
             const response = await fetch(API_URL_GRIEVANCE, {
@@ -493,15 +493,14 @@
     }
 
     // Function to populate and show modal
-    async function viewGrievance(id,fidid) {
-        const grievance = await fetchGrievanceDetails(id,fidid);
+    async function viewGrievance(id) {
+        const grievance = await fetchGrievanceDetails(id);
         if (!grievance) return;
 
         grievanceModalOverlay.style.display = 'flex';
 
         // Populate modal details
         document.getElementById('modal-grievance-id').textContent = grievance.id;
-        document.getElementById('detail-type').textContent = grievance.type.replace(/_/g, ' ');
         document.getElementById('detail-user-id').textContent = grievance.user_id;
         document.getElementById('detail-date').textContent = new Date(grievance.submission_timestamp).toLocaleString();
         document.getElementById('detail-status').innerHTML = createStatusBadge(grievance.status);
@@ -592,7 +591,7 @@
             const payload = {
                 "_func": "update_grievance_status",
                 "grievance_id": grievanceId,
-                "fiduciary_id": fiduciaryId,
+                "fiduciary_id": localStorage.getItem('fiduciary_id'),
                 "status": newStatus,
                 "resolution_details": resolutionNotes
             };

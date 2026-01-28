@@ -1,6 +1,6 @@
 package org.tsicoop.dpdpcms.service.v1;
 
-import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available
+import org.tsicoop.dpdpcms.framework.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
@@ -12,7 +12,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement; // For Statement.RETURN_GENERATED_KEYS
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -21,56 +20,44 @@ import java.util.UUID;
 import java.util.Optional;
 
 /**
- * GrievanceService class for managing Data Principal grievances and requests.
- * All operations are exposed via the POST method, using a '_func' attribute
- * in the JSON request body to specify the desired operation.
- *
- * This class serves as the backend service for the Grievance Management module
- * of the DPDP Consent Management System.
- *
- * NOTE ON DATABASE SCHEMA ASSUMPTIONS:
- * - Table is named 'grievances'.
- * - Columns: id (UUID PK), user_id (VARCHAR), fiduciary_id (UUID), subject (VARCHAR),
- * description (TEXT), submission_timestamp (TIMESTAMPZ), status (VARCHAR),
- * assigned_dpo_user_id (UUID), resolution_details (TEXT), resolution_timestamp (TIMESTAMPZ),
- * communication_log (JSONB), attachments (JSONB), last_updated_at (TIMESTAMPZ),
- * last_updated_by_user_id (UUID), due_date (TIMESTAMPZ).
- * - Assumes 'fiduciaries' and 'users' tables exist for FK references.
+ * Grievance class for managing Data Principal grievances and requests.
+ * Refactored to determine service context (APP/DPO) and log audit events after pool cleanup.
  */
 public class Grievance implements Action {
 
-    // Define standard SLA for different grievance types (e.g., in days)
-    private static final int DEFAULT_SLA_DAYS = 30; // DPDP Act typically gives 30 days
-    private static final int ERASURE_SLA_DAYS = 7; // Example: Erasure might have shorter SLA
+    private static final int DEFAULT_SLA_DAYS = 30;
+    private static final int ERASURE_SLA_DAYS = 7;
+    private static final UUID ADMIN_FID_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
-    /**
-     * Handles all Grievance Management operations via a single POST endpoint.
-     * The specific operation is determined by the '_func' attribute in the JSON request body.
-     *
-     * @param req The HttpServletRequest containing the JSON input.
-     * @param res The HttpServletResponse for sending the JSON output.
-     */
     @Override
     public void post(HttpServletRequest req, HttpServletResponse res) {
         JSONObject input = null;
-        JSONObject output = null;
-        JSONArray outputArray = null;
-        UUID loginUserId = null;
-
         try {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
             String apiKey = req.getHeader("X-API-Key");
             String apiSecret = req.getHeader("X-API-Secret");
-            // For Admin APIs
-            loginUserId = InputProcessor.getAuthenticatedUserId(req);
 
             if (func == null || func.trim().isEmpty()) {
-                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute.", req.getRequestURI());
                 return;
             }
 
-            // Extract common parameters
+            // Determine Service Context for Audit
+            UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+            UUID appId = new ApiKey().getAppId(apiKey, apiSecret);
+
+            String serviceType = "SYSTEM";
+            UUID actorServiceId = ADMIN_FID_UUID;
+
+            if (appId != null) {
+                serviceType = "APP";
+                actorServiceId = appId;
+            } else if (loginUserId != null) {
+                serviceType = "DPO";
+                actorServiceId = loginUserId;
+            }
+
             UUID grievanceId = null;
             String grievanceIdStr = (String) input.get("grievance_id");
             if (grievanceIdStr != null && !grievanceIdStr.isEmpty()) {
@@ -82,502 +69,260 @@ public class Grievance implements Action {
                 }
             }
 
-            String userId = (String) input.get("user_id"); // Data Principal's ID
+            String userId = (String) input.get("user_id");
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Fiduciary().getFiduciaryId(UUID.fromString(apiKey),apiSecret);
+            String fiduciaryIdStr = input.get("fiduciary_id") != null ? (String) input.get("fiduciary_id") : new Fiduciary().getFiduciaryId(UUID.fromString(apiKey != null ? apiKey : "00000000-0000-0000-0000-000000000000"), apiSecret);
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
-                try {
-                    fiduciaryId = UUID.fromString(fiduciaryIdStr);
-                } catch (IllegalArgumentException e) {
-                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid 'fiduciary_id' format.", req.getRequestURI());
-                    return;
-                }
+                fiduciaryId = UUID.fromString(fiduciaryIdStr);
             }
-
 
             switch (func.toLowerCase()) {
                 case "submit_grievance":
-                    String type = (String) input.get("type");
-                    String subject = (String) input.get("subject");
-                    String description = (String) input.get("description");
-                    JSONArray attachmentsJson = (JSONArray) input.get("attachments"); // Array of file references
-                    String language = (String) input.get("language"); // Language of submission
-
-                    if (userId == null || userId.isEmpty() || fiduciaryId == null || type == null || type.isEmpty() || subject == null || subject.isEmpty() || description == null || description.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (user_id, fiduciary_id, type, subject, description) for 'submit_grievance'.", req.getRequestURI());
-                        return;
-                    }
-                    if (!fiduciaryExists(fiduciaryId)) { // Helper to check if fiduciary exists
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Fiduciary with ID '" + fiduciaryId + "' not found.", req.getRequestURI());
-                        return;
-                    }
-
-                    output = saveGrievanceToDb(userId, fiduciaryId, type, subject, description, attachmentsJson, language, loginUserId);
-                    OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
+                    handleSubmitGrievance(input, userId, fiduciaryId, serviceType, actorServiceId, res, req);
                     break;
 
                 case "get_grievance":
-                    if (grievanceId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'grievance_id' is required for 'get_grievance'.", req.getRequestURI());
-                        return;
-                    }
-                    Optional<JSONObject> grievanceOptional = getGrievanceFromDb(grievanceId);
-                    if (grievanceOptional.isPresent()) {
-                        output = grievanceOptional.get();
-                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
-                    } else {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Grievance with ID '" + grievanceId + "' not found.", req.getRequestURI());
-                    }
+                    handleGetGrievance(grievanceId, res, req);
                     break;
 
                 case "list_grievances":
-                    String statusFilter = (String) input.get("status_filter");
-                    String typeFilter = (String) input.get("type");
-
-                    String search = (String) input.get("search");
-                    // fiduciaryId is required for listing grievances
-                    if (fiduciaryId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_grievances'.", req.getRequestURI());
-                        return;
-                    }
-                    int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
-                    int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
-
-                    outputArray = listGrievancesFromDb(fiduciaryId, statusFilter, search, page, limit);
-                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    handleListGrievances(fiduciaryId, input, res, req);
                     break;
 
                 case "list_user_grievances":
-                    // fiduciaryId is required for listing grievances
-                    if (fiduciaryId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_grievances'.", req.getRequestURI());
-                        return;
-                    }
-
-                    outputArray = listUserGrievancesFromDb(fiduciaryId, userId);
-                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    handleListUserGrievances(fiduciaryId, userId, res, req);
                     break;
 
                 case "update_grievance_status":
-                    if (grievanceId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'grievance_id' is required for 'update_grievance_status'.", req.getRequestURI());
-                        return;
-                    }
-                    Optional<JSONObject> existingGrievance = getGrievanceFromDb(grievanceId);
-                    if (existingGrievance.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Grievance with ID '" + grievanceId + "' not found.", req.getRequestURI());
-                        return;
-                    }
-
-                    String newStatus = (String) input.get("status");
-                    String resolutionDetails = (String) input.get("resolution_details");
-
-                    if (newStatus == null || newStatus.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "New 'status' is required for 'update_grievance_status'.", req.getRequestURI());
-                        return;
-                    }
-                    // Basic status transition validation (can be more complex with a state machine)
-                    String currentGrievanceStatus = (String) existingGrievance.get().get("status");
-                    if (("RESOLVED".equalsIgnoreCase(currentGrievanceStatus) || "CLOSED".equalsIgnoreCase(currentGrievanceStatus)) &&
-                            !("RESOLVED".equalsIgnoreCase(newStatus) || "CLOSED".equalsIgnoreCase(newStatus))) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Cannot change status from RESOLVED/CLOSED to a prior state.", req.getRequestURI());
-                        return;
-                    }
-
-                    output = updateGrievanceStatusInDb(grievanceId, newStatus, resolutionDetails);
-                    OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
-
-                    // --- Trigger Downstream Actions based on status update ---
-                    if ("RESOLVED".equalsIgnoreCase(newStatus) && "ERASURE_REQUEST".equalsIgnoreCase((String)existingGrievance.get().get("type"))) {
-                        // This would typically call the Data Retention/Purge Service via API or Message Queue
-                        System.out.println("GrievanceService: Triggering purge for erasure request " + grievanceId);
-                        // Example: purgeService.initiatePurge(userId, fiduciaryId, "ERASURE_REQUEST", grievanceId);
-                    }
-                    // --- End Downstream Actions ---
-                    break;
-
-                case "add_grievance_communication":
-                    if (grievanceId == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'grievance_id' is required for 'add_grievance_communication'.", req.getRequestURI());
-                        return;
-                    }
-                    if (getGrievanceFromDb(grievanceId).isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Grievance with ID '" + grievanceId + "' not found.", req.getRequestURI());
-                        return;
-                    }
-                    String message = (String) input.get("message");
-                    String sender = (String) input.get("sender"); // e.g., "DP", "DPO"
-                    String channel = (String) input.get("channel"); // e.g., "PORTAL", "EMAIL"
-
-                    if (message == null || message.isEmpty() || sender == null || sender.isEmpty() || channel == null || channel.isEmpty()) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (message, sender, channel) for 'add_grievance_communication'.", req.getRequestURI());
-                        return;
-                    }
-                    addCommunicationToGrievance(grievanceId, message, sender, channel);
-                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Communication added successfully."); }});
+                    handleUpdateGrievanceStatus(input, grievanceId, serviceType, actorServiceId, res, req);
                     break;
 
                 default:
-                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown '_func': " + func, req.getRequestURI());
                     break;
             }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "A database error occurred: " + e.getMessage(), req.getRequestURI());
-        } catch (ParseException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid JSON input: " + e.getMessage(), req.getRequestURI());
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid UUID or date format in input: " + e.getMessage(), req.getRequestURI());
         } catch (Exception e) {
             e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred: " + e.getMessage(), req.getRequestURI());
+            OutputProcessor.errorResponse(res, 500, "Internal Error", e.getMessage(), req.getRequestURI());
         }
     }
 
-    /**
-     * Validates the HTTP method and request content type.
-     * @param method The HTTP method of the request.
-     * @param req The HttpServletRequest.
-     * @param res The HttpServletResponse.
-     * @return true if validation passes, false otherwise.
-     */
-    @Override
-    public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
-        if (!"POST".equalsIgnoreCase(method)) {
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "Only POST method is supported for Grievance Management operations.", req.getRequestURI());
-            return false;
+    private void handleSubmitGrievance(JSONObject input, String userId, UUID fiduciaryId, String serviceType, UUID serviceId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String type = (String) input.get("type");
+        String subject = (String) input.get("subject");
+        String description = (String) input.get("description");
+        JSONArray attachments = (JSONArray) input.get("attachments");
+
+        if (userId == null || fiduciaryId == null || type == null || subject == null || description == null) {
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "Missing mandatory fields.", req.getRequestURI());
+            return;
         }
-        return InputProcessor.validate(req, res); // This validates content-type and basic body parsing
-    }
 
-    // --- Helper Methods for Grievance Management ---
-
-    /**
-     * Checks if a fiduciary exists. (Ideally, this would be an API call to FiduciaryService in a microservices 5)
-     */
-    private boolean fiduciaryExists(UUID fiduciaryId) throws SQLException {
+        PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM fiduciaries WHERE id = ?";
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, fiduciaryId);
-            rs = pstmt.executeQuery();
-            return rs.next() && rs.getInt(1) > 0;
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-    }
 
-    /**
-     * Calculates the due date for a grievance based on its type and predefined SLAs.
-     */
-    private Timestamp calculateDueDate(String grievanceType) {
-        int slaDays = DEFAULT_SLA_DAYS;
-        if ("ERASURE_REQUEST".equalsIgnoreCase(grievanceType)) {
-            slaDays = ERASURE_SLA_DAYS;
-        }
-        return Timestamp.from(Instant.now().plusSeconds(slaDays * 24 * 60 * 60)); // Add SLA days in seconds
-    }
-
-    /**
-     * Saves a new grievance to the database.
-     * @return JSONObject containing the new grievance's details.
-     * @throws SQLException if a database access error occurs.
-     */
-    private JSONObject saveGrievanceToDb(String userId, UUID fiduciaryId, String type, String subject, String description,
-                                         JSONArray attachments, String language, UUID submittedByCmsUserId) throws SQLException {
-        JSONObject output = new JSONObject();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-
+        boolean success = false;
+        String newGrievanceId = null;
         Timestamp submissionTime = Timestamp.from(Instant.now());
         Timestamp dueDate = calculateDueDate(type);
-        JSONArray communicationLog = new JSONArray();
-        JSONObject initialCommunication = new JSONObject();
-        initialCommunication.put("timestamp", submissionTime.toInstant().toString());
-        initialCommunication.put("sender", "Data Principal");
-        initialCommunication.put("message", "Grievance submitted: " + subject);
-        initialCommunication.put("channel", "PORTAL");
-        communicationLog.add(initialCommunication);
-
-        String sql = "INSERT INTO grievances (id, user_id, fiduciary_id, type, subject, description, submission_timestamp, status, communication_log, attachments, due_date, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            String sql = "INSERT INTO grievances (id, user_id, fiduciary_id, type, subject, description, submission_timestamp, status, communication_log, attachments, due_date, last_updated_at) " +
+                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, 'NEW', '[]'::jsonb, ?::jsonb, ?, NOW()) RETURNING id";
+
+            pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, userId);
             pstmt.setObject(2, fiduciaryId);
             pstmt.setString(3, type);
             pstmt.setString(4, subject);
             pstmt.setString(5, description);
             pstmt.setTimestamp(6, submissionTime);
-            pstmt.setString(7, "NEW"); // Initial status
-            pstmt.setString(8, communicationLog.toJSONString());
-            pstmt.setString(9, attachments != null ? attachments.toJSONString() : "[]");
-            pstmt.setTimestamp(10, dueDate);
+            pstmt.setString(7, attachments != null ? attachments.toJSONString() : "[]");
+            pstmt.setTimestamp(8, dueDate);
 
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Submitting grievance failed, no rows affected.");
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                newGrievanceId = rs.getString(1);
+                JSONObject out = new JSONObject();
+                out.put("success", true);
+                out.put("grievance_id", newGrievanceId);
+                OutputProcessor.send(res, 201, out);
+                success = true;
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+
+        // Audit Log: Instrument after cleanup. Audit user is the principal (userId).
+        if (success) {
+            new Audit().logEventAsync(userId, fiduciaryId, serviceType, serviceId, "GRIEVANCE_SUBMITTED", "Subject: " + subject);
+        }
+    }
+
+    private void handleUpdateGrievanceStatus(JSONObject input, UUID grievanceId, String serviceType, UUID serviceId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String newStatus = (String) input.get("status");
+        String resolutionDetails = (String) input.get("resolution_details");
+
+        if (grievanceId == null || newStatus == null) {
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "ID and Status required.", req.getRequestURI());
+            return;
+        }
+
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        boolean success = false;
+        String principalId = "N/A";
+        UUID fiduciaryId = ADMIN_FID_UUID;
+
+        try {
+            conn = pool.getConnection();
+            // Fetch metadata for audit context
+            try (PreparedStatement p = conn.prepareStatement("SELECT user_id, fiduciary_id FROM grievances WHERE id = ?")) {
+                p.setObject(1, grievanceId);
+                try (ResultSet r = p.executeQuery()) {
+                    if (r.next()) {
+                        principalId = r.getString("user_id");
+                        fiduciaryId = (UUID) r.getObject("fiduciary_id");
+                    }
+                }
             }
 
-            rs = pstmt.getGeneratedKeys();
-            if (rs.next()) {
-                String grievanceId = rs.getString(1);
-                output.put("grievance_id", grievanceId);
-                output.put("user_id", userId);
-                output.put("message", "Grievance submitted successfully.");
+            StringBuilder sql = new StringBuilder("UPDATE grievances SET status = ?, last_updated_at = NOW()");
+            if (resolutionDetails != null) {
+                sql.append(", resolution_details = ?, resolution_timestamp = NOW()");
+            }
+            sql.append(" WHERE id = ?");
+
+            pstmt = conn.prepareStatement(sql.toString());
+            pstmt.setString(1, newStatus);
+            if (resolutionDetails != null) {
+                pstmt.setString(2, resolutionDetails);
+                pstmt.setObject(3, grievanceId);
             } else {
-                throw new SQLException("Submitting grievance failed, no ID obtained.");
+                pstmt.setObject(2, grievanceId);
             }
 
-            // Audit Log: Log the grievance submission event
-            // auditLogService.logEvent(submittedByCmsUserId, "GRIEVANCE_SUBMITTED", "Grievance", UUID.fromString(output.get("grievance_id").toString()), subject, null, "SUCCESS", "GrievanceService");
-
+            if (pstmt.executeUpdate() > 0) {
+                OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
+                success = true;
+            }
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
-        return new JSONObject() {{ put("success", true); put("data", output); }};
+
+        // Audit Log: Instrument after cleanup. Audit user is the principal (principalId).
+        if (success) {
+            new Audit().logEventAsync(principalId, fiduciaryId, serviceType, serviceId, "GRIEVANCE_STATUS_UPDATED", "New Status: " + newStatus);
+        }
     }
 
-    /**
-     * Retrieves a single grievance by ID from the database.
-     * @return An Optional containing the grievance JSONObject if found, otherwise empty.
-     * @throws SQLException if a database access error occurs.
-     */
-    private Optional<JSONObject> getGrievanceFromDb(UUID grievanceId) throws SQLException {
+    private void handleGetGrievance(UUID id, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-        String sql = "SELECT id, user_id, fiduciary_id, type, subject, description, submission_timestamp, status, assigned_dpo_user_id, resolution_details, resolution_timestamp, communication_log, attachments, due_date, last_updated_at FROM grievances WHERE id = ?";
         try {
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, grievanceId);
+            pstmt = conn.prepareStatement("SELECT * FROM grievances WHERE id = ?");
+            pstmt.setObject(1, id);
             rs = pstmt.executeQuery();
             if (rs.next()) {
-                JSONObject grievance = new JSONObject();
-                grievance.put("grievance_id", rs.getString("id"));
-                grievance.put("user_id", rs.getString("user_id"));
-                grievance.put("fiduciary_id", rs.getString("fiduciary_id"));
-                grievance.put("type", rs.getString("type"));
-                grievance.put("subject", rs.getString("subject"));
-                grievance.put("description", rs.getString("description"));
-                grievance.put("submission_timestamp", rs.getTimestamp("submission_timestamp").toInstant().toString());
-                grievance.put("status", rs.getString("status"));
-                grievance.put("assigned_dpo_user_id", rs.getString("assigned_dpo_user_id"));
-                grievance.put("resolution_details", rs.getString("resolution_details"));
-                grievance.put("resolution_timestamp", rs.getTimestamp("resolution_timestamp") != null ? rs.getTimestamp("resolution_timestamp").toInstant().toString() : null);
-                grievance.put("communication_log", new JSONParser().parse(rs.getString("communication_log")));
-                grievance.put("attachments", new JSONParser().parse(rs.getString("attachments")));
-                grievance.put("due_date", rs.getTimestamp("due_date").toInstant().toString());
-                grievance.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
-                return Optional.of(grievance);
+                JSONObject g = new JSONObject();
+                g.put("grievance_id", rs.getString("id"));
+                g.put("user_id", rs.getString("user_id"));
+                g.put("status", rs.getString("status"));
+                g.put("subject", rs.getString("subject"));
+                g.put("description", rs.getString("description"));
+                g.put("submission_timestamp", rs.getTimestamp("submission_timestamp").toString());
+                g.put("due_date", rs.getTimestamp("due_date").toString());
+                try {
+                    g.put("communication_log", new JSONParser().parse(rs.getString("communication_log")));
+                    g.put("attachments", new JSONParser().parse(rs.getString("attachments")));
+                } catch (Exception e) { }
+                OutputProcessor.send(res, 200, g);
+            } else {
+                OutputProcessor.errorResponse(res, 404, "Not Found", "Grievance not found.", req.getRequestURI());
             }
-        } catch (ParseException e) {
-            throw new SQLException("Failed to parse JSONB content from DB for grievance: " + e.getMessage(), e);
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
-        return Optional.empty();
     }
 
-    /**
-     * Retrieves a list of grievances from the database with optional filtering and pagination.
-     * @return JSONArray of grievance JSONObjects.
-     * @throws SQLException if a database access error occurs.
-     */
-    private JSONArray listGrievancesFromDb(UUID fiduciaryId, String statusFilter, String search, int page, int limit) throws SQLException {
-        JSONArray grievancesArray = new JSONArray();
+    private void handleListGrievances(UUID fiduciaryId, JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, user_id, fiduciary_id, type, subject, submission_timestamp, status, assigned_dpo_user_id, due_date FROM grievances WHERE fiduciary_id = ?");
-        List<Object> params = new ArrayList<>();
-        params.add(fiduciaryId);
-
-        if (statusFilter != null && !statusFilter.isEmpty() && statusFilter.equalsIgnoreCase("ALL")) {
-            sqlBuilder.append(" AND status != ?");
-            params.add("RESOLVED");
-        }
-        else if (statusFilter != null && !statusFilter.isEmpty()) {
-            sqlBuilder.append(" AND status = ?");
-            params.add(statusFilter);
-        }
-
-        if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (subject ILIKE ? OR description ILIKE ? OR user_id ILIKE ?)");
-            params.add("%" + search + "%");
-            params.add("%" + search + "%");
-            params.add("%" + search + "%");
-        }
-
-        sqlBuilder.append(" ORDER BY submission_timestamp DESC LIMIT ? OFFSET ?");
-        params.add(limit);
-        params.add((page - 1) * limit);
-        //System.out.println(sqlBuilder.toString());
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sqlBuilder.toString());
-            for (int i = 0; i < params.size(); i++) {
-                pstmt.setObject(i + 1, params.get(i));
-            }
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                JSONObject grievance = new JSONObject();
-                grievance.put("grievance_id", rs.getString("id"));
-                grievance.put("user_id", rs.getString("user_id"));
-                grievance.put("fiduciary_id", rs.getString("fiduciary_id"));
-                grievance.put("type", rs.getString("type"));
-                grievance.put("subject", rs.getString("subject"));
-                grievance.put("submission_timestamp", rs.getTimestamp("submission_timestamp").toInstant().toString());
-                grievance.put("status", rs.getString("status"));
-                grievance.put("assigned_dpo_user_id", rs.getString("assigned_dpo_user_id"));
-                grievance.put("due_date", rs.getTimestamp("due_date").toInstant().toString());
-                grievancesArray.add(grievance);
-            }
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-        return grievancesArray;
-    }
-
-    /**
-     * Retrieves a list of grievances from the database with optional filtering and pagination.
-     * @return JSONArray of grievance JSONObjects.
-     * @throws SQLException if a database access error occurs.
-     */
-    private JSONArray listUserGrievancesFromDb(UUID fiduciaryId, String userId) throws SQLException {
-        JSONArray grievancesArray = new JSONArray();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        PoolDB pool = new PoolDB();
-
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, user_id, fiduciary_id, type, subject, submission_timestamp, status, assigned_dpo_user_id, due_date FROM grievances WHERE fiduciary_id = ?");
-        List<Object> params = new ArrayList<>();
-        params.add(fiduciaryId);
-
-        if (userId != null && !userId.isEmpty()) {
-            sqlBuilder.append(" AND user_id = ?");
-            params.add(userId);
-        }
-
-        //System.out.println(sqlBuilder.toString());
-        try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sqlBuilder.toString());
-            for (int i = 0; i < params.size(); i++) {
-                pstmt.setObject(i + 1, params.get(i));
-            }
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                JSONObject grievance = new JSONObject();
-                grievance.put("grievance_id", rs.getString("id"));
-                grievance.put("user_id", rs.getString("user_id"));
-                grievance.put("fiduciary_id", rs.getString("fiduciary_id"));
-                grievance.put("type", rs.getString("type"));
-                grievance.put("subject", rs.getString("subject"));
-                grievance.put("submission_timestamp", rs.getTimestamp("submission_timestamp").toInstant().toString());
-                grievance.put("status", rs.getString("status"));
-                grievance.put("assigned_dpo_user_id", rs.getString("assigned_dpo_user_id"));
-                grievance.put("due_date", rs.getTimestamp("due_date").toInstant().toString());
-                grievancesArray.add(grievance);
-            }
-        } finally {
-            pool.cleanup(rs, pstmt, conn);
-        }
-        return grievancesArray;
-    }
-
-
-    /**
-     * Updates the status and resolution details of a grievance.
-     * @return JSONObject indicating success.
-     * @throws SQLException if a database access error occurs.
-     */
-    private JSONObject updateGrievanceStatusInDb(UUID grievanceId, String newStatus, String resolutionDetails) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        PoolDB pool = new PoolDB();
-
-        StringBuilder sqlBuilder = new StringBuilder("UPDATE grievances SET status = ?, last_updated_at = NOW()");
-        List<Object> params = new ArrayList<>();
-        params.add(newStatus);
-
-        if (resolutionDetails != null && !resolutionDetails.isEmpty()) {
-            sqlBuilder.append(", resolution_details = ?");
-            params.add(resolutionDetails);
-            sqlBuilder.append(", resolution_timestamp = NOW()"); // Set resolution timestamp if details provided
-        }
-
-        sqlBuilder.append(" WHERE id = ?");
-        params.add(grievanceId);
+        JSONArray arr = new JSONArray();
 
         try {
-            conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sqlBuilder.toString());
-            for (int i = 0; i < params.size(); i++) {
-                pstmt.setObject(i + 1, params.get(i));
-            }
-
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Updating grievance status failed, grievance not found or no changes made.");
-            }
-        } finally {
-            pool.cleanup(null, pstmt, conn);
-        }
-        return new JSONObject() {{ put("success", true); put("message", "Grievance status updated successfully."); }};
-    }
-
-    /**
-     * Adds a communication entry to a grievance's communication_log.
-     * @throws SQLException if a database access error occurs.
-     */
-    private void addCommunicationToGrievance(UUID grievanceId, String message, String sender, String channel) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        PoolDB pool = new PoolDB();
-
-        // Append new communication to the existing JSONB array
-        String sql = "UPDATE grievances SET communication_log = communication_log || ?::jsonb, last_updated_at = NOW() WHERE id = ?";
-
-        JSONObject newCommunication = new JSONObject();
-        newCommunication.put("timestamp", Instant.now().toString());
-        newCommunication.put("sender", sender);
-        newCommunication.put("message", message);
-        newCommunication.put("channel", channel);
-
-        JSONArray communicationArray = new JSONArray();
-        communicationArray.add(newCommunication); // Create a new array with just the new message to append
-
-        try {
+            String sql = "SELECT id, user_id, type, subject, submission_timestamp, status, due_date FROM grievances WHERE fiduciary_id = ? ORDER BY submission_timestamp DESC";
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, communicationArray.toJSONString()); // Append the new JSON object
-            pstmt.setObject(2, grievanceId);
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
 
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Adding communication to grievance failed, grievance not found.");
+            while (rs.next()) {
+                JSONObject g = new JSONObject();
+                g.put("grievance_id", rs.getString("id"));
+                g.put("user_id", rs.getString("user_id"));
+                g.put("type", rs.getString("type"));
+                g.put("subject", rs.getString("subject"));
+                g.put("status", rs.getString("status"));
+                g.put("submission_timestamp", rs.getTimestamp("submission_timestamp").toString());
+                g.put("due_date", rs.getTimestamp("due_date").toString());
+                arr.add(g);
             }
+            OutputProcessor.send(res, 200, arr);
         } finally {
-            pool.cleanup(null, pstmt, conn);
+            pool.cleanup(rs, pstmt, conn);
         }
+    }
+
+    private void handleListUserGrievances(UUID fiduciaryId, String userId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        JSONArray arr = new JSONArray();
+
+        try {
+            String sql = "SELECT id, type, subject, status, submission_timestamp, due_date FROM grievances WHERE fiduciary_id = ? AND user_id = ? ORDER BY submission_timestamp DESC";
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setString(2, userId);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                JSONObject g = new JSONObject();
+                g.put("grievance_id", rs.getString("id"));
+                g.put("type", rs.getString("type"));
+                g.put("subject", rs.getString("subject"));
+                g.put("status", rs.getString("status"));
+                g.put("due_date", rs.getTimestamp("due_date").toString());
+                arr.add(g);
+            }
+            OutputProcessor.send(res, 200, arr);
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    private Timestamp calculateDueDate(String type) {
+        int days = "ERASURE_REQUEST".equalsIgnoreCase(type) ? ERASURE_SLA_DAYS : DEFAULT_SLA_DAYS;
+        return Timestamp.from(Instant.now().plusSeconds(days * 24L * 60 * 60));
+    }
+
+    @Override
+    public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
+        return "POST".equalsIgnoreCase(method);
     }
 }

@@ -22,7 +22,7 @@
 
 <body class="flex lg:p-0">
 
-<!-- Restored Sidebar Navigation from Original Upload -->
+<!-- Sidebar Navigation -->
 <div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
   <div>
     <div class="px-5 pb-6 border-b border-gray-200"><span class="text-xl font-bold text-[#006A67]">TSI DPDP CMS</span></div>
@@ -41,6 +41,9 @@
     </div>
   </div>
 </div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
 
 <main class="flex-1 p-4 lg:p-8">
   <div class="flex justify-between items-center mb-8">
@@ -87,7 +90,6 @@
         <div>
           <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Role</label>
           <select id="user-role" name="role" class="w-full p-2 border rounded-lg text-sm">
-            <!-- Only DPO role as requested -->
             <option value="DPO">DPO</option>
           </select>
         </div>
@@ -171,19 +173,36 @@
             const tbody = document.getElementById('user-table-body');
             tbody.innerHTML = users.map(u => {
                 const isAdmin = u.role === 'ADMIN';
+                const isInactive = u.status === 'INACTIVE';
                 const fiduciaryName = FiduciaryList[u.fiduciary_id] || u.fiduciary_id || 'Global Access';
+
+                // Status Badge logic
+                const statusColor = isInactive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+
+                // Action logic: If inactive, all options disabled
+                let actionsHtml = '';
+                if (isInactive) {
+                    actionsHtml = `<span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter italic self-center">Account Locked</span>`;
+                } else {
+                    if (!isAdmin) {
+                        actionsHtml += `<button onclick="editUser('${u.user_id}')" class="text-indigo-600 font-bold hover:underline text-xs">Edit</button>`;
+                    }
+                    actionsHtml += `<button onclick="requestRecoveryKey('${u.user_id}')" class="text-amber-600 font-black hover:underline text-[10px] uppercase tracking-tighter">Recovery Key</button>`;
+                    if (!isAdmin) {
+                        actionsHtml += `<button onclick="deactivateUser('${u.user_id}')" class="text-red-500 font-bold hover:underline text-xs">Deactivate</button>`;
+                    } else {
+                        actionsHtml += `<span class="text-[9px] font-black text-slate-300 uppercase tracking-tighter italic self-center">System Protected</span>`;
+                    }
+                }
 
                 return `
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-4 font-bold text-slate-700">${u.username}</td>
                     <td class="px-4 py-4 text-xs font-black text-slate-400 uppercase">${u.role}</td>
                     <td class="px-4 py-4 text-xs text-slate-500">${fiduciaryName}</td>
-                    <td class="px-4 py-4"><span class="px-3 py-1 text-[10px] font-black rounded-full bg-green-100 text-green-700 uppercase">${u.status}</span></td>
-                    <td class="px-4 py-4 flex gap-3">
-                        ${!isAdmin ? `<button onclick="editUser('${u.user_id}')" class="text-indigo-600 font-bold hover:underline text-xs">Edit</button>` : ''}
-                        <button onclick="requestRecoveryKey('${u.user_id}')" class="text-amber-600 font-black hover:underline text-[10px] uppercase tracking-tighter">Recovery Key</button>
-                        ${!isAdmin ? `<button onclick="deactivateUser('${u.user_id}')" class="text-red-500 font-bold hover:underline text-xs">Deactivate</button>` : ''}
-                        ${isAdmin ? `<span class="text-[9px] font-black text-slate-300 uppercase tracking-tighter italic self-center">System Protected</span>` : ''}
+                    <td class="px-4 py-4"><span class="px-3 py-1 text-[10px] font-black rounded-full ${statusColor} uppercase">${u.status}</span></td>
+                    <td class="px-4 py-4 flex items-center gap-3">
+                        ${actionsHtml}
                     </td>
                 </tr>
             `}).join('');
