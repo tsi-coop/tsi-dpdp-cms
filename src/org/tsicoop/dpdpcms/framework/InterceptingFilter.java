@@ -48,7 +48,9 @@ public class InterceptingFilter implements Filter {
 
     private static final Set<String> ADMIN_NOAUTH_FUNCS = new HashSet<>(Arrays.asList(
             "reset_password",
-            "login"
+            "login",
+            "verify_recovery_key",
+            "reset_password_via_recovery"
     ));
 
     private static final HashMap<String, String> filterConfig = new HashMap<>(); // Unused in original, keeping for template consistency
