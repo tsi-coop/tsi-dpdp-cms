@@ -7,6 +7,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.tsicoop.dpdpcms.util.Constants;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -569,9 +570,8 @@ public class Policy implements Action {
         }
 
         // Instrument audit log only after connection is returned to pool
-        // Audit log revised: user name "DPO", service_id is fiduciaryId, contextDetails has ID alone
         if (success) {
-            new Audit().logEventAsync("DPO", fiduciaryId, "DPO", fiduciaryId, "POLICY_CREATED", "ID: " + policyId);
+            new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId, "POLICY_CREATED", "ID: " + policyId);
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
     }
@@ -608,9 +608,8 @@ public class Policy implements Action {
         }
 
         // Instrument audit log only after connection is returned to pool
-        // Audit log revised: user name "DPO", service_id is fiduciaryId, contextDetails has ID alone
         if (success) {
-            new Audit().logEventAsync("DPO", (fiduciaryId != null ? fiduciaryId : ADMIN_FID_UUID), "DPO", (fiduciaryId != null ? fiduciaryId : ADMIN_FID_UUID), "POLICY_UPDATED", "ID: " + policyId);
+            new Audit().logEventAsync("DPO", (fiduciaryId != null ? fiduciaryId : ADMIN_FID_UUID), Constants.SERVICE_TYPE_DPO_CONSOLE, (fiduciaryId != null ? fiduciaryId : ADMIN_FID_UUID), "POLICY_UPDATED", "ID: " + policyId);
         }
         return new JSONObject() {{ put("success", true); put("message", "Policy updated successfully."); }};
     }
@@ -647,9 +646,8 @@ public class Policy implements Action {
         }
 
         // Instrument audit log only after connection is returned to pool
-        // Audit log revised: user name "DPO", service_id is fiduciaryId, contextDetails has ID alone
         if (success) {
-            new Audit().logEventAsync("DPO", fiduciaryId, "DPO", fiduciaryId, "POLICY_PUBLISHED", "ID: " + policyId);
+            new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId, "POLICY_PUBLISHED", "ID: " + policyId);
         }
     }
 
@@ -671,9 +669,8 @@ public class Policy implements Action {
         }
 
         // Instrument audit log only after connection is returned to pool
-        // Audit log revised: user name "DPO", service_id is fiduciaryId, contextDetails has ID alone
         if (success) {
-            new Audit().logEventAsync("DPO", fiduciaryId, "DPO", fiduciaryId, "POLICY_DELETED", "ID: " + policyId);
+            new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId, "POLICY_DELETED", "ID: " + policyId);
         }
     }
 }

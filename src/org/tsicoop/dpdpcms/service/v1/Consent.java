@@ -17,10 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement; // For Statement.RETURN_GENERATED_KEYS
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -58,19 +55,28 @@ public class Consent implements Action {
         JSONArray outputArray = null;
         String reason = null;
         UUID appId = null;
+        UUID loginUserId = null;
+        String serviceType = null;
+        UUID serviceId = null;
 
-        // Placeholder for current user ID (in a real system, this would come from authentication context)
-        // For consent records, the 'actor' is often the Data Principal or the system acting on their behalf.
-        // For audit logs, it would be the CMS user who initiated an action.
-        UUID currentCmsUserId = null; // Assume null for Data Principal initiated actions, or get from session if CMS user
-        // Example: If a DPO manually updates consent, currentCmsUserId would be DPO's ID.
 
         try {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
             String apiKey = req.getHeader("X-API-Key");
             String apiSecret = req.getHeader("X-API-Secret");
+            // For Admin APIs
+            loginUserId = InputProcessor.getAuthenticatedUserId(req);
+            // For apps
             appId = new ApiKey().getAppId(apiKey,apiSecret);
+            if(appId != null){
+                serviceType = Constants.SERVICE_TYPE_APP;
+                serviceId = appId;
+            }
+            else{
+                serviceType = Constants.SERVICE_TYPE_DPO_CONSOLE;
+                serviceId = loginUserId;
+            }
 
             if (func == null || func.trim().isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
@@ -216,7 +222,7 @@ public class Consent implements Action {
                         return;
                     }
 
-                    result = withdrawConsent(userId, fiduciaryId, appId, reason, false);
+                    result = withdrawConsent(userId, fiduciaryId, serviceType, serviceId, false);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
 
                     break;
@@ -230,7 +236,7 @@ public class Consent implements Action {
                         return;
                     }
 
-                    result = withdrawConsent(userId, fiduciaryId, appId, reason, true);
+                    result = withdrawConsent(userId, fiduciaryId, serviceType, serviceId, true);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
                     break;
                 default:
@@ -300,7 +306,7 @@ public class Consent implements Action {
             auditContext.put("principal", childId);
             auditContext.put("guardian", guardianId);
             auditContext.put("proof_metadata", proofMetadata);
-            new Audit().logEventAsync(childId, fiduciaryId, "APP", appId , Constants.ACTION_PARENTAL_CONSENT, auditContext.toJSONString());
+            new Audit().logEventAsync(childId, fiduciaryId, Constants.SERVICE_TYPE_APP, appId , Constants.ACTION_PARENTAL_CONSENT, auditContext.toJSONString());
 
             JSONObject out = new JSONObject();
             out.put("success", true);
@@ -414,10 +420,10 @@ public class Consent implements Action {
         auditContext.put("purpose", requiredPurposeId);
         if (granted != null && granted) {
             auditContext.put("status", Constants.VALIDATION_SUCCESS);
-            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_VALIDATED", auditContext.toJSONString());
+            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), Constants.SERVICE_TYPE_APP, appId , "CONSENT_VALIDATED", auditContext.toJSONString());
         } else {
             auditContext.put("status", Constants.VALIDATION_FAILED);
-            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), "APP", appId , "CONSENT_DENIED", auditContext.toJSONString());
+            new Audit().logEventAsync(userId, UUID.fromString(fiduciaryId), Constants.SERVICE_TYPE_APP, appId , "CONSENT_DENIED", auditContext.toJSONString());
         }
         return result;
     }
@@ -451,11 +457,10 @@ public class Consent implements Action {
      *
      * @param userId The Data Principal's ID.
      * @param fiduciaryId The Data Fiduciary ID.
-     * @param reason The reason for withdrawal (optional).
      * @return JSONObject indicating success.
      * @throws SQLException
      */
-    private JSONObject withdrawConsent(String userId, UUID fiduciaryId, UUID appId, String reason, boolean erasure) throws SQLException {
+    private JSONObject withdrawConsent(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, boolean erasure) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -566,9 +571,9 @@ public class Consent implements Action {
 
         // --- log audit event
         if(erasure){
-            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_ERASURE_REQUEST, currentConsents.toJSONString());
+            new Audit().logEventAsync(userId, fiduciaryId, serviceType, serviceId , Constants.ACTION_ERASURE_REQUEST, currentConsents.toJSONString());
         }else{
-            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , Constants.ACTION_CONSENT_WITHDRAWN, currentConsents.toJSONString());
+            new Audit().logEventAsync(userId, fiduciaryId, serviceType, serviceId , Constants.ACTION_CONSENT_WITHDRAWN, currentConsents.toJSONString());
         }
         return result;
     }
@@ -910,6 +915,6 @@ public class Consent implements Action {
         auditContext.put("action", Constants.ACTION_LINK_USER);
         auditContext.put("anonymous_id", anonymousUserId);
         auditContext.put("principal", authenticatedUserId);
-        new Audit().logEventAsync(authenticatedUserId, fiduciaryId, "APP", appId , Constants.ACTION_LINK_USER, auditContext.toJSONString());
+        new Audit().logEventAsync(authenticatedUserId, fiduciaryId, Constants.SERVICE_TYPE_APP, appId , Constants.ACTION_LINK_USER, auditContext.toJSONString());
     }
 }
