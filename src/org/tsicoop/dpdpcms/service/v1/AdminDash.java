@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.tsicoop.dpdpcms.util.Constants;
+
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -55,7 +57,7 @@ public class AdminDash implements Action {
 
     protected JSONArray listAuditLogsFromDb() throws SQLException {
         JSONArray logs = new JSONArray();
-        StringBuilder sql = new StringBuilder("SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 5");
+        StringBuilder sql = new StringBuilder("SELECT * FROM audit_logs where service_type='"+ Constants.SERVICE_TYPE_ADMIN_CONSOLE+"' ORDER BY timestamp DESC LIMIT 5");
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;

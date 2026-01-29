@@ -49,13 +49,11 @@ public class Constants {
     public static final String AGE_ADULT = "ADULT";
     public static final String AGE_MINOR = "MINOR";
 
-    //-- Service Type
+    //-- Service Type for Audit Logs
     public static final String SERVICE_TYPE_APP = "APP";
-    public static final String SERVICE_TYPE_USER = "USER";
-
+    public static final String SERVICE_TYPE_DPO_CONSOLE = "DPO_CONSOLE";
+    public static final String SERVICE_TYPE_ADMIN_CONSOLE = "ADMIN_CONSOLE";
     public static final String SERVICE_TYPE_SYSTEM = "SYSTEM";
-
-    public static final String SERVICE_TYPE_DPO = "DPO";
 
     // Grievance Status
     public static final String GRIEVANCE_NEW = "NEW";

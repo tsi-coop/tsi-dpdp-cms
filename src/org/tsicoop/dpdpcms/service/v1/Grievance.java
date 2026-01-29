@@ -7,6 +7,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.tsicoop.dpdpcms.util.Constants;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -51,10 +52,10 @@ public class Grievance implements Action {
             UUID actorServiceId = ADMIN_FID_UUID;
 
             if (appId != null) {
-                serviceType = "APP";
+                serviceType = Constants.SERVICE_TYPE_APP;
                 actorServiceId = appId;
             } else if (loginUserId != null) {
-                serviceType = "DPO";
+                serviceType = Constants.SERVICE_TYPE_DPO_CONSOLE;
                 actorServiceId = loginUserId;
             }
 

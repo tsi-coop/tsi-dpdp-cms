@@ -1,6 +1,7 @@
 package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.framework.*;
+import org.tsicoop.dpdpcms.util.Constants;
 import org.tsicoop.dpdpcms.util.PassphraseGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -128,12 +129,20 @@ public class Operator implements Action {
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
+
+        String serviceType = null;
+        if(role != null && role.equalsIgnoreCase("DPO")){
+            serviceType = Constants.SERVICE_TYPE_DPO_CONSOLE;
+        }else{
+            serviceType = Constants.SERVICE_TYPE_ADMIN_CONSOLE;
+        }
+
         if (success) {
             // Service type is ADMIN, Service Id is the user being authenticated (since loginUserId is null)
-            new Audit().logEventAsync(identifier, fidUid, "ADMIN", userUid, "LOGIN_SUCCESS", "Operator Access Granted");
+            new Audit().logEventAsync(identifier, fidUid, serviceType, userUid, "LOGIN_SUCCESS", "Operator Access Granted");
             OutputProcessor.send(res, 200, out);
         }else{
-            new Audit().logEventAsync(identifier, fidUid, "ADMIN", userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
+            new Audit().logEventAsync(identifier, fidUid, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
             OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
         }
     }
@@ -181,7 +190,7 @@ public class Operator implements Action {
         }
 
         if (success) {
-            new Audit().logEventAsync(mail, fid, "ADMIN", loginUserId, "USER_CREATED", "Role assigned: " + role);
+            new Audit().logEventAsync(mail, fid, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "USER_CREATED", "Role assigned: " + role);
         }
     }
 
@@ -237,7 +246,7 @@ public class Operator implements Action {
         }
 
         if (success) {
-            new Audit().logEventAsync(targetEmail, fid, "ADMIN", loginUserId, "USER_UPDATED", "Profile modified");
+            new Audit().logEventAsync(targetEmail, fid, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "USER_UPDATED", "Profile modified");
         }
     }
 
@@ -271,7 +280,7 @@ public class Operator implements Action {
         }
 
         if (success) {
-            new Audit().logEventAsync(targetEmail, ADMIN_FID_UUID, "ADMIN", loginUserId, "USER_DEACTIVATED", "Account disabled");
+            new Audit().logEventAsync(targetEmail, ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "USER_DEACTIVATED", "Account disabled");
         }
     }
 
@@ -329,7 +338,7 @@ public class Operator implements Action {
         }
 
         if (success) {
-            new Audit().logEventAsync(email, fidId, "ADMIN", loginUserId != null ? loginUserId : userId, "PASSWORD_RECOVERY_SUCCESS", "Self-service recovery");
+            new Audit().logEventAsync(email, fidId, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId != null ? loginUserId : userId, "PASSWORD_RECOVERY_SUCCESS", "Self-service recovery");
         }
     }
 
@@ -365,7 +374,7 @@ public class Operator implements Action {
         }
 
         if (success) {
-            new Audit().logEventAsync(targetEmail, ADMIN_FID_UUID, "ADMIN", loginUserId, "RECOVERY_KEY_ROTATED", "New Master Key generated");
+            new Audit().logEventAsync(targetEmail, ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "RECOVERY_KEY_ROTATED", "New Master Key generated");
         }
     }
 

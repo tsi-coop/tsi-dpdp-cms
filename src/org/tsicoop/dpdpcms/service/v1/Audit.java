@@ -196,6 +196,8 @@ public class Audit implements Action {
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
+        sql.append(" AND service_type IN ('APP','DPO_CONSOLE','SYSTEM')");
+
         if (action != null && !action.isEmpty()) {
             sql.append(" AND audit_action = ?"); params.add(action);
         }

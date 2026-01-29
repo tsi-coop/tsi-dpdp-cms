@@ -295,7 +295,7 @@ public class Compliance implements Action {
                 serviceType = Constants.SERVICE_TYPE_APP;
             }
             else{
-                serviceType = Constants.SERVICE_TYPE_DPO;
+                serviceType = Constants.SERVICE_TYPE_DPO_CONSOLE;
             }
             JSONObject auditContext = new JSONObject();
             auditContext.put("details",details);
