@@ -10,6 +10,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.tsicoop.dpdpcms.util.Constants;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,6 +30,8 @@ import java.util.stream.Collectors;
  * of API keys for Apps.
  */
 public class ApiKey implements Action {
+
+    private static final UUID ADMIN_FID_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     /**
      * Handles all API Key Management operations via a single POST endpoint.
@@ -71,6 +74,9 @@ public class ApiKey implements Action {
                 }
             }
 
+            // Get the ID of the Admin performing the action
+            UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+
             switch (func.toLowerCase()) {
                 case "generate_api_key":
                     if (fiduciaryId == null) {
@@ -98,7 +104,7 @@ public class ApiKey implements Action {
 
                     // NOTE: Fiduciary existence check is recommended here but omitted for brevity.
 
-                    output = generateAndSaveApiKey(fiduciaryId, appId, description, permissionsJson);
+                    output = generateAndSaveApiKey(fiduciaryId, appId, description, permissionsJson, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -129,7 +135,7 @@ public class ApiKey implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'key_id' is required for revocation.", req.getRequestURI());
                         return;
                     }
-                    revokeApiKeyInDb(keyId);
+                    revokeApiKeyInDb(keyId, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "API Key revoked successfully."); }});
                     break;
 
@@ -202,7 +208,7 @@ public class ApiKey implements Action {
      * Generates a new API key, saves the hashed value, and returns the raw key.
      */
     private JSONObject generateAndSaveApiKey(UUID fiduciaryId, UUID appId, String description,
-                                             JSONArray permissionsJson) throws SQLException {
+                                             JSONArray permissionsJson, UUID loginUserId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -214,6 +220,7 @@ public class ApiKey implements Action {
         String permissionsString = permissionsJson != null ? permissionsJson.toJSONString() : "[]";
 
         JSONObject output = new JSONObject();
+        boolean success = false;
 
         String sql = "INSERT INTO api_keys (id, key_value, fiduciary_id, app_id, description, permissions, created_at, status) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?::jsonb, NOW(), 'ACTIVE') RETURNING id";
 
@@ -245,8 +252,12 @@ public class ApiKey implements Action {
             } else {
                 throw new SQLException("Key generation failed, no ID obtained.");
             }
+            success = true;
         } finally {
             pool.cleanup(rs, pstmt, conn);
+        }
+        if (success) {
+            new  Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "GENERATE_API_KEY", "ID:"+appId);
         }
         return new JSONObject() {{ put("success", true); put("data", output); put("message", "API Key created successfully. STORE THIS KEY SAFELY, IT WILL NOT BE SHOWN AGAIN."); }};
     }
@@ -314,10 +325,11 @@ public class ApiKey implements Action {
     /**
      * Revokes an API key by setting its status to REVOKED and recording revocation details.
      */
-    private void revokeApiKeyInDb(UUID keyId) throws SQLException {
+    private void revokeApiKeyInDb(UUID keyId, UUID loginUserId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
+        boolean success = false;
 
         // Soft delete/Revoke by updating status and recording metadata
         String sql = "UPDATE api_keys SET status = 'REVOKED', revoked_at = NOW(), last_used_at = NOW() WHERE id = ? AND status != 'REVOKED'";
@@ -333,12 +345,14 @@ public class ApiKey implements Action {
                 if (getApiKeyDetailsFromDb(keyId).isEmpty()) {
                     throw new SQLException("API Key not found.");
                 }
-                // Already revoked/expired
-                // Log a warning: Key revocation attempted on already revoked key.
             }
-            // NOTE: Audit log service call would go here to log key revocation.
+            success = true;
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+
+        if (success) {
+            new  Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "REVOKE_KEY", "Key:"+keyId);
         }
     }
 

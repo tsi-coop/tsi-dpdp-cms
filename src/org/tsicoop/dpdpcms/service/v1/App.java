@@ -7,6 +7,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.tsicoop.dpdpcms.util.Constants;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -43,6 +44,9 @@ public class App implements Action {
     // Regex for basic domain validation (simplified, if app has a domain to validate)
     private static final Pattern DOMAIN_PATTERN = Pattern.compile("^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$");
 
+    private static final UUID ADMIN_FID_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
+
     /**
      * Handles all App Management operations via a single POST endpoint.
      * The specific operation is determined by the '_func' attribute in the JSON request body.
@@ -57,9 +61,6 @@ public class App implements Action {
         JSONArray outputArray = null;
         String processingPurposes = null;
 
-        // Placeholder for current CMS user ID (from authentication context)
-        UUID currentCmsUserId = UUID.fromString("00000000-0000-0000-0000-000000000001"); // Example Admin User ID
-
         try {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
@@ -68,6 +69,9 @@ public class App implements Action {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", req.getRequestURI());
                 return;
             }
+
+            // Get the ID of the Admin performing the action
+            UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
 
             // Extract common parameters
             UUID appId = null;
@@ -138,7 +142,7 @@ public class App implements Action {
                         return;
                     }
 
-                    output = saveAppToDb(fiduciaryId, name, email, phone, dpaReference, processingPurposes);
+                    output = saveAppToDb(fiduciaryId, name, email, phone, dpaReference, processingPurposes, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
 
@@ -169,7 +173,7 @@ public class App implements Action {
                         return;
                     }*/
 
-                    output = updateAppInDb(appId, fiduciaryId, name, email, phone, dpaReference, processingPurposes);
+                    output = updateAppInDb(appId, fiduciaryId, name, email, phone, dpaReference, processingPurposes, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
@@ -182,7 +186,7 @@ public class App implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "App with ID '" + appId + "' not found for Fiduciary ID '" + fiduciaryId + "'.", req.getRequestURI());
                         return;
                     }
-                    deleteAppFromDb(appId, currentCmsUserId);
+                    deleteAppFromDb(appId, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, null);
                     break;
 
@@ -416,12 +420,14 @@ public class App implements Action {
      * @throws SQLException if a database access error occurs.
      */
     private JSONObject saveAppToDb(UUID fiduciaryId, String name, String email, String phone, String dpaReference,
-                                         String processingPurposes) throws SQLException {
+                                         String processingPurposes, UUID loginUserId) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
+        boolean success = false;
+        String appId = null;
         String sql = "INSERT INTO apps (id, fiduciary_id, name, email, phone, dpa_reference, processing_purposes, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?,?,NOW(),NOW()) RETURNING id";
 
         try {
@@ -442,7 +448,7 @@ public class App implements Action {
 
             rs = pstmt.getGeneratedKeys();
             if (rs.next()) {
-                String appId = rs.getString(1);
+                appId = rs.getString(1);
                 output.put("app_id", appId);
                 output.put("name", name);
                 output.put("fiduciary_id", fiduciaryId.toString());
@@ -450,8 +456,12 @@ public class App implements Action {
             } else {
                 throw new SQLException("Creating app failed, no ID obtained.");
             }
+            success = true;
         } finally {
             pool.cleanup(rs, pstmt, conn);
+        }
+        if (success) {
+            new  Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "CREATE_APP", "ID:"+appId+" Name:"+name);
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
     }
@@ -461,10 +471,11 @@ public class App implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject updateAppInDb(UUID appId, UUID fiduciaryId, String name, String email, String phone,String dpaReference, String processingPurposes) throws SQLException {
+    private JSONObject updateAppInDb(UUID appId, UUID fiduciaryId, String name, String email, String phone,String dpaReference, String processingPurposes, UUID loginUserId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
+        boolean success = false;
 
         StringBuilder sqlBuilder = new StringBuilder("UPDATE apps SET last_updated_at = NOW()");
         List<Object> params = new ArrayList<>();
@@ -489,8 +500,12 @@ public class App implements Action {
             if (affectedRows == 0) {
                 throw new SQLException("Updating app failed, app not found or no changes made.");
             }
+            success = true;
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+        if (success) {
+            new  Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "UPDATE_APP", "ID:"+appId+" Name:"+name);
         }
         return new JSONObject() {{ put("success", true); put("message", "App updated successfully."); }};
     }
@@ -499,10 +514,11 @@ public class App implements Action {
      * Deletes an app from the database (soft delete).
      * @throws SQLException if a database access error occurs.
      */
-    private void deleteAppFromDb(UUID appId, UUID deletedByUserId) throws SQLException {
+    private void deleteAppFromDb(UUID appId, UUID loginUserId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
+        boolean success = false;
         String sql = "UPDATE apps SET status = 'INACTIVE' WHERE id = ?";
         try {
             conn = pool.getConnection();
@@ -512,8 +528,12 @@ public class App implements Action {
             if (affectedRows == 0) {
                 throw new SQLException("Deleting app failed, app not found or already deleted.");
             }
+            success = true;
         } finally {
             pool.cleanup(null, pstmt, conn);
+        }
+        if (success) {
+            new  Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "DELETE_APP", "ID:"+appId);
         }
     }
 }
