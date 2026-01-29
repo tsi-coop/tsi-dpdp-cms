@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -40,13 +41,16 @@ public class Audit implements Action {
         String auditAction;
         String contextDetails;
 
-        AuditEntry(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) {
+        Timestamp eventtime;
+
+        AuditEntry(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails, Timestamp eventtime) {
             this.userId = userId;
             this.fiduciaryId = fiduciaryId;
             this.serviceType = serviceType;
             this.serviceId = serviceId;
             this.auditAction = auditAction;
             this.contextDetails = contextDetails;
+            this.eventtime = eventtime;
         }
     }
 
@@ -116,7 +120,7 @@ public class Audit implements Action {
      * Buffers a log event into the in-memory queue.
      */
     public void logEventAsync(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) {
-        auditCache.add(new AuditEntry(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails));
+        auditCache.add(new AuditEntry(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails, Timestamp.from(Instant.now())));
     }
 
     /**
@@ -137,7 +141,7 @@ public class Audit implements Action {
         if (batch.isEmpty()) return;
 
         String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details) " +
-                "VALUES (uuid_generate_v4(), ?, NOW(), ?, ?, ?, ?, ?)";
+                "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?)";
 
         PoolDB pool = null;
         Connection conn = null;
@@ -151,11 +155,12 @@ public class Audit implements Action {
 
             for (AuditEntry log : batch) {
                 pstmt.setObject(1, log.fiduciaryId);
-                pstmt.setString(2, log.userId);
-                pstmt.setString(3, log.serviceType);
-                pstmt.setObject(4, log.serviceId);
-                pstmt.setString(5, log.auditAction);
-                pstmt.setString(6, log.contextDetails);
+                pstmt.setTimestamp(2, log.eventtime);
+                pstmt.setString(3, log.userId);
+                pstmt.setString(4, log.serviceType);
+                pstmt.setObject(5, log.serviceId);
+                pstmt.setString(6, log.auditAction);
+                pstmt.setString(7, log.contextDetails);
                 pstmt.addBatch();
             }
 
