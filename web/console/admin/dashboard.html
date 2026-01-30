@@ -85,6 +85,20 @@
             z-index: 40;
         }
 
+        /* Modal Overlays */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white; padding: 32px; border-radius: 1rem;
+            max-width: 600px; width: 95%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
         @media (min-width: 1024px) {
             .sidebar {
                 transform: translateX(0);
@@ -117,30 +131,14 @@
       <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
     </div>
     <nav class="flex flex-col space-y-1 mt-4 px-3">
-      <a href="#" class="nav-link active">
-        Dashboard
-      </a>
-      <a href="fiduciaries.html" class="nav-link">
-        Fiduciaries
-      </a>
-      <a href="apps.html" class="nav-link">
-        Apps
-      </a>
-      <a href="users.html" class="nav-link">
-        CMS Users
-      </a>
-      <!-- <a href="lifecycle_management.html" class="nav-link">
-        System Purge
-      </a> -->
-      <a href="apikeys.html" class="nav-link">
-        API Keys
-      </a>
+      <a href="#" class="nav-link active">Dashboard</a>
+      <a href="fiduciaries.html" class="nav-link">Fiduciaries</a>
+      <a href="apps.html" class="nav-link">Apps</a>
+      <a href="users.html" class="nav-link">CMS Users</a>
+      <a href="apikeys.html" class="nav-link">API Keys</a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
-    <!-- <a href="system_config.html" class="nav-link">
-      System Config
-    </a> -->
     <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
       <span id="username" class="font-bold text-slate-700">Admin User</span>
       <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
@@ -155,26 +153,24 @@
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-black text-slate-800 tracking-tight">Admin Dashboard</h1>
+    <button onclick="openDownloadsModal()" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-slate-50 shadow-sm transition-all">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      View Downloads
+    </button>
   </div>
 
   <!-- Metric Widgets Section -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-
-    <!-- Widget 1: Active Fiduciaries -->
     <div id="metric-fiduciaries" class="card p-5 border-l-4 border-green-500 hover:shadow-md transition duration-200 cursor-pointer">
       <p class="text-sm font-medium text-gray-500">Active Fiduciaries</p>
       <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-fiduciaries-value">--</p>
       <p class="text-xs text-gray-400 mt-2">Entities currently collecting consent.</p>
     </div>
-
-    <!-- Widget 2: Data Processors -->
     <div id="metric-processors" class="card p-5 border-l-4 border-indigo-500 hover:shadow-md transition duration-200 cursor-pointer">
       <p class="text-sm font-medium text-gray-500">Active Apps</p>
       <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-processors-value">--</p>
       <p class="text-xs text-gray-400 mt-2">Apps for injestion / processing.</p>
     </div>
-
-    <!-- Widget 3: Purge Compliance Health -->
     <div id="metric-purge" class="card p-5 border-l-4 border-red-500 hover:shadow-md transition duration-200 cursor-pointer">
       <p class="text-sm font-medium text-gray-500">Purge Operations Failed</p>
       <p class="text-3xl font-bold text-gray-900 mt-1" id="metric-purge-value">--</p>
@@ -184,7 +180,19 @@
 
   <!-- Recent Activity / Audit Log Snapshot -->
   <div class="card mb-8">
-    <h2 class="text-lg font-bold text-slate-700 mb-4 tracking-tight">Recent User Activity</h2>
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-slate-700 tracking-tight">Recent User Activity</h2>
+      <div class="flex gap-4">
+        <button onclick="openExportModal()" class="text-xs font-black text-teal-600 uppercase tracking-widest hover:underline flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Request Log Export
+        </button>
+        <button onclick="openDownloadsModal()" class="text-xs font-black text-slate-400 uppercase tracking-widest hover:underline flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M9 17l3 3 3-3M8 4h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
+          View Previous Jobs
+        </button>
+      </div>
+    </div>
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200 text-left">
         <thead>
@@ -196,7 +204,7 @@
         </tr>
         </thead>
         <tbody id="audit-activity-body" class="bg-white divide-y divide-gray-200">
-        <tr><td colspan="5" class="p-4 text-center text-gray-500">Loading recent activity...</td></tr>
+        <tr><td colspan="4" class="p-4 text-center text-gray-500">Loading recent activity...</td></tr>
         </tbody>
       </table>
     </div>
@@ -204,177 +212,227 @@
       Failed to load audit activity.
     </p>
   </div>
-
 </main>
+
+<!-- Modal: Export Logs -->
+<div id="export-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 class="text-xl font-black text-slate-800 mb-2 tracking-tight">Export Admin Logs</h2>
+    <p class="text-sm text-slate-500 mb-6">Request a background job to generate a full CSV dump of system activity logs for the selected period.</p>
+
+    <form id="export-form" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Start Date</label>
+          <input type="date" id="export-start-date" required class="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-600">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">End Date</label>
+          <input type="date" id="export-end-date" required class="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-600">
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 text-sm font-bold text-slate-400 hover:text-slate-600">Cancel</button>
+        <button type="submit" class="bg-[#006A67] text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg hover:bg-opacity-90">Queue Export Job</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Downloads Status -->
+<div id="downloads-modal" class="modal-overlay">
+  <div class="modal-content !max-w-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-black text-slate-800 tracking-tight">Background Jobs & Downloads</h2>
+      <button onclick="loadJobs()" class="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline">Refresh List</button>
+    </div>
+
+    <div class="overflow-x-auto max-h-[400px]">
+      <table class="w-full text-left">
+        <thead>
+        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+          <th class="pb-3">Job ID</th>
+          <th class="pb-3">Type</th>
+          <th class="pb-3">Requested</th>
+          <th class="pb-3 text-center">Status</th>
+          <th class="pb-3 text-right">Action</th>
+        </tr>
+        </thead>
+        <tbody id="jobs-table-body" class="text-sm divide-y divide-slate-50">
+        <!-- Dynamic Rows -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-8 text-center">
+      <button onclick="closeModals()" class="px-8 py-2.5 bg-slate-100 text-slate-600 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-slate-200">Close Manager</button>
+    </div>
+  </div>
+</div>
 
 <script>
         // --- Configuration ---
         const API_URL_DASHBOARD = '/api/v1/admindash';
+        const API_URL_JOBS = '/api/v1/admin/job';
         const AUTH_TOKEN = localStorage.getItem('authToken');
         const USER_NAME = localStorage.getItem('username');
 
-        // --- DOM Element References ---
-        let sidebar, menuToggle, backdrop;
-        let metricFiduciaries, metricProcessors, metricGrievances, metricPurge;
+        // Defaulting to the Global Null UUID
+        const FIDUCIARY_ID = localStorage.getItem('fiduciary_id') || '00000000-0000-0000-0000-000000000000';
+
         let auditActivityBody, auditErrorMessageP;
+        let jobPollingInterval;
 
         // --- Utility Functions ---
         function toggleMenu() {
-            sidebar.classList.toggle('open');
-            backdrop.classList.toggle('hidden');
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebar-backdrop').classList.toggle('hidden');
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+            if (jobPollingInterval) clearInterval(jobPollingInterval);
+        }
+
+        function openExportModal() {
+            document.getElementById('export-modal').style.display = 'flex';
+        }
+
+        function openDownloadsModal() {
+            document.getElementById('downloads-modal').style.display = 'flex';
+            loadJobs();
+            // Poll for updates while open
+            jobPollingInterval = setInterval(loadJobs, 10000);
         }
 
         // --- Data Loading Functions ---
 
         async function loadDashboardMetrics() {
-            // Initializing with placeholders
-            document.getElementById('metric-fiduciaries-value').textContent = '...';
-            document.getElementById('metric-processors-value').textContent = '...';
-            document.getElementById('metric-purge-value').textContent = '...';
-
             try {
-                const payload = { "_func": "get_admin_metrics" };
-
                 const response = await fetch(API_URL_DASHBOARD, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${AUTH_TOKEN}`
-                    },
-                    body: JSON.stringify(payload)
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify({ "_func": "get_admin_metrics" })
                 });
-
-                if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}`);
-                }
-
                 const data = await response.json();
-
-                if (data.status === 401) {
-                  alert("Auth Failed: " + (data.message || "Authentication required."));
-                  handleLogout();
-                  return;
-                }
-
-                // Assuming successful data structure: { success: true, metrics: { active_fiduciaries: 5, active_processors: 10, pending_grievances: 3, failed_purges: 0 } }
                 if (data.success && data.metrics) {
-                    const metrics = data.metrics;
-                    document.getElementById('metric-fiduciaries-value').textContent = metrics.active_fiduciaries !== undefined ? metrics.active_fiduciaries : 'N/A';
-                    document.getElementById('metric-processors-value').textContent = metrics.active_processors !== undefined ? metrics.active_processors : 'N/A';
-                    document.getElementById('metric-purge-value').textContent = metrics.failed_purges !== undefined ? metrics.failed_purges : 'N/A';
-                } else {
-                    throw new Error(data.message || 'Metrics data missing.');
+                    const m = data.metrics;
+                    document.getElementById('metric-fiduciaries-value').textContent = m.active_fiduciaries ?? '0';
+                    document.getElementById('metric-processors-value').textContent = m.active_processors ?? '0';
+                    document.getElementById('metric-purge-value').textContent = m.failed_purges ?? '0';
                 }
-            } catch (error) {
-                console.error("Error loading dashboard metrics:", error);
-                document.getElementById('metric-fiduciaries-value').textContent = 'FAIL';
-                document.getElementById('metric-processors-value').textContent = 'FAIL';
-                document.getElementById('metric-purge-value').textContent = 'FAIL';
-            }
+            } catch (error) { console.error("Metrics load failed", error); }
         }
 
         async function loadRecentAuditActivity() {
-            auditActivityBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Fetching recent audit logs...</td></tr>`;
-            auditErrorMessageP.classList.add('hidden');
-
+            auditActivityBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Fetching logs...</td></tr>`;
             try {
-                const payload = {
-                    "_func": "list_access_logs",
-                    "limit": 10 // Get last 10 activities
-                };
-
                 const response = await fetch(API_URL_DASHBOARD, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${AUTH_TOKEN}`
-                    },
-                    body: JSON.stringify(payload)
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify({ "_func": "list_access_logs", "limit": 10 })
                 });
-
-                if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}`);
-                }
-
                 const responseData = await response.json();
                 const activities = responseData.data || responseData;
-
                 if (Array.isArray(activities)) {
-                    auditActivityBody.innerHTML = '';
-
-                    if (activities.length === 0) {
-                         auditActivityBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">No recent activity found.</td></tr>`;
-                    } else {
-                        activities.forEach(activity => {
-                            const row = document.createElement('tr');
-                            const statusColor = activity.status === 'SUCCESS' ? 'text-green-600' : 'text-red-600';
-
-                            row.innerHTML = `
-                                <td class="px-4 py-2 text-sm text-gray-600">${new Date(activity.timestamp).toLocaleString()}</td>
-                                <td class="px-4 py-2 text-sm text-gray-600">${activity.user_id || 'SYSTEM'}</td>
-                                <td class="px-4 py-2 text-sm text-gray-900">${activity.audit_action || 'N/A'}</td>
-                                <td class="px-4 py-2 text-sm text-gray-600">${activity.context_details || 'N/A'}</td>
-                            `;
-                            auditActivityBody.appendChild(row);
-                        });
-                    }
-                } else {
-                    throw new Error(responseData.message || 'Audit data missing or malformed.');
+                    auditActivityBody.innerHTML = activities.length === 0
+                        ? `<tr><td colspan="4" class="p-4 text-center text-gray-500">No recent activity.</td></tr>`
+                        : activities.map(a => `
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-500 font-mono">${new Date(a.timestamp).toLocaleString()}</td>
+                                <td class="px-4 py-3 text-sm font-bold text-slate-700">${a.user_id || 'SYSTEM'}</td>
+                                <td class="px-4 py-3 text-sm"><span class="text-[10px] font-black uppercase text-teal-600">${a.audit_action}</span></td>
+                                <td class="px-4 py-3 text-sm text-gray-500 truncate max-w-xs">${a.context_details || '-'}</td>
+                            </tr>
+                        `).join('');
                 }
-            } catch (error) {
-                console.error("Error loading audit activity:", error);
-                auditActivityBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600">Failed to load recent audit logs.</td></tr>`;
-                auditErrorMessageP.classList.remove('hidden');
-            }
+            } catch (error) { auditActivityBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Error loading activity.</td></tr>`; }
         }
+
+        async function loadJobs() {
+            const tbody = document.getElementById('jobs-table-body');
+            try {
+                const response = await fetch(API_URL_JOBS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify({ "_func": "list_jobs", "fiduciary_id": FIDUCIARY_ID })
+                });
+                const jobs = await response.json();
+                const list = jobs.data || jobs;
+                if (Array.isArray(list)) {
+                    tbody.innerHTML = list.map(j => {
+                        const isComplete = j.status === 'COMPLETED';
+                        const statusColor = j.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : (j.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
+                        return `
+                            <tr class="hover:bg-slate-50 border-b border-slate-50">
+                                <td class="py-3 font-mono text-[10px] text-slate-400">...${j.id.slice(-8)}</td>
+                                <td class="py-3 font-bold text-[11px] text-slate-700">${j.subtype || j.job_type}</td>
+                                <td class="py-3 text-[10px] text-slate-500">${new Date(j.created_at).toLocaleDateString()}</td>
+                                <td class="py-3 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-black ${statusColor}">${j.status}</span></td>
+                                <td class="py-3 text-right">
+                                    ${isComplete
+                                        ? `<button onclick="downloadJobFile('${j.id}')" class="text-teal-600 font-bold hover:underline text-[10px] uppercase flex items-center justify-end gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                            CSV
+                                           </button>`
+                                        : '<span class="text-slate-300 text-[9px] italic">Processing</span>'}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) { console.error("Jobs load failed", e); }
+        }
+
+        function downloadJobFile(jobId) {
+            window.location.href = `${API_URL_JOBS}?_func=download_file&job_id=${jobId}&auth=${AUTH_TOKEN}`;
+        }
+
+        document.getElementById('export-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.submitter;
+            btn.disabled = true;
+            btn.textContent = "Scheduling...";
+
+            try {
+                const response = await fetch(API_URL_JOBS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify({
+                        "_func": "create_job",
+                        "job_type": "EXPORT",
+                        "subtype": "ADMIN_LOGS",
+                        "start_date": document.getElementById('export-start-date').value,
+                        "end_date": document.getElementById('export-end-date').value,
+                        "fiduciary_id": FIDUCIARY_ID
+                    })
+                });
+
+                if (response.ok) {
+                    alert("Export job queued successfully. Check 'View Downloads' for progress.");
+                    closeModals();
+                    openDownloadsModal();
+                } else { alert("Failed to schedule export."); }
+            } catch (err) { alert("Network error."); }
+            finally { btn.disabled = false; btn.textContent = "Queue Export Job"; }
+        };
 
         function handleLogout() {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('username');
-          window.location.href = "../index.html";
+            localStorage.clear();
+            window.location.href = "../index.html";
         }
 
-
-        // --- Initialization ---
-
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Variable Assignments ---
-            sidebar = document.getElementById('sidebar');
-            menuToggle = document.getElementById('menu-toggle');
-            backdrop = document.getElementById('sidebar-backdrop');
-
-            // Metrics
-            metricFiduciaries = document.getElementById('metric-fiduciaries');
-            metricProcessors = document.getElementById('metric-processors');
-            metricGrievances = document.getElementById('metric-grievances');
-            metricPurge = document.getElementById('metric-purge');
-
-            // Audit Section
             auditActivityBody = document.getElementById('audit-activity-body');
             auditErrorMessageP = document.getElementById('audit-error-message');
-
-            // User name
             document.getElementById('username').textContent = USER_NAME;
 
-            // --- Event Listener Attachments ---
-            menuToggle.addEventListener('click', toggleMenu);
-            backdrop.addEventListener('click', toggleMenu);
+            document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
+            document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
 
-            // Add navigation links to metric cards for quick access
-            metricFiduciaries.addEventListener('click', () => window.location.href = 'fiduciaries_management.html');
-            metricProcessors.addEventListener('click', () => window.location.href = 'processors_management.html');
-            // Placeholder: Grievance/Purge dashboard links when ready
-
-            // --- Initialization Calls ---
             loadDashboardMetrics();
             loadRecentAuditActivity();
         });
-
-        // Expose functions globally for simplicity (used by inline JS and external code)
-        window.toggleMenu = toggleMenu;
-
     </script>
-
 </body>
-
 </html>
