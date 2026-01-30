@@ -424,7 +424,7 @@
 
             const data = await response.json();
             if (data.status === 401) {
-                alert("Auth Failed: " + (data.message || "Authentication required."));
+                alert("Session Expired: " + (data.message || "Authentication required."));
                 handleLogout();
                 return;
             }

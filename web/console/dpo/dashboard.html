@@ -261,6 +261,12 @@
 
             const data = await response.json();
 
+            if (data.status === 401) {
+                alert("Session Expired: " + (data.message || "Authentication required."));
+                handleLogout();
+                return;
+            }
+
             if (data.success && data.metrics) {
                 const m = data.metrics;
                 document.getElementById('metric-active-policies').textContent = m.active_policies || 0;

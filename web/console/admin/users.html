@@ -170,6 +170,11 @@
                 body: JSON.stringify({ "_func": "list_users", "search": search })
             });
             const users = await res.json();
+            if (users.status === 401) {
+              alert("Session Expired: Authentication required");
+              handleLogout();
+              return;
+           }
             const tbody = document.getElementById('user-table-body');
             tbody.innerHTML = users.map(u => {
                 const isAdmin = u.role === 'ADMIN';

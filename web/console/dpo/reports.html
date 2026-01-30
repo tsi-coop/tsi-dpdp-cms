@@ -165,6 +165,13 @@
 
                 if (response.ok) {
                     const jobs = await response.json();
+
+                    if (jobs.status === 401) {
+                        alert("Session Expired: " + (jobs.message || "Authentication required."));
+                        handleLogout();
+                        return;
+                    }
+
                     renderJobTable(jobs.data || jobs);
                 }
             } catch (e) { console.error("Failed to load background jobs", e); }

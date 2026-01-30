@@ -402,7 +402,7 @@
             const responseData = await response.json();
 
             if (responseData.status === 401) {
-              alert("Auth Failed: " + (responseData.message || "Authentication required."));
+              alert("Session Expired: " + (responseData.message || "Authentication required."));
               handleLogout();
               return;
             }

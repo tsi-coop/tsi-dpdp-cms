@@ -397,6 +397,12 @@
             if (response.status === 401) { handleLogout(); return; }
 
             const data = await response.json();
+
+            if (data.status === 401) {
+                alert("Session Expired: " + (data.message || "Authentication required."));
+                handleLogout();
+                return;
+            }
             const policies = data.data || data;
 
             if (Array.isArray(policies)) {
