@@ -228,7 +228,7 @@ public class Policy implements Action {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "A database error occurred: " + e.getMessage(), req.getRequestURI());
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "System Error: " + e.getMessage(), req.getRequestURI());
         } catch (ParseException e) {
             e.printStackTrace();
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid JSON input: " + e.getMessage(), req.getRequestURI());
@@ -616,23 +616,56 @@ public class Policy implements Action {
 
     private void publishPolicyInDb(String policyId, String version, UUID fiduciaryId, String jurisdiction) throws SQLException {
         Connection conn = null;
-        PreparedStatement pstmtDeactivate = null;
+        PreparedStatement pstmtCheck = null;
         PreparedStatement pstmtActivate = null;
+        ResultSet rs = null;
         PoolDB pool = new PoolDB();
         boolean success = false;
-
-        String activateSql = "UPDATE consent_policies SET status = 'ACTIVE', last_updated_at = NOW() WHERE id = ? AND version = ?";
 
         try {
             conn = pool.getConnection();
             conn.setAutoCommit(false);
 
+            // 1. Extract Purpose IDs from the target policy
+            Set<String> targetPurposes = new HashSet<>();
+            String fetchSql = "SELECT policy_content FROM consent_policies WHERE id = ? AND version = ?";
+            try (PreparedStatement pFetch = conn.prepareStatement(fetchSql)) {
+                pFetch.setString(1, policyId);
+                pFetch.setString(2, version);
+                try (ResultSet rsFetch = pFetch.executeQuery()) {
+                    if (rsFetch.next()) {
+                        targetPurposes = extractPurposeIdsFromContent(rsFetch.getString("policy_content"));
+                    }
+                }
+            }
+
+            // 2. Scan all currently ACTIVE policies for the fiduciary for potential collisions
+            Set<String> activePurposes = new HashSet<>();
+            String scanSql = "SELECT policy_content FROM consent_policies WHERE fiduciary_id = ? AND status = 'ACTIVE' AND (id != ? OR version != ?)";
+            pstmtCheck = conn.prepareStatement(scanSql);
+            pstmtCheck.setObject(1, fiduciaryId);
+            pstmtCheck.setString(2, policyId);
+            pstmtCheck.setString(3, version);
+            rs = pstmtCheck.executeQuery();
+            while (rs.next()) {
+                activePurposes.addAll(extractPurposeIdsFromContent(rs.getString("policy_content")));
+            }
+
+            // 3. Collision Logic: Ensure no duplicate Purpose IDs exist in the active set
+            Set<String> collisions = new HashSet<>(targetPurposes);
+            collisions.retainAll(activePurposes);
+            if (!collisions.isEmpty()) {
+                throw new SQLException("Publication Conflict: The following Purpose IDs are already defined in other active policies for this fiduciary: " + collisions + ". Please archive conflicting policies first.");
+            }
+
+            // 4. Update target to ACTIVE
+            String activateSql = "UPDATE consent_policies SET status = 'ACTIVE', last_updated_at = NOW() WHERE id = ? AND version = ?";
             pstmtActivate = conn.prepareStatement(activateSql);
             pstmtActivate.setString(1, policyId);
             pstmtActivate.setString(2, version);
-            int affectedRows = pstmtActivate.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Publishing policy failed, target policy not found.");
+
+            if (pstmtActivate.executeUpdate() == 0) {
+                throw new SQLException("Publishing failed: policy not found.");
             }
 
             conn.commit();
@@ -641,15 +674,42 @@ public class Policy implements Action {
             if (conn != null) conn.rollback();
             throw e;
         } finally {
-            pool.cleanup(null, pstmtDeactivate, null);
+            pool.cleanup(rs, pstmtCheck, null);
             pool.cleanup(null, pstmtActivate, conn);
         }
 
-        // Instrument audit log only after connection is returned to pool
         if (success) {
             new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId, "POLICY_PUBLISHED", "ID: " + policyId);
         }
     }
+
+    /**
+     * Internal logic to extract Purpose IDs from the JSONB policy content.
+     */
+    private Set<String> extractPurposeIdsFromContent(String policyContentStr) {
+        Set<String> ids = new HashSet<>();
+        try {
+            if (policyContentStr == null || policyContentStr.isEmpty()) return ids;
+            JSONObject content = (JSONObject) new JSONParser().parse(policyContentStr);
+            if (content.isEmpty()) return ids;
+
+            // Reference the first available language (integrity checks ensure parity)
+            String lang = (String) content.keySet().iterator().next();
+            JSONObject langObj = (JSONObject) content.get(lang);
+            JSONArray purposes = (JSONArray) langObj.get("data_processing_purposes");
+
+            if (purposes != null) {
+                for (Object obj : purposes) {
+                    JSONObject p = (JSONObject) obj;
+                    String pid = (String) p.get("id");
+                    if (pid != null) ids.add(pid);
+                }
+            }
+        } catch (Exception e) { /* Content structure invalid or unparseable */ }
+        return ids;
+    }
+
+
 
     private void deletePolicyFromDb(UUID fiduciaryId, String policyId, String version) throws SQLException {
         Connection conn = null;

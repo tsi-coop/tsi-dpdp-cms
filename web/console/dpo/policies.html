@@ -301,9 +301,8 @@
                     <div>
                         <label for="policy-jurisdiction-select" class="block text-sm font-medium text-gray-700 font-bold mb-1">Jurisdiction</label>
                         <select id="policy-jurisdiction-select" name="jurisdiction" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm outline-none focus:ring-2 focus:ring-teal-600">
-                            <option value="IN">India (DPDP Act)</option>
-                            <option value="EU">EU (GDPR)</option>
-                            <option value="GLOBAL">Global Default</option>
+                            <!-- Support only India (DPDP Act) -->
+                            <option value="IN">India (DPDP Act, 2023)</option>
                         </select>
                     </div>
                 </div>
@@ -493,12 +492,22 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify({ "_func": "publish_policy", "policy_id": id, "fiduciary_id": fid })
             });
+
+            const data = await res.json();
+
             if (res.ok) {
-                alert("Published!");
+                alert("Published successfully!");
                 statusFilter.value = 'ALL';
                 loadPolicies();
+            } else {
+                // Display specific conflict or error message from backend (e.g. Purpose Conflict)
+                const errorMsg = data.message || data.error || "Publication failed.";
+                alert("Publication Error: " + errorMsg);
             }
-        } catch (e) { alert("Publish failed."); }
+        } catch (e) {
+            console.error("Publish Error:", e);
+            alert("Network Error: Registry is unreachable.");
+        }
     }
 
     async function deletePolicy(id, fid) {
@@ -509,8 +518,18 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
                 body: JSON.stringify({ "_func": "delete_policy", "policy_id": id, "fiduciary_id": fid })
             });
-            if (res.ok) { alert("Deleted."); loadPolicies(); }
-        } catch (e) { alert("Network Error."); }
+
+            if (res.ok) {
+                alert("Policy archived successfully.");
+                loadPolicies();
+            } else {
+                const data = await res.json();
+                alert("Action Error: " + (data.message || data.error || "Action failed."));
+            }
+        } catch (e) {
+            console.error("Delete Error:", e);
+            alert("Network Error.");
+        }
     }
 
     function showModal(title, isEdit = false) {
