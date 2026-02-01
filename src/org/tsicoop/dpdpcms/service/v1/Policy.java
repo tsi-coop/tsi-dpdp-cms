@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern; // Not strictly needed for PolicyService, but kept for consistency with template
 
 /**
@@ -29,6 +30,8 @@ public class Policy implements Action {
     private static final Pattern POLICY_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{3,255}$");
     private static final Pattern VERSION_PATTERN = Pattern.compile("^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"); // e.g., 1.0, 1.0.1
     private static final UUID ADMIN_FID_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    // Thread-safe in-memory cache for Policy lookups to minimize database round-trips
+    private static final Map<String, JSONObject> policyCache = new ConcurrentHashMap<>();
 
     /**
      * Handles all Policy Management operations via a single POST endpoint.
@@ -471,7 +474,18 @@ public class Policy implements Action {
         return policiesArray;
     }
 
+    /**
+     * Retrieves a policy from the database.
+     * Uses a ConcurrentHashMap to cache results and minimize latency.
+     */
     protected Optional<JSONObject> getPolicyFromDb(String policyId, String version) throws SQLException {
+        String cacheKey = policyId;
+
+        // 1. Return from cache if present
+        if (policyCache.containsKey(cacheKey)) {
+            return Optional.of(policyCache.get(cacheKey));
+        }
+
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -494,6 +508,9 @@ public class Policy implements Action {
                 policy.put("policy_content", rs.getString("policy_content"));
                 policy.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 policy.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
+
+                // 2. Populate cache on successful lookup
+                policyCache.put(cacheKey, policy);
                 return Optional.of(policy);
             }
         } catch (Exception e) {

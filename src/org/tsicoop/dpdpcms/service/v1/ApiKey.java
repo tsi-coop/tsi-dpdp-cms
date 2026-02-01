@@ -17,11 +17,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +29,9 @@ import java.util.stream.Collectors;
 public class ApiKey implements Action {
 
     private static final UUID ADMIN_FID_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
+    // Thread-safe in-memory cache for API key to App ID mapping
+    private static final Map<String, UUID> appCache = new ConcurrentHashMap<>();
 
     /**
      * Handles all API Key Management operations via a single POST endpoint.
@@ -299,25 +299,59 @@ public class ApiKey implements Action {
         return Optional.empty();
     }
 
+    /**
+     * Resolves an API Key and Secret to the corresponding Application UUID.
+     * Uses an internal cache to avoid hitting the database for every request validation.
+     *
+     * @param apiKey The UUID key from the request header.
+     * @param apiSecret The secret token from the request header.
+     * @return UUID of the associated Application, or null if invalid.
+     * @throws SQLException if a database error occurs.
+     */
     public UUID getAppId(String apiKey, String apiSecret) throws SQLException {
-        if(apiKey == null || apiSecret == null) return null;
+        if (apiKey == null || apiSecret == null) {
+            return null;
+        }
+
+        // 1. Generate a unique cache key for this credential pair
+        String cacheKey = apiKey + ":" + apiSecret;
+
+        // 2. Return from cache if present
+        if (appCache.containsKey(cacheKey)) {
+            return appCache.get(cacheKey);
+        }
+
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         UUID appId = null;
-        String sql = "SELECT app_id FROM api_keys WHERE id = ? AND key_value=?";
+
+        String sql = "SELECT app_id FROM api_keys WHERE id = ? AND key_value = ? AND status = 'ACTIVE'";
+
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, UUID.fromString(apiKey));
-            pstmt.setString(2, "HASHED_"+apiSecret);
+
+            // Note: Matching the hashing pattern used in InputProcessor/Operator
+            pstmt.setString(2, "HASHED_" + apiSecret);
+
             rs = pstmt.executeQuery();
-            if(rs.next())
-                appId = UUID.fromString(rs.getString("app_id"));
+            if (rs.next()) {
+                String appIdStr = rs.getString("app_id");
+                if (appIdStr != null) {
+                    appId = UUID.fromString(appIdStr);
+
+                    // 3. Populate cache on successful lookup
+                    appCache.put(cacheKey, appId);
+                }
+            }
         } finally {
+            // Reliable resource cleanup
             pool.cleanup(rs, pstmt, conn);
         }
+
         return appId;
     }
 
