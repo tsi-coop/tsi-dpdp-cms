@@ -106,6 +106,23 @@
             margin-bottom: 25px;
             font-weight: 500;
         }
+
+        .rbac-table th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 10px 15px;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .rbac-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -188,11 +205,12 @@ http://localhost:8080/api/v1/client/consent</pre>
             Processing & Validation
         </h2>
         <p class="phase-subtitle">Real-time endpoints for Data Processors to verify processing authorization.</p>
-        <a href="json/validate_consent.json" target="_blank" class="json-link">View Request Template JSON</a>
+
         <div class="api-card">
             <div class="mb-6">
                 <h3 class="text-lg font-bold text-slate-800">1. Validate Consent (Processor)</h3>
                 <p class="text-sm text-slate-500 mt-1 italic">Lightweight boolean check to ensure specific purpose is granted.</p>
+                <a href="json/validate_consent.json" target="_blank" class="json-link">View Request Template JSON</a>
             </div>
             <div class="code-header">
                 <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/consent</div>
@@ -233,8 +251,7 @@ http://localhost:8080/api/v1/client/consent</pre>
                 <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/consent</div>
                 <span class="copy-btn" onclick="copyCode('code-rights-1')">Copy</span>
             </div>
-            <pre class="code-block" id="code-rights-1">
-curl -X POST [HEADERS] -d @withdraw_consent.json \
+            <pre class="code-block" id="code-rights-1">curl -X POST [HEADERS] -d @withdraw_consent.json \
 http://localhost:8080/api/v1/client/consent</pre>
 
             <div class="mb-6">
@@ -246,14 +263,13 @@ http://localhost:8080/api/v1/client/consent</pre>
                 <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/consent</div>
                 <span class="copy-btn" onclick="copyCode('code-rights-2')">Copy</span>
             </div>
-            <pre class="code-block" id="code-rights-2">
-curl -X POST [HEADERS] -d @erasure_request.json \
+            <pre class="code-block" id="code-rights-2">curl -X POST [HEADERS] -d @erasure_request.json \
 http://localhost:8080/api/v1/client/consent</pre>
 
             <div class="mb-6">
                 <h3 class="text-lg font-bold text-slate-800">4. List User Grievances</h3>
                 <p class="text-sm text-slate-500 mt-1 italic">Retrieve submitted grievances with status.</p>
-                <a href="json/list_user_grievances.json" target="_blank" class="json-link">View Submit JSON</a>
+                <a href="json/list_user_grievances.json" target="_blank" class="json-link">View JSON</a>
             </div>
             <div class="code-header">
                 <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/grievance</div>
@@ -265,7 +281,7 @@ http://localhost:8080/api/v1/client/grievance</pre>
             <div class="mb-6">
                 <h3 class="text-lg font-bold text-slate-800">5. Submit Grievance</h3>
                 <p class="text-sm text-slate-500 mt-1 italic">Submit new grievance.</p>
-                <a href="json/submit_grievance.json" target="_blank" class="json-link">View Submit JSON</a>
+                <a href="json/submit_grievance.json" target="_blank" class="json-link">View JSON</a>
             </div>
             <div class="code-header">
                 <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/grievance</div>
@@ -273,7 +289,6 @@ http://localhost:8080/api/v1/client/grievance</pre>
             </div>
             <pre class="code-block" id="code-grv-2">curl -X POST [HEADERS] -d @submit_grievance.json \
 http://localhost:8080/api/v1/client/grievance</pre>
-
         </div>
     </section>
 
@@ -286,28 +301,27 @@ http://localhost:8080/api/v1/client/grievance</pre>
         <p class="phase-subtitle">APIs to track data end-of-life and purge fulfillment.</p>
 
         <div class="api-card">
-        <div class="mb-6">
-            <h3 class="text-lg font-bold text-slate-800">1. Retrieve Retention & Purge Notifications</h3>
-            <p class="text-sm text-slate-500 mt-1 italic">Fetches notifications for data points nearing expiry or pending purge.</p>
-        </div>
-        <div class="code-header">
-            <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/notification</div>
-            <span class="copy-btn" onclick="copyCode('code-notif')">Copy</span>
-        </div>
-        <pre class="code-block" id="code-notif">curl -X POST [HEADERS] -d @list_notifications.json \
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-slate-800">1. Retrieve Retention & Purge Notifications</h3>
+                <p class="text-sm text-slate-500 mt-1 italic">Fetches notifications for data points nearing expiry or pending purge.</p>
+            </div>
+            <div class="code-header">
+                <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/notification</div>
+                <span class="copy-btn" onclick="copyCode('code-notif')">Copy</span>
+            </div>
+            <pre class="code-block" id="code-notif">curl -X POST [HEADERS] -d @list_notifications.json \
 http://localhost:8080/api/v1/client/notification</pre>
 
-        <div class="mb-6">
-            <h3 class="text-lg font-bold text-slate-800">2. Mark Notification as Read</h3>
-            <p class="text-sm text-slate-500 mt-1 italic">Update notification read status</p>
-        </div>
-        <div class="code-header">
-            <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/notification</div>
-            <span class="copy-btn" onclick="copyCode('code-notif-read')">Copy</span>
-        </div>
-        <pre class="code-block" id="code-notif-read">curl -X POST [HEADERS] -d @mark_notification_read.json \
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-slate-800">2. Mark Notification as Read</h3>
+                <p class="text-sm text-slate-500 mt-1 italic">Update notification read status.</p>
+            </div>
+            <div class="code-header">
+                <div class="flex items-center gap-2"><span class="method-badge">POST</span> /api/v1/client/notification</div>
+                <span class="copy-btn" onclick="copyCode('code-notif-read')">Copy</span>
+            </div>
+            <pre class="code-block" id="code-notif-read">curl -X POST [HEADERS] -d @mark_notification_read.json \
 http://localhost:8080/api/v1/client/notification</pre>
-
 
             <div class="mb-6">
                 <h3 class="text-lg font-bold text-slate-800">3. Retrieve Purge Requests</h3>
@@ -332,7 +346,96 @@ http://localhost:8080/api/v1/client/compliance</pre>
 http://localhost:8080/api/v1/client/compliance</pre>
         </div>
     </section>
+
+    <!-- RBAC Permission Scope Mapping -->
+    <section class="mb-20">
+        <h2 class="phase-title">
+            <span class="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center text-sm italic">5</span>
+            RBAC Permission Scope Mapping
+        </h2>
+        <p class="phase-subtitle">This section maps the Consent Management System (CMS) functions to the finalized Permission Scopes for implementation in the Auth service.</p>
+
+        <!-- Scope 1: Write -->
+        <div class="api-card">
+            <div class="mb-4">
+                <h3 class="text-lg font-bold text-slate-800">1. Write Scope</h3>
+                <p class="text-sm text-slate-500 italic">Grant this scope to Data Principals and Applications capturing new intent or updating interaction states.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full rbac-table">
+                    <thead>
+                    <tr>
+                        <th>Function (_func)</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr><td><code>record_consent</code></td><td>Captures primary notice acceptance.</td></tr>
+                    <tr><td><code>record_parent_consent</code></td><td>Registers verifiable parental proof for children (Section 9).</td></tr>
+                    <tr><td><code>link_user</code></td><td>Associates anonymous identifiers with authenticated user accounts.</td></tr>
+                    <tr><td><code>withdraw_consent</code></td><td>Modifies active consent records to revoke specific rights.</td></tr>
+                    <tr><td><code>submit_grievance</code></td><td>Initiates the rights exercise flow (Section 13).</td></tr>
+                    <tr><td><code>mark_notification_read</code></td><td>Management of the dashboard notification center.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Scope 2: Read -->
+        <div class="api-card">
+            <div class="mb-4">
+                <h3 class="text-lg font-bold text-slate-800">2. Read Scope</h3>
+                <p class="text-sm text-slate-500 italic">Grant this scope to Dashboards, Processors, and Compliance auditing modules for information retrieval.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full rbac-table">
+                    <thead>
+                    <tr>
+                        <th>Function (_func)</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr><td><code>get_active_consent</code></td><td>Retrieves the current valid consent state for a principal.</td></tr>
+                    <tr><td><code>list_consent_history</code></td><td>Returns the temporal trail of all consent events.</td></tr>
+                    <tr><td><code>get_consent_record_details</code></td><td>Provides evidentiary details (Timestamp, IP, Notice Version).</td></tr>
+                    <tr><td><code>validate_consent</code></td><td>Real-time verification of authorization for processors.</td></tr>
+                    <tr><td><code>get_grievance</code></td><td>Provides status updates on registered complaints.</td></tr>
+                    <tr><td><code>list_user_grievances</code></td><td>Lists historical complaints for a specific principal.</td></tr>
+                    <tr><td><code>get_policy</code></td><td>Retrieves a specific version of a privacy policy for archival view.</td></tr>
+                    <tr><td><code>get_active_policy</code></td><td>Fetches the current live policy for notice rendering.</td></tr>
+                    <tr><td><code>list_notifications</code></td><td>View system alerts regarding purge milestones or notice changes.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Scope 3: Purge -->
+        <div class="api-card">
+            <div class="mb-4">
+                <h3 class="text-lg font-bold text-slate-800">3. Purge Scope</h3>
+                <p class="text-sm text-slate-500 italic">Grant this scope to Data Principals (initiation) and DPOs (fulfillment) to manage the data end-of-life lifecycle.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full rbac-table">
+                    <thead>
+                    <tr>
+                        <th>Function (_func)</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr><td><code>erasure_request</code></td><td>The Data Principal confirms the intent to delete all personal data.</td></tr>
+                    <tr><td><code>list_purge_requests</code></td><td>Oversee the queue of pending data deletions across fiduciaries.</td></tr>
+                    <tr><td><code>update_purge_status</code></td><td>Manual/Job override to confirm technical data destruction.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
 </div>
+
 <script>
     function copyCode(id) {
         const text = document.getElementById(id).innerText;
