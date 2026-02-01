@@ -7,11 +7,7 @@ import org.json.simple.JSONObject; // For parsing input in validateRequestFunc
 import org.tsicoop.dpdpcms.service.v1.Wallet;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 
 public class InterceptingFilter implements Filter {
@@ -53,8 +49,40 @@ public class InterceptingFilter implements Filter {
             "reset_password_via_recovery"
     ));
 
-    private static final HashMap<String, String> filterConfig = new HashMap<>(); // Unused in original, keeping for template consistency
+    // Permission Scopes
+    private static final String SCOPE_READ = "READ";
+    private static final String SCOPE_WRITE = "WRITE";
+    private static final String SCOPE_PURGE = "PURGE";
 
+    // Mapping of functions to Permission Scopes as per rbac_mapping.md
+    private static final Map<String, String> CLIENT_FUNC_SCOPES = new HashMap<>();
+
+    static {
+        // --- WRITE SCOPE ---
+        CLIENT_FUNC_SCOPES.put("record_consent", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("record_parent_consent", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("link_user", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("withdraw_consent", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("submit_grievance", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("mark_notification_read", SCOPE_WRITE);
+
+        // --- READ SCOPE ---
+        CLIENT_FUNC_SCOPES.put("get_active_consent", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("list_consent_history", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("get_consent_record_details", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("validate_consent", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("get_grievance", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("list_user_grievances", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("get_policy", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("get_active_policy", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("list_notifications", SCOPE_READ);
+
+        // --- PURGE SCOPE ---
+        CLIENT_FUNC_SCOPES.put("erasure_request", SCOPE_PURGE);
+        CLIENT_FUNC_SCOPES.put("list_purge_requests", SCOPE_PURGE);
+        CLIENT_FUNC_SCOPES.put("update_purge_status", SCOPE_PURGE);
+    }
+    
     @Override
     public void destroy() {
         // Any cleanup of resources
@@ -116,24 +144,19 @@ public class InterceptingFilter implements Filter {
         String serviceName = null; // "user", "policy", "consent" etc.
 
         if (pathSegments.length >= 1) {
-            if (ADMIN_URI_PATH.equalsIgnoreCase(pathSegments[0])) {
-                apiCategory = ADMIN_URI_PATH;
-                if (pathSegments.length >= 2) {
-                    serviceName = pathSegments[1]; // e.g., /api/v1/admin/user -> serviceName "user"
-                }
-            } else if (CLIENT_URI_PATH.equalsIgnoreCase(pathSegments[0])) {
+            if (CLIENT_URI_PATH.equalsIgnoreCase(pathSegments[0])) {
                 apiCategory = CLIENT_URI_PATH;
                 if (pathSegments.length >= 2) {
                     serviceName = pathSegments[1]; // e.g., /api/v1/client/consent -> serviceName "consent"
                 }
-            } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(pathSegments[0])) {
-                apiCategory = BOOTSTRAP_URI_PATH;
-                if (pathSegments.length >= 2) {
-                    serviceName = pathSegments[1]; // e.g., /api/v1/client/consent -> serviceName "consent"
-                }
-            } else {
+            } else if (ADMIN_URI_PATH.equalsIgnoreCase(pathSegments[0])){
                 // If it's directly /api/v1/user or /api/v1/policy, assume it's an admin endpoint by default
                 // Or, you could make it explicitly invalid if not prefixed with /admin or /client
+                apiCategory = ADMIN_URI_PATH; // Default to admin if no explicit category
+                if (pathSegments.length >= 2) {
+                    serviceName = pathSegments[1]; // e.g., /api/v1/admin/policy -> serviceName "policy"
+                }
+            } else{
                 apiCategory = ADMIN_URI_PATH; // Default to admin if no explicit category
                 serviceName = pathSegments[0];
             }
@@ -143,8 +166,6 @@ public class InterceptingFilter implements Filter {
         // This assumes apiRegistry stores paths like "/api/v1/user" not "/api/v1/admin/user"
         // If your apiRegistry stores "/api/v1/admin/user", then use servletPath directly.
         String targetServletPath = API_PREFIX + (serviceName != null ? serviceName : "");
-        //System.out.println("Target Servlet Path:"+targetServletPath);
-
         if (!apiRegistry.containsKey(targetServletPath.trim())) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "API endpoint not found: " + uri, uri);
             return;
@@ -159,44 +180,47 @@ public class InterceptingFilter implements Filter {
         boolean authenticated = false;
         String errorMessage = "Authentication failed.";
 
+        // --- Validate _func and specific permissions for POST requests ---
+        if (!"POST".equalsIgnoreCase(method)) {
+            res.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed");
+            return;
+        }
+
         // --- Authentication & Authorization ---
         try {
             InputProcessor.processInput(req, res);
             JSONObject inputJson = InputProcessor.getInput(req); // InputProcessor should parse and set this
             String func = (String) inputJson.get("_func");
 
-            // --- Validate _func and specific permissions for POST requests ---
-            if ("POST".equalsIgnoreCase(method)) {
-                if (!InputProcessor.validate(req, res)) { // Validates content-type and basic body parsing
-                    return; // Error response already sent by InputProcessor
-                }
-                if (inputJson == null) { // Should not happen if InputProcessor.validate passed
-                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing JSON request body.", uri);
+            // Basic TSI Framework Validations
+            if (inputJson == null) { // Should not happen if InputProcessor.validate passed
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing JSON request body.", uri);
+                return;
+            }
+            if (func == null || func.trim().isEmpty()) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", uri);
+                return;
+            }
+            if (!InputProcessor.validate(req, res)) { // Validates content-type and basic body parsing
+                return; // Error response already sent by InputProcessor
+            }
+
+            // Enforce _func whitelist for Client APIs
+            if (CLIENT_URI_PATH.equalsIgnoreCase(apiCategory)) {
+                if (!CLIENT_ALLOWED_FUNCS.contains(func.toLowerCase())) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Function '" + func + "' is not allowed for client API access.", uri);
                     return;
                 }
 
-                if (func == null || func.trim().isEmpty()) {
-                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", uri);
-                    return;
-                }
-
-                // Enforce _func whitelist for Client APIs
-                if (CLIENT_URI_PATH.equalsIgnoreCase(apiCategory)) {
-                    if (!CLIENT_ALLOWED_FUNCS.contains(func.toLowerCase())) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Function '" + func + "' is not allowed for client API access.", uri);
-                        return;
+                String requiredScope = CLIENT_FUNC_SCOPES.get(func.toLowerCase());
+                // B. Authenticate Credentials (API Key/Secret)
+                if (InputProcessor.processClientHeader(req, res)) {
+                    // RBAC Verification
+                    // InputProcessor.hasPermission checks if the API Key/Token possesses the required scope (READ/WRITE/PURGE)
+                    if (InputProcessor.hasPermission(req, requiredScope)) {
+                        authenticated = true;
                     }
-                    // For client APIs, ensure the API key is associated with a Fiduciary
-                    /*if (authContext.getFiduciaryId() == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "API Key not associated with a Data Fiduciary.", uri);
-                        return;
-                    }*/
                 }
-
-                // Generic permission check based on authContext.getPermissions()
-                // This would be more complex in a real system, matching resource:action
-                // For example: authContext.hasPermission(serviceName + ":" + func.toLowerCase())
-                // For now, relies on the service's internal validation for granular checks.
             }
 
             if (ADMIN_URI_PATH.equalsIgnoreCase(apiCategory)) {
@@ -206,12 +230,7 @@ public class InterceptingFilter implements Filter {
                     authenticated = InputProcessor.processAdminHeader(req, res);
                     //authenticated = true; // go easy for now
                 }
-            } else if (CLIENT_URI_PATH.equalsIgnoreCase(apiCategory)) {
-                authenticated = InputProcessor.processClientHeader(req, res);
-                //authenticated = true; // go easy for now
-            } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(apiCategory)) {
-                authenticated = true; // go easy for now
-            } else {
+            }else {
                 // If no category specified, or unknown category, deny by default
                 errorMessage = "API category not specified or recognized. Access denied.";
             }
@@ -221,27 +240,14 @@ public class InterceptingFilter implements Filter {
                 return;
             }
 
-
             // --- Instantiate and execute Servlet ---
             Action action = ((Action) Class.forName(classname).getConstructor().newInstance());
 
             // The service's own validate method (e.g., checking method, specific input fields)
             boolean validRequest = action.validate(method, req, res);
             if (validRequest) {
-                // Call the appropriate method on the REST service
-                if (method.equalsIgnoreCase("POST")) {
-                    action.post(req, res);
-                } else  if (method.equalsIgnoreCase("GET")) {
-                    action.post(req, res);
-                }else {
-                    // This should ideally not be reached if validate method correctly handles non-POST
-                    res.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed");
-                }
+                action.post(req, res);
             }
-
-        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Server Error", "Failed to instantiate API handler: " + e.getMessage(), uri);
         } catch (Exception e) { // Catch any other unexpected exceptions
             e.printStackTrace();
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred: " + e.getMessage(), uri);
@@ -257,9 +263,5 @@ public class InterceptingFilter implements Filter {
         JSONSchemaValidator.createInstance(filterConfig.getServletContext());
         System.out.println("Loaded TSI Schema Validator");
         System.out.println("TSI DPDP CMS Service started in " + System.getenv("TSI_DPDP_CMS_ENV") + " environment");
-
-        // Initialize JWT and API Key validators here if they need global 5
-        // JwtValidator.init(SystemConfig.getAppConfig().getProperty("jwt.secret"));
-        // ApiKeyValidator.init(SystemConfig.getPoolDB()); // Or pass connection pool
     }
 }

@@ -14,14 +14,82 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Enumeration;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class InputProcessor {
     public final static String REQUEST_DATA = "input_json";
     public final static String AUTH_TOKEN = "auth_token";
+
+    private static final String CLIENT_PERMISSIONS = "CLIENT_PERMISSIONS";
+
+    private static Map<String,Set<String>> permissionsMap = new ConcurrentHashMap<String, Set<String>>();
+
+    // Thread-safe cache for API client validity to minimize database round-trips
+    private static final Map<String, Boolean> apiClientCache = new ConcurrentHashMap<>();
+
+
+    /**
+     * Verifies if the authenticated client or user possesses the required permission scope.
+     * This method is called by InterceptingFilter after processClientHeader has loaded the scopes.
+     */
+    public static boolean hasPermission(HttpServletRequest req, String requiredScope) {
+        Object permsObj = retrievePerms(req);
+        if (permsObj instanceof Set) {
+            Set<String> permissions = (Set<String>) permsObj;
+            String permstr = permissions.toString();
+            return permstr.contains(requiredScope.toUpperCase());
+        }
+        return false;
+    }
+
+    /**
+     * Retrieves app permissions.
+     * Loads authorized scopes (READ, WRITE, PURGE) from the registry into the request context.
+     */
+    public static Set<String> retrievePerms(HttpServletRequest req) {
+        String key = req.getHeader("X-API-Key");
+        String secret = req.getHeader("X-API-Secret");
+        Set<String> scopeSet = null;
+        PoolDB pool = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        if(permissionsMap.get(key)!=null){
+            scopeSet = (Set<String>) permissionsMap.get(key);
+        }
+        else {
+            try {
+                pool = new PoolDB();
+                conn = pool.getConnection();
+                // Permissions are stored as a comma-separated string (e.g., 'READ,WRITE')
+                String sql = "SELECT fiduciary_id, permissions FROM api_keys WHERE id = ? AND key_value = ? AND status = 'ACTIVE'";
+                pstmt = conn.prepareStatement(sql);
+                pstmt.setObject(1, UUID.fromString(key));
+                pstmt.setString(2, "HASHED_" + secret);
+                rs = pstmt.executeQuery();
+
+                if (rs.next()) {
+                    req.setAttribute("fiduciary_id", rs.getObject("fiduciary_id"));
+
+                    String rawPerms = rs.getString("permissions");
+                    scopeSet = new HashSet<>();
+                    if (rawPerms != null) {
+                        for (String p : rawPerms.split(",")) {
+                            scopeSet.add(p.trim().toUpperCase());
+                        }
+                    }
+                    permissionsMap.put(key,scopeSet);
+                }
+            } catch (Exception e) {
+                System.err.println("Client Auth Failure: " + e.getMessage());
+            } finally {
+                pool.cleanup(rs, pstmt, conn);
+            }
+        }
+        return scopeSet;
+    }
 
     public static void processInput(HttpServletRequest request, HttpServletResponse response) {
         StringBuilder buffer = new StringBuilder();
@@ -111,6 +179,12 @@ public class InputProcessor {
     }
 
     private static boolean isValidApiClient(String apiKey, String apiSecret) throws SQLException {
+        String cacheKey = apiKey + ":" + apiSecret;
+        // 1. Return from cache if available
+        if (apiClientCache.containsKey(cacheKey)) {
+            return apiClientCache.get(cacheKey);
+        }
+
         boolean valid = false;
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -128,6 +202,10 @@ public class InputProcessor {
                 String status = rs.getString("status");
                 if(status.equalsIgnoreCase("ACTIVE")){
                     valid = true;
+                }
+                // 2. Store result in cache to prevent redundant queries
+                if (valid) {
+                    apiClientCache.put(cacheKey, true);
                 }
             }
         } finally {

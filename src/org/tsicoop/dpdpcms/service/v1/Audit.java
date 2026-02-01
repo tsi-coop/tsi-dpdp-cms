@@ -166,7 +166,7 @@ public class Audit implements Action {
 
             pstmt.executeBatch();
             conn.commit();
-            System.out.println("[Audit] Successfully persisted " + batch.size() + " logs to database.");
+            //System.out.println("[Audit] Successfully persisted " + batch.size() + " logs to database.");
         } catch (SQLException e) {
             System.err.println("CRITICAL: Failed to write audit batch: " + e.getMessage());
             // Fail-safe: Put failed entries back into the cache for retry in next run
