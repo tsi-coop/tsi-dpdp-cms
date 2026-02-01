@@ -105,9 +105,6 @@ CREATE TABLE IF NOT EXISTS consent_records (
     FOREIGN KEY (policy_id, policy_version) REFERENCES consent_policies(id, version)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_consent
-ON consent_records (user_id, fiduciary_id) WHERE is_active_consent IS TRUE;
-
 --
 -- 6. Table: audit_logs (Can be created now, references users)
 -- Stores immutable logs of all significant system events and user actions.
@@ -237,8 +234,6 @@ CREATE TABLE IF NOT EXISTS jobs (
     completed_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE INDEX idx_jobs_status ON jobs(status) WHERE status = 'PENDING';
-
 --
 -- 14. Creating a dedicated table for Verification Artifacts
 -- This allows developers to store mechanism-specific proofs (OTP logs, VC Hashes, KYC IDs)
@@ -254,14 +249,70 @@ CREATE TABLE IF NOT EXISTS parental_verification_logs (
     verified_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     fiduciary_id UUID NOT NULL
 );
+-- -----------------------------------------------------------------------------------
+-- INDEX DEFINITIONS
+-- -----------------------------------------------------------------------------------
 
--- Index for relationship lookups
+-- 15. Consent Records Logic
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_consent ON consent_records (user_id, fiduciary_id) WHERE is_active_consent IS TRUE;
+CREATE INDEX IF NOT EXISTS idx_consent_records_active_lookup ON consent_records (user_id, fiduciary_id) WHERE (is_active_consent = TRUE);
+CREATE INDEX IF NOT EXISTS idx_consent_records_history ON consent_records (user_id, fiduciary_id, timestamp DESC);
+
+-- 16. Identity & Parental Links
 CREATE INDEX idx_guardian_child ON parental_verification_logs(guardian_principal_id, child_principal_id);
-
--- SEPARATE CONSTRAINT: Establishing the legal link to the verification logs outside the column addition.
--- This ensures the relational integrity is defined as a discrete schema artifact via the 'REFERENCES' clause.
 ALTER TABLE consent_records ADD CONSTRAINT fk_consent_parental_log FOREIGN KEY (verification_log_id) REFERENCES parental_verification_logs(id);
-
--- SEPARATE INDEX: Descriptive index for the parental log reference.
--- Specifically facilitates high-performance joins with the 'parental_verification_logs' table.
 CREATE INDEX IF NOT EXISTS idx_consent_parental_log_link ON consent_records(verification_log_id);
+CREATE INDEX IF NOT EXISTS idx_data_principal_auth_link ON data_principal (user_id, fiduciary_id, verification_status);
+
+-- 17. Audit & Dashboards
+CREATE INDEX IF NOT EXISTS idx_audit_logs_service_timestamp ON audit_logs (service_type, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_fiduciaries_status ON fiduciaries (status);
+CREATE INDEX IF NOT EXISTS idx_apps_status ON apps (status);
+CREATE INDEX IF NOT EXISTS idx_consent_policies_status_created ON consent_policies (status, created_at);
+CREATE INDEX IF NOT EXISTS idx_consent_records_timestamp ON consent_records (timestamp);
+CREATE INDEX IF NOT EXISTS idx_data_principal_created ON data_principal (created_at);
+
+-- 18. Compliance & Redressal
+CREATE INDEX IF NOT EXISTS idx_purge_requests_status_initiated ON purge_requests (status, initiated_at);
+CREATE INDEX IF NOT EXISTS idx_grievances_timeline ON grievances (submission_timestamp);
+CREATE INDEX IF NOT EXISTS idx_grievances_pending ON grievances (status, due_date ASC);
+CREATE INDEX IF NOT EXISTS idx_grievances_fid_timestamp ON grievances (fiduciary_id, submission_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_grievances_fid_user_timestamp ON grievances (fiduciary_id, user_id, submission_timestamp DESC);
+
+-- 19. API Security & Apps
+CREATE INDEX IF NOT EXISTS idx_api_keys_app_id ON api_keys (app_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_fiduciary_status_created ON api_keys (fiduciary_id, status, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_apps_fiduciary_name ON apps (fiduciary_id, name);
+CREATE INDEX IF NOT EXISTS idx_apps_fiduciary_status_created ON apps (fiduciary_id, status, created_at DESC);
+
+-- 20. Lifecycle Fulfillment & Auditing
+CREATE INDEX IF NOT EXISTS idx_audit_logs_fid_action_timestamp ON audit_logs (fiduciary_id, audit_action, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_timestamp ON audit_logs (user_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_purge_requests_fiduciary_app ON purge_requests (fiduciary_id, app_id, status);
+CREATE INDEX IF NOT EXISTS idx_purge_requests_initiated_sort ON purge_requests (fiduciary_id, initiated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_purge_requests_user_search ON purge_requests (user_id);
+CREATE INDEX IF NOT EXISTS idx_consent_validations_report ON consent_validations (fiduciary_id, app_id, purpose_id);
+
+-- 21. Fiduciaries & Policies
+CREATE UNIQUE INDEX IF NOT EXISTS idx_fiduciaries_name_unique ON fiduciaries (name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_fiduciaries_domain_unique ON fiduciaries (primary_domain);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_fiduciaries_email_unique ON fiduciaries (email);
+CREATE INDEX IF NOT EXISTS idx_fiduciaries_status_created ON fiduciaries (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_consent_policies_active_lookup ON consent_policies (fiduciary_id, jurisdiction, status, effective_date DESC);
+CREATE INDEX IF NOT EXISTS idx_consent_policies_list_sort ON consent_policies (fiduciary_id, status, effective_date DESC);
+
+-- 22. Background Operations & Alerts
+CREATE INDEX IF NOT EXISTS idx_jobs_fid_type_created ON jobs (fiduciary_id, job_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status) WHERE status = 'PENDING';
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_created ON notifications (recipient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_fiduciary_type ON notifications (fiduciary_id, notification_type, created_at DESC);
+
+-- 23. Operators Management
+CREATE UNIQUE INDEX IF NOT EXISTS idx_operators_name_unique ON operators (name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_operators_email_unique ON operators (email);
+CREATE INDEX IF NOT EXISTS idx_operators_fiduciary_id ON operators (fiduciary_id);
+CREATE INDEX IF NOT EXISTS idx_operators_status_created ON operators (status, created_at DESC);
+
+-- 24. Portable Wallet: Remote rights management
+CREATE INDEX IF NOT EXISTS idx_consent_records_wallet_actions ON consent_records (fiduciary_id, consent_mechanism, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_consent_records_fid_text ON consent_records ((fiduciary_id::text));

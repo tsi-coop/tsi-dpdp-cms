@@ -156,7 +156,14 @@ public class InterceptingFilter implements Filter {
                 if (pathSegments.length >= 2) {
                     serviceName = pathSegments[1]; // e.g., /api/v1/admin/policy -> serviceName "policy"
                 }
-            } else{
+            } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(pathSegments[0])){
+                // If it's directly /api/v1/user or /api/v1/policy, assume it's an admin endpoint by default
+                // Or, you could make it explicitly invalid if not prefixed with /admin or /client
+                apiCategory = BOOTSTRAP_URI_PATH; // Default to admin if no explicit category
+                if (pathSegments.length >= 2) {
+                    serviceName = pathSegments[1]; // e.g., /api/v1/admin/policy -> serviceName "policy"
+                }
+            }else{
                 apiCategory = ADMIN_URI_PATH; // Default to admin if no explicit category
                 serviceName = pathSegments[0];
             }
@@ -221,15 +228,15 @@ public class InterceptingFilter implements Filter {
                         authenticated = true;
                     }
                 }
-            }
-
-            if (ADMIN_URI_PATH.equalsIgnoreCase(apiCategory)) {
+            } else if (ADMIN_URI_PATH.equalsIgnoreCase(apiCategory)) {
                 if (ADMIN_NOAUTH_FUNCS.contains(func.toLowerCase())) {
                     authenticated = true;
-                }else{
+                } else {
                     authenticated = InputProcessor.processAdminHeader(req, res);
                     //authenticated = true; // go easy for now
                 }
+            }else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(apiCategory)){
+                authenticated = true;
             }else {
                 // If no category specified, or unknown category, deny by default
                 errorMessage = "API category not specified or recognized. Access denied.";
