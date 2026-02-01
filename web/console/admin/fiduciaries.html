@@ -215,7 +215,7 @@
           <th class="px-4 py-3 text-sm">Primary Domain</th>
           <th class="px-4 py-3 text-sm">CMS CNAME</th>
           <th class="px-4 py-3 text-sm">Status</th>
-          <th class="px-4 py-3 text-sm">Validation</th>
+          <!-- <th class="px-4 py-3 text-sm">Validation</th> -->
           <th class="px-4 py-3 text-sm">Actions</th>
         </tr>
         </thead>
@@ -267,7 +267,7 @@
       <div>
         <label for="fiduciary-domain" class="block text-sm font-medium text-gray-700">Primary Domain (e.g., example.com)</label>
         <input type="text" id="fiduciary-domain" name="primary_domain" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-        <p class="mt-1 text-xs text-gray-500">Used for CNAME generation and ownership validation.</p>
+        <!--<p class="mt-1 text-xs text-gray-500">Used for CNAME generation and ownership validation.</p> -->
       </div>
 
       <div>
@@ -394,7 +394,7 @@ function createFiduciaryRow(fiduciary) {
         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${fiduciary.primary_domain || 'N/A'}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${fiduciary.cms_cname || 'N/A'}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.status)}</td>
-        <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.domain_validation_status || 'PENDING')}</td>
+       <!-- <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.domain_validation_status || 'PENDING')}</td> -->
         <td class="px-4 py-3 whitespace-nowrap text-sm">
             ${actionsHtml}
         </td>
