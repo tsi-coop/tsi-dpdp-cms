@@ -65,6 +65,7 @@ public class InterceptingFilter implements Filter {
         CLIENT_FUNC_SCOPES.put("withdraw_consent", SCOPE_WRITE);
         CLIENT_FUNC_SCOPES.put("submit_grievance", SCOPE_WRITE);
         CLIENT_FUNC_SCOPES.put("mark_notification_read", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("erasure_request", SCOPE_WRITE);
 
         // --- READ SCOPE ---
         CLIENT_FUNC_SCOPES.put("get_active_consent", SCOPE_READ);
@@ -78,7 +79,6 @@ public class InterceptingFilter implements Filter {
         CLIENT_FUNC_SCOPES.put("list_notifications", SCOPE_READ);
 
         // --- PURGE SCOPE ---
-        CLIENT_FUNC_SCOPES.put("erasure_request", SCOPE_PURGE);
         CLIENT_FUNC_SCOPES.put("list_purge_requests", SCOPE_PURGE);
         CLIENT_FUNC_SCOPES.put("update_purge_status", SCOPE_PURGE);
     }
