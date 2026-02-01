@@ -61,12 +61,12 @@
         }
         .credentials-content {
             background: white; padding: 40px; border-radius: 16px;
-            width: 420px; text-align: left; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 420px; text-align: left; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
         }
         .credentials-content h2 { margin-top: 0; color: #006A67; font-size: 1.5rem; font-weight: 700; }
         .credentials-content input {
             width: 100%; padding: 12px; margin: 8px 0 20px 0;
-            border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;
+            border: solid 1px #cbd5e1; border-radius: 8px; box-sizing: border-box;
             font-family: monospace; font-size: 0.9rem;
         }
         .credentials-content button {
@@ -102,7 +102,8 @@
         <a href="https://tsicoop.org" target="_blank"><img src="https://tsicoop.org/logo.svg" alt="TSI Coop" style="height: 50px;"/></a>
     </div>
 
-    <h1 style="color: #006A67; font-size: 2.25rem; font-weight: 800; margin-bottom: 10px;">Consent & Identity Journey</h1>
+    <!-- Title retrieved from active policy -->
+    <h1 id="main-policy-title" style="color: #006A67; font-size: 2.25rem; font-weight: 800; margin-bottom: 10px;">Consent & Identity Journey</h1>
 
     <div class="info-card">
         <p><strong>Operational Notice:</strong> This interactive tour demonstrates how the TSI DPDP CMS enforces data principal rights. The initial <strong>Notice</strong> (Banner) and <strong>Capture</strong> (Preference Center) workflows are foundational and trigger automatically based on the policy configuration.</p>
@@ -115,14 +116,6 @@
     <h3>Identity Consolidation (Account Linking)</h3>
     <p>To ensure portable rights, users can link anonymous browser interactions to a registered Data Principal ID. This flow simulates collecting verified account details and updating the CMS identity registry.</p>
     <p><a href="javascript:void(0)" id="link-principal" class="tour-link">→ Link Anonymous Activity to Account</a></p>
-
-    <h3>Compliance-Gated Interactions</h3>
-    <p>Under DPDP guidelines, processing is strictly limited to consented purposes. These tests verify that application features are dynamically enabled or blocked based on your current preferences.</p>
-    <div style="display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap;">
-        <a href="javascript:void(0)" id="validate-add-post" class="tour-link">Test: Add Community Post</a>
-        <a href="javascript:void(0)" id="validate-provider-zone" class="tour-link">Test: Access Provider Zone</a>
-        <a href="javascript:void(0)" id="view-profile" class="tour-link">Test: View User Profile</a>
-    </div>
 </div>
 
 <!-- Dynamic Overlay Containers -->
@@ -168,9 +161,6 @@
 </script>
 
 <script>
-/**
- * --- CONSENT MANAGER LOGIC (Integrated) ---
- */
 const config = JSON.parse(document.getElementById('config-data').textContent);
 
 const CONSENT_LOCAL_STORAGE_KEY = config.tsi_dpdp_cms_localstoragekey;
@@ -186,7 +176,6 @@ let currentLanguageContent = null;
 const cookieBanner = document.getElementById('cookie-consent-banner');
 const preferenceCenterOverlay = document.getElementById('preference-center-overlay');
 
-// Global Headers Helper to ensure UTF-8 for both Request AND Expectation
 const getHeaders = () => ({
     'Content-Type': 'application/json; charset=UTF-8',
     'Accept': 'application/json; charset=UTF-8',
@@ -194,15 +183,14 @@ const getHeaders = () => ({
     'X-API-Secret': API_SECRET
 });
 
-// UI Helpers
 function displayCustomModal(title, bodyHtml, actionButtonHtml = '') {
     const existing = document.getElementById('custom-message-modal-overlay');
     if (existing) existing.remove();
 
     let modalHtml = `
-        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 3000;" id="custom-message-modal-overlay">
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 3000;" id=\"custom-message-modal-overlay\">
             <div style="background-color: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; font-family: Arial, sans-serif; color: #333; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
-                <button style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: #888;" onclick="document.getElementById('custom-message-modal-overlay').remove();">&times;</button>
+                <button style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: #888;" onclick=\"document.getElementById('custom-message-modal-overlay').remove();\">&times;</button>
                 <h2 style="color:#006A67; margin-top:0; font-weight:700;">${title}</h2>
                 <div style="font-size: 1rem; margin-top: 20px; line-height: 1.6; color: #475569;">${bodyHtml}</div>
                 <div style="margin-top:30px;">${actionButtonHtml}</div>
@@ -229,27 +217,19 @@ function getPreferredLanguage(policyMap) {
     return availableLangs.includes('en') ? 'en' : availableLangs[0];
 }
 
-/**
- * Switch the active language and re-render components.
- */
 function changeLanguage(langCode) {
     const map = resolvePolicyContent(currentPolicy);
     if (map[langCode]) {
         currentLanguageContent = map[langCode];
         document.documentElement.lang = langCode;
-
-        // Re-render UI
         renderCookieBanner();
-
         if (preferenceCenterOverlay.style.display === 'flex') {
             const currentPrefs = {};
             (currentLanguageContent.data_processing_purposes || []).forEach(p => {
                 const el = document.getElementById(`toggle-${p.id}`);
                 if (el) currentPrefs[p.id] = el.checked;
             });
-
             renderPreferenceCenter();
-
             (currentLanguageContent.data_processing_purposes || []).forEach(p => {
                 const el = document.getElementById(`toggle-${p.id}`);
                 if (el) el.checked = currentPrefs[p.id] !== undefined ? currentPrefs[p.id] : p.is_mandatory_for_service;
@@ -299,13 +279,12 @@ async function saveConsentState(preferences, mechanism) {
 
     try {
         const fiduciaryId = currentPolicy ? currentPolicy.fiduciary_id : (localStorage.getItem('cc_fiduciary_id') || 'fiduciary_hub_abc');
-
         const payload = {
             _func: 'record_consent',
             user_id: userId,
             policy_id: POLICY_ID,
             fiduciary_id: fiduciaryId,
-            language_selected: document.documentElement.lang || 'en', // FIX: Pass language
+            language_selected: document.documentElement.lang || 'en',
             consent_mechanism: mechanism,
             data_point_consents: Object.keys(preferences).map(id => {
                 const purposeObj = (currentLanguageContent.data_processing_purposes || []).find(p => p.id === id);
@@ -317,19 +296,12 @@ async function saveConsentState(preferences, mechanism) {
                 };
             })
         };
-
-        const response = await fetch(`${API_BASE_URL}/api/v1/client/consent`, {
+        await fetch(`${API_BASE_URL}/api/v1/client/consent`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(payload)
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Consent Sync Failed:", errorText);
-        }
     } catch (e) { console.error("Sync to DB failed", e); }
-
     if (cookieBanner) cookieBanner.style.display = 'none';
 }
 
@@ -338,24 +310,23 @@ function renderCookieBanner() {
     const btn = currentLanguageContent.buttons || {};
     const map = resolvePolicyContent(currentPolicy);
     const languages = Object.keys(map);
-
     let langOptions = languages.map(l => `<option value="${l}" ${document.documentElement.lang === l ? 'selected' : ''}>${l.toUpperCase()}</option>`).join('');
 
     cookieBanner.innerHTML = `
-        <div style="flex: 1; min-width: 300px;">
-            <p style="margin:0; font-size: 0.95rem;">${currentLanguageContent.general_purpose_description || 'Compliance Notice'}.</p>
+        <div style=\"flex: 1; min-width: 300px;\">
+            <p style=\"margin:0; font-size: 0.95rem;\">${currentLanguageContent.general_purpose_description || 'Compliance Notice'}.</p>
         </div>
-        <div style="display:flex; align-items:center; gap:15px; flex-wrap: wrap; margin-top:10px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:0.7rem; color:#94a3b8; font-weight:700;">LANGUAGE:</span>
-                <select onchange="changeLanguage(this.value)" class="lang-select">
+        <div style=\"display:flex; align-items:center; gap:15px; flex-wrap: wrap; margin-top:10px;\">
+            <div style=\"display:flex; align-items:center; gap:8px;\">
+                <span style=\"font-size:0.7rem; color:#94a3b8; font-weight:700;\">LANGUAGE:</span>
+                <select onchange=\"changeLanguage(this.value)\" class=\"lang-select\">
                     ${langOptions}
                 </select>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button onclick="handleAcceptAll()">${btn.accept_all || 'Accept All'}</button>
-                <button onclick="handleRejectAll()" style="background:#64748b;">${btn.reject_all_non_essential || 'Reject'}</button>
-                <button onclick="handleManagePreferences()" style="background:transparent; border:1px solid #475569;">${btn.manage_preferences || 'Preferences'}</button>
+            <div style=\"display:flex; gap:10px;\">
+                <button onclick=\"handleAcceptAll()\">${btn.accept_all || 'Accept All'}</button>
+                <button onclick=\"handleRejectAll()\" style=\"background:#64748b;\">${btn.reject_all_non_essential || 'Reject'}</button>
+                <button onclick=\"handleManagePreferences()\" style=\"background:transparent; border:1px solid #475569;\">${btn.manage_preferences || 'Preferences'}</button>
             </div>
         </div>
     `;
@@ -369,28 +340,28 @@ function renderPreferenceCenter() {
     let langOptions = languages.map(l => `<option value="${l}" ${document.documentElement.lang === l ? 'selected' : ''}>${l.toUpperCase()}</option>`).join('');
 
     let html = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:0.7rem; color:#64748b; font-weight:800;">UI LANGUAGE:</span>
-                <select onchange="changeLanguage(this.value)" class="lang-select-light">
+        <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;\">
+            <div style=\"display:flex; align-items:center; gap:10px;\">
+                <span style=\"font-size:0.7rem; color:#64748b; font-weight:800;\">UI LANGUAGE:</span>
+                <select onchange=\"changeLanguage(this.value)\" class=\"lang-select-light\">
                     ${langOptions}
                 </select>
             </div>
-            <button onclick="closePreferenceCenter()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#888;">&times;</button>
+            <button onclick=\"closePreferenceCenter()\" style=\"border:none; background:none; font-size:1.5rem; cursor:pointer; color:#888;\">&times;</button>
         </div>
-        <h2 style="color:#006A67; font-size: 1.5rem; font-weight: 700;">${currentLanguageContent.title}</h2>
-        <div style="margin-top:25px;">`;
+        <h2 style=\"color:#006A67; font-size: 1.5rem; font-weight: 700;\">${currentLanguageContent.title}</h2>
+        <div style=\"margin-top:25px;\">`;
 
     (currentLanguageContent.data_processing_purposes || []).forEach(p => {
         html += `
-            <div style="padding:15px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:12px; background:#f8fafc;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="color:#1e293b;">${p.name}</strong>
-                    ${p.is_mandatory_for_service ? '<span style="color:#059669; font-size:0.7rem; font-weight:800; text-transform:uppercase;">Mandatory</span>' : `
-                        <input type="checkbox" id="toggle-${p.id}" style="width:20px; height:20px; cursor:pointer;">
+            <div style=\"padding:15px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:12px; background:#f8fafc;\">
+                <div style=\"display:flex; justify-content:space-between; align-items:center;\">
+                    <strong style=\"color:#1e293b;\">${p.name}</strong>
+                    ${p.is_mandatory_for_service ? '<span style=\"color:#059669; font-size:0.7rem; font-weight:800; text-transform:uppercase;\">Mandatory</span>' : `
+                        <input type=\"checkbox\" id=\"toggle-${p.id}\" style=\"width:20px; height:20px; cursor:pointer;\">
                     `}
                 </div>
-                <p style="font-size:0.85rem; color:#64748b; margin-top:4px; line-height:1.4;">${p.description}</p>
+                <p style=\"font-size:0.85rem; color:#64748b; margin-top:4px; line-height:1.4;\">${p.description}</p>
             </div>
         `;
     });
@@ -432,8 +403,6 @@ document.getElementById('save-preferences').onclick = () => {
 
 function closePreferenceCenter() { preferenceCenterOverlay.style.display = 'none'; }
 
-// --- Tour Actions ---
-
 function initiateLinkPrincipalFlow() {
     const anonymousUserId = localStorage.getItem('tsi_dpdp_cms_anon_id');
     const existingPrincipal = localStorage.getItem('tsi_dpdp_cms_principal_id');
@@ -444,66 +413,50 @@ function initiateLinkPrincipalFlow() {
     }
 
     const body = `
-        <div style="text-align: left;">
-            <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">Linking associates your anonymous choices with your verified account for portable rights management.</p>
-
-            <label style="display:block; font-size:0.8rem; font-weight:700; margin-bottom:5px; color:#475569; text-transform:uppercase;">Data Principal - User Id/Email</label>
-            <input type="email" id="link-user-email" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;" placeholder="john@example.com">
-
-            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 20px;">
-                <p style="font-size: 0.7rem; color: #94a3b8; margin: 0;">Anonymous Target ID:</p>
-                <p style="font-size: 0.8rem; font-family: monospace; color: #475569; word-break: break-all; margin: 0;"><strong>${anonymousUserId || 'Session Not Found'}</strong></p>
+        <div style=\"text-align: left;\">
+            <p style=\"font-size: 0.9rem; color: #64748b; margin-bottom: 20px;\">Linking associates your anonymous choices with your verified account for portable rights management.</p>
+            <label style=\"display:block; font-size:0.8rem; font-weight:700; margin-bottom:5px; color:#475569; text-transform:uppercase;\">Data Principal - User Id/Email</label>
+            <input type=\"email\" id=\"link-user-email\" style=\"width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;\" placeholder=\"john@example.com\">
+            <div style=\"background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 20px;\">
+                <p style=\"font-size: 0.7rem; color: #94a3b8; margin: 0;\">Anonymous Target ID:</p>
+                <p style=\"font-size: 0.8rem; font-family: monospace; color: #475569; word-break: break-all; margin: 0;\"><strong>${anonymousUserId || 'Session Not Found'}</strong></p>
             </div>
         </div>
     `;
-
-    const action = `<button id="submit-link-btn" style="background:#006A67; color:white; border:none; padding:14px; border-radius:8px; cursor:pointer; width:100%; font-weight:700; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">Consolidate & Link Identity</button>`;
+    const action = `<button id=\"submit-link-btn\" style=\"background:#006A67; color:white; border:none; padding:14px; border-radius:8px; cursor:pointer; width:100%; font-weight:700; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);\">Consolidate & Link Identity</button>`;
 
     displayCustomModal("Link Data Principal", body, action);
 
     document.getElementById('submit-link-btn').onclick = async () => {
         const email = document.getElementById('link-user-email').value.trim();
         if (!email) return alert("User Id/ Email mandatory for linking.");
-
         const btn = document.getElementById('submit-link-btn');
         btn.disabled = true;
         btn.textContent = "Posting to Registry...";
 
         try {
             const fiduciaryId = currentPolicy ? currentPolicy.fiduciary_id : (localStorage.getItem('cc_fiduciary_id') || 'fiduciary_hub_abc');
-
             const payload = {
                 _func: "link_user",
                 anonymous_user_id: anonymousUserId || "anon_undefined",
                 authenticated_user_id: email,
                 fiduciary_id: fiduciaryId,
-                language_selected: document.documentElement.lang || 'en', // FIX: Pass language
-                meta: { name }
+                language_selected: document.documentElement.lang || 'en'
             };
-
             const res = await fetch(`${API_BASE_URL}/api/v1/client/consent`, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(payload)
+                method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
             });
-
             if (res.ok) {
                 localStorage.setItem('tsi_dpdp_cms_principal_id', email);
                 const currentPrefs = getConsentState() || {};
                 await saveConsentState(currentPrefs, 'account_linked_sync');
-
-                displayCustomModal("Identity Linked!", `<p>Successfully linked <strong>${anonymousUserId}</strong> to <strong>${email}</strong>.</p><p style="color: #059669; font-weight: 700; margin-top: 10px;">✓ Consent records synchronized for the linked user.</p>`);
+                displayCustomModal("Identity Linked!", `<p>Successfully linked <strong>${anonymousUserId}</strong> to <strong>${email}</strong>.</p><p style=\"color: #059669; font-weight: 700; margin-top: 10px;\">✓ Consent records synchronized for the linked user.</p>`);
             } else {
                 const errData = await res.json().catch(() => ({}));
-                alert("Backend Error: " + (errData.message || "The server rejected the identity consolidation request."));
+                alert("Backend Error: " + (errData.message || "The server rejected identity consolidation."));
             }
-        } catch (e) {
-            console.error("Linking Post Error:", e);
-            alert("Network Error: Could not reach the CMS Registry. Please check backend status.");
-        } finally {
-            btn.disabled = false;
-            btn.textContent = "Consolidate & Link Identity";
-        }
+        } catch (e) { alert("Network Error: Could not reach Registry."); }
+        finally { btn.disabled = false; btn.textContent = "Consolidate & Link Identity"; }
     };
 }
 
@@ -521,6 +474,8 @@ async function initConsentManager() {
     currentLanguageContent = map[lang];
     document.documentElement.lang = lang;
 
+    document.getElementById('main-policy-title').textContent = currentLanguageContent.title || 'Consent & Identity Journey';
+
     renderCookieBanner();
     renderPreferenceCenter();
 
@@ -531,36 +486,15 @@ async function initConsentManager() {
 
     bind('view-preferences', () => {
         const stored = localStorage.getItem(CONSENT_LOCAL_STORAGE_KEY);
-        displayCustomModal("Consent Artifact", stored ? `<pre style="background:#f1f5f9; padding:15px; border-radius:8px; font-size:0.8rem; overflow-x:auto;">${JSON.stringify(JSON.parse(stored), null, 2)}</pre>` : '<p>Interact with the banner to generate an artifact.</p>');
+        displayCustomModal("Consent Artifact", stored ? `<pre style=\"background:#f1f5f9; padding:15px; border-radius:8px; font-size:0.8rem; overflow-x:auto;\">${JSON.stringify(JSON.parse(stored), null, 2)}</pre>` : '<p>Interact with the banner to generate an artifact.</p>');
     });
 
     bind('link-principal', initiateLinkPrincipalFlow);
     bind('open-cookie-settings', handleManagePreferences);
 
-    bind('validate-add-post', () => {
-        const state = getConsentState();
-        if (state && state.purpose_community_engagement) {
-            displayCustomModal("Access Granted!", "Verification successful. You have granted 'Community Engagement' consent.");
-        } else {
-            displayCustomModal("Access Denied", "Requires 'Community Engagement' consent.", `<button onclick="handleManagePreferences()" style="background:#006A67; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;">Grant Consent</button>`);
-        }
-    });
-
-    bind('validate-provider-zone', () => {
-        const state = getConsentState();
-        if (state && state.purpose_solution_service_training_showcase) {
-            displayCustomModal("Access Granted!", "Verification successful. You have granted 'Solutions & Services' consent.");
-        } else {
-            displayCustomModal("Access Denied", "Requires 'Solutions & Services Showcase' consent.", `<button onclick="handleManagePreferences()" style="background:#006A67; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;">Update Preferences</button>`);
-        }
-    });
-
-    bind('view-profile', () => displayCustomModal("User Dashboard", "This view demonstrates the right to access (Section 11) for a verified Data Principal."));
-
     if (getConsentState()) cookieBanner.style.display = 'none';
 }
 
-// --- App Bootstrap ---
 document.addEventListener('DOMContentLoaded', () => {
     if (!config.tsi_dpdp_cms_apikey) {
         document.getElementById('credentials-modal').style.display = 'flex';
@@ -569,23 +503,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-
 document.getElementById('save-credentials-btn').onclick = () => {
     const key = document.getElementById('api-key').value.trim();
     const secret = document.getElementById('api-secret').value.trim();
     const policyId = document.getElementById('policy-id').value.trim();
-
     if (key && secret && policyId) {
-
-        // 1. Clear the main consent artifact
         localStorage.removeItem(config.tsi_dpdp_cms_localstoragekey);
-
-        // 2. Clear identity trackers (Anonymous ID and Linked Principal ID)
         localStorage.removeItem('tsi_dpdp_cms_anon_id');
         localStorage.removeItem('tsi_dpdp_cms_principal_id');
-        localStorage.removeItem('cc_fiduciary_id');
-
         config.tsi_dpdp_cms_apikey = key;
         config.tsi_dpdp_cms_apisecret = secret;
         config.tsi_dpdp_cms_policyid = policyId;
