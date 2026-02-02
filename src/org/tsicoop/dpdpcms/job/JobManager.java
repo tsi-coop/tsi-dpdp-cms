@@ -30,8 +30,9 @@ public class JobManager implements ServletContextListener {
 
     private ScheduledExecutorService scheduler;
     private volatile boolean running = true;
-    private static final String EXPORT_DIR = System.getProperty("os.name").toLowerCase().contains("win") ? "c:/tmp/" : "/tmp/";
-
+    private static final String EXPORT_DIR = System.getenv("TSI_EXPORT_PATH") != null
+            ? System.getenv("TSI_EXPORT_PATH")
+            : "/var/lib/tsi/exports/";
     private static final int BATCH_SIZE = 10; // Fixed number of principals to fetch at a time
 
     // Track the last date a full CES run was scheduled to prevent duplicates
@@ -313,6 +314,7 @@ public class JobManager implements ServletContextListener {
             pool.cleanup(rs,pstmt,conn);
             if(pw!=null)pw.close();
         }
+        System.out.println(outFile.getAbsolutePath()+" created");
     }
 
 
@@ -344,6 +346,7 @@ public class JobManager implements ServletContextListener {
         }finally{
             pool.cleanup(null,pstmt,conn);
         }
+
     }
 
     @Override

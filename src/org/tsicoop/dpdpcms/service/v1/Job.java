@@ -16,8 +16,9 @@ import java.util.UUID;
  */
 public class Job implements Action {
 
-    private static final String EXPORT_DIR = System.getProperty("os.name").toLowerCase().contains("win") ? "c:/tmp/" : "/tmp/";
-
+    private static final String EXPORT_DIR = System.getenv("TSI_EXPORT_PATH") != null
+            ? System.getenv("TSI_EXPORT_PATH")
+            : "/var/lib/tsi/exports/";
 
     @Override
     public void post(HttpServletRequest req, HttpServletResponse res) {

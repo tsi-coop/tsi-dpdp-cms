@@ -4,6 +4,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONObject; // For parsing input in validateRequestFunc
+import org.tsicoop.dpdpcms.service.v1.Job;
 import org.tsicoop.dpdpcms.service.v1.Wallet;
 
 import java.io.IOException;
@@ -118,6 +119,14 @@ public class InterceptingFilter implements Filter {
             // The Wallet service handles its own 'validateSyncToken' logic internally
             InputProcessor.processInput(req, res);
             new Wallet().post(req, res);
+            return;
+        }
+
+        if ("GET".equalsIgnoreCase(method) && uri.contains("/admin/job")) {
+            // Forward to Job service
+            // The Wallet service handles its own 'validateSyncToken' logic internally
+            InputProcessor.processInput(req, res);
+            new Job().post(req, res);
             return;
         }
 

@@ -19,4 +19,5 @@ POSTGRES_PASSWD=
 # --- Application Configuration ---
 TSI_DPDP_CMS_STEALTH_ENV=local
 TSI_DPDP_CMS_STEALTH_HOME=
+TSI_EXPORT_PATH=
 

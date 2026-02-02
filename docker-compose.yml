@@ -2,7 +2,7 @@ services:
   # PostgreSQL Database Service
   postgres_db:
     image: postgres:15-alpine
-    container_name: tsi_dpdp_cms_postgres
+    container_name: tsi_dpdp_cms_db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -21,7 +21,7 @@ services:
   # Java Jetty Web Application Service
   jetty_app:
     build: . # Build the image from the Dockerfile in the current directory
-    container_name: tsi_dpdp_cms_jetty
+    container_name: tsi_dpdp_cms_server
     ports:
       - "8080:8080" # Map host port 8090 to container port 8090
     environment:
@@ -31,6 +31,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWD: ${POSTGRES_PASSWD}
       TSI_DPDP_CMS_ENV: ${TSI_DPDP_CMS_ENV}
+      TSI_EXPORT_PATH: ${TSI_EXPORT_PATH}
     # START FIX: depends_on key is now correctly aligned with environment, ports, etc.
     depends_on:
       postgres_db:
