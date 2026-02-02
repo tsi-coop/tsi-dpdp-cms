@@ -12,9 +12,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/296d41274d0bf449de295e89c1cf3c92a7f81259/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf)
 
-[Installation Walkthrough - Video](https://youtu.be/8LKycujvHBU)
-
-[Functional Demo - Video](https://youtu.be/d85ye4BoFbM)
+[Functional Overview - Video](https://youtu.be/d85ye4BoFbM)
 
 [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
