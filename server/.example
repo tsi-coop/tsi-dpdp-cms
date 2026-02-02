@@ -5,7 +5,7 @@
 # To use: Copy this file to .env and fill in the placeholder values.
 
 # --- Basic Configuration ---
-JAVA_HOME=
+JAVA_HOME=/usr/lib/jvm/java-1.17.0-openjdk-amd64
 JETTY_HOME=
 JETTY_BASE=
 
@@ -17,7 +17,6 @@ POSTGRES_USER=
 POSTGRES_PASSWD=
 
 # --- Application Configuration ---
-TSI_DPDP_CMS_STEALTH_ENV=local
-TSI_DPDP_CMS_STEALTH_HOME=
-TSI_EXPORT_PATH=
-
+TSI_DPDP_CMS_ENV=local
+TSI_DPDP_CMS_HOME=
+TSI_EXPORT_PATH=/var/lib/tsi/exports/
