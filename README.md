@@ -26,7 +26,48 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [DPDP Wallet Demonstration](https://youtu.be/1N4TYXfamsw)
 
-## Prerequisites
+## Installation
+
+### Docker
+
+Coming soon..
+
+### Binary
+
+Coming soon..
+
+## Post-Installation Steps
+
+The system includes a pre-configured interactive tour designed for evaluators and administrators.
+
+**Access the Tour**: Open your browser and navigate to:
+http://localhost:8080/tour
+
+Follow the Guided Journey:
+
+1. System Setup: Initialize your environment and configure master admin credentials.
+
+2. Org Configuration: Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies.
+
+3. Consent Collector: Experience the notice and capture workflow from a Data Principal's perspective.
+
+4. User Dashboard: Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
+
+5. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
+
+6. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity.
+
+7. DPO Console Tour: Comprehensive video walkthrough of the administrative console for managing compliance workflows.
+
+8. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks.
+
+9. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
+
+10. DPDP Wallet Demo: Experience portable privacy. Checkout the [DPDP Wallet](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via) concept, then download your PCA from the User Dashboard to manage your processing rights independently.
+
+## Developers
+
+### Prerequisites
 
 Before you begin, ensure you have the following software installed on your development machine or server:
 
@@ -67,7 +108,7 @@ Before you begin, ensure you have the following software installed on your devel
     * **Verification:**
         ```bash
         docker --version
-        docker compose version # Or docker-compose --version for older installations
+        docker compose version # Or docker compose --version for older installations
         ```
 
 * **Git**: For cloning the repository.
@@ -82,7 +123,9 @@ Before you begin, ensure you have the following software installed on your devel
         git --version
         ```
 
-## Installation Steps (Docker)
+### Build 
+
+#### Docker
 
 Follow these steps to get the TSI DPDP CMS solution running on your local machine using Docker Compose:
 
@@ -109,23 +152,23 @@ Follow these steps to get the TSI DPDP CMS solution running on your local machin
 4.  **Initialize PostgreSQL Database Schema:**
     The `postgres` Docker image only runs initialization scripts on its *first* startup when the data directory is empty. To ensure your schema is loaded:
     ```bash
-    docker-compose down -v 
+    docker compose down -v 
     ```
 
 5.  **Build and Start Docker Services:**
     This command will build your application's Docker image and start both the PostgreSQL database and the Jetty application.
     ```bash
-    docker-compose up --build -d
+    docker compose up --build -d
     ```
     * `--build`: Ensures Docker images are rebuilt, picking up any changes in your Java code or Dockerfile.
     * `-d`: Runs the containers in detached mode (in the background).
 
 6.  **Verify Services and Check Logs:**
     * Check if containers are running: `docker ps`
-    * Monitor PostgreSQL logs for schema initialization: `docker-compose logs -f postgres_db`
-    * Monitor Jetty application logs for successful deployment: `docker-compose logs -f jetty_app`
+    * Monitor PostgreSQL logs for schema initialization: `docker compose logs -f postgres_db`
+    * Monitor Jetty application logs for successful deployment: `docker compose logs -f jetty_app`
 
-## Installation Steps (without Docker)
+#### Using Scripts (without docker)
 
 These steps describe how to install and run the TSI DPDP CMS solution directly on a Linux/Windows server without using Docker.
 
@@ -193,31 +236,3 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
    curl -I http://localhost:8080
    ```
 
-## Post-Installation Steps
-
-The system includes a pre-configured interactive tour designed for evaluators and administrators.
-
-**Access the Tour**: Open your browser and navigate to:
-http://localhost:8080/tour
-
-Follow the Guided Journey:
-
-1. System Setup: Initialize your environment and configure master admin credentials.
-
-2. Org Configuration: Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies.
-
-3. Consent Collector: Experience the notice and capture workflow from a Data Principal's perspective.
-
-4. User Dashboard: Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
-
-5. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
-
-6. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity.
-
-7. DPO Console Tour: Comprehensive video walkthrough of the administrative console for managing compliance workflows.
-
-8. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks.
-
-9. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
-
-10. DPDP Wallet Demo: Experience portable privacy. Checkout the [DPDP Wallet](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via) concept, then download your PCA from the User Dashboard to manage your processing rights independently.
