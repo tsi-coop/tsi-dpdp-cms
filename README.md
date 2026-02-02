@@ -234,3 +234,6 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
    curl -I http://localhost:8080
    ```
 
+## License
+
+TSI DPDP CMS is licensed under AGPL v3 license
