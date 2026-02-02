@@ -13,4 +13,4 @@ POSTGRES_PASSWD=<password>
 # --- Application Configuration ---
 TSI_DPDP_CMS_ENV=local
 TSI_DPDP_CMS_HOME=C:\work\tsi-dpdp-cms
-TSI_DPDP_CMS_SERVER_URL=http://localhost:8080
+TSI_EXPORT_PATH=/var/lib/tsi/exports/
