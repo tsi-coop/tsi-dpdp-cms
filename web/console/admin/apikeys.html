@@ -374,13 +374,12 @@
         const row = document.createElement('tr');
 
         const keyHashSuffix = (key.key_id || 'XXXXXXXX').slice(-4);
-        const lastUsed = key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never';
         const showRevoke = key.status === 'ACTIVE' || key.status === 'PENDING';
 
         // If app_id is present, display ID (or ideally map name if available).
         // If no app (which shouldn't happen with new logic, but legacy keys might exist), display "Direct".
         const targetEntity = key.app_name;
-
+        
         const actionsHtml = `
             ${showRevoke ?
                 `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="revokeKey('${key.key_id}')">Revoke</button>`
@@ -395,7 +394,6 @@
                 ${key.permissions ? key.permissions.join(', ') : 'None'}
             </td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(key.status)}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm">${lastUsed}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">
                 ${actionsHtml}
             </td>
@@ -543,7 +541,6 @@
             keys.forEach(key => {
               tableBody.appendChild(createKeyRow(key));
             });
-            countSpan.textContent = `Showing 1 - ${keys.length} of ${keys.length} Total`;
           }
         } else {
           throw new Error(responseData.message || 'API returned unexpected structure.');
@@ -555,7 +552,6 @@
                 Error connecting to the CMS API. Ensure the service is running and the token is valid.
             </td></tr>`;
         errorMessageP.classList.remove('hidden');
-        countSpan.textContent = '0 Total';
       }
     }
 
