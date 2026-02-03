@@ -1,9 +1,10 @@
 # TSI DPDP CMS - Universal Docker Compose (Public Release)
+# Indentation is strictly 2 spaces. No tabs.
 
 x-db-credentials: &db-credentials
-  POSTGRES_DB: ${POSTGRES_DB:-tsi_cms}
-  POSTGRES_USER: ${POSTGRES_USER:-tsi_admin}
-  POSTGRES_PASSWORD: ${POSTGRES_PASSWD:-secure_dev_password}
+  POSTGRES_DB: "${POSTGRES_DB:-tsi_cms}"
+  POSTGRES_USER: "${POSTGRES_USER:-tsi_admin}"
+  POSTGRES_PASSWORD: "${POSTGRES_PASSWD:-secure_dev_password}"
 
 services:
   # 1. PostgreSQL Database Service
@@ -29,7 +30,8 @@ services:
   # 2. Java Jetty Web Application Service
   jetty_app:
     # Uses the IMAGE_NAME from .env, defaults to latest if not set
-    image: ${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}
+    # Fixed: Added quotes to prevent YAML parsing errors with colons
+    image: "${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}"
     
     # DEVELOPERS: To build from local source, uncomment the block below
     # build:
@@ -45,14 +47,14 @@ services:
     
     environment:
       POSTGRES_HOST: "jdbc:postgresql://postgres_db:5432"
-      POSTGRES_DB: ${POSTGRES_DB:-tsi_cms}
-      POSTGRES_USER: ${POSTGRES_USER:-tsi_admin}
-      POSTGRES_PASSWD: ${POSTGRES_PASSWD:-secure_dev_password}
-      TSI_DPDP_CMS_ENV: ${TSI_DPDP_CMS_ENV:-production}
-      TSI_EXPORT_PATH: ${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}
+      POSTGRES_DB: "${POSTGRES_DB:-tsi_cms}"
+      POSTGRES_USER: "${POSTGRES_USER:-tsi_admin}"
+      POSTGRES_PASSWD: "${POSTGRES_PASSWD:-secure_dev_password}"
+      TSI_DPDP_CMS_ENV: "${TSI_DPDP_CMS_ENV:-production}"
+      TSI_EXPORT_PATH: "${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}"
     
     volumes:
-      - tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw
+      - "tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw"
     
     depends_on:
       postgres_db:
