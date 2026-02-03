@@ -49,9 +49,9 @@ Follow the Guided Journey:
 
 3. Consent Collector: Experience the notice and capture workflow from a Data Principal's perspective.
 
-4. User Dashboard: Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
+4. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
 
-5. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
+5. User Dashboard: Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
 
 6. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity.
 
@@ -62,6 +62,8 @@ Follow the Guided Journey:
 9. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
 
 10. DPDP Wallet Demo: Experience portable privacy. Checkout the [DPDP Wallet](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via) concept, then download your PCA from the User Dashboard to manage your processing rights independently.
+
+11. Password Recovery: Explore the "break-glass" account recovery mechanism using secure Master Recovery Keys.
 
 ## Developers
 
