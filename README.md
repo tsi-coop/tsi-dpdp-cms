@@ -123,7 +123,7 @@ Before you begin, ensure you have the following software installed on your devel
 
 ### Build 
 
-#### Docker
+#### Using Docker
 
 Follow these steps to get the TSI DPDP CMS solution running on your local machine using Docker Compose:
 
