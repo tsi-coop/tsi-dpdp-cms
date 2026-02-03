@@ -30,11 +30,13 @@ services:
 
   # 2. Java Jetty Web Application Service
   jetty_app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # --- FOR LOCAL DEVELOPMENT ---
+    # To build from local source code, uncomment the lines below:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     
-    image: tsi-dpdp-cms-server:latest
+    image: tsicoop/tsi-dpdp-cms:latest
     user: "root"
     
     container_name: tsi_dpdp_cms_server
