@@ -1,5 +1,4 @@
-# TSI DPDP CMS - Universal Docker Compose
-# Professional pattern using YAML anchors for credential management
+# TSI DPDP CMS - Universal Docker Compose (Public Release)
 
 x-db-credentials: &db-credentials
   POSTGRES_DB: ${POSTGRES_DB:-tsi_cms}
@@ -15,7 +14,6 @@ services:
     environment:
       <<: *db-credentials
     ports:
-      # Localhost only binding recommended for production security
       - "${DB_PORT_MAP:-5432:5432}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -30,15 +28,15 @@ services:
 
   # 2. Java Jetty Web Application Service
   jetty_app:
-    # --- FOR LOCAL DEVELOPMENT ---
-    # To build from local source code, uncomment the lines below:
+    # Uses the IMAGE_NAME from .env, defaults to latest if not set
+    image: ${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}
+    
+    # DEVELOPERS: To build from local source, uncomment the block below
     # build:
     #   context: .
     #   dockerfile: Dockerfile
     
-    image: tsicoop/tsi-dpdp-cms:latest
     user: "root"
-    
     container_name: tsi_dpdp_cms_server
     restart: unless-stopped
     
@@ -46,19 +44,14 @@ services:
       - "${APP_PORT_MAP:-8080:8080}"
     
     environment:
-      # Database connection parameters
       POSTGRES_HOST: "jdbc:postgresql://postgres_db:5432"
       POSTGRES_DB: ${POSTGRES_DB:-tsi_cms}
       POSTGRES_USER: ${POSTGRES_USER:-tsi_admin}
       POSTGRES_PASSWD: ${POSTGRES_PASSWD:-secure_dev_password}
-      
-      # Application context
-      TSI_DPDP_CMS_ENV: ${TSI_DPDP_CMS_ENV:-development}
-      # Path used by JobManager and Export services
+      TSI_DPDP_CMS_ENV: ${TSI_DPDP_CMS_ENV:-production}
       TSI_EXPORT_PATH: ${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}
     
     volumes:
-      # PERSISTENCE: This named volume ensures reports survive 'docker build'
       - tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw
     
     depends_on:
@@ -73,5 +66,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:      # Managed persistent storage for the SQL registry
-  tsi_reports_data:   # Managed persistent storage for CSV compliance artifacts
+  postgres_data:      
+  tsi_reports_data:
