@@ -22,6 +22,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [DPDP Wallet Demonstration](https://youtu.be/1N4TYXfamsw)
 
+[Verifiable Parent Consent - Video Demo](https://youtu.be/kz4idKMBLXk)
+
 ## Installation
 
 ### Docker
