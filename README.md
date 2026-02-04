@@ -40,7 +40,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 ### Binary
 
-Coming soon..
+Check out [v0.1 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.1)
 
 ## Post-Installation Steps
 
@@ -105,7 +105,7 @@ Before you begin, ensure you have the following software installed on your devel
         mvn -v
         ```
 
-* **Docker Desktop (or Docker Engine + Docker Compose)**: Essential for containerizing and running the application and database locally.
+* **Docker Desktop (For Docker based development)**: Essential for containerizing and running the application and database locally.
     * **Installation Steps:**
         * **Windows:** Download and install Docker Desktop from the [official Docker website](https://www.docker.com/products/docker-desktop/).
         * **Linux:** Follow the official Docker Engine installation guide for your specific distribution (e.g., [Docker Docs](https://docs.docker.com/engine/install/)). Install Docker Compose separately if using Docker Engine.
@@ -130,6 +130,16 @@ Before you begin, ensure you have the following software installed on your devel
         ```bash
         git --version
         ```
+
+* **Jetty (For Non Docker Development)**:Navigate to the Eclipse Jetty Downloads page.
+
+    * Download the Jetty 11 (Standard) distribution (e.g., jetty-home-11.x.x.tar.gz or .zip).
+
+    * Extract the archive to a permanent directory:
+
+        Linux/macOS: /opt/jetty-home
+
+        Windows: C:\jetty-home
 
 ### Build 
 
