@@ -14,15 +14,15 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
-[Consent Enforcement Service - Video Demo](https://youtu.be/_i9znxthbOA)
+[Consent Enforcement Service - Video](https://youtu.be/_i9znxthbOA)
 
-[DPO Console - Video Demo](https://youtu.be/QPXHg4bQhf8)
+[DPO Console - Video](https://youtu.be/QPXHg4bQhf8)
 
 [Solving Consent Fatigue via Portable Consent Artifacts (PCA) - A Proposal](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
 
-[DPDP Wallet Demonstration](https://youtu.be/1N4TYXfamsw)
+[DPDP Wallet Demonstration - Video](https://youtu.be/1N4TYXfamsw)
 
-[Verifiable Parent Consent - Video Demo](https://youtu.be/kz4idKMBLXk)
+[Verifiable Parent Consent - Video](https://youtu.be/kz4idKMBLXk)
 
 ## Installation
 
