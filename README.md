@@ -28,7 +28,15 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 ### Docker
 
-Coming soon..
+1.  **Clone the repository to a separate folder**
+    ```bash
+    git clone https://github.com/tsi-coop/tsi-dpdp-cms.git tsi-dpdp-cms-eval
+    ```
+2.  **Start the TSI DPDP CMS service**
+    ```bash
+    cd tsi-dpdp-cms-eval
+    docker compose up -d
+    ```
 
 ### Binary
 
