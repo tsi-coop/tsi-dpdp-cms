@@ -9,7 +9,7 @@
         "phone": "",
         "description": "A non-profit Digital Enabler for the MSME ecosystem. We strengthen local IT supply chains and enable high-quality career pathways through open-source R&D and community initiatives.",
         "webpageUrl": {
-            "url": "https://tsicoop.org",
+            "url": "https://github.com/tsi-coop/tsi-dpdp-cms",
             "wellKnown": ""
         }
     },
@@ -27,62 +27,6 @@
         },
         "licenses": ["spdx:AGPL-3.0"],
         "tags": ["data-privacy", "data-protection", "dpdp", "msme","consent-management-system"]
-    },
-    {
-        "guid": "tsi-privacy-vault",
-        "name": "TSI Privacy Vault",
-        "description": "An open-source digital safe that isolates personal and sensitive data for effortless compliance.",
-        "webpageUrl": {
-            "url": "https://github.com/tsi-coop/tsi-privacy-vault"
-        },
-        "repositoryUrl": {
-            "url": "https://github.com/tsi-coop/tsi-privacy-vault",
-            "wellKnown": "https://github.com/tsi-coop/tsi-privacy-vault/blob/main/.well-known/funding-manifest-urls"
-        },
-        "licenses": ["spdx:AGPL-3.0"],
-        "tags": ["identity-vault","aadhaar-vault","aadhaar-data-vault","sensitive-data-vault"]
-    },  
-    {
-        "guid": "tsi-dx-node",
-        "name": "TSI DX Node",
-        "description": "An open-source, decentralized solution for peer-to-peer data exchange among business partners.",
-        "webpageUrl": {
-            "url": "https://github.com/tsi-coop/tsi-dx-node"
-        },
-        "repositoryUrl": {
-            "url": "https://github.com/tsi-coop/tsi-dx-node",
-            "wellKnown": "https://github.com/tsi-coop/tsi-dx-node/blob/main/.well-known/funding-manifest-urls"
-        },
-        "licenses": ["spdx:AGPL-3.0"],
-        "tags": ["data-exchange", "consent-aware-data-transfer", "msme"]
-    },
-    {
-        "guid": "tsi-ratings",
-        "name": "TSI Ratings",
-        "description": "Transforming operational trust into verifiable digital collateral for the token economy",
-        "webpageUrl": {
-            "url": "https://tsicoop.org/ratings"
-        },
-        "repositoryUrl": {
-            "url": "https://github.com/tsi-coop/tsi-ratings",
-            "wellKnown": "https://github.com/tsi-coop/tsi-ratings/blob/main/.well-known/funding-manifest-urls"
-        },
-        "licenses": ["spdx:AGPL-3.0"],
-        "tags": ["digital-maturity-measurement","capability-maturity-measurement","operational-trust"]
-    },
-    {
-        "guid": "tsi-digital-hub",
-        "name": "TSI Digital Hub",
-        "description": "A ready-to-deploy, open-source digital hub solution for industry associations & enablers to drive digital transformation",
-        "webpageUrl": {
-            "url": "https://github.com/tsi-coop/tsi-digital-hub"
-        },
-        "repositoryUrl": {
-            "url": "https://github.com/tsi-coop/tsi-digital-hub",
-            "wellKnown": "https://github.com/tsi-coop/tsi-digital-hub/blob/main/.well-known/funding-manifest-urls"
-        },
-        "licenses": ["spdx:AGPL-3.0"],
-        "tags": ["enquiries","rfp", "job-postings", "solution-discovery"]
     }],
     "funding": {
         "channels": [
