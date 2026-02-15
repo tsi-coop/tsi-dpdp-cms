@@ -24,6 +24,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [Verifiable Parent Consent - Video](https://youtu.be/kz4idKMBLXk)
 
+[The need for standardized erasure interfaces across DPDP Consent Managers](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
+
 ## Installation
 
 ### Docker
