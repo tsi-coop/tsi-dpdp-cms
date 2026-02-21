@@ -30,13 +30,12 @@ services:
   # 2. Java Jetty Web Application Service
   jetty_app:
     # Uses the IMAGE_NAME from .env, defaults to latest if not set
-    # Fixed: Added quotes to prevent YAML parsing errors with colons
     image: "${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}"
     
     # DEVELOPERS: To build from local source, uncomment the block below
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    #build:
+    #  context: .
+    # dockerfile: Dockerfile
     
     user: "root"
     container_name: tsi_dpdp_cms_server
@@ -52,6 +51,9 @@ services:
       POSTGRES_PASSWD: "${POSTGRES_PASSWD:-secure_dev_password}"
       TSI_DPDP_CMS_ENV: "${TSI_DPDP_CMS_ENV:-production}"
       TSI_EXPORT_PATH: "${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}"
+      TSI_KEYSTORE_PATH: "${TSI_KEYSTORE_PATH}"
+      TSI_KEYSTORE_PASS: "${TSI_KEYSTORE_PASS}"
+      TSI_KEYSTORE_ALIAS: "${TSI_KEYSTORE_ALIAS}"
     
     volumes:
       - "tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw"

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Legal Evidence Center</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <script>
+        window.ENV_SERVER_URL = window.ENV_SERVER_URL || 'http://localhost:8080';
+    </script>
+    <style>
+        :root {
+            --tsi-primary: #006A67;
+            --background: #f4fbf9;
+            --card-bg: #FFFFFF;
+            --radius: 0.75rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+
+        .sidebar {
+            width: 250px; background-color: #f8fafc; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px; position: fixed; height: 100vh; z-index: 50; border-right: 1px solid #e2e8f0;
+        }
+
+        .nav-link {
+            display: flex; align-items: center; padding: 10px 20px; margin: 5px 0;
+            border-radius: 6px; color: #4a5568; transition: all 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active { background-color: #e5f5f4; color: var(--tsi-primary); font-weight: 600; }
+
+        .card {
+            background-color: var(--card-bg); border-radius: var(--radius);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 24px; border: 1px solid #e2e8f0;
+        }
+
+        /* Certificate View Styling */
+        .cert-paper {
+            background: white; border: 1px solid #e2e8f0; padding: 50px; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative;
+            max-width: 800px; margin: 0 auto;
+        }
+        .cert-watermark {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 4rem; font-weight: 900; color: rgba(0, 106, 103, 0.03); pointer-events: none; white-space: nowrap;
+        }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        /* PRINTER FRIENDLY FIX */
+        @media print {
+            body, html { background: white !important; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+            #sidebar, .no-print, header, nav, #setup-banner, .modal-overlay button, .modal-overlay .flex.justify-end { 
+                display: none !important; 
+            }
+            .modal-overlay { 
+                position: absolute !important; display: block !important; background: white !important; 
+                backdrop-filter: none !important; inset: 0 !important; overflow: visible !important;
+            }
+            main { padding: 0 !important; margin: 0 !important; display: block !important; }
+            .modal-content { 
+                box-shadow: none !important; margin: 0 !important; padding: 0 !important; 
+                max-width: none !important; width: 100% !important; overflow: visible !important;
+            }
+            .cert-paper { 
+                box-shadow: none !important; border: 1px solid #000 !important; 
+                width: 100% !important; max-width: none !important; 
+                margin: 0 !important; padding: 1cm !important; 
+                position: relative !important; page-break-after: always;
+            }
+            .cert-watermark { color: rgba(0, 0, 0, 0.02) !important; }
+        }
+    </style>
+</head>
+
+<body class="flex">
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between no-print">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="policies.html" class="nav-link">Policies</a>
+            <a href="principals.html" class="nav-link">Principals</a>
+            <a href="compliance.html" class="nav-link">Compliance</a>
+            <a href="grievances.html" class="nav-link">Grievances</a>
+            <a href="audit.html" class="nav-link">Audit</a>
+            <a href="legal.html" class="nav-link active">Legal</a>        
+            <a href="reports.html" class="nav-link">Reports</a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username-display">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        </div>
+    </div>
+</div>
+
+<main class="flex-1 p-8 overflow-y-auto">
+    <header class="mb-10 no-print">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight">Legal Evidence Center</h1>
+                <p class="text-slate-500 mt-1">Non-repudiated artifacts for Section 62 of the Bharatiya Sakshya Adhiniyam (BSA).</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- STEP 1: Generate New Evidence -->
+    <div class="card mb-8 no-print border-l-4 border-teal-600">
+        <h2 class="text-lg font-bold text-slate-800 mb-4">Crystallize Evidence Trail</h2>
+        <p class="text-xs text-slate-400 mb-6 uppercase font-black tracking-widest">Validation Logic: SHA256 Hash-Chaining Verification</p>
+        
+        <form id="evidence-form" class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div class="md:col-span-1">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Target Data Principal ID</label>
+                <input type="text" id="target-user-id" required class="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-600" placeholder="e.g. rahul@example.com">
+            </div>
+            <div class="md:col-span-1">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Legal Case / Board Ref</label>
+                <input type="text" id="case-ref" required class="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-600" placeholder="e.g. DPB-2026-X77">
+            </div>
+            <div class="md:col-span-1">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Authorized Certifier</label>
+                <input type="text" disabled id="officer-name" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-teal-800 font-bold">
+            </div>
+            <button type="submit" id="generate-btn" class="primary-bg text-white py-2.5 rounded-lg font-bold text-sm shadow-lg hover:opacity-90 flex items-center justify-center gap-2 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                Sign & Issue Certificate
+            </button>
+        </form>
+    </div>
+
+    <!-- STEP 2: Artifact Repository -->
+    <div class="card no-print">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-slate-800 tracking-tight">Evidence Repository</h2>
+            <button onclick="loadCertificates()" class="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                Sync with Registry
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                        <th class="pb-4 px-2">Artifact Reference</th>
+                        <th class="pb-4 px-2">Principal ID</th>
+                        <th class="pb-4 px-2">Case Reference</th>
+                        <th class="pb-4 px-2">Timestamp (IST)</th>
+                        <th class="pb-4 px-2 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="cert-table-body" class="text-sm divide-y divide-slate-50">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Modal: Digital Evidence Viewer (Print Optimized) -->
+<div id="cert-modal" class="modal-overlay">
+    <div class="max-w-4xl w-full p-6 max-h-screen overflow-y-auto">
+        <div class="flex justify-end mb-4 gap-3 no-print">
+            <button onclick="window.print()" class="bg-teal-600 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md flex items-center gap-2 hover:bg-teal-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                Print Admissible Document
+            </button>
+            <button onclick="closeModal()" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-300 transition-colors">Close</button>
+        </div>
+
+        <!-- THE PHYSICAL CERTIFICATE -->
+        <div class="cert-paper" id="printable-cert">
+            <div class="cert-watermark">AUTHENTICATED EVIDENCE</div>
+            
+            <div class="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-8">
+                <div>
+                    <h2 class="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-none">Certificate of Electronic Evidence</h2>
+                    <p class="text-xs font-black text-slate-600 uppercase tracking-widest mt-2">Issued under Section 62 of Bharatiya Sakshya Adhiniyam, 2023</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Artifact Serial No:</p>
+                    <p class="font-mono text-xs font-bold uppercase" id="view-cert-id">----</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-12 mb-10">
+                <div>
+                    <h4 class="text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 mb-3 pb-1">Identity & Purpose</h4>
+                    <p class="text-sm"><strong>Data Principal:</strong> <span id="view-principal" class="font-mono">--</span></p>
+                    <p class="text-sm"><strong>Inquiry Reference:</strong> <span id="view-case" class="font-mono">--</span></p>
+                    <p class="text-sm"><strong>Issuing Fiduciary:</strong> <span id="view-fiduciary" class="font-mono">--</span></p>
+                </div>
+                <div>
+                    <h4 class="text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 mb-3 pb-1">Chain of Custody Proofs</h4>
+                    <p class="text-[11px] text-slate-700"><strong>Hardware MAC:</strong> <span id="view-mac" class="font-mono">--</span></p>
+                    <p class="text-[11px] text-slate-700"><strong>Source Host IP:</strong> <span id="view-ip" class="font-mono">--</span></p>
+                    <p class="text-[11px] text-slate-700"><strong>System Runtime:</strong> <span id="view-os">--</span></p>
+                </div>
+            </div>
+
+            <div class="mb-10">
+                <h4 class="text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 mb-4 pb-1">Verified Transactional Lifecycle (Cryptographic Trail)</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-[10px] border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-y border-slate-900">
+                                <th class="p-2 font-bold uppercase">Timestamp (UTC)</th>
+                                <th class="p-2 font-bold uppercase">Activity Performed</th>
+                                <th class="p-2 font-bold uppercase">Integrity Hash (SHA-256)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="view-trail-body" class="divide-y divide-slate-100">
+                            <!-- Trail Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="p-6 bg-slate-50 rounded-xl border-2 border-slate-200 mb-10">
+                <h4 class="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest italic">Attestation of the Person in Charge</h4>
+                <p class="text-[13px] italic leading-relaxed text-slate-800 font-medium" id="view-attestation"></p>
+            </div>
+
+            <div class="flex justify-between items-end mt-20">
+                <div class="text-center w-48">
+                    <div id="view-qr" class="w-24 h-24 bg-slate-100 mx-auto mb-2 flex items-center justify-center text-[8px] text-slate-400 font-bold border border-slate-200">MATCH VALIDATOR</div>
+                    <p class="text-[8px] font-black uppercase text-slate-500">Registry Integrity Match</p>
+                </div>
+                <div class="text-right">
+                    <div class="w-64 h-0.5 bg-slate-900 mb-2"></div>
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-900">Digitally Certified System Officer</p>
+                    <p class="text-[9px] text-teal-600 font-black uppercase italic mt-1">Verification: SHA256withRSA Secured</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Setup & Connectivity ---
+    const API_URL = ENV_SERVER_URL + '/api/v1/admin/legal';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
+
+    /**
+     * Fetches the full list of previously crystallized certificates.
+     */
+    async function loadCertificates() {
+        const tbody = document.getElementById('cert-table-body');
+        tbody.innerHTML = '<tr><td colspan="5" class="py-12 text-center text-slate-400 font-medium animate-pulse uppercase tracking-widest text-xs">Querying Secure Registry...</td></tr>';
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_certificates", "fiduciary_id": FIDUCIARY_ID })
+            });
+
+            if (response.ok) {
+                const list = await response.json();
+                if(list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-12 text-center text-slate-400">No certified artifacts found in this fiduciary context.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = list.map(c => `
+                    <tr class="hover:bg-teal-50/30 transition-colors group">
+                        <td class="py-4 px-2 font-mono text-[11px] text-slate-500">...${c.id.slice(-12).toUpperCase()}</td>
+                        <td class="py-4 px-2 font-bold text-slate-700 text-xs">${c.principal_id}</td>
+                        <td class="py-4 px-2 text-slate-600 font-medium text-xs underline decoration-dotted">${c.case_ref || 'GENERAL_TRACE'}</td>
+                        <td class="py-4 px-2 text-slate-400 text-[10px] font-bold">${new Date(c.timestamp).toLocaleString()}</td>
+                        <td class="py-4 px-2 text-right">
+                            <button onclick="viewCertificate('${c.id}')" class="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-black hover:bg-teal-600 hover:text-white text-[9px] uppercase tracking-tighter transition-all">Open Viewer</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (e) { 
+            tbody.innerHTML = '<tr><td colspan="5" class="py-12 text-center text-red-500 font-black">Registry Connection Failed.</td></tr>'; 
+        }
+    }
+
+    /**
+     * Retrieves and renders a specific certificate with its hash-chained trail.
+     */
+    async function viewCertificate(id) {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "get_certificate", "id": id })
+            });
+            const cert = await response.json();
+            
+            // Backend returns 'data' as a JSON string
+            const data = typeof cert.data === 'string' ? JSON.parse(cert.data) : cert.data;
+
+            document.getElementById('view-cert-id').textContent = cert.id.toUpperCase();
+            document.getElementById('view-principal').textContent = data.principal_id;
+            
+            // Display Inquiry Reference defaulting to requested value
+            document.getElementById('view-case').textContent = data.case_ref_id;
+            
+            // Map Issuing Fiduciary properly
+            document.getElementById('view-fiduciary').textContent = data.fiduciary_name;
+            
+            document.getElementById('view-attestation').textContent = cert.attestation;
+
+            // System Provenance
+            const env = data.system_metadata || {};
+            document.getElementById('view-ip').textContent = env.server_ip || 'Internal';
+            document.getElementById('view-mac').textContent = env.mac_address || '---';
+            document.getElementById('view-os').textContent = (env.os_name || 'System') + " (" + (env.os_version || 'v1') + ")";
+
+            // Validated Chain Execution
+            const trailBody = document.getElementById('view-trail-body');
+            trailBody.innerHTML = (data.evidence_trail || []).map(t => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2 font-mono text-slate-500">${t.ts}</td>
+                    <td class="p-2 font-black text-slate-800 uppercase tracking-tighter">${t.act}</td>
+                    <td class="p-2 font-mono text-teal-700 break-all border-l border-slate-100">${t.hash}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('cert-modal').style.display = 'flex';
+        } catch (e) { 
+            console.error(e);
+            alert("Digital artifact retrieval failed. Verify connectivity."); 
+        }
+    }
+
+    /**
+     * Form Handler to initiate the crystallization process.
+     */
+    document.getElementById('evidence-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('generate-btn');
+        const userIdInput = document.getElementById('target-user-id');
+        const caseRefInput = document.getElementById('case-ref');
+
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Cryptographic Signing...`;
+
+        const payload = {
+            "_func": "generate_certificate",
+            "user_id": userIdInput.value.trim(),
+            "fiduciary_id": FIDUCIARY_ID,
+            "case_ref_id": caseRefInput.value.trim()
+        };
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const res = await response.json();
+                loadCertificates();
+                viewCertificate(res.certificate_id);
+                userIdInput.value = '';
+                caseRefInput.value = '';
+            } else { 
+                const err = await response.json();
+                alert("Generation Error: " + (err.message || "Ensure the principal has an audit history.")); 
+            }
+        } catch (e) { alert("Registry Network Error."); }
+        finally {
+            btn.disabled = false;
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Sign & Issue Certificate`;
+        }
+    };
+
+    function closeModal() { document.getElementById('cert-modal').style.display = 'none'; }
+    function handleLogout() { localStorage.clear(); window.location.href = "../index.html"; }
+
+    window.onload = () => {
+        // Dynamically populating the Officer Identification from the logged-in session
+        const currentUserName = localStorage.getItem('username') || 'AUTHORIZED_OFFICER';
+        document.getElementById('officer-name').value = currentUserName;
+        document.getElementById('username-display').textContent = currentUserName;
+        loadCertificates();
+    };
+</script>
+</body>
+</html>

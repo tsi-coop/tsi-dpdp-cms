@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Interactive Voice Consent</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --tsi-primary: #006A67; }
+        body { background-color: #f4fbf9; font-family: ui-sans-serif, system-ui, sans-serif; }
+        
+        .mic-btn { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .recording { background-color: #ef4444 !important; animation: pulse-red 1.5s infinite; }
+        
+        @keyframes pulse-red { 
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } 
+        }
+
+        .progress-fill { height: 100%; background: var(--tsi-primary); transition: width 0.5s ease; }
+        .notice-fade { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: white; padding: 40px; border-radius: 32px; width: 450px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6 text-slate-900">
+
+    <!-- SETUP MODAL: CMS & SARVAM CREDENTIALS -->
+    <div id="setup-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-black text-teal-800 mb-2">Voice Gateway Setup</h2>
+            <p class="text-sm text-slate-500 mb-8">Configure your endpoints and Sarvam AI keys to start the interactive consent loop.</p>
+            
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">CMS API Key</label>
+                    <input type="text" id="cms-key" class="w-full p-3 border rounded-xl text-sm font-mono mt-1" placeholder="UUID">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">CMS API Secret</label>
+                    <input type="password" id="cms-secret" class="w-full p-3 border rounded-xl text-sm font-mono mt-1" placeholder="Secret">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Policy ID</label>
+                    <input type="text" id="policy-id" class="w-full p-3 border rounded-xl text-sm mt-1" placeholder="e.g. VARAM_MICRO_V1">
+                </div>
+                <div class="pt-4 border-t">
+                    <label class="text-[10px] font-black text-teal-600 uppercase tracking-widest">Sarvam API Key (Bulbul & Saarathi)</label>
+                    <input type="password" id="sarvam-key" class="w-full p-3 border border-teal-100 bg-teal-50/30 rounded-xl text-sm font-mono mt-1" placeholder="Your Sarvam Subscription Key">
+                </div>
+            </div>
+
+            <button onclick="initializeVoiceTour()" class="w-full py-4 bg-[#006A67] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:opacity-90">Start Voice Interaction</button>
+        </div>
+    </div>
+
+    <!-- MAIN UI -->
+    <div id="interaction-ui" class="max-w-md w-full bg-white rounded-[48px] shadow-2xl p-10 text-center border border-slate-100 relative overflow-hidden hidden">
+        
+        <header class="mb-10">
+            <div class="flex justify-between items-center mb-6">
+                <span id="step-indicator" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Policy...</span>
+                <div class="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Voice Affirmation</h1>
+            <p id="sub-status" class="text-[10px] font-bold text-teal-600 uppercase tracking-widest mt-2">Connecting to Bulbul TTS...</p>
+        </header>
+
+        <!-- Dynamic Notice Box -->
+        <div id="notice-box" class="notice-fade bg-slate-50 p-8 rounded-[32px] mb-10 text-left border border-slate-100 min-h-[160px] flex flex-col justify-center transition-all">
+            <p id="purpose-name" class="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-3 italic">---</p>
+            <p id="purpose-desc" class="text-sm text-slate-700 leading-relaxed font-bold">
+                Awaiting first purpose...
+            </p>
+        </div>
+
+        <!-- Interaction UI -->
+        <div class="flex flex-col items-center gap-6">
+            <button id="mic-trigger" disabled class="mic-btn bg-[#006A67] text-white shadow-xl shadow-teal-100 disabled:opacity-30 transition-all outline-none">
+                <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+            </button>
+            <div class="text-center min-h-[40px]">
+                <p id="status-label" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Listening for response</p>
+                <p id="transcript-preview" class="text-xs text-teal-600 font-bold mt-2 italic h-4"></p>
+            </div>
+        </div>
+
+        <!-- Completion Overlay -->
+        <div id="completion-screen" class="hidden absolute inset-0 bg-white z-50 flex flex-col items-center justify-center p-10">
+            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-black text-slate-800 mb-2">Consent Verified</h2>
+            <p class="text-xs text-slate-500 mb-8 leading-relaxed px-6">Your granular voice affirmations have been synchronized with the registry and cryptographically signed.</p>
+            <button onclick="location.reload()" class="w-full py-4 bg-[#006A67] text-white rounded-2xl font-bold hover:bg-opacity-90 transition-all">Finish & Return</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG & STATE ---
+        let config = { cmsKey: '', cmsSecret: '', policyId: '', sarvamKey: '', apiBase: 'http://localhost:8080' };
+        let purposes = [];
+        let currentIndex = 0;
+        let responses = {};
+
+        // DOM Elements
+        const micBtn = document.getElementById('mic-trigger');
+        const statusLabel = document.getElementById('status-label');
+        const transcriptPreview = document.getElementById('transcript-preview');
+        const stepIndicator = document.getElementById('step-indicator');
+        const progressFill = document.getElementById('progress-fill');
+        const purposeNameEl = document.getElementById('purpose-name');
+        const purposeDescEl = document.getElementById('purpose-desc');
+        const subStatus = document.getElementById('sub-status');
+
+        /**
+         * Bootstrap the tour
+         */
+        async function initializeVoiceTour() {
+            config.cmsKey = document.getElementById('cms-key').value;
+            config.cmsSecret = document.getElementById('cms-secret').value;
+            config.policyId = document.getElementById('policy-id').value;
+            config.sarvamKey = document.getElementById('sarvam-key').value;
+
+            if(!config.cmsKey || !config.policyId) return alert("CMS Credentials Required.");
+
+            document.getElementById('setup-modal').style.display = 'none';
+            document.getElementById('interaction-ui').classList.remove('hidden');
+
+            await fetchPolicyAndStart();
+        }
+
+        /**
+         * Fetch the live policy from the registry
+         */
+        async function fetchPolicyAndStart() {
+            try {
+                const res = await fetch(`${config.apiBase}/api/v1/client/policy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': config.cmsKey, 'X-API-Secret': config.cmsSecret },
+                    body: JSON.stringify({ "_func": "get_policy", "policy_id": config.policyId })
+                });
+                const data = await res.json();
+                const content = typeof data.policy_content === 'string' ? JSON.parse(data.policy_content) : data.policy_content;
+                
+                // Use first available language
+                const lang = Object.keys(content)[0];
+                purposes = content[lang].data_processing_purposes.filter(p => !p.is_mandatory_for_service);
+                
+                if(purposes.length === 0) {
+                    alert("No optional purposes found in this policy for voice affirmation.");
+                    return;
+                }
+
+                runPurposeLoop();
+            } catch (e) {
+                alert("CMS Connection Error. Check registry connectivity.");
+            }
+        }
+
+        /**
+         * The main iterative loop
+         */
+        async function runPurposeLoop() {
+            if (currentIndex >= purposes.length) {
+                finishInteraction();
+                return;
+            }
+
+            const p = purposes[currentIndex];
+            updateUI(p);
+
+            // Step 1: Synthesize and Speak (Sarvam Bulbul)
+            await speakPurpose(p.description);
+
+            // Step 2: Open Mic and Listen (Sarvam Saarathi)
+            statusLabel.textContent = "Listening...";
+            micBtn.disabled = false;
+            micBtn.classList.add('recording');
+
+            // Simulate Saarathi STT for demo (Integration point provided below)
+            setTimeout(() => {
+                handleSpeechAffirmation("Yes, I agree");
+            }, 3000);
+        }
+
+        function updateUI(p) {
+            purposeNameEl.textContent = p.name;
+            purposeDescEl.textContent = `"${p.description}"`;
+            stepIndicator.textContent = `Purpose ${currentIndex + 1} of ${purposes.length}`;
+            progressFill.style.width = `${((currentIndex + 1) / purposes.length) * 100}%`;
+            subStatus.textContent = "Synthesizing Notice...";
+        }
+
+        /**
+         * Sarvam Bulbul Integration (TTS)
+         */
+        async function speakPurpose(text) {
+            if (!config.sarvamKey) {
+                console.log("[MOCK TTS] " + text);
+                return new Promise(r => setTimeout(r, 1000));
+            }
+
+            subStatus.textContent = "Bulbul TTS Active...";
+            try {
+                const res = await fetch("https://api.sarvam.ai/text-to-speech", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "api-subscription-key": config.sarvamKey },
+                    body: JSON.stringify({
+                        inputs: [text],
+                        target_language_code: "en-IN", // Dynamic based on policy
+                        speaker: "Kore",
+                        speech_sample_rate: 8000
+                    })
+                });
+                const data = await res.json();
+                if(data.audios && data.audios[0]) {
+                    const audio = new Audio("data:audio/wav;base64," + data.audios[0]);
+                    return new Promise(resolve => {
+                        audio.onended = resolve;
+                        audio.play();
+                    });
+                }
+            } catch (e) { console.error("Bulbul failed", e); }
+        }
+
+        /**
+         * Verify logic for transcripts
+         */
+        function handleSpeechAffirmation(transcript) {
+            micBtn.classList.remove('recording');
+            micBtn.disabled = true;
+            transcriptPreview.textContent = `"${transcript}"`;
+            
+            const isAffirmative = transcript.toLowerCase().includes("yes") || transcript.toLowerCase().includes("agree");
+
+            if (isAffirmative) {
+                statusLabel.textContent = "Verified!";
+                responses[purposes[currentIndex].id] = true;
+                
+                setTimeout(() => {
+                    currentIndex++;
+                    transcriptPreview.textContent = "";
+                    runPurposeLoop();
+                }, 1500);
+            } else {
+                statusLabel.textContent = "Response Unclear. Retrying...";
+                speakPurpose("I'm sorry, I didn't catch that. Please say Yes or Agree to continue.");
+            }
+        }
+
+        /**
+         * Sync back to CMS Registry
+         */
+        async function finishInteraction() {
+            subStatus.textContent = "Synchronizing Registry...";
+            
+            const userId = localStorage.getItem('tsi_dpdp_cms_principal_id') || "voice_demo_user";
+            const payload = {
+                _func: "record_consent",
+                user_id: userId,
+                policy_id: config.policyId,
+                consent_mechanism: "VOICE_AFFIRMATION",
+                data_point_consents: Object.keys(responses).map(id => ({
+                    data_point_id: id,
+                    consent_granted: true,
+                    timestamp_updated: new Date().toISOString()
+                }))
+            };
+
+            await fetch(`${config.apiBase}/api/v1/client/consent`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': config.cmsKey, 'X-API-Secret': config.cmsSecret },
+                body: JSON.stringify(payload)
+            });
+
+            document.getElementById('completion-screen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -7,6 +7,7 @@
 /api/v1/policy=org.tsicoop.dpdpcms.service.v1.Policy
 /api/v1/consent=org.tsicoop.dpdpcms.service.v1.Consent
 /api/v1/compliance=org.tsicoop.dpdpcms.service.v1.Compliance
+/api/v1/legal=org.tsicoop.dpdpcms.service.v1.Legal
 /api/v1/grievance=org.tsicoop.dpdpcms.service.v1.Grievance
 /api/v1/notification=org.tsicoop.dpdpcms.service.v1.Notification
 /api/v1/audit=org.tsicoop.dpdpcms.service.v1.Audit
