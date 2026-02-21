@@ -44,7 +44,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 ### Binary
 
-Check out [v0.1 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.1)
+Check out [v0.2 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.2)
 
 ## Post-Installation Steps
 
