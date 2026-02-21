@@ -26,6 +26,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [Standardized Erasure Interface for DPDP Consent Managers - A Proposal](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
 
+[Securing Court-Ready Evidence under BSA Section 62](https://techadvisory.substack.com/p/dpdp-consent-manager-securing-court)
+
 ## Installation
 
 ### Docker
