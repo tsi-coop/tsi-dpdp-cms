@@ -156,10 +156,11 @@ Follow these steps to get the TSI DPDP CMS solution running on your local machin
 1.  **Change Docker to Dev mode:**
 
     To build from local source, uncomment the block below in docker-compose.yml
-
+    ```bash
     build:
       context: .
       dockerfile: Dockerfile
+    ```
 
 2.  **Clone the Repository:**
     ```bash
