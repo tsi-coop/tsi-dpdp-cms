@@ -28,6 +28,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [Securing Court-Ready Evidence under BSA Section 62](https://techadvisory.substack.com/p/dpdp-consent-manager-securing-court)
 
+[DPDP Inclusion: Voice Consent Gateway using Sarvam AI](https://techadvisory.substack.com/p/dpdp-inclusion-voice-consent-gateway)
+
 ## Installation
 
 ### Docker
@@ -78,6 +80,8 @@ Follow the Guided Journey:
 11. Password Recovery: Explore the "break-glass" account recovery mechanism using secure Master Recovery Keys.
 
 12. Legal Module: Explore the crystallization of immutable audit trails into cryptographically signed, BSA Section 62-compliant digital evidence artifacts for court and regulatory submission.
+
+13. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed, voice affirmations for processing purposes.
 
 ## Developers
 

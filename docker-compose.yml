@@ -29,12 +29,12 @@ services:
   # 2. Java Jetty Web Application Service
   jetty_app:
     # Uses the IMAGE_NAME from .env, defaults to latest if not set
-    image: "${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}"
+    #image: "${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}"
     
     # DEVELOPERS: To build from local source, uncomment the block below
-    # build:
-    #  context: .
-    #  dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
     
     user: "root"
     container_name: tsi_dpdp_cms_server

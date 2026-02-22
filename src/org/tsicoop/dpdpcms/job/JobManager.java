@@ -263,7 +263,7 @@ public class JobManager implements ServletContextListener {
                 sql = "SELECT timestamp, user_id as principal, audit_action as action, context_details FROM audit_logs WHERE fiduciary_id=? AND timestamp BETWEEN ? AND ?";
                 break;
             case "PARENT_CONSENT":
-                sql = "SELECT verified_at, child_principal_id as principal, guardian_principal_id as guardian, verification_mechanism, provider_name, verification_ref_id, proof_metadata FROM parental_verification_logs WHERE fiduciary_id=? AND verified_at BETWEEN ? AND ?";
+                sql = "SELECT id, verified_at, child_principal_id as principal, guardian_principal_id as guardian, verification_mechanism, provider_name, verification_ref_id, proof_metadata FROM parental_verification_logs WHERE fiduciary_id=? AND verified_at BETWEEN ? AND ?";
                 break;
             case "ADMIN_LOGS":
                 sql = "SELECT timestamp, user_id as user, audit_action as action, context_details as details FROM audit_logs WHERE service_type='ADMIN_CONSOLE' AND fiduciary_id=? AND timestamp BETWEEN ? AND ? ORDER BY timestamp asc";
