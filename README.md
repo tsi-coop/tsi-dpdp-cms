@@ -77,6 +77,8 @@ Follow the Guided Journey:
 
 11. Password Recovery: Explore the "break-glass" account recovery mechanism using secure Master Recovery Keys.
 
+12. Legal Module: Explore the crystallization of immutable audit trails into cryptographically signed, BSA Section 62-compliant digital evidence artifacts for court and regulatory submission.
+
 ## Developers
 
 ### Prerequisites
