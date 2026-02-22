@@ -81,7 +81,7 @@ Follow the Guided Journey:
 
 12. Legal Module: Explore the crystallization of immutable audit trails into cryptographically signed, BSA Section 62-compliant digital evidence artifacts for court and regulatory submission.
 
-13. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed, voice affirmations for processing purposes.
+13. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed voice affirmations for processing purposes.
 
 ## Developers
 
