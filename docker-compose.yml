@@ -50,9 +50,9 @@ services:
       POSTGRES_PASSWD: "${POSTGRES_PASSWD:-secure_dev_password}"
       TSI_DPDP_CMS_ENV: "${TSI_DPDP_CMS_ENV:-production}"
       TSI_EXPORT_PATH: "${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}"
-      TSI_KEYSTORE_PATH: "${TSI_KEYSTORE_PATH}"
-      TSI_KEYSTORE_PASS: "${TSI_KEYSTORE_PASS}"
-      TSI_KEYSTORE_ALIAS: "${TSI_KEYSTORE_ALIAS}"
+      TSI_KEYSTORE_PATH: "${TSI_KEYSTORE_PATH:-/etc/tsi/keystore.p12}"
+      TSI_KEYSTORE_PASS: "${TSI_KEYSTORE_PASS:-changeit}"
+      TSI_KEYSTORE_ALIAS: "${TSI_KEYSTORE_ALIAS:-tsi_fiduciary}"
     
     volumes:
       - "tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw"

@@ -41,7 +41,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 2.  **Start the TSI DPDP CMS service**
     ```bash
     cd tsi-dpdp-cms-eval
-    docker compose up -d
+    sudo docker compose up -d
     ```
 
 ### Binary
