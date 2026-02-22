@@ -1,5 +1,4 @@
 # TSI DPDP CMS - Universal Docker Compose (Public Release)
-# Indentation is strictly 2 spaces. No tabs.
 
 x-db-credentials: &db-credentials
   POSTGRES_DB: "${POSTGRES_DB:-tsi_cms}"
@@ -33,7 +32,7 @@ services:
     image: "${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}"
     
     # DEVELOPERS: To build from local source, uncomment the block below
-    #build:
+    # build:
     #  context: .
     #  dockerfile: Dockerfile
     

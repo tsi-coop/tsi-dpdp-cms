@@ -151,33 +151,41 @@ Before you begin, ensure you have the following software installed on your devel
 
 Follow these steps to get the TSI DPDP CMS solution running on your local machine using Docker Compose:
 
-1.  **Clone the Repository:**
+1.  **Change Docker to Dev mode:**
+
+    To build from local source, uncomment the block below in docker-compose.yml
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+2.  **Clone the Repository:**
     ```bash
     git clone https://github.com/tsi-coop/tsi-dpdp-cms.git
     cd tsi-dpdp-cms
     ```
 
-2.  **Create `.env` File:**
+3.  **Create `.env` File:**
     This file stores sensitive configurations (passwords, API keys, etc.) and is **NOT** committed to Git.
     ```bash
     cp .example .env
     ```
     Now, **edit the newly created `.env` file** and fill in the placeholder values.
 
-3.  **Build the Java WAR File:**
+4.  **Build the Java WAR File:**
     Navigate to the project root and build your Java application.
     ```bash
     mvn clean package
     ```
     This will create `target/tsi_dpdp_cms.war`
 
-4.  **Initialize PostgreSQL Database Schema:**
+5.  **Initialize PostgreSQL Database Schema:**
     The `postgres` Docker image only runs initialization scripts on its *first* startup when the data directory is empty. To ensure your schema is loaded:
     ```bash
     docker compose down -v 
     ```
 
-5.  **Build and Start Docker Services:**
+6.  **Build and Start Docker Services:**
     This command will build your application's Docker image and start both the PostgreSQL database and the Jetty application.
     ```bash
     docker compose up --build -d
@@ -185,7 +193,7 @@ Follow these steps to get the TSI DPDP CMS solution running on your local machin
     * `--build`: Ensures Docker images are rebuilt, picking up any changes in your Java code or Dockerfile.
     * `-d`: Runs the containers in detached mode (in the background).
 
-6.  **Verify Services and Check Logs:**
+7.  **Verify Services and Check Logs:**
     * Check if containers are running: `docker ps`
     * Monitor PostgreSQL logs for schema initialization: `docker compose logs -f postgres_db`
     * Monitor Jetty application logs for successful deployment: `docker compose logs -f jetty_app`
