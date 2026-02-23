@@ -28,7 +28,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [Securing Court-Ready Evidence under BSA Section 62](https://techadvisory.substack.com/p/dpdp-consent-manager-securing-court)
 
-[DPDP Inclusion: Voice Consent Gateway using Sarvam AI](https://techadvisory.substack.com/p/dpdp-inclusion-voice-consent-gateway)
+[DPDP Inclusion: Interactive Voice Consent using Sarvam AI](https://techadvisory.substack.com/p/dpdp-inclusion-voice-consent-gateway)
 
 ## Installation
 
