@@ -275,4 +275,4 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
 
 ## License
 
-TSI DPDP CMS is licensed under AGPL v3 license
+TSI DPDP CMS is licensed under the Apache 2.0 license
