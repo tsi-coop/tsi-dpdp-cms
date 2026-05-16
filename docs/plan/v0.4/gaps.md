@@ -1,5 +1,5 @@
 # Security & Architecture Gaps
-**TSI DPDP Consent Management System — v0.4**
+**TSI DPDP Consent Management System - v0.4**
 Status: Under Review
 
 ---
@@ -15,14 +15,14 @@ Severities: **CRITICAL** → **HIGH** → **MEDIUM** → **LOW**
 
 ### G-01 · JWT Secret Regenerated on Every Server Restart
 **File:** `src/.../framework/JWTUtil.java:16`
-The JWT signing key is generated in-memory at startup (`Keys.secretKeyFor(SignatureAlgorithm.HS256)`). Every server restart invalidates all active sessions — users are silently logged out. In a multi-instance deployment, instances cannot verify each other's tokens.
+The JWT signing key is generated in-memory at startup (`Keys.secretKeyFor(SignatureAlgorithm.HS256)`). Every server restart invalidates all active sessions - users are silently logged out. In a multi-instance deployment, instances cannot verify each other's tokens.
 **Fix:** Load the signing key from an environment variable (`JWT_SECRET`) at startup, following the same pattern as `LookupHasher.java` which reads `TSI_LOOKUP_SALT` from env.
 
 ---
 
 ### G-02 · Session Persistence Not Implemented
 **File:** `src/.../framework/JWTUtil.java`, `src/.../service/v1/Wallet.java:266`
-There is no session store — all session state lives in-memory JWTs that are invalidated on restart (see G-01). A comment in `Wallet.java:266` explicitly notes that session/registry table validation "would be needed in production" but is not implemented. Operators must re-authenticate after every deployment.
+There is no session store - all session state lives in-memory JWTs that are invalidated on restart (see G-01). A comment in `Wallet.java:266` explicitly notes that session/registry table validation "would be needed in production" but is not implemented. Operators must re-authenticate after every deployment.
 **Fix:** Persist session tokens (or a token registry) in the PostgreSQL database. On startup, load and validate the JWT secret from a stable external source so existing tokens survive restarts.
 
 ---
@@ -37,7 +37,7 @@ Token validation checks only whether the token string starts with `SECURE_JWT_TO
 ### G-04 · API Key Hashing Is a String Prefix, Not a Hash
 **File:** `src/.../service/v1/ApiKey.java:201–204`, `src/.../framework/InputProcessor.java:199`
 The "hash" function prepends `HASHED_` to the raw key (`"HASHED_" + rawKey`). A database breach exposes all API keys in plaintext. The code comment acknowledges this is a mock implementation.
-**Fix:** Replace with `BCrypt.hashpw(rawKey, BCrypt.gensalt(12))` for storage and `BCrypt.checkpw(incoming, storedHash)` for validation — the same bcrypt pattern already used for operator passwords.
+**Fix:** Replace with `BCrypt.hashpw(rawKey, BCrypt.gensalt(12))` for storage and `BCrypt.checkpw(incoming, storedHash)` for validation - the same bcrypt pattern already used for operator passwords.
 
 ---
 
@@ -69,7 +69,7 @@ The `target` variable (user-supplied) is concatenated directly into a SQL string
 
 ---
 
-### G-09 · Audit Log Hash-Chaining Broken — Schema Missing Columns
+### G-09 · Audit Log Hash-Chaining Broken - Schema Missing Columns
 **File:** `src/.../service/v1/Audit.java:157`, `db/01_init.sql:112–121`
 `Audit.java` inserts `prev_log_hash` and `current_log_hash` into `audit_logs`, but the `audit_logs` table definition in `01_init.sql` does not include these columns. Every audit write fails at runtime with a silent SQL exception, meaning the tamper-evident audit trail is non-functional.
 **Fix:** Add `prev_log_hash VARCHAR(512)` and `current_log_hash VARCHAR(512)` to the `audit_logs` schema in `01_init.sql` (or a new migration file).
@@ -81,7 +81,7 @@ The `target` variable (user-supplied) is concatenated directly into a SQL string
 ### G-10 · XSS via Unsanitized innerHTML in Frontend
 **Files:** `web/tour/dpdp-wallet.html:270,283,291,309`, `web/console/admin/dashboard.html`, `web/console/dpo/principals.html`, `web/console/dpo/reports.html`, `web/tour/user-dashboard.html`
 API response values (names, IDs, statuses) are injected directly into `innerHTML` and into `onclick` attribute strings without HTML escaping. A malicious data value (e.g., a fiduciary name containing `"><script>`) would execute arbitrary JavaScript.
-**Fix:** Replace `innerHTML` with `textContent` for plain text values, or use a sanitization helper. For `onclick` handlers, avoid inline event strings — use `addEventListener` with `data-*` attributes.
+**Fix:** Replace `innerHTML` with `textContent` for plain text values, or use a sanitization helper. For `onclick` handlers, avoid inline event strings - use `addEventListener` with `data-*` attributes.
 
 ---
 
@@ -122,7 +122,7 @@ The role used for access control is read from the JWT payload. If a user's role 
 
 ### G-16 · Hardcoded Default Keystore Password
 **File:** `production.env:15`, `docker-compose.yml:54`
-`TSI_KEYSTORE_PASS=changeit` — the default Java keystore password — is committed in the repository. If the keystore file is exposed, the private key used for consent certificates can be extracted.
+`TSI_KEYSTORE_PASS=changeit` - the default Java keystore password - is committed in the repository. If the keystore file is exposed, the private key used for consent certificates can be extracted.
 **Fix:** Remove the default value. Require an explicit secret (from a vault or deployment secret) on startup. Fail fast if the variable is unset or equals `changeit`.
 
 ---

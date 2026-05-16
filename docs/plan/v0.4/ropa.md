@@ -1,5 +1,5 @@
 # Records of Processing Activities (ROPA)
-**TSI DPDP Consent Management System — Design & Implementation Plan**
+**TSI DPDP Consent Management System - Design & Implementation Plan**
 Version: 0.4 | Status: Planned
 
 ---
@@ -47,7 +47,7 @@ The current CMS stores consent policies, apps, and consent records in separate s
 
 - DPOs cannot answer a Data Principal's right-to-information request accurately without manually querying multiple tables
 - Retention enforcement (CES) reads app-level fields that are not governed or versioned
-- There is no completeness check — gaps in required declarations go unnoticed until an audit
+- There is no completeness check - gaps in required declarations go unnoticed until an audit
 
 ROPA addresses all three gaps in a single module.
 
@@ -57,37 +57,37 @@ The DPDP Act designates certain fiduciaries as **Significant Data Fiduciaries** 
 
 ### 2.4 Customer and Partner Trust
 
-Enterprise clients — banks, hospitals, fintechs, insurers — perform vendor due diligence that includes reviewing the CMS platform's own compliance posture. A ROPA export demonstrates that the platform is compliance-grade, not just a consent-click tool. This is a direct trust signal for procurement and sales.
+Enterprise clients - banks, hospitals, fintechs, insurers - perform vendor due diligence that includes reviewing the CMS platform's own compliance posture. A ROPA export demonstrates that the platform is compliance-grade, not just a consent-click tool. This is a direct trust signal for procurement and sales.
 
 ---
 
 ## 3. Business Outcomes
 
 ### 3.1 Regulatory Audit Readiness
-- DPO can export a complete, signed ROPA report (CSV/PDF) in minutes — no manual assembly from disparate tables
+- DPO can export a complete, signed ROPA report (CSV/PDF) in minutes - no manual assembly from disparate tables
 - Every ROPA entry is timestamped, versioned, and written into the tamper-evident audit trail
 - Board inquiry response time reduces from weeks to hours
 
 ### 3.2 Reduced Legal Risk
-- Every processing activity has a documented legal basis — eliminates "we didn't know we needed consent" failures
-- Retention periods managed from one authoritative source — CES purge jobs read ROPA instead of unversioned app fields
+- Every processing activity has a documented legal basis - eliminates "we didn't know we needed consent" failures
+- Retention periods managed from one authoritative source - CES purge jobs read ROPA instead of unversioned app fields
 - Cross-border transfer declarations surface data localisation risks before they become violations
 
 ### 3.3 DPO Efficiency
-- Draft ROPA entries are auto-populated from published consent policies — DPOs review and publish rather than write from scratch
+- Draft ROPA entries are auto-populated from published consent policies - DPOs review and publish rather than write from scratch
 - Completeness checker flags missing required fields before a regulator does
 - Single dashboard view of all processing activities, filterable by legal basis, status, app, and data category
 
 ### 3.4 Platform Differentiation
 - ROPA is a feature gap in most competing CMS products in the Indian market
 - Positions the platform as an end-to-end DPDP compliance tool, not just a consent SDK
-- Enables a future DPDP compliance score / maturity report per fiduciary — a premium reporting feature
+- Enables a future DPDP compliance score / maturity report per fiduciary - a premium reporting feature
 
 ---
 
 ## 4. Implementation Steps
 
-### Step 1 — Database Migration
+### Step 1 - Database Migration
 **New file:** `db/02_ropa.sql`
 
 ```sql
@@ -133,7 +133,7 @@ ALTER TABLE consent_records
 
 ---
 
-### Step 2 — Service Layer
+### Step 2 - Service Layer
 **New file:** `src/org/tsicoop/dpdpcms/service/v1/Ropa.java`
 
 Follow the `post()` / `validate()` dispatch pattern used by `Consent.java` and `Policy.java`.
@@ -160,7 +160,7 @@ Validates a ROPA entry against the completeness checklist (see Step 6).
 
 ---
 
-### Step 3 — API Routes
+### Step 3 - API Routes
 Wire into the existing servlet filter (`web/WEB-INF/web.xml`). Access restricted to `DPO` and `ADMIN` roles, following the role-check pattern in `Operator.java`.
 
 ```
@@ -177,7 +177,7 @@ POST   /api/v1/ropa/derive                 derive_from_policy
 
 ---
 
-### Step 4 — Integration with Existing Modules
+### Step 4 - Integration with Existing Modules
 
 | Module | File | Change |
 |--------|------|--------|
@@ -189,7 +189,7 @@ POST   /api/v1/ropa/derive                 derive_from_policy
 
 ---
 
-### Step 5 — Frontend
+### Step 5 - Frontend
 **New files:** `web/ropa-registry.html`, `web/ropa-registry.js`
 
 | Component | Description |
@@ -203,19 +203,19 @@ POST   /api/v1/ropa/derive                 derive_from_policy
 
 ---
 
-### Step 6 — Completeness Validation Checklist
+### Step 6 - Completeness Validation Checklist
 `RopaValidator.java` checks each active entry against DPDP Act accountability obligations:
 
-- [ ] `activity_name` — non-empty
-- [ ] `purpose` — non-empty
-- [ ] `legal_basis` — set (not null)
-- [ ] `data_categories` — at least one entry
-- [ ] `data_subject_categories` — at least one entry
-- [ ] `retention_period_days` — greater than zero
-- [ ] `retention_start_event` — set
-- [ ] `dpo_id` — assigned
-- [ ] `security_measures` — non-empty
-- [ ] `cross_border_transfers` — if non-empty, each transfer must have `destination_country` and `safeguard`
+- [ ] `activity_name` - non-empty
+- [ ] `purpose` - non-empty
+- [ ] `legal_basis` - set (not null)
+- [ ] `data_categories` - at least one entry
+- [ ] `data_subject_categories` - at least one entry
+- [ ] `retention_period_days` - greater than zero
+- [ ] `retention_start_event` - set
+- [ ] `dpo_id` - assigned
+- [ ] `security_measures` - non-empty
+- [ ] `cross_border_transfers` - if non-empty, each transfer must have `destination_country` and `safeguard`
 
 Returns structured validation errors so the UI renders an actionable completeness checklist.
 
@@ -227,7 +227,7 @@ Returns structured validation errors so the UI renders an actionable completenes
 |------|-------------|
 | ADMIN | Full CRUD on all fiduciary ROPA entries; publish; retire |
 | DPO | CRUD on their fiduciary's entries; publish; retire |
-| AUDITOR | Read-only — entries and history |
+| AUDITOR | Read-only - entries and history |
 | OPERATOR (app-level) | No access |
 
 ---
@@ -237,8 +237,8 @@ Returns structured validation errors so the UI renders an actionable completenes
 ### New Files
 | File | Purpose |
 |------|---------|
-| `db/02_ropa.sql` | DB migration — `ropa_entries`, `ropa_history`, FK on `consent_records` |
-| `src/.../service/v1/Ropa.java` | Service class — all ROPA actions |
+| `db/02_ropa.sql` | DB migration - `ropa_entries`, `ropa_history`, FK on `consent_records` |
+| `src/.../service/v1/Ropa.java` | Service class - all ROPA actions |
 | `src/.../util/RopaDeriver.java` | Auto-populate draft from consent policy |
 | `src/.../util/RopaValidator.java` | Completeness checker |
 | `web/ropa-registry.html` | ROPA registry UI |
