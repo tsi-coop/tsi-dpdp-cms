@@ -51,11 +51,7 @@ The current CMS stores consent policies, apps, and consent records in separate s
 
 ROPA addresses all three gaps in a single module.
 
-### 2.3 Significant Data Fiduciary (SDF) Path
-
-The DPDP Act designates certain fiduciaries as **Significant Data Fiduciaries** (Section 10) based on volume, sensitivity, or risk. SDFs face heightened obligations including mandatory Data Protection Impact Assessments (DPIAs). A well-maintained ROPA is a prerequisite for the SDF designation process and for passing any DPIA exercise.
-
-### 2.4 Customer and Partner Trust
+### 2.3 Customer and Partner Trust
 
 Enterprise clients - banks, hospitals, fintechs, insurers - perform vendor due diligence that includes reviewing the CMS platform's own compliance posture. A ROPA export demonstrates that the platform is compliance-grade, not just a consent-click tool. This is a direct trust signal for procurement and sales.
 
