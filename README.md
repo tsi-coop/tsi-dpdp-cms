@@ -282,7 +282,7 @@ If you have built an optimization, bug fix, or feature extension that you believ
 
 If you wish to give back your changes to the project, please follow this process:
 
-* **Email the Repository Owner:** Send a brief summary of your modifications and a link to your code branch directly to **[admin@tsicoop.org]**.
+* **Email the Repository Owner:** Send a brief summary of your modifications and a link to your code branch directly to **admin@tsicoop.org**.
 
 Every contribution is manually evaluated for architectural alignment, readability, and long-term maintenance impact before integration. Thank you for respecting this workflow and helping us maintain a clean, resilient core!
 
