@@ -62,9 +62,32 @@
       }
     ],
     "data_categories_details": [
-      { "id": "pan_card", "name": "PAN Number", "description": "Used for credit bureau checks and income verification." },
-      { "id": "bank_account_no", "name": "Bank Account Details", "description": "Required for automated loan disbursement and EMI NACH setups." },
-      { "id": "masked_aadhaar", "name": "Masked Aadhaar", "description": "Identity proof with Aadhaar numbers partially hidden for security." }
+      { "id": "full_name",           "name": "Full Name",                "description": "Legal name as on government-issued ID, used for KYC and loan documentation." },
+      { "id": "pan_card",            "name": "PAN Number",               "description": "Used for credit bureau checks and income verification." },
+      { "id": "masked_aadhaar",      "name": "Masked Aadhaar",           "description": "Identity proof with Aadhaar number partially hidden for security." },
+      { "id": "photo",               "name": "Photograph",               "description": "Passport-size photo captured during field KYC for account records." },
+      { "id": "voter_id",            "name": "Voter ID",                 "description": "Alternative government-issued identity proof." },
+      { "id": "income_details",      "name": "Income Details",           "description": "Salary slips or income certificates used for creditworthiness assessment." },
+      { "id": "bank_statements",     "name": "Bank Statements",          "description": "Last 3–6 months of transaction history for credit evaluation." },
+      { "id": "existing_loan_info",  "name": "Existing Loan Information","description": "Active loans and repayment history sourced from credit bureaus." },
+      { "id": "employment_status",   "name": "Employment Status",        "description": "Current occupation and employer details for repayment capacity assessment." },
+      { "id": "bank_account_no",     "name": "Bank Account Details",     "description": "Account number and IFSC required for automated loan disbursement and EMI NACH." },
+      { "id": "ifsc_code",           "name": "IFSC Code",                "description": "Bank branch identifier required for NEFT/RTGS disbursement." },
+      { "id": "current_location",    "name": "Current Location",         "description": "Residential address for field visit coordination and loan delivery." },
+      { "id": "contact_number",      "name": "Contact Number",           "description": "Mobile number for EMI reminders and collections communication." },
+      { "id": "mobile_number",       "name": "Mobile Number",            "description": "Primary contact used for OTP and promotional communications." },
+      { "id": "email_address",       "name": "Email Address",            "description": "Secondary channel for loan account statements and offer notifications." }
+    ],
+    "data_subject_categories": ["customer"],
+    "security_measures": "AES-256 encryption at rest, TLS 1.3 in transit, CERSAI-compliant data vaulting, role-based access with MFA.",
+    "processors": [
+      { "name": "Amazon Web Services", "country": "IN", "role": "Cloud Hosting & Storage",          "contact": "aws-india-dpa@amazon.com" },
+      { "name": "CIBIL (TransUnion)",  "country": "IN", "role": "Credit Bureau Enquiry",            "contact": "compliance@cibil.com" },
+      { "name": "CERSAI",              "country": "IN", "role": "Central Registry Verification",    "contact": "helpdesk@cersai.org.in" },
+      { "name": "Twilio Inc.",         "country": "US", "role": "OTP & SMS Delivery",               "contact": "privacy@twilio.com" }
+    ],
+    "cross_border_transfers": [
+      { "destination_country": "US", "safeguard": "Standard Contractual Clauses (SCC)", "processor": "Twilio Inc." }
     ],
     "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your loan data, correct inaccuracies, withdraw consent for marketing, and request data erasure after all statutory and financial obligations are met.",
     "grievance_redressal_info": "For concerns, contact our Nodal Officer / DPO at: Email: compliance@varamcredit.in | Phone: +91 44 2233 4455 | Address: 10, Artha Towers, Mount Road, Chennai, Tamil Nadu.",

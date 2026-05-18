@@ -254,13 +254,159 @@ Returns structured validation errors so the UI renders an actionable completenes
 
 ## 7. Verification
 
+### 7.1 End-to-End Verification Flow
+
+ROPA entries are not created in isolation — they are derived from published consent policies. The correct verification sequence is:
+
+**Step 1 — Policy publish triggers ROPA derivation**
+1. Create and publish a consent policy: `POST /api/v1/policies/{id}/publish`
+2. Confirm a draft `ropa_entry` is auto-created by `RopaDeriver`, with `linked_policy_ids` referencing the policy
+3. Verify `data_categories`, `purpose`, and `retention_start_event` are pre-populated from the policy JSONB
+
+**Step 2 — DPO completes and publishes the ROPA entry**
+1. DPO fills in any fields not derivable from the policy: `retention_period_days`, `security_measures`, `processors`, `cross_border_transfers`, `dpo_id`
+2. Run completeness check: `GET /api/v1/ropa/entries/{id}/validate` — must return no missing fields
+3. Publish: `POST /api/v1/ropa/entries/{id}/publish` — status transitions to `active`; `audit_logs` entry written with `service_type=ROPA`
+
+**Step 3 — Record consents to prove end-to-end linkage**
+1. Record a consent via the SDK for the app whose policy was published
+2. Confirm the resulting `consent_records` row has `ropa_entry_id` populated (the ROPA entry governing that processing activity)
+3. This proves the chain: **consent record → consent policy → ROPA entry**
+
+**Step 4 — Generate and verify the ROPA report**
+1. Export: `GET /api/v1/ropa/export?format=csv`
+2. Confirm the CSV contains all active entries with all required fields populated
+3. Verify entries derived from different policies appear as separate rows
+
+---
+
+### 7.2 Unit and Integration Test Cases
+
 | Test | Expected Result |
 |------|----------------|
 | `POST /api/v1/ropa/entries` with DPO token | 201 Created; entry appears in list |
 | `POST /api/v1/ropa/derive` with existing `policy_id` | Draft entry pre-filled from policy JSONB |
 | `POST .../publish` | Status → `active`; `audit_logs` entry written with `service_type=ROPA` |
 | `GET .../validate` on incomplete entry | Returns list of missing required fields |
+| `GET .../validate` on complete entry | Returns empty error list |
 | `GET /api/v1/ropa/export?format=csv` | Downloadable CSV with all active entries |
 | Publish a consent policy | Draft ROPA entry auto-created via `RopaDeriver` |
+| Record consent via SDK | `consent_records.ropa_entry_id` is populated |
 | CES purge run after consent withdrawal | Reads `retention_period_days` from `ropa_entries`, not app field |
 | AUDITOR token on `PUT /api/v1/ropa/entries/{id}` | 403 Forbidden |
+| OPERATOR token on any ROPA endpoint | 403 Forbidden |
+| `POST .../retire` on active entry | Status → `retired`; entry excluded from CSV export |
+
+---
+
+## 8. DPO Operations Guide
+
+The ROPA screen (`/console/dpo/ropa.html`) is the DPO's accountability workbench. Its primary job is **verification, not data entry** — by the time a ROPA draft reaches this screen, all fields should already be populated from the originating consent policy.
+
+---
+
+### 8.1 Roles & Responsibilities
+
+```
+DPO defines requirements
+        ↓
+Engineer configures policy (processors, security measures,
+cross-border transfers, subject categories)
+        ↓
+Policy published → System auto-derives ROPA draft (all fields populated)
+        ↓
+DPO verifies accuracy on ROPA screen  ← DPO's primary role
+        ↓
+DPO clicks Publish → dpo_id auto-recorded from login session
+```
+
+The DPO is a **verifier and approver**, not a data-entry operator. Publishing a ROPA entry is the DPO's formal attestation that the entry accurately reflects how the organisation processes personal data under DPDP Act Section 8.
+
+| Role | Responsibility |
+|------|---------------|
+| **DPO** | Defines ROPA requirements: which processors, what security controls, cross-border flows, subject categories |
+| **System Engineer** | Translates DPO requirements into the policy form (ROPA Accountability section) before publishing the policy |
+| **System** | Auto-derives ROPA draft on policy publish; auto-records DPO identity at ROPA publish |
+
+---
+
+### 8.2 End-to-End Workflow
+
+#### Step 1 — DPO specifies requirements
+
+Before policy creation begins, the DPO communicates to the engineering or compliance team:
+- Which third-party **processors** handle the data (name, country, role)
+- What **security measures** are in place
+- Whether any **cross-border transfers** occur and what safeguard applies
+- Which **subject categories** are involved (customer, employee, minor, etc.)
+
+#### Step 2 — Engineer configures the policy
+
+The engineer opens the policy form in the Policy screen and fills the **ROPA Accountability Fields** section (collapsible panel, below the JSON editor). These fields are embedded into the policy JSON at save time and flow into the ROPA draft automatically.
+
+#### Step 3 — Policy published → ROPA draft auto-created
+
+When the policy is published, `RopaDeriver` reads the policy content and inserts a draft `ropa_entries` row with all fields pre-populated:
+
+| Field | Source |
+|-------|--------|
+| `activity_name` | Policy ID |
+| `purpose` | Purpose names from `data_processing_purposes[]` |
+| `legal_basis` | Defaults to `consent`; DPO may update if a different basis applies |
+| `data_categories` | `data_categories_details[].id` from policy |
+| `data_subject_categories` | From policy ROPA section; defaults to `["data_principal"]` if omitted |
+| `security_measures` | From policy ROPA section |
+| `processors` | From policy ROPA section |
+| `cross_border_transfers` | From policy ROPA section |
+| `retention_period_days` | Max retention across all purposes, converted to days |
+| `retention_start_event` | From `retention_start_event` in purposes; blank if mixed |
+| `linked_policy_ids` | Policy ID automatically linked |
+| `dpo_id` | **Not set yet** — recorded automatically at publish time (Step 5) |
+
+#### Step 4 — DPO verifies on ROPA screen
+
+The DPO opens the draft entry (**View**) and inspects the **DPDP Completeness Checklist**. All fields should be green. If any field is incorrect, the DPO uses **Edit** to correct it using the structured form (chip inputs and builder UIs — no raw JSON entry required).
+
+The completeness banner will read **"Ready to publish — your DPO accountability will be recorded automatically"** once all fields are in order.
+
+#### Step 5 — DPO publishes (one click)
+
+The DPO clicks **Publish**. The system:
+- Auto-sets `dpo_id` from the DPO's active login session (no manual UUID entry required)
+- Runs the completeness validator server-side
+- Transitions status to `active`
+- Writes an `ROPA_ENTRY_PUBLISHED` event to the tamper-evident audit log
+
+Publishing is the DPO's formal act of accountability. Their identity is recorded as the person who attested that the entry is accurate.
+
+#### Step 6 — Maintain active records
+
+When a processing activity changes (new processor, updated retention, added data category), the DPO or engineer updates the policy first, then re-derives or directly edits the ROPA entry. Each edit increments the version and writes a full snapshot to the version history timeline.
+
+#### Step 7 — Retire obsolete entries
+
+When a processing activity is permanently discontinued, the DPO clicks **Retire**. Retired entries:
+- Are excluded from the CSV export (regulatory evidence only covers active activities)
+- Remain permanently in the registry as an audit trail of historical processing
+- Cannot be reinstated — a new draft entry must be created if processing resumes
+
+---
+
+### 8.3 Manual Entry (Non-Consent Legal Bases)
+
+Not all processing activities are governed by a consent policy. For activities under `legal_obligation`, `vital_interest`, or `legitimate_use`, there is no policy to derive from. The DPO creates these manually:
+
+1. Click **+ New Entry**
+2. Set `legal_basis` to the correct non-consent value
+3. Complete all required fields using the structured form
+4. Verify completeness, then publish (DPO identity auto-recorded)
+
+---
+
+### 8.4 Regulatory Export
+
+When required by the Data Protection Board of India, an internal audit, or a Data Principal's right-to-information request, the DPO clicks **↓ Export CSV**. The export:
+- Includes all `active` entries for the fiduciary
+- Contains all ROPA fields as columns
+- Downloads immediately as `ropa_export.csv`
+- Reflects the current published state — not draft or retired entries

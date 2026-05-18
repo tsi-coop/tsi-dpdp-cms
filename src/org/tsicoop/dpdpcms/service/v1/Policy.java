@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.RopaDeriver;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -697,6 +698,11 @@ public class Policy implements Action {
 
         if (success) {
             new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId, "POLICY_PUBLISHED", "ID: " + policyId);
+            try {
+                RopaDeriver.deriveFromPolicy(policyId, version, fiduciaryId);
+            } catch (Exception e) {
+                System.err.println("ROPA derivation failed for policy " + policyId + ": " + e.getMessage());
+            }
         }
     }
 

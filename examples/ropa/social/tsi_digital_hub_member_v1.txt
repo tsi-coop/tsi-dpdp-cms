@@ -1,0 +1,83 @@
+========================================================================
+ROPA REQUIREMENTS DOCUMENT
+Activity : tsi_digital_hub_member_v1
+Sector   : Social / Professional Community
+Standard : Digital Personal Data Protection Act, 2023 (India)
+========================================================================
+
+DESCRIPTION
+------------------------------------------------------------------------
+ROPA requirements for TSI Digital Hub's member consent policy. Covers
+account management, website analytics, community engagement, solutions
+showcase, and maturity assessments.
+
+COMPLIANCE LIFECYCLE
+------------------------------------------------------------------------
+  1. DPO defined requirements in this template
+  2. Engineer configured policy (tsi_digital_hub_member_v1)
+  3. System auto-derived ROPA draft on publish
+  4. DPO verified draft against this template
+  5. DPO published (dpo_id auto-recorded)
+
+PROCESSING ACTIVITY
+------------------------------------------------------------------------
+  Activity Name : tsi_digital_hub_member_v1
+  Legal Basis   : CONSENT
+  Purpose       :
+    - Account Registration & Management
+    - Website Analytics & Performance
+    - Community Engagement
+    - Solutions and Services Showcase
+    - Maturity Assessments
+
+DATA SUBJECT CATEGORIES
+------------------------------------------------------------------------
+  - data_principal
+
+DATA CATEGORIES  (26 total)
+------------------------------------------------------------------------
+  email_address                  business_name                  industry                    
+  city                           organization_type              business_start_year         
+  professional_name              college_type                   career_start_year           
+  disability                     household_income_range         website_usage_data          
+  device_info                    post                           meeting_invite              
+  enquiry                        rfp                            testimonial                 
+  discussion                     solution_details               service_details             
+  training_details               assessment_responses           grievance_note              
+  support_request                advise_request              
+
+SECURITY MEASURES
+------------------------------------------------------------------------
+TLS 1.3 in transit, AES-256 at rest, role-based admin access with MFA,
+OWASP Top 10 compliance for web platform.
+
+DATA PROCESSORS  (3 declared)
+------------------------------------------------------------------------
+  Name                         Country    Role                           Contact
+  ---------------------------- ---------- ------------------------------ ----------------------------
+  Amazon Web Services          IN         Cloud Hosting & Storage        aws-india-dpa@amazon.com
+  Google Analytics             US         Website Analytics              google-privacy@google.com
+  Hotjar                       IE         UX Analytics & Heatmaps        privacy@hotjar.com
+
+CROSS-BORDER TRANSFERS
+------------------------------------------------------------------------
+  Destination    Safeguard                                    Processor
+  -------------- -------------------------------------------- ----------------------------
+  US             Standard Contractual Clauses (SCC)           Google Analytics
+  IE             Standard Contractual Clauses (SCC)           Hotjar
+
+RETENTION
+------------------------------------------------------------------------
+  Period      : 2555 days  (approx. 7.0 years)
+  Start Event : CESSATION
+
+LINKED CONSENT POLICY
+------------------------------------------------------------------------
+  - tsi_digital_hub_member_v1
+
+========================================================================
+NOTE: This document records the DPO's ROPA requirements before system
+configuration. Once the corresponding consent policy is published, the
+system will auto-derive a ROPA draft. The DPO should verify the draft
+against this document before publishing the ROPA entry.
+========================================================================

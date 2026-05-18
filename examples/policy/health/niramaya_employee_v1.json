@@ -48,10 +48,26 @@
       }
     ],
     "data_categories_details": [
-      { "id": "salary_details", "name": "Compensation Data", "description": "Details of basic pay, allowances, and bonuses." },
-      { "id": "attendance_logs", "name": "Attendance & Leave", "description": "Records of time-in/time-out and leaves availed." },
-      { "id": "dependent_details", "name": "Family Information", "description": "Names and relations of family members for insurance coverage." }
+      { "id": "full_name",            "name": "Full Name",               "description": "Employee legal name for payroll processing and HR records." },
+      { "id": "bank_account_details", "name": "Bank Account Details",    "description": "Account number and IFSC code for monthly salary credit via NEFT." },
+      { "id": "pan_number",           "name": "PAN Number",              "description": "Mandatory for TDS deduction, Form 16, and income tax filing." },
+      { "id": "aadhaar_number",       "name": "Aadhaar Number",          "description": "Used for identity verification and EPFO / ESIC enrollment." },
+      { "id": "salary_details",       "name": "Compensation Data",       "description": "Breakdown of basic pay, HRA, allowances, deductions, and bonuses." },
+      { "id": "dependent_details",    "name": "Dependent / Family Details","description": "Names and relations of family members enrolled for group insurance benefits." },
+      { "id": "health_declaration",   "name": "Health Declaration",      "description": "Pre-existing conditions declared at the time of insurance enrollment — sensitive data." },
+      { "id": "contact_information",  "name": "Contact Information",     "description": "Personal mobile number and home address for emergency and HR communication." },
+      { "id": "performance_appraisals","name": "Performance Appraisals", "description": "Annual and mid-year review scores, ratings, and feedback records." },
+      { "id": "training_records",     "name": "Training Records",        "description": "Completion status and assessment scores for mandatory and optional training." },
+      { "id": "attendance_logs",      "name": "Attendance & Leave",      "description": "Time-in / time-out records and leave availed for payroll computation." }
     ],
+    "data_subject_categories": ["employee"],
+    "security_measures": "Encrypted payroll database, access restricted to HR and Finance teams, audit logs for all sensitive record access, MFA on HRMS.",
+    "processors": [
+      { "name": "Greytip Software",   "country": "IN", "role": "Payroll & HRMS Platform",          "contact": "support@greytip.com" },
+      { "name": "HDFC Life Insurance","country": "IN", "role": "Group Health Insurance Provider",   "contact": "compliance@hdfclife.com" },
+      { "name": "EPFO (Government)",  "country": "IN", "role": "Provident Fund Administration",    "contact": "epfo@nic.in" }
+    ],
+    "cross_border_transfers": [],
     "data_principal_rights_summary": "As an employee, you have the right to access your employment records, correct any inaccuracies, and raise grievances regarding data handling. Requests for erasure are subject to statutory retention requirements for financial and labor law compliance.",
     "grievance_redressal_info": "For any concerns, please contact the HR Compliance / Data Protection Officer at: Email: hr-compliance@company.com | Internal Extension: 555. Your concerns will be addressed within 30 days.",
     "buttons": {

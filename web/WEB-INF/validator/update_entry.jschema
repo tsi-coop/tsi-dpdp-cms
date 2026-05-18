@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ROPA Update Entry",
+  "type": "object",
+  "properties": {
+    "_func":                   { "type": "string" },
+    "id":                      { "type": "string" },
+    "activity_name":           { "type": "string" },
+    "purpose":                 { "type": "string" },
+    "legal_basis":             { "type": "string", "enum": ["consent","legal_obligation","vital_interest","legitimate_use"] },
+    "data_categories":         { "type": "array", "items": { "type": "string" } },
+    "data_subject_categories": { "type": "array", "items": { "type": "string" } },
+    "retention_period_days":   { "type": "number" },
+    "retention_start_event":   { "type": "string", "enum": ["COLLECTION","CESSATION"] },
+    "processors":              { "type": "array", "items": { "type": "object" } },
+    "cross_border_transfers":  { "type": "array", "items": { "type": "object" } },
+    "security_measures":       { "type": "string" },
+    "dpo_id":                  { "type": "string" },
+    "app_id":                  { "type": "string" },
+    "linked_policy_ids":       { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["_func", "id"]
+}

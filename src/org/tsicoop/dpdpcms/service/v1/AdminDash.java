@@ -150,6 +150,10 @@ public class AdminDash implements Action {
             metrics.put("grievances_total", getCount(conn, pool, "SELECT COUNT(*) FROM grievances WHERE submission_timestamp >= ?::timestamp AND submission_timestamp <= ?::timestamp", start, end));
             metrics.put("grievances_pending", getCount(conn, pool, "SELECT COUNT(*) FROM grievances WHERE status NOT IN ('RESOLVED') AND submission_timestamp >= ?::timestamp AND submission_timestamp <= ?::timestamp", start, end));
 
+            // 6. ROPA entries by status
+            metrics.put("ropa_active", getCount(conn, pool, "SELECT COUNT(*) FROM ropa_entries WHERE status = 'active' AND created_at >= ?::timestamp AND created_at <= ?::timestamp", start, end));
+            metrics.put("ropa_draft",  getCount(conn, pool, "SELECT COUNT(*) FROM ropa_entries WHERE status = 'draft'  AND created_at >= ?::timestamp AND created_at <= ?::timestamp", start, end));
+
         } finally {
             // Standard cleanup if not handled by individual getCount calls (though they clean up their own stmt/rs)
             if (pool != null && conn != null) pool.cleanup(null, null, conn);

@@ -103,7 +103,10 @@ public class Operator implements Action {
 
         try {
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement("SELECT id, name, email, password_hash, status, role, fiduciary_id FROM operators WHERE name = ? OR email = ?");
+            pstmt = conn.prepareStatement(
+                "SELECT o.id, o.name, o.email, o.password_hash, o.status, o.role, o.fiduciary_id, f.name AS fiduciary_name " +
+                "FROM operators o LEFT JOIN fiduciaries f ON o.fiduciary_id = f.id " +
+                "WHERE o.name = ? OR o.email = ?");
             pstmt.setString(1, identifier);
             pstmt.setString(2, identifier);
             rs = pstmt.executeQuery();
@@ -123,6 +126,8 @@ public class Operator implements Action {
                     out.put("role", role);
                     out.put("username", operatorName);
                     out.put("fiduciary_id", fidUid.toString());
+                    String fidName = rs.getString("fiduciary_name");
+                    if (fidName != null) out.put("fiduciary_name", fidName);
                     success = true;
                 }
             }

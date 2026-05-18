@@ -48,9 +48,26 @@
       }
     ],
     "data_categories_details": [
-      { "id": "mobile_number", "name": "Mobile Number", "description": "Primary identifier for account login and order updates." },
-      { "id": "delivery_address", "name": "Residential Address", "description": "Physical location for delivering goods." },
-      { "id": "purchase_history", "name": "Purchase History", "description": "Log of items bought to manage returns and rewards." }
+      { "id": "full_name",           "name": "Full Name",            "description": "Customer name for billing, delivery documentation, and loyalty records." },
+      { "id": "mobile_number",       "name": "Mobile Number",        "description": "Primary identifier for account login, OTP, and order status updates." },
+      { "id": "email_address",       "name": "Email Address",        "description": "Used for order confirmations and loyalty program communications." },
+      { "id": "date_of_birth",       "name": "Date of Birth",        "description": "Used for birthday discount offers and age-restricted product verification." },
+      { "id": "delivery_address",    "name": "Delivery Address",     "description": "Physical location for last-mile delivery of purchased goods." },
+      { "id": "payment_details",     "name": "Payment Details",      "description": "Tokenised card or UPI reference for transaction processing — not stored in raw form." },
+      { "id": "purchase_history",    "name": "Purchase History",     "description": "Log of items bought, used for returns management and loyalty point calculation." },
+      { "id": "shopping_preferences","name": "Shopping Preferences", "description": "Inferred category interests based on past purchase and browse behaviour." },
+      { "id": "browsing_history",    "name": "Browsing History",     "description": "Products viewed within the Apna Mart app or website." }
+    ],
+    "data_subject_categories": ["customer"],
+    "security_measures": "PCI-DSS Level 1 compliant payment tokenisation, TLS 1.3 in transit, AES-256 encrypted customer PII at rest.",
+    "processors": [
+      { "name": "Razorpay",        "country": "IN", "role": "Payment Gateway",                    "contact": "dpo@razorpay.com" },
+      { "name": "Delhivery",       "country": "IN", "role": "Logistics & Last-Mile Delivery",      "contact": "privacy@delhivery.com" },
+      { "name": "MoEngage",        "country": "IN", "role": "Customer Engagement & Push",          "contact": "privacy@moengage.com" },
+      { "name": "Google Analytics","country": "US", "role": "Website & App Analytics",             "contact": "google-privacy@google.com" }
+    ],
+    "cross_border_transfers": [
+      { "destination_country": "US", "safeguard": "Standard Contractual Clauses (SCC)", "processor": "Google Analytics" }
     ],
     "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your data, correct it, withdraw consent for marketing, and request erasure after your financial obligations are settled.",
     "grievance_redressal_info": "For concerns, contact our DPO at: Email: care@apnamart.in | Phone: +91 11 2233 4455 | Address: Plot 12, Retail Park, Gurugram, Haryana.",

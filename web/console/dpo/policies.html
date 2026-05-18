@@ -183,6 +183,18 @@
             color: #475569;
             font-family: monospace;
         }
+        .chip-area { border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; min-height: 42px; background: #f9fafb; }
+        .chip-list { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+        .chip { display: inline-flex; align-items: center; gap: 4px; background: #e0f2f1; color: #00695c; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 9999px; }
+        .chip-remove { background: none; border: none; color: #00897b; cursor: pointer; font-size: 1rem; padding: 0 0 1px; line-height: 1; }
+        .chip-remove:hover { color: #c62828; }
+        .preset-tag { cursor: pointer; display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 2px 9px; border-radius: 9999px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; transition: all 0.15s; }
+        .preset-tag:hover { background: #e0f2f1; color: #006A67; border-color: #99d6d3; }
+        .struct-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; }
+        .sub-form { background: #f0faf9; border: 1px dashed #a7d8d6; border-radius: 6px; padding: 12px; margin-top: 8px; }
+        .sub-btn-add { font-size: 0.75rem; font-weight: 700; color: var(--tsi-primary); border: 1px solid #99d6d3; background: white; padding: 4px 12px; border-radius: 6px; cursor: pointer; }
+        .sub-btn-confirm { font-size: 0.75rem; font-weight: 700; color: white; background: var(--tsi-primary); border: none; padding: 5px 14px; border-radius: 6px; cursor: pointer; }
+        .sub-btn-cancel  { font-size: 0.75rem; font-weight: 600; color: #64748b; background: #e2e8f0; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 
@@ -211,6 +223,7 @@
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="audit.html" class="nav-link">Audit</a>
             <a href="legal.html" class="nav-link">Legal</a>
+            <a href="ropa.html" class="nav-link">ROPA</a>
             <a href="reports.html" class="nav-link">Reports</a>
         </nav>
     </div>
@@ -332,6 +345,77 @@
                     </div>
                 </div>
 
+                <!-- ROPA ACCOUNTABILITY FIELDS -->
+                <div class="mt-6">
+                    <button type="button" onclick="toggleRopaPanel()" class="flex items-center gap-2 text-sm font-bold primary-text mb-3 hover:opacity-80">
+                        <span id="ropa-panel-chevron">▶</span>
+                        ROPA Accountability Fields
+                        <span class="text-[10px] font-normal text-slate-400 ml-1">Captured from policy — auto-populates the ROPA draft on publish</span>
+                    </button>
+                    <div id="ropa-panel" class="hidden border border-teal-200 rounded-xl p-5 bg-teal-50/30 space-y-5">
+
+                        <!-- data_subject_categories -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Data Subject Categories</label>
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <span class="preset-tag" onclick="addPolicySubjectPreset('data_principal')">data_principal</span>
+                                <span class="preset-tag" onclick="addPolicySubjectPreset('minor')">minor</span>
+                                <span class="preset-tag" onclick="addPolicySubjectPreset('employee')">employee</span>
+                                <span class="preset-tag" onclick="addPolicySubjectPreset('customer')">customer</span>
+                                <span class="preset-tag" onclick="addPolicySubjectPreset('job_applicant')">job_applicant</span>
+                            </div>
+                            <div class="chip-area">
+                                <div id="policy-subject-chips" class="chip-list"></div>
+                                <input type="text" id="policy-subject-input" class="text-xs outline-none bg-transparent w-full" placeholder="Type and press Enter to add…">
+                            </div>
+                        </div>
+
+                        <!-- security_measures -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Security Measures</label>
+                            <textarea id="policy-security-measures" rows="2" class="w-full text-xs p-2 border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-teal-500" placeholder="Describe the security controls in place (encryption, access controls, audit logging, etc.)…"></textarea>
+                        </div>
+
+                        <!-- processors -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-2">Data Processors</label>
+                            <div id="policy-processor-list"></div>
+                            <div id="policy-processor-sub-form" class="sub-form hidden">
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input id="p-proc-name"    type="text" class="text-xs p-2 border rounded-md bg-white outline-none" placeholder="Processor name *">
+                                    <input id="p-proc-country" type="text" class="text-xs p-2 border rounded-md bg-white outline-none" placeholder="Country code (e.g. IN) *">
+                                    <input id="p-proc-role"    type="text" class="text-xs p-2 border rounded-md bg-white outline-none" placeholder="Role (e.g. Cloud Hosting) *">
+                                    <input id="p-proc-contact" type="text" class="text-xs p-2 border rounded-md bg-white outline-none" placeholder="Contact / DPA email (optional)">
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="button" class="sub-btn-confirm" onclick="confirmAddPolicyProcessor()">Add</button>
+                                    <button type="button" class="sub-btn-cancel"  onclick="cancelAddPolicyProcessor()">Cancel</button>
+                                </div>
+                            </div>
+                            <button type="button" class="sub-btn-add mt-2" onclick="showPolicyProcessorForm()">+ Add Processor</button>
+                        </div>
+
+                        <!-- cross_border_transfers -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-2">Cross-Border Transfers</label>
+                            <div id="policy-transfer-list"></div>
+                            <div id="policy-transfer-sub-form" class="sub-form hidden">
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input id="p-xfer-country"   type="text" class="text-xs p-2 border rounded-md bg-white outline-none" placeholder="Destination country *">
+                                    <input id="p-xfer-safeguard" type="text" class="text-xs p-2 border rounded-md bg-white outline-none" placeholder="Safeguard (e.g. SCC, Adequacy) *">
+                                    <input id="p-xfer-processor" type="text" class="text-xs p-2 border rounded-md bg-white outline-none col-span-2" placeholder="Processor name (optional)">
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="button" class="sub-btn-confirm" onclick="confirmAddPolicyTransfer()">Add</button>
+                                    <button type="button" class="sub-btn-cancel"  onclick="cancelAddPolicyTransfer()">Cancel</button>
+                                </div>
+                            </div>
+                            <button type="button" class="sub-btn-add mt-2" onclick="showPolicyTransferForm()">+ Add Transfer</button>
+                        </div>
+
+                    </div>
+                </div>
+
                 <!-- GRACEFUL VALIDATION ERROR DISPLAY -->
                 <div id="validation-errors" class="mt-8 p-4 bg-red-50 border border-red-200 rounded-md hidden">
                     <p class="text-xs font-bold text-red-700 mb-2 uppercase tracking-wider flex items-center gap-2">
@@ -367,6 +451,109 @@
     // --- Configuration ---
     const API_URL_POLICY = '/api/v1/policy';
     const AUTH_TOKEN = localStorage.getItem('authToken');
+
+    // ROPA Accountability state
+    let policySubjectCategories = [];
+    let policyProcessors = [];
+    let policyTransfers = [];
+
+    function toggleRopaPanel() {
+        const panel   = document.getElementById('ropa-panel');
+        const chevron = document.getElementById('ropa-panel-chevron');
+        panel.classList.toggle('hidden');
+        chevron.textContent = panel.classList.contains('hidden') ? '▶' : '▼';
+    }
+
+    function addPolicySubjectPreset(val) {
+        if (!policySubjectCategories.includes(val)) {
+            policySubjectCategories.push(val);
+            renderPolicySubjectChips();
+        }
+    }
+
+    function addPolicySubjectCategory() {
+        const input = document.getElementById('policy-subject-input');
+        const val = input.value.trim().toLowerCase().replace(/\s+/g, '_');
+        if (val && !policySubjectCategories.includes(val)) {
+            policySubjectCategories.push(val);
+            renderPolicySubjectChips();
+        }
+        input.value = '';
+    }
+
+    function removePolicySubjectCategory(i) {
+        policySubjectCategories.splice(i, 1);
+        renderPolicySubjectChips();
+    }
+
+    function renderPolicySubjectChips() {
+        document.getElementById('policy-subject-chips').innerHTML = policySubjectCategories.map((c, i) =>
+            `<span class="chip">${c}<button type="button" class="chip-remove" onclick="removePolicySubjectCategory(${i})">×</button></span>`
+        ).join('');
+    }
+
+    function showPolicyProcessorForm()   { document.getElementById('policy-processor-sub-form').classList.remove('hidden'); }
+    function cancelAddPolicyProcessor()  {
+        ['p-proc-name','p-proc-country','p-proc-role','p-proc-contact'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('policy-processor-sub-form').classList.add('hidden');
+    }
+    function confirmAddPolicyProcessor() {
+        const name    = document.getElementById('p-proc-name').value.trim();
+        const country = document.getElementById('p-proc-country').value.trim();
+        const role    = document.getElementById('p-proc-role').value.trim();
+        const contact = document.getElementById('p-proc-contact').value.trim();
+        if (!name || !country || !role) { alert('Name, country, and role are required.'); return; }
+        const proc = { name, country, role };
+        if (contact) proc.contact = contact;
+        policyProcessors.push(proc);
+        renderPolicyProcessors();
+        cancelAddPolicyProcessor();
+    }
+    function removePolicyProcessor(i)    { policyProcessors.splice(i, 1); renderPolicyProcessors(); }
+    function renderPolicyProcessors() {
+        document.getElementById('policy-processor-list').innerHTML = policyProcessors.map((p, i) =>
+            `<div class="struct-card flex justify-between items-start">
+                <div class="text-xs"><span class="font-bold">${p.name}</span><span class="text-slate-500"> · ${p.country} · ${p.role}</span>${p.contact ? `<span class="text-slate-400"> · ${p.contact}</span>` : ''}</div>
+                <button type="button" class="text-red-400 hover:text-red-600 text-xs ml-2" onclick="removePolicyProcessor(${i})">✕</button>
+            </div>`
+        ).join('');
+    }
+
+    function showPolicyTransferForm()   { document.getElementById('policy-transfer-sub-form').classList.remove('hidden'); }
+    function cancelAddPolicyTransfer()  {
+        ['p-xfer-country','p-xfer-safeguard','p-xfer-processor'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('policy-transfer-sub-form').classList.add('hidden');
+    }
+    function confirmAddPolicyTransfer() {
+        const destination_country = document.getElementById('p-xfer-country').value.trim();
+        const safeguard           = document.getElementById('p-xfer-safeguard').value.trim();
+        const processor           = document.getElementById('p-xfer-processor').value.trim();
+        if (!destination_country || !safeguard) { alert('Destination country and safeguard are required.'); return; }
+        const xfer = { destination_country, safeguard };
+        if (processor) xfer.processor = processor;
+        policyTransfers.push(xfer);
+        renderPolicyTransfers();
+        cancelAddPolicyTransfer();
+    }
+    function removePolicyTransfer(i)    { policyTransfers.splice(i, 1); renderPolicyTransfers(); }
+    function renderPolicyTransfers() {
+        document.getElementById('policy-transfer-list').innerHTML = policyTransfers.map((t, i) =>
+            `<div class="struct-card flex justify-between items-start">
+                <div class="text-xs"><span class="font-bold">${t.destination_country}</span><span class="text-slate-500"> · ${t.safeguard}</span>${t.processor ? `<span class="text-slate-400"> · ${t.processor}</span>` : ''}</div>
+                <button type="button" class="text-red-400 hover:text-red-600 text-xs ml-2" onclick="removePolicyTransfer(${i})">✕</button>
+            </div>`
+        ).join('');
+    }
+
+    function resetRopaPanel() {
+        policySubjectCategories = []; policyProcessors = []; policyTransfers = [];
+        ['policy-subject-chips','policy-processor-list','policy-transfer-list'].forEach(id => { document.getElementById(id).innerHTML = ''; });
+        document.getElementById('policy-subject-input').value = '';
+        document.getElementById('policy-security-measures').value = '';
+        ['policy-processor-sub-form','policy-transfer-sub-form'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        document.getElementById('ropa-panel').classList.add('hidden');
+        document.getElementById('ropa-panel-chevron').textContent = '▶';
+    }
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';
 
@@ -482,6 +669,22 @@
             policyJurisdictionSelect.value = p.jurisdiction;
             const content = typeof p.policy_content === 'string' ? JSON.parse(p.policy_content) : p.policy_content;
             policyContentInput.value = JSON.stringify(content, null, 2);
+
+            // Pre-fill ROPA accountability fields from the 'en' section
+            const enSec = content.en || content[Object.keys(content)[0]];
+            if (enSec) {
+                policySubjectCategories = Array.isArray(enSec.data_subject_categories) ? enSec.data_subject_categories.slice() : [];
+                policyProcessors = Array.isArray(enSec.processors) ? enSec.processors.slice() : [];
+                policyTransfers = Array.isArray(enSec.cross_border_transfers) ? enSec.cross_border_transfers.slice() : [];
+                document.getElementById('policy-security-measures').value = enSec.security_measures || '';
+                renderPolicySubjectChips();
+                renderPolicyProcessors();
+                renderPolicyTransfers();
+                if (policySubjectCategories.length || policyProcessors.length || policyTransfers.length || enSec.security_measures) {
+                    document.getElementById('ropa-panel').classList.remove('hidden');
+                    document.getElementById('ropa-panel-chevron').textContent = '▼';
+                }
+            }
         } catch(e) { alert("Load Failed."); }
     }
 
@@ -543,6 +746,7 @@
         policyIdInput.disabled = false;
         policyViewDetails.classList.add('hidden');
         document.getElementById('save-policy-btn').textContent = isEdit ? 'Update Draft' : 'Save Draft';
+        resetRopaPanel();
         policyModalOverlay.style.display = 'flex';
     }
 
@@ -575,11 +779,24 @@
         statusFilter.onchange = loadPolicies;
         searchInput.oninput = () => { clearTimeout(timeout); timeout = setTimeout(loadPolicies, 400); };
 
+        document.getElementById('policy-subject-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); addPolicySubjectCategory(); }
+        });
+
         policyForm.onsubmit = async (e) => {
             e.preventDefault();
             const isEditing = !!policyIdHidden.value;
             let json;
             try { json = JSON.parse(policyContentInput.value); } catch (e) { alert("Invalid JSON Content."); return; }
+
+            // Inject ROPA accountability fields into every language section
+            Object.keys(json).forEach(lang => {
+                if (policySubjectCategories.length) json[lang].data_subject_categories = policySubjectCategories.slice();
+                const sm = document.getElementById('policy-security-measures').value.trim();
+                if (sm) json[lang].security_measures = sm;
+                if (policyProcessors.length)  json[lang].processors = policyProcessors.slice();
+                if (policyTransfers.length)   json[lang].cross_border_transfers = policyTransfers.slice();
+            });
 
             const payload = {
                 "_func": isEditing ? "update_policy" : "create_policy",
@@ -630,6 +847,17 @@
     window.publishPolicy = publishPolicy;
     window.deletePolicy = deletePolicy;
     window.closeModal = closeModal;
+    window.toggleRopaPanel = toggleRopaPanel;
+    window.addPolicySubjectPreset = addPolicySubjectPreset;
+    window.removePolicySubjectCategory = removePolicySubjectCategory;
+    window.showPolicyProcessorForm = showPolicyProcessorForm;
+    window.cancelAddPolicyProcessor = cancelAddPolicyProcessor;
+    window.confirmAddPolicyProcessor = confirmAddPolicyProcessor;
+    window.removePolicyProcessor = removePolicyProcessor;
+    window.showPolicyTransferForm = showPolicyTransferForm;
+    window.cancelAddPolicyTransfer = cancelAddPolicyTransfer;
+    window.confirmAddPolicyTransfer = confirmAddPolicyTransfer;
+    window.removePolicyTransfer = removePolicyTransfer;
 </script>
 </body>
 </html>

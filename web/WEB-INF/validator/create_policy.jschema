@@ -131,6 +131,38 @@
                 "name"
               ]
             }
+          },
+          "data_subject_categories": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "security_measures": {
+            "type": "string"
+          },
+          "processors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name":    { "type": "string" },
+                "country": { "type": "string" },
+                "role":    { "type": "string" },
+                "contact": { "type": "string" }
+              },
+              "required": ["name", "country", "role"]
+            }
+          },
+          "cross_border_transfers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "destination_country": { "type": "string" },
+                "safeguard":           { "type": "string" },
+                "processor":           { "type": "string" }
+              },
+              "required": ["destination_country", "safeguard"]
+            }
           }
         },
         "required": [

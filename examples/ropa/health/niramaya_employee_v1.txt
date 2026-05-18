@@ -1,0 +1,72 @@
+========================================================================
+ROPA REQUIREMENTS DOCUMENT
+Activity : niramaya_employee_v1
+Sector   : Healthcare / Employee HR
+Standard : Digital Personal Data Protection Act, 2023 (India)
+========================================================================
+
+DESCRIPTION
+------------------------------------------------------------------------
+ROPA requirements for Niramaya Health's employee data policy. Covers
+payroll & taxation, group health insurance, and performance management.
+
+COMPLIANCE LIFECYCLE
+------------------------------------------------------------------------
+  1. DPO defined requirements in this template
+  2. Engineer configured policy (niramaya_employee_v1)
+  3. System auto-derived ROPA draft on publish
+  4. DPO verified draft against this template
+  5. DPO published (dpo_id auto-recorded)
+
+PROCESSING ACTIVITY
+------------------------------------------------------------------------
+  Activity Name : niramaya_employee_v1
+  Legal Basis   : CONSENT
+  Purpose       :
+    - Payroll, Taxation & Compliance
+    - Health Insurance & Benefits
+    - Performance Review & Skill Development
+
+DATA SUBJECT CATEGORIES
+------------------------------------------------------------------------
+  - employee
+
+DATA CATEGORIES  (11 total)
+------------------------------------------------------------------------
+  full_name                      bank_account_details           pan_number                  
+  aadhaar_number                 salary_details                 dependent_details           
+  health_declaration             contact_information            performance_appraisals      
+  training_records               attendance_logs             
+
+SECURITY MEASURES
+------------------------------------------------------------------------
+Encrypted payroll database, access restricted to HR and Finance teams,
+audit logs for all sensitive record access, MFA on HRMS.
+
+DATA PROCESSORS  (3 declared)
+------------------------------------------------------------------------
+  Name                         Country    Role                           Contact
+  ---------------------------- ---------- ------------------------------ ----------------------------
+  Greytip Software             IN         Payroll & HRMS Platform        support@greytip.com
+  HDFC Life Insurance          IN         Group Health Insurance Provider compliance@hdfclife.com
+  EPFO (Government)            IN         Provident Fund Administration  epfo@nic.in
+
+CROSS-BORDER TRANSFERS
+------------------------------------------------------------------------
+  No cross-border transfers.
+
+RETENTION
+------------------------------------------------------------------------
+  Period      : 3650 days  (approx. 10.0 years)
+  Start Event : CESSATION
+
+LINKED CONSENT POLICY
+------------------------------------------------------------------------
+  - niramaya_employee_v1
+
+========================================================================
+NOTE: This document records the DPO's ROPA requirements before system
+configuration. Once the corresponding consent policy is published, the
+system will auto-derive a ROPA draft. The DPO should verify the draft
+against this document before publishing the ROPA entry.
+========================================================================

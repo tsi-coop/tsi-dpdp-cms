@@ -53,19 +53,38 @@
         "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
         "data_categories_involved": ["email_address", "mobile_number"],
         "recipients_or_third_parties": [],
-        "retention_policy": "Until consent is withdrawn.",
-        "retention_duration_value": 0,
-        "retention_duration_unit": "MINUTES",
-        "retention_start_event": "CESSATION",
+        "retention_policy": "Until consent is withdrawn, or 1 year from last communication.",
+        "retention_duration_value": 1,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
     ],
     "data_categories_details": [
-      { "id": "full_name", "name": "Full Name", "description": "Legal name of the patient for identification." },
-      { "id": "clinical_history", "name": "Clinical History", "description": "Sensitive data regarding past illnesses and treatments." },
-      { "id": "blood_group", "name": "Blood Group", "description": "Critical health data for emergency care." }
+      { "id": "full_name",        "name": "Full Name",              "description": "Legal name of the patient for identification and medical records." },
+      { "id": "mobile_number",    "name": "Mobile Number",          "description": "Primary contact for appointment reminders and emergency alerts." },
+      { "id": "email_address",    "name": "Email Address",          "description": "Used for appointment confirmation and wellness communications." },
+      { "id": "age",              "name": "Age",                    "description": "Patient age for treatment protocols and drug dosage calculation." },
+      { "id": "gender",           "name": "Gender",                 "description": "Required for accurate clinical assessment and billing." },
+      { "id": "address",          "name": "Address",                "description": "Residential address for patient records and home care coordination." },
+      { "id": "clinical_history", "name": "Clinical History",       "description": "Sensitive data regarding past illnesses, diagnoses, and treatments." },
+      { "id": "test_results",     "name": "Lab / Diagnostic Results","description": "Blood tests, imaging reports, and other diagnostic findings." },
+      { "id": "prescriptions",    "name": "Prescriptions",          "description": "Medication records and dosage instructions issued by physicians." },
+      { "id": "blood_group",      "name": "Blood Group",            "description": "Critical health data for emergency care and surgical preparation." },
+      { "id": "allergies",        "name": "Known Allergies",        "description": "Documented allergies to medications or substances — sensitive health data." },
+      { "id": "billing_details",  "name": "Billing Details",        "description": "Itemized treatment costs and invoice amounts." },
+      { "id": "insurance_id",     "name": "Insurance ID",           "description": "Policy number for cashless insurance claim processing." },
+      { "id": "payment_method",   "name": "Payment Method",         "description": "Mode of payment — card, UPI, insurance, or cash." }
     ],
+    "data_subject_categories": ["customer"],
+    "security_measures": "HIPAA-aligned controls — AES-256 encrypted patient records, audit trails, HL7 FHIR access controls, TLS 1.3 in transit.",
+    "processors": [
+      { "name": "Amazon Web Services", "country": "IN", "role": "Cloud Hosting (Mumbai Region)",  "contact": "aws-india-dpa@amazon.com" },
+      { "name": "Razorpay",            "country": "IN", "role": "Payment Processing",             "contact": "dpo@razorpay.com" },
+      { "name": "Practo Technologies", "country": "IN", "role": "Appointment & Doctor Network",   "contact": "privacy@practo.com" }
+    ],
+    "cross_border_transfers": [],
     "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your medical records, correct errors, withdraw consent for optional services, and request data erasure after the statutory retention period.",
     "grievance_redressal_info": "For concerns, contact our DPO at: Email: support@nirmayahealth.in | Phone: +91 80 4455 6677 | Address: 45, Niramaya Complex, Jayanagar, Bengaluru, Karnataka.",
     "buttons": {

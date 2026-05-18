@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - ROPA Registry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67;
+            --tsi-accent: #008D8A;
+            --background: #f4fbf9;
+            --card-bg: #FFFFFF;
+            --radius: 0.5rem;
+        }
+        body { background-color: var(--background); font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; min-height: 100vh; }
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .sidebar {
+            width: 250px; background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05); padding-top: 20px;
+            position: fixed; top: 0; left: 0; height: 100vh;
+            z-index: 50; border-right: 1px solid #e2e8f0;
+            transition: transform 0.3s ease-in-out;
+        }
+        @media (max-width: 1023px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } }
+        @media (min-width: 1024px) { body { padding-left: 250px; } }
+        .nav-link { display: flex; align-items: center; padding: 10px 20px; margin: 5px 0; border-radius: 6px; color: #4a5568; transition: all 0.2s ease; }
+        .nav-link:hover, .nav-link.active { background-color: #e5f5f4; color: var(--tsi-primary); font-weight: 600; }
+        .card { background-color: var(--card-bg); border-radius: var(--radius); box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); padding: 20px; border: 1px solid #e2e8f0; }
+        .table-header { background-color: #f1f5f9; font-weight: 600; color: #4a5568; text-align: left; }
+        .mobile-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #ffffff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 40; }
+        @media (min-width: 1024px) { .mobile-header { display: none; } }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 0; border-radius: 1rem; max-width: 860px; width: 95%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); position: relative; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-content.wide { max-width: 1100px; }
+        .modal-header { padding: 1.5rem 2rem; border-bottom: 1px solid #f1f5f9; background: white; }
+        .modal-body { padding: 1.5rem 2rem; flex: 1; overflow-y: auto; background: white; }
+        .modal-footer { padding: 1rem 2rem; border-top: 1px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-close-btn { position: absolute; top: 1.5rem; right: 1.5rem; font-size: 1.5rem; color: #64748b; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .modal-close-btn:hover { background: #e2e8f0; color: #0f172a; }
+        .field-label { display: block; font-size: 0.75rem; font-weight: 700; color: #374151; margin-bottom: 4px; }
+        .field-input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; outline: none; }
+        .field-input:focus { border-color: var(--tsi-primary); box-shadow: 0 0 0 2px rgba(0,106,103,0.15); }
+        .field-input[disabled] { background: #f8fafc; color: #94a3b8; }
+        .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: none; }
+        .sidebar-backdrop.active { display: block; }
+        .checklist-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; padding: 4px 0; }
+        .checklist-ok { color: #16a34a; }
+        .checklist-fail { color: #dc2626; }
+        .history-row { border-left: 3px solid #e2e8f0; padding: 8px 12px; margin-bottom: 8px; background: #f8fafc; border-radius: 0 6px 6px 0; }
+        /* Chip / tag inputs */
+        .chip-area { border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; min-height: 42px; background: #f9fafb; }
+        .chip-list { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+        .chip { display: inline-flex; align-items: center; gap: 4px; background: #e0f2f1; color: #00695c; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 9999px; }
+        .chip-remove { background: none; border: none; color: #00897b; cursor: pointer; font-size: 1rem; padding: 0 0 1px; line-height: 1; }
+        .chip-remove:hover { color: #c62828; }
+        .preset-tag { cursor: pointer; display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 2px 9px; border-radius: 9999px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; transition: all 0.15s; }
+        .preset-tag:hover { background: #e0f2f1; color: #006A67; border-color: #99d6d3; }
+        /* Struct cards for processors / transfers */
+        .struct-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; }
+        .sub-form { background: #f0faf9; border: 1px dashed #a7d8d6; border-radius: 6px; padding: 12px; margin-top: 8px; }
+        .sub-btn-add { font-size: 0.75rem; font-weight: 700; color: var(--tsi-primary); border: 1px solid #99d6d3; background: white; padding: 4px 12px; border-radius: 6px; cursor: pointer; }
+        .sub-btn-add:hover { background: #e0f2f1; }
+        .sub-btn-confirm { font-size: 0.75rem; font-weight: 700; color: white; background: var(--tsi-primary); border: none; padding: 5px 14px; border-radius: 6px; cursor: pointer; }
+        .sub-btn-cancel  { font-size: 0.75rem; font-weight: 600; color: #64748b; background: #e2e8f0; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; }
+    </style>
+</head>
+
+<body>
+
+<!-- Mobile Header -->
+<div class="mobile-header lg:hidden">
+    <button onclick="toggleSidebar()" class="p-2 text-gray-600">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <span class="text-xl font-bold primary-text">ROPA Registry</span>
+    <div class="text-sm text-gray-500">DPO User</div>
+</div>
+
+<div id="backdrop" class="sidebar-backdrop lg:hidden" onclick="toggleSidebar()"></div>
+
+<!-- Sidebar -->
+<div id="sidebar" class="sidebar flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200 hidden lg:block">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="dashboard.html"   class="nav-link">Dashboard</a>
+            <a href="policies.html"    class="nav-link">Policies</a>
+            <a href="principals.html"  class="nav-link">Principals</a>
+            <a href="compliance.html"  class="nav-link">Compliance</a>
+            <a href="grievances.html"  class="nav-link">Grievances</a>
+            <a href="audit.html"       class="nav-link">Audit</a>
+            <a href="legal.html"       class="nav-link">Legal</a>
+            <a href="ropa.html"        class="nav-link active">ROPA</a>
+            <a href="reports.html"     class="nav-link">Reports</a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md flex justify-between items-center">
+            <span id="username" class="font-bold text-slate-700">DPO User</span>
+            <button onclick="handleLogout()" class="text-xs font-semibold text-red-500 hover:underline">Logout</button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">ROPA Registry</h1>
+            <p class="text-xs text-slate-400 mt-1 font-medium">Records of Processing Activities — DPDP Act 2023, Section 8</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <button onclick="openDeriveModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition">
+                ⬇ Derive from Policy
+            </button>
+            <button onclick="openCreateModal()" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition">
+                + New Entry
+            </button>
+            <button onclick="exportRopa()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition">
+                ↓ Export CSV
+            </button>
+            <button onclick="exportRopaPdf()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition">
+                ↓ Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Registry Card -->
+    <div class="card">
+        <div class="flex flex-col md:flex-row gap-3 mb-4">
+            <select id="status-filter" onchange="loadEntries()" class="field-input max-w-[160px]">
+                <option value="">All Statuses</option>
+                <option value="draft">Draft</option>
+                <option value="active">Active</option>
+                <option value="under_review">Under Review</option>
+                <option value="retired">Retired</option>
+            </select>
+            <select id="basis-filter" onchange="loadEntries()" class="field-input max-w-[200px]">
+                <option value="">All Legal Bases</option>
+                <option value="consent">Consent</option>
+                <option value="legal_obligation">Legal Obligation</option>
+                <option value="vital_interest">Vital Interest</option>
+                <option value="legitimate_use">Legitimate Use</option>
+            </select>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr class="table-header">
+                        <th class="px-4 py-3 text-xs">Activity Name</th>
+                        <th class="px-4 py-3 text-xs">Legal Basis</th>
+                        <th class="px-4 py-3 text-xs">Status</th>
+                        <th class="px-4 py-3 text-xs">Retention</th>
+                        <th class="px-4 py-3 text-xs">Version</th>
+                        <th class="px-4 py-3 text-xs">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ropa-table-body" class="bg-white divide-y divide-gray-200">
+                    <tr><td colspan="6" class="p-6 text-center text-gray-400 italic">Loading registry...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- ===================== ENTRY FORM MODAL ===================== -->
+<div id="form-modal" class="modal-overlay">
+    <div class="modal-content wide">
+        <button class="modal-close-btn" onclick="closeFormModal()">&times;</button>
+        <div class="modal-header">
+            <h2 id="form-modal-title" class="text-xl font-bold primary-text">New ROPA Entry</h2>
+            <p class="text-xs text-slate-400 mt-1">All required fields must be completed before the entry can be published.</p>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="entry-id-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <!-- Activity Name -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Activity Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="f-activity-name" class="field-input" placeholder="e.g., KYC Data Processing for Account Opening">
+                </div>
+
+                <!-- Purpose -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Processing Purpose <span class="text-red-500">*</span></label>
+                    <textarea id="f-purpose" rows="2" class="field-input" placeholder="Describe the purpose(s) for processing this personal data..."></textarea>
+                </div>
+
+                <!-- Legal Basis -->
+                <div>
+                    <label class="field-label">Legal Basis <span class="text-red-500">*</span></label>
+                    <select id="f-legal-basis" class="field-input">
+                        <option value="">— Select —</option>
+                        <option value="consent">Consent</option>
+                        <option value="legal_obligation">Legal Obligation</option>
+                        <option value="vital_interest">Vital Interest</option>
+                        <option value="legitimate_use">Legitimate Use</option>
+                    </select>
+                </div>
+
+                <!-- Retention Period -->
+                <div>
+                    <label class="field-label">Retention Period (days) <span class="text-red-500">*</span></label>
+                    <input type="number" id="f-retention-days" class="field-input" placeholder="e.g., 1095 (= 3 years)" min="1">
+                </div>
+
+                <!-- Retention Start Event -->
+                <div>
+                    <label class="field-label">Retention Start Event <span class="text-red-500">*</span></label>
+                    <select id="f-retention-event" class="field-input">
+                        <option value="">— Select —</option>
+                        <option value="COLLECTION">COLLECTION — from when data was collected</option>
+                        <option value="CESSATION">CESSATION — from when processing ceased</option>
+                    </select>
+                </div>
+
+                <!-- Data Categories — chip input -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Data Categories <span class="text-red-500">*</span>
+                        <span class="font-normal text-slate-400 normal-case">— press Enter or click Add</span>
+                    </label>
+                    <div class="chip-area">
+                        <div id="data-cat-chips" class="chip-list"></div>
+                        <div class="flex gap-2">
+                            <input type="text" id="data-cat-input" class="field-input text-xs"
+                                   placeholder="e.g. mobile_number, aadhaar_hash, location"
+                                   onkeydown="if(event.key==='Enter'){addDataCategory();event.preventDefault();}">
+                            <button type="button" onclick="addDataCategory()" class="sub-btn-add whitespace-nowrap">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Subject Categories — chip input with presets -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Data Subject Categories <span class="text-red-500">*</span></label>
+                    <div class="chip-area">
+                        <div class="flex flex-wrap gap-1 mb-2">
+                            <span class="text-[10px] text-slate-400 font-semibold self-center mr-1">Quick add:</span>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('data_principal')">data_principal</button>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('minor')">minor</button>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('employee')">employee</button>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('customer')">customer</button>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('job_applicant')">job_applicant</button>
+                        </div>
+                        <div id="subject-cat-chips" class="chip-list"></div>
+                        <div class="flex gap-2">
+                            <input type="text" id="subject-cat-input" class="field-input text-xs"
+                                   placeholder="or type a custom subject category…"
+                                   onkeydown="if(event.key==='Enter'){addSubjectCategory();event.preventDefault();}">
+                            <button type="button" onclick="addSubjectCategory()" class="sub-btn-add whitespace-nowrap">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Measures -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Security Measures <span class="text-red-500">*</span></label>
+                    <textarea id="f-security-measures" rows="2" class="field-input" placeholder="e.g., AES-256 encryption at rest, TLS 1.2+ in transit, role-based access control, audit logging"></textarea>
+                </div>
+
+                <!-- Data Processors — structured builder -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Data Processors
+                        <span class="font-normal text-slate-400 normal-case">— third parties processing data on your behalf</span>
+                    </label>
+                    <div id="processor-list"></div>
+                    <div id="processor-sub-form" class="sub-form hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="field-label">Processor Name <span class="text-red-500">*</span></label>
+                                <input type="text" id="proc-name" class="field-input text-sm" placeholder="e.g. Amazon Web Services">
+                            </div>
+                            <div>
+                                <label class="field-label">Country (ISO 3166-1) <span class="text-red-500">*</span></label>
+                                <input type="text" id="proc-country" class="field-input text-sm" placeholder="e.g. IN, US, SG" maxlength="3">
+                            </div>
+                            <div>
+                                <label class="field-label">Role / Purpose <span class="text-red-500">*</span></label>
+                                <input type="text" id="proc-role" class="field-input text-sm" placeholder="e.g. Cloud hosting and database storage">
+                            </div>
+                            <div>
+                                <label class="field-label">Contact Email <span class="font-normal text-slate-400">(optional)</span></label>
+                                <input type="email" id="proc-contact" class="field-input text-sm" placeholder="e.g. dpo@processor.com">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="confirmAddProcessor()" class="sub-btn-confirm">Add Processor</button>
+                            <button type="button" onclick="cancelAddProcessor()" class="sub-btn-cancel">Cancel</button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-processor-btn" onclick="showProcessorForm()" class="sub-btn-add mt-2">+ Add Processor</button>
+                </div>
+
+                <!-- Cross Border Transfers — structured builder -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Cross Border Transfers
+                        <span class="font-normal text-slate-400 normal-case">— each requires a destination country and safeguard</span>
+                    </label>
+                    <div id="transfer-list"></div>
+                    <div id="transfer-sub-form" class="sub-form hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <label class="field-label">Destination Country <span class="text-red-500">*</span></label>
+                                <input type="text" id="xfer-country" class="field-input text-sm" placeholder="e.g. US, SG, GB" maxlength="3">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="field-label">Safeguard Mechanism <span class="text-red-500">*</span></label>
+                                <input type="text" id="xfer-safeguard" class="field-input text-sm" placeholder="e.g. Standard Contractual Clauses, Adequacy Decision">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="field-label">Processor Name <span class="font-normal text-slate-400">(optional)</span></label>
+                                <input type="text" id="xfer-processor" class="field-input text-sm" placeholder="Name of the processor receiving data cross-border">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="confirmAddTransfer()" class="sub-btn-confirm">Add Transfer</button>
+                            <button type="button" onclick="cancelAddTransfer()" class="sub-btn-cancel">Cancel</button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-transfer-btn" onclick="showTransferForm()" class="sub-btn-add mt-2">+ Add Transfer</button>
+                </div>
+
+                <!-- Linked Policy IDs — chip input -->
+                <div>
+                    <label class="field-label">Linked Policy IDs <span class="font-normal text-slate-400">(optional)</span></label>
+                    <div class="chip-area">
+                        <div id="linked-policy-chips" class="chip-list"></div>
+                        <div class="flex gap-2">
+                            <input type="text" id="linked-policy-input" class="field-input text-xs font-mono"
+                                   placeholder="e.g. WEB_PRIVACY_POLICY"
+                                   onkeydown="if(event.key==='Enter'){addLinkedPolicy();event.preventDefault();}">
+                            <button type="button" onclick="addLinkedPolicy()" class="sub-btn-add whitespace-nowrap">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- App ID -->
+                <div>
+                    <label class="field-label">App ID <span class="font-normal text-slate-400">(optional)</span></label>
+                    <input type="text" id="f-app-id" class="field-input font-mono text-xs" placeholder="UUID of the associated app">
+                </div>
+            </div>
+
+            <!-- Form error area -->
+            <div id="form-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700"></div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeFormModal()" class="bg-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+            <button onclick="saveEntry()" class="primary-bg text-white px-6 py-2 rounded-md text-sm font-bold hover:bg-opacity-90">Save Entry</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== VIEW / HISTORY MODAL ===================== -->
+<div id="view-modal" class="modal-overlay">
+    <div class="modal-content wide">
+        <button class="modal-close-btn" onclick="closeViewModal()">&times;</button>
+        <div class="modal-header">
+            <h2 id="view-modal-title" class="text-xl font-bold primary-text">ROPA Entry Details</h2>
+            <p id="view-modal-subtitle" class="text-xs text-slate-400 mt-1"></p>
+        </div>
+        <div class="modal-body">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Left: Entry Details -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Legal Basis</p>
+                            <p id="v-legal-basis" class="text-sm font-semibold text-slate-700 mt-1">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retention</p>
+                            <p id="v-retention" class="text-sm font-semibold text-slate-700 mt-1">—</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Purpose</p>
+                            <p id="v-purpose" class="text-sm text-slate-600 mt-1">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Categories</p>
+                            <p id="v-data-categories" class="text-xs font-mono text-slate-600 mt-1 break-words">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Subjects</p>
+                            <p id="v-data-subjects" class="text-xs font-mono text-slate-600 mt-1 break-words">—</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Security Measures</p>
+                            <p id="v-security" class="text-sm text-slate-600 mt-1">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Processors</p>
+                            <p id="v-processors" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cross Border Transfers</p>
+                            <p id="v-cross-border" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Linked Policies</p>
+                            <p id="v-linked-policies" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">DPO ID</p>
+                            <p id="v-dpo-id" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
+                        </div>
+                    </div>
+
+                    <!-- Version History -->
+                    <div class="mt-4">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Version History</p>
+                        <div id="v-history" class="space-y-1 max-h-48 overflow-y-auto">
+                            <p class="text-xs text-slate-400 italic">No history.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Completeness Checklist -->
+                <div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">DPDP Completeness Checklist</p>
+                        <div id="v-checklist" class="space-y-1">
+                            <p class="text-xs text-slate-400 italic">Loading...</p>
+                        </div>
+                        <div id="v-completeness-banner" class="hidden mt-4 p-2 rounded-lg text-center text-xs font-bold"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeViewModal()" class="bg-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== DERIVE FROM POLICY MODAL ===================== -->
+<div id="derive-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width:480px">
+        <button class="modal-close-btn" onclick="closeDeriveModal()">&times;</button>
+        <div class="modal-header">
+            <h2 class="text-xl font-bold primary-text">Derive from Policy</h2>
+            <p class="text-xs text-slate-400 mt-1">Creates a pre-filled draft ROPA entry from a published consent policy.</p>
+        </div>
+        <div class="modal-body">
+            <label class="field-label">Policy ID <span class="text-red-500">*</span></label>
+            <input type="text" id="derive-policy-id" class="field-input" placeholder="e.g., WEB_PRIVACY_POLICY">
+            <p class="text-xs text-slate-400 mt-2">Only active (published) policies can be derived. The policy must belong to your fiduciary.</p>
+            <div id="derive-result" class="hidden mt-4 p-3 rounded-md text-sm font-medium"></div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeDeriveModal()" class="bg-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+            <button onclick="deriveFromPolicy()" class="bg-indigo-600 text-white px-6 py-2 rounded-md text-sm font-bold hover:bg-indigo-700">Derive</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '/api/v1/admin/ropa';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
+
+    const REQUIRED_FIELDS = [
+        'activity_name','purpose','legal_basis','data_categories','data_subject_categories',
+        'retention_period_days','retention_start_event','dpo_id','security_measures'
+    ];
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('backdrop').classList.toggle('active');
+    }
+
+    function handleLogout() { localStorage.clear(); window.location.href = '../index.html'; }
+
+    // ---- Status badges ----
+    function statusBadge(status) {
+        const map = {
+            draft:        'bg-yellow-100 text-yellow-800',
+            active:       'bg-green-100 text-green-800',
+            under_review: 'bg-blue-100 text-blue-800',
+            retired:      'bg-gray-100 text-gray-600'
+        };
+        return `<span class="px-2 py-0.5 text-[10px] font-black rounded-full uppercase ${map[status] || 'bg-red-50 text-red-700'}">${status}</span>`;
+    }
+
+    // ---- Load entries ----
+    async function loadEntries() {
+        const tbody = document.getElementById('ropa-table-body');
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">Syncing with registry...</td></tr>';
+        const status = document.getElementById('status-filter').value;
+        const basis  = document.getElementById('basis-filter').value;
+
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ _func: 'list_entries', fiduciary_id: FIDUCIARY_ID, status, legal_basis: basis, limit: 50 })
+            });
+            if (res.status === 401) { handleLogout(); return; }
+            const data = await res.json();
+            const entries = Array.isArray(data) ? data : (data.data || []);
+            if (!entries.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No ROPA entries found. Publish a policy or create one manually.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '';
+            entries.forEach(e => tbody.appendChild(buildRow(e)));
+        } catch(err) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-bold">API connection error.</td></tr>`;
+        }
+    }
+
+    function buildRow(e) {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/50 transition-colors';
+
+        const editable  = e.status === 'draft' || e.status === 'under_review';
+        const canPublish = e.status === 'draft' || e.status === 'under_review';
+        const canRetire  = e.status === 'active';
+
+        const retention = e.retention_period_days
+            ? `${e.retention_period_days}d (${e.retention_start_event || '—'})`
+            : '<span class="text-red-400 text-[10px] font-bold">NOT SET</span>';
+
+        const actions = `
+            <button class="text-teal-700 hover:text-teal-900 font-bold text-xs mr-2" onclick="viewEntry('${e.id}')">View</button>
+            ${editable  ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-2" onclick="openEditModal('${e.id}')">Edit</button>` : ''}
+            ${canPublish ? `<button class="text-green-600 hover:text-green-800 font-bold text-xs mr-2" onclick="publishEntry('${e.id}', '${e.activity_name}')">Publish</button>` : ''}
+            ${canRetire  ? `<button class="text-gray-500 hover:text-gray-700 font-bold text-xs" onclick="retireEntry('${e.id}', '${e.activity_name}')">Retire</button>` : ''}
+        `;
+
+        tr.innerHTML = `
+            <td class="px-4 py-4 text-sm font-bold text-slate-800 max-w-[240px]">
+                <div class="truncate" title="${e.activity_name}">${e.activity_name}</div>
+                <div class="text-[10px] font-mono text-slate-400 mt-0.5">${e.id.slice(0,8)}…</div>
+            </td>
+            <td class="px-4 py-4 text-xs text-slate-500 whitespace-nowrap capitalize">${(e.legal_basis||'').replace(/_/g,' ')}</td>
+            <td class="px-4 py-4 whitespace-nowrap">${statusBadge(e.status)}</td>
+            <td class="px-4 py-4 text-xs text-slate-500 whitespace-nowrap">${retention}</td>
+            <td class="px-4 py-4 text-xs text-slate-500 text-center">v${e.version}</td>
+            <td class="px-4 py-4 whitespace-nowrap">${actions}</td>
+        `;
+        return tr;
+    }
+
+    // ---- Form state (structured arrays replace raw JSON textareas) ----
+    let formDataCategories   = [];
+    let formSubjectCategories = [];
+    let formProcessors       = [];
+    let formCrossTransfers   = [];
+    let formLinkedPolicies   = [];
+
+    // ---- Chip helpers ----
+    function renderChips(containerId, arr, removeFn) {
+        const el = document.getElementById(containerId);
+        el.innerHTML = arr.map((item, i) =>
+            `<span class="chip">${item}<button type="button" class="chip-remove" onclick="${removeFn}(${i})">&times;</button></span>`
+        ).join('');
+    }
+
+    function addDataCategory() {
+        const inp = document.getElementById('data-cat-input');
+        const val = inp.value.trim();
+        if (val && !formDataCategories.includes(val)) {
+            formDataCategories.push(val);
+            renderChips('data-cat-chips', formDataCategories, 'removeDataCategory');
+        }
+        inp.value = '';
+    }
+    function removeDataCategory(i) { formDataCategories.splice(i,1); renderChips('data-cat-chips', formDataCategories, 'removeDataCategory'); }
+
+    function addSubjectPreset(val) {
+        if (!formSubjectCategories.includes(val)) {
+            formSubjectCategories.push(val);
+            renderChips('subject-cat-chips', formSubjectCategories, 'removeSubjectCategory');
+        }
+    }
+    function addSubjectCategory() {
+        const inp = document.getElementById('subject-cat-input');
+        const val = inp.value.trim();
+        if (val && !formSubjectCategories.includes(val)) {
+            formSubjectCategories.push(val);
+            renderChips('subject-cat-chips', formSubjectCategories, 'removeSubjectCategory');
+        }
+        inp.value = '';
+    }
+    function removeSubjectCategory(i) { formSubjectCategories.splice(i,1); renderChips('subject-cat-chips', formSubjectCategories, 'removeSubjectCategory'); }
+
+    function addLinkedPolicy() {
+        const inp = document.getElementById('linked-policy-input');
+        const val = inp.value.trim();
+        if (val && !formLinkedPolicies.includes(val)) {
+            formLinkedPolicies.push(val);
+            renderChips('linked-policy-chips', formLinkedPolicies, 'removeLinkedPolicy');
+        }
+        inp.value = '';
+    }
+    function removeLinkedPolicy(i) { formLinkedPolicies.splice(i,1); renderChips('linked-policy-chips', formLinkedPolicies, 'removeLinkedPolicy'); }
+
+    // ---- Processor builder ----
+    function showProcessorForm() {
+        document.getElementById('processor-sub-form').classList.remove('hidden');
+        document.getElementById('add-processor-btn').classList.add('hidden');
+        document.getElementById('proc-name').focus();
+    }
+    function cancelAddProcessor() {
+        ['proc-name','proc-country','proc-role','proc-contact'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('processor-sub-form').classList.add('hidden');
+        document.getElementById('add-processor-btn').classList.remove('hidden');
+    }
+    function confirmAddProcessor() {
+        const name    = document.getElementById('proc-name').value.trim();
+        const country = document.getElementById('proc-country').value.trim().toUpperCase();
+        const role    = document.getElementById('proc-role').value.trim();
+        const contact = document.getElementById('proc-contact').value.trim();
+        if (!name || !role) { showFormError('Processor name and role are required.'); return; }
+        const obj = { name, country: country || 'IN', role };
+        if (contact) obj.contact = contact;
+        formProcessors.push(obj);
+        renderProcessors();
+        cancelAddProcessor();
+    }
+    function removeProcessor(i) { formProcessors.splice(i,1); renderProcessors(); }
+    function renderProcessors() {
+        const el = document.getElementById('processor-list');
+        el.innerHTML = formProcessors.map((p, i) => `
+            <div class="struct-card">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="font-bold text-slate-700 text-sm">${p.name}</span>
+                        <span class="text-[10px] font-mono font-bold text-teal-600 ml-2 bg-teal-50 px-1.5 py-0.5 rounded">${p.country}</span>
+                    </div>
+                    <button type="button" onclick="removeProcessor(${i})" class="text-red-400 hover:text-red-600 text-xs font-bold">Remove</button>
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5">${p.role}</div>
+                ${p.contact ? `<div class="text-[10px] text-slate-400 mt-0.5">${p.contact}</div>` : ''}
+            </div>`).join('');
+    }
+
+    // ---- Cross-border transfer builder ----
+    function showTransferForm() {
+        document.getElementById('transfer-sub-form').classList.remove('hidden');
+        document.getElementById('add-transfer-btn').classList.add('hidden');
+        document.getElementById('xfer-country').focus();
+    }
+    function cancelAddTransfer() {
+        ['xfer-country','xfer-safeguard','xfer-processor'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('transfer-sub-form').classList.add('hidden');
+        document.getElementById('add-transfer-btn').classList.remove('hidden');
+    }
+    function confirmAddTransfer() {
+        const country   = document.getElementById('xfer-country').value.trim().toUpperCase();
+        const safeguard = document.getElementById('xfer-safeguard').value.trim();
+        const processor = document.getElementById('xfer-processor').value.trim();
+        if (!country || !safeguard) { showFormError('Destination country and safeguard are required.'); return; }
+        const obj = { destination_country: country, safeguard };
+        if (processor) obj.processor = processor;
+        formCrossTransfers.push(obj);
+        renderTransfers();
+        cancelAddTransfer();
+    }
+    function removeTransfer(i) { formCrossTransfers.splice(i,1); renderTransfers(); }
+    function renderTransfers() {
+        const el = document.getElementById('transfer-list');
+        el.innerHTML = formCrossTransfers.map((t, i) => `
+            <div class="struct-card">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="font-bold text-slate-700 text-sm">${t.destination_country}</span>
+                        <span class="text-xs text-slate-500 ml-2">${t.safeguard}</span>
+                    </div>
+                    <button type="button" onclick="removeTransfer(${i})" class="text-red-400 hover:text-red-600 text-xs font-bold">Remove</button>
+                </div>
+                ${t.processor ? `<div class="text-[10px] text-slate-400 mt-0.5">Processor: ${t.processor}</div>` : ''}
+            </div>`).join('');
+    }
+
+    // ---- Create / Edit Form ----
+    function openCreateModal() {
+        clearForm();
+        document.getElementById('entry-id-hidden').value = '';
+        document.getElementById('form-modal-title').textContent = 'New ROPA Entry';
+        document.getElementById('form-modal').style.display = 'flex';
+    }
+
+    async function openEditModal(id) {
+        clearForm();
+        document.getElementById('form-modal-title').textContent = 'Edit ROPA Entry';
+        document.getElementById('form-modal').style.display = 'flex';
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ _func: 'get_entry', id })
+            });
+            const e = await res.json();
+            document.getElementById('entry-id-hidden').value       = e.id;
+            document.getElementById('f-activity-name').value       = e.activity_name || '';
+            document.getElementById('f-purpose').value             = e.purpose || '';
+            document.getElementById('f-legal-basis').value         = e.legal_basis || '';
+            document.getElementById('f-retention-days').value      = e.retention_period_days || '';
+            document.getElementById('f-retention-event').value     = e.retention_start_event || '';
+            document.getElementById('f-security-measures').value   = e.security_measures || '';
+            document.getElementById('f-app-id').value              = e.app_id || '';
+
+            formDataCategories    = parseArr(e.data_categories);
+            formSubjectCategories = parseArr(e.data_subject_categories);
+            formProcessors        = parseArr(e.processors);
+            formCrossTransfers    = parseArr(e.cross_border_transfers);
+            formLinkedPolicies    = parseArr(e.linked_policy_ids);
+
+            renderChips('data-cat-chips',     formDataCategories,   'removeDataCategory');
+            renderChips('subject-cat-chips',  formSubjectCategories,'removeSubjectCategory');
+            renderChips('linked-policy-chips',formLinkedPolicies,   'removeLinkedPolicy');
+            renderProcessors();
+            renderTransfers();
+        } catch(err) { alert('Failed to load entry.'); closeFormModal(); }
+    }
+
+    function closeFormModal() {
+        document.getElementById('form-modal').style.display = 'none';
+        clearForm();
+    }
+
+    function clearForm() {
+        ['f-activity-name','f-purpose','f-retention-days','f-security-measures','f-app-id'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('f-legal-basis').value     = '';
+        document.getElementById('f-retention-event').value = '';
+        document.getElementById('form-error').classList.add('hidden');
+
+        formDataCategories = []; formSubjectCategories = [];
+        formProcessors     = []; formCrossTransfers    = []; formLinkedPolicies = [];
+
+        ['data-cat-chips','subject-cat-chips','linked-policy-chips'].forEach(id => {
+            document.getElementById(id).innerHTML = '';
+        });
+        document.getElementById('processor-list').innerHTML = '';
+        document.getElementById('transfer-list').innerHTML  = '';
+        cancelAddProcessor();
+        cancelAddTransfer();
+
+        ['data-cat-input','subject-cat-input','linked-policy-input'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+    }
+
+    function parseArr(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        try { return JSON.parse(val); } catch(e) { return []; }
+    }
+
+    async function saveEntry() {
+        const entryId = document.getElementById('entry-id-hidden').value;
+        const isEdit  = !!entryId;
+
+        const payload = {
+            _func:                   isEdit ? 'update_entry' : 'create_entry',
+            fiduciary_id:            FIDUCIARY_ID,
+            activity_name:           document.getElementById('f-activity-name').value.trim(),
+            purpose:                 document.getElementById('f-purpose').value.trim(),
+            legal_basis:             document.getElementById('f-legal-basis').value,
+            retention_period_days:   parseInt(document.getElementById('f-retention-days').value) || undefined,
+            retention_start_event:   document.getElementById('f-retention-event').value || undefined,
+            security_measures:       document.getElementById('f-security-measures').value.trim() || undefined,
+            app_id:                  document.getElementById('f-app-id').value.trim() || undefined,
+            data_categories:          formDataCategories,
+            data_subject_categories:  formSubjectCategories,
+            processors:               formProcessors,
+            cross_border_transfers:   formCrossTransfers,
+            linked_policy_ids:        formLinkedPolicies,
+        };
+        if (isEdit) payload.id = entryId;
+
+        if (!payload.activity_name || !payload.purpose || !payload.legal_basis) {
+            showFormError('Activity name, purpose, and legal basis are required.'); return;
+        }
+
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                closeFormModal();
+                loadEntries();
+            } else {
+                showFormError(data.message || data.error || 'Save failed.');
+            }
+        } catch(err) { showFormError('Network error.'); }
+    }
+
+    function showFormError(msg) {
+        const el = document.getElementById('form-error');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
+
+    // ---- View / Completeness ----
+    async function viewEntry(id) {
+        document.getElementById('view-modal').style.display = 'flex';
+        document.getElementById('v-history').innerHTML = '<p class="text-xs text-slate-400 italic">Loading...</p>';
+        document.getElementById('v-checklist').innerHTML = '<p class="text-xs text-slate-400 italic">Loading...</p>';
+
+        try {
+            const [entryRes, validateRes] = await Promise.all([
+                fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}` }, body: JSON.stringify({ _func:'get_entry', id }) }),
+                fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}` }, body: JSON.stringify({ _func:'validate_completeness', id }) })
+            ]);
+
+            const e = await entryRes.json();
+            const v = await validateRes.json();
+
+            document.getElementById('view-modal-title').textContent   = e.activity_name || 'Entry';
+            document.getElementById('view-modal-subtitle').textContent = `ID: ${e.id} • Status: ${e.status} • v${e.version}`;
+            document.getElementById('v-legal-basis').textContent   = (e.legal_basis || '—').replace(/_/g,' ');
+            document.getElementById('v-purpose').textContent        = e.purpose || '—';
+            document.getElementById('v-retention').textContent      = e.retention_period_days ? `${e.retention_period_days} days (${e.retention_start_event || '—'})` : '—';
+            document.getElementById('v-security').textContent       = e.security_measures || '—';
+            document.getElementById('v-data-categories').textContent = prettyJson(e.data_categories);
+            document.getElementById('v-data-subjects').textContent  = prettyJson(e.data_subject_categories);
+            document.getElementById('v-processors').textContent     = prettyJson(e.processors);
+            document.getElementById('v-cross-border').textContent   = prettyJson(e.cross_border_transfers);
+            document.getElementById('v-linked-policies').textContent = prettyJson(e.linked_policy_ids);
+            document.getElementById('v-dpo-id').textContent         = e.dpo_id || '—';
+
+            // History
+            const histEl = document.getElementById('v-history');
+            if (e.history && e.history.length) {
+                histEl.innerHTML = e.history.map(h => `
+                    <div class="history-row">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-600">Version ${h.version}</span>
+                            <span class="text-[10px] text-slate-400">${new Date(h.changed_at).toLocaleString()}</span>
+                        </div>
+                        ${h.changed_by ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5">by ${h.changed_by.slice(0,8)}…</div>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                histEl.innerHTML = '<p class="text-xs text-slate-400 italic">No history recorded.</p>';
+            }
+
+            // Completeness checklist
+            renderChecklist(v);
+
+        } catch(err) {
+            document.getElementById('v-checklist').innerHTML = '<p class="text-xs text-red-500">Failed to load.</p>';
+        }
+    }
+
+    function renderChecklist(v) {
+        const checkEl = document.getElementById('v-checklist');
+        const banner  = document.getElementById('v-completeness-banner');
+        // dpo_id is excluded — it is auto-set from the logged-in user's session at publish time
+        const allFields = [
+            'activity_name','purpose','legal_basis','data_categories','data_subject_categories',
+            'retention_period_days','retention_start_event','security_measures','cross_border_transfers'
+        ];
+        const missingArr = Array.isArray(v.missing_fields) ? v.missing_fields.map(f => f.split(' ')[0]) : [];
+        const missing = new Set(missingArr);
+
+        checkEl.innerHTML = allFields.map(f => {
+            const ok = !Array.from(missing).some(m => m.startsWith(f));
+            const label = f.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+            return `<div class="checklist-item ${ok ? 'checklist-ok' : 'checklist-fail'}">
+                <span>${ok ? '✓' : '✗'}</span>
+                <span>${label}</span>
+            </div>`;
+        }).join('');
+
+        const nonDpoMissing = missingArr.filter(f => !f.startsWith('dpo_id'));
+        if (v.complete || nonDpoMissing.length === 0) {
+            banner.textContent = '✓ Ready to publish — your DPO accountability will be recorded automatically';
+            banner.className = 'mt-4 p-2 rounded-lg text-center text-xs font-bold bg-green-100 text-green-700';
+        } else {
+            banner.textContent = `${nonDpoMissing.length} field(s) incomplete`;
+            banner.className = 'mt-4 p-2 rounded-lg text-center text-xs font-bold bg-amber-100 text-amber-700';
+        }
+        banner.classList.remove('hidden');
+    }
+
+    function closeViewModal() {
+        document.getElementById('view-modal').style.display = 'none';
+    }
+
+    // ---- Publish / Retire ----
+    async function publishEntry(id, name) {
+        if (!confirm(`Publish "${name}"?\n\nThis will transition the entry to ACTIVE status. All required fields must be complete.`)) return;
+        const res = await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify({ _func: 'publish_entry', id })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            loadEntries();
+        } else {
+            const msg = data.missing_fields
+                ? `Cannot publish. Missing fields:\n• ${data.missing_fields.join('\n• ')}`
+                : (data.message || 'Publish failed.');
+            alert(msg);
+        }
+    }
+
+    async function retireEntry(id, name) {
+        if (!confirm(`Retire "${name}"?\n\nThis entry will be marked as retired. This cannot be undone.`)) return;
+        const res = await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify({ _func: 'retire_entry', id })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) loadEntries();
+        else alert(data.message || 'Retire failed.');
+    }
+
+    // ---- Derive from Policy ----
+    function openDeriveModal() {
+        document.getElementById('derive-policy-id').value = '';
+        document.getElementById('derive-result').classList.add('hidden');
+        document.getElementById('derive-modal').style.display = 'flex';
+    }
+
+    function closeDeriveModal() {
+        document.getElementById('derive-modal').style.display = 'none';
+    }
+
+    async function deriveFromPolicy() {
+        const policyId = document.getElementById('derive-policy-id').value.trim();
+        const resultEl = document.getElementById('derive-result');
+        if (!policyId) { resultEl.textContent = 'Policy ID is required.'; resultEl.className = 'mt-4 p-3 rounded-md text-sm font-medium bg-red-50 text-red-700'; resultEl.classList.remove('hidden'); return; }
+
+        resultEl.textContent = 'Deriving…';
+        resultEl.className = 'mt-4 p-3 rounded-md text-sm font-medium bg-blue-50 text-blue-700';
+        resultEl.classList.remove('hidden');
+
+        const res = await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify({ _func: 'derive_from_policy', fiduciary_id: FIDUCIARY_ID, policy_id: policyId, version: '' })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            resultEl.textContent = `✓ Draft entry created (ID: ${data.id.slice(0,8)}…). Review and complete remaining fields.`;
+            resultEl.className = 'mt-4 p-3 rounded-md text-sm font-medium bg-green-50 text-green-700';
+            loadEntries();
+            setTimeout(() => closeDeriveModal(), 1500);
+        } else {
+            resultEl.textContent = data.message || data.error || 'Derivation failed.';
+            resultEl.className = 'mt-4 p-3 rounded-md text-sm font-medium bg-red-50 text-red-700';
+        }
+    }
+
+    // ---- Export ----
+    async function exportRopa() {
+        const res = await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify({ _func: 'export_ropa', fiduciary_id: FIDUCIARY_ID })
+        });
+        if (!res.ok) { alert('Export failed.'); return; }
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = 'ropa_export.csv'; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function exportRopaPdf() {
+        let entries;
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ _func: 'list_entries', fiduciary_id: FIDUCIARY_ID, status: 'active', limit: 200 })
+            });
+            const data = await res.json();
+            entries = Array.isArray(data) ? data : (data.data || []);
+        } catch(e) { alert('Failed to fetch entries for HTML export.'); return; }
+
+        if (!entries.length) { alert('No active ROPA entries to export.'); return; }
+
+        const generated = new Date().toLocaleString('en-IN', { dateStyle:'long', timeStyle:'short' });
+        function lsVal(k) { const v = localStorage.getItem(k); return (v && v !== 'undefined' && v !== 'null') ? v : null; }
+        const fiduciary = lsVal('fiduciary_name') || lsVal('username') || FIDUCIARY_ID || 'Organisation';
+
+        const css = `
+            *, *::before, *::after { box-sizing: border-box; }
+            body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 1000px; margin: 0 auto; padding: 32px 24px; color: #1e293b; background: #f8fafc; }
+            .page-hdr { background: #006A67; color: white; padding: 28px 36px; border-radius: 12px 12px 0 0; }
+            .page-hdr-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.75; margin-bottom: 6px; }
+            .page-hdr h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 800; }
+            .page-hdr p { margin: 0; font-size: 0.82rem; opacity: 0.85; }
+            .register { background: white; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 32px; }
+            .entry { border-bottom: 2px solid #f1f5f9; padding: 28px 36px; }
+            .entry:last-child { border-bottom: none; }
+            .entry-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+            .entry-title { font-size: 1rem; font-weight: 800; color: #006A67; font-family: monospace; }
+            .badge { display: inline-block; font-size: 0.65rem; font-weight: 800; padding: 3px 10px; border-radius: 4px; }
+            .badge-active { background: #dcfce7; color: #166534; }
+            .badge-consent { background: #e0f2f1; color: #006A67; }
+            .section-title { font-size: 0.62rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; margin: 18px 0 10px; }
+            .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+            .field-label { font-size: 0.65rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+            .field-value { font-size: 0.88rem; line-height: 1.5; }
+            .chip { display: inline-block; background: #e0f2f1; color: #00695c; font-size: 0.7rem; font-weight: 700; padding: 3px 9px; border-radius: 9999px; margin: 2px 3px 2px 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 4px; }
+            th { background: #f8fafc; text-align: left; padding: 7px 10px; font-size: 0.62rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 2px solid #e2e8f0; }
+            td { padding: 7px 10px; border-bottom: 1px solid #f8fafc; vertical-align: top; }
+            tr:last-child td { border-bottom: none; }
+            .footer { text-align: center; font-size: 0.72rem; color: #94a3b8; padding: 16px; }
+            @media print {
+                body { background: white; padding: 0; }
+                .page-hdr { border-radius: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .register { box-shadow: none; border-radius: 0; }
+                .entry { page-break-inside: avoid; }
+            }
+        `;
+
+        function chips(arr) {
+            if (!arr || !arr.length) return '<span style="color:#94a3b8">—</span>';
+            return arr.map(v => `<span class="chip">${v}</span>`).join('');
+        }
+        function processorsTable(procs) {
+            if (!procs || !procs.length) return '<p style="font-size:0.85rem;color:#94a3b8;margin:4px 0">No processors declared.</p>';
+            const rows = procs.map(p => `<tr><td><strong>${p.name}</strong></td><td>${p.country}</td><td>${p.role}</td><td style="color:#64748b">${p.contact||'—'}</td></tr>`).join('');
+            return `<table><thead><tr><th>Processor</th><th>Country</th><th>Role</th><th>Contact</th></tr></thead><tbody>${rows}</tbody></table>`;
+        }
+        function transfersTable(transfers) {
+            if (!transfers || !transfers.length) return '<p style="font-size:0.85rem;color:#94a3b8;margin:4px 0">No cross-border transfers.</p>';
+            const rows = transfers.map(t => `<tr><td><strong>${t.destination_country}</strong></td><td>${t.safeguard}</td><td>${t.processor||'—'}</td></tr>`).join('');
+            return `<table><thead><tr><th>Destination</th><th>Safeguard</th><th>Processor</th></tr></thead><tbody>${rows}</tbody></table>`;
+        }
+        function parseJ(v) { if (!v) return []; if (Array.isArray(v)) return v; try { return JSON.parse(v); } catch(e) { return []; } }
+
+        const entryBlocks = entries.map(e => {
+            const cats       = parseJ(e.data_categories);
+            const subjects   = parseJ(e.data_subject_categories);
+            const procs      = parseJ(e.processors);
+            const transfers  = parseJ(e.cross_border_transfers);
+            const policies   = parseJ(e.linked_policy_ids);
+            const retDays    = e.retention_period_days || '—';
+            const retYears   = e.retention_period_days ? `(≈ ${(e.retention_period_days/365).toFixed(1)} yrs)` : '';
+            return `
+            <div class="entry">
+              <div class="entry-hdr">
+                <div>
+                  <div class="entry-title">${e.activity_name}</div>
+                  <div style="font-size:0.78rem;color:#64748b;margin-top:3px">v${e.version} &nbsp;·&nbsp; DPO: ${e.dpo_id||'—'}</div>
+                </div>
+                <div><span class="badge badge-active">ACTIVE</span> &nbsp;<span class="badge badge-consent">${(e.legal_basis||'').toUpperCase()}</span></div>
+              </div>
+
+              <div class="section-title">Purpose</div>
+              <p style="font-size:0.88rem;margin:0;line-height:1.6">${e.purpose||'—'}</p>
+
+              <div class="section-title">Data Subject Categories</div>
+              ${chips(subjects)}
+
+              <div class="section-title">Data Categories (${cats.length})</div>
+              ${chips(cats)}
+
+              <div class="section-title">Security Measures</div>
+              <p style="font-size:0.88rem;margin:0;line-height:1.6">${e.security_measures||'—'}</p>
+
+              <div class="section-title">Processors (${procs.length})</div>
+              ${processorsTable(procs)}
+
+              <div class="section-title">Cross-Border Transfers</div>
+              ${transfersTable(transfers)}
+
+              <div class="section-title">Retention &amp; Policy</div>
+              <div class="field-grid">
+                <div><div class="field-label">Retention Period</div><div class="field-value">${retDays} days ${retYears}</div></div>
+                <div><div class="field-label">Start Event</div><div class="field-value">${e.retention_start_event||'—'}</div></div>
+                <div style="grid-column:span 2"><div class="field-label">Linked Policies</div><div class="field-value">${chips(policies)}</div></div>
+              </div>
+            </div>`;
+        }).join('');
+
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROPA Register — ${fiduciary}</title>
+  <style>${css}</style>
+</head>
+<body>
+  <div class="page-hdr">
+    <div class="page-hdr-label">DPDP Act, 2023 &nbsp;·&nbsp; Records of Processing Activities &nbsp;·&nbsp; Active Entries Only</div>
+    <h1>ROPA Register — ${fiduciary}</h1>
+    <p>Generated: ${generated} &nbsp;·&nbsp; ${entries.length} active processing activit${entries.length===1?'y':'ies'}</p>
+  </div>
+  <div class="register">${entryBlocks}</div>
+  <div class="footer">Generated by TSI DPDP CMS &nbsp;·&nbsp; ${generated}</div>
+</body>
+</html>`;
+
+        const printWin = window.open('', '_blank', 'width=1000,height=800');
+        printWin.document.write(html);
+        printWin.document.close();
+        printWin.addEventListener('load', () => {
+            printWin.focus();
+            printWin.print();
+        });
+    }
+
+    // ---- Helpers ----
+    function prettyJson(val) {
+        if (val == null) return '—';
+        if (typeof val === 'string') {
+            try { return JSON.stringify(JSON.parse(val), null, 0); } catch(e) { return val; }
+        }
+        return JSON.stringify(val);
+    }
+
+    // ---- Init ----
+    document.addEventListener('DOMContentLoaded', () => {
+        const user = localStorage.getItem('username');
+        if (user) document.getElementById('username').textContent = user;
+        if (!FIDUCIARY_ID) { alert('No fiduciary session found. Please log in.'); handleLogout(); return; }
+        loadEntries();
+    });
+
+    window.openCreateModal    = openCreateModal;
+    window.openEditModal      = openEditModal;
+    window.viewEntry          = viewEntry;
+    window.publishEntry       = publishEntry;
+    window.retireEntry        = retireEntry;
+    window.openDeriveModal    = openDeriveModal;
+    window.exportRopa         = exportRopa;
+    // Chip & builder functions referenced from inline onclick handlers
+    window.removeDataCategory   = removeDataCategory;
+    window.addDataCategory      = addDataCategory;
+    window.addSubjectPreset     = addSubjectPreset;
+    window.addSubjectCategory   = addSubjectCategory;
+    window.removeSubjectCategory= removeSubjectCategory;
+    window.addLinkedPolicy      = addLinkedPolicy;
+    window.removeLinkedPolicy   = removeLinkedPolicy;
+    window.showProcessorForm    = showProcessorForm;
+    window.cancelAddProcessor   = cancelAddProcessor;
+    window.confirmAddProcessor  = confirmAddProcessor;
+    window.removeProcessor      = removeProcessor;
+    window.showTransferForm     = showTransferForm;
+    window.cancelAddTransfer    = cancelAddTransfer;
+    window.confirmAddTransfer   = confirmAddTransfer;
+    window.removeTransfer       = removeTransfer;
+</script>
+</body>
+</html>
