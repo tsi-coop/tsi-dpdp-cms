@@ -121,10 +121,11 @@ public class Job implements Action {
     private void handleListJobs(UUID fiduciaryId, JSONObject input, HttpServletResponse res) throws SQLException {
         JSONArray jobs = new JSONArray();
         String jobType = (String) input.get("job_type");
+        boolean hasJobType = jobType != null && (jobType.equals("CES") || jobType.equals("EXPORT"));
         String sql = null;
-        if(jobType != null){
-            sql = "SELECT id, fiduciary_id, job_type, subtype, status, created_at FROM jobs where fiduciary_id=? AND job_type='"+jobType+"' ORDER BY created_at DESC LIMIT 20";
-        }else {
+        if (hasJobType) {
+            sql = "SELECT id, fiduciary_id, job_type, subtype, status, created_at FROM jobs where fiduciary_id=? AND job_type=? ORDER BY created_at DESC LIMIT 20";
+        } else {
             sql = "SELECT id, fiduciary_id, job_type, subtype, status, created_at FROM jobs where fiduciary_id=? ORDER BY created_at DESC LIMIT 20";
         }
 
@@ -135,7 +136,10 @@ public class Job implements Action {
         try{
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1,fiduciaryId);
+            pstmt.setObject(1, fiduciaryId);
+            if (hasJobType) {
+                pstmt.setString(2, jobType);
+            }
             rs = pstmt.executeQuery();
             while (rs.next()) {
                 JSONObject job = new JSONObject();

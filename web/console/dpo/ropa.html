@@ -413,6 +413,10 @@
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">DPO ID</p>
                             <p id="v-dpo-id" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
                         </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Consents</p>
+                            <p id="v-consent-count" class="text-sm font-semibold text-slate-700 mt-1">—</p>
+                        </div>
                     </div>
 
                     <!-- Version History -->
@@ -836,6 +840,7 @@
             document.getElementById('v-cross-border').textContent   = prettyJson(e.cross_border_transfers);
             document.getElementById('v-linked-policies').textContent = prettyJson(e.linked_policy_ids);
             document.getElementById('v-dpo-id').textContent         = e.dpo_id || '—';
+            document.getElementById('v-consent-count').textContent  = e.consent_count !== undefined && e.consent_count !== null ? e.consent_count.toString() : '0';
 
             // History
             const histEl = document.getElementById('v-history');

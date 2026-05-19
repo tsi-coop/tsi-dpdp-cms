@@ -223,6 +223,7 @@ public class Ropa implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "ROPA entry not found.", req.getRequestURI());
             return;
         }
+        entry.put("consent_count", getConsentCountForEntry(entryId));
         entry.put("history", getHistoryForEntry(entryId));
         OutputProcessor.send(res, HttpServletResponse.SC_OK, entry);
     }
@@ -248,7 +249,7 @@ public class Ropa implements Action {
         UUID fiduciaryId = requireUUID(input, "fiduciary_id", res, req);
         if (fiduciaryId == null) return;
 
-        JSONArray entries = listEntries(fiduciaryId, "active", null, null, 1, 10000);
+        JSONArray entries = listEntriesWithConsentCount(fiduciaryId);
 
         res.setContentType("text/csv; charset=UTF-8");
         res.setHeader("Content-Disposition", "attachment; filename=\"ropa_export.csv\"");
@@ -259,7 +260,7 @@ public class Ropa implements Action {
             "ID", "Activity Name", "Purpose", "Legal Basis", "Data Categories",
             "Data Subject Categories", "Retention Period Days", "Retention Start Event",
             "Processors", "Cross Border Transfers", "Security Measures",
-            "Status", "Version", "Created At"
+            "Status", "Version", "Created At", "Consent Count"
         });
 
         for (Object obj : entries) {
@@ -271,7 +272,8 @@ public class Ropa implements Action {
                 s(e, "retention_start_event"), s(e, "processors"), s(e, "cross_border_transfers"),
                 s(e, "security_measures"), s(e, "status"),
                 e.get("version") != null ? e.get("version").toString() : "",
-                s(e, "created_at")
+                s(e, "created_at"),
+                e.get("consent_count") != null ? e.get("consent_count").toString() : "0"
             });
         }
         csv.flush();
@@ -580,6 +582,54 @@ public class Ropa implements Action {
         e.put("created_at",             rs.getTimestamp("created_at").toInstant().toString());
         e.put("updated_at",             rs.getTimestamp("updated_at").toInstant().toString());
         return e;
+    }
+
+    private long getConsentCountForEntry(UUID entryId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM consent_records WHERE ropa_entry_id = ?";
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, entryId);
+            rs = pstmt.executeQuery();
+            return rs.next() ? rs.getLong(1) : 0L;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    private JSONArray listEntriesWithConsentCount(UUID fiduciaryId) throws SQLException {
+        String sql = "SELECT r.id, r.fiduciary_id, r.app_id, r.activity_name, r.purpose, r.legal_basis, " +
+                "r.data_categories, r.data_subject_categories, r.retention_period_days, r.retention_start_event, " +
+                "r.processors, r.cross_border_transfers, r.security_measures, r.dpo_id, r.linked_policy_ids, " +
+                "r.status, r.version, r.created_at, r.updated_at, COUNT(c.id) AS consent_count " +
+                "FROM ropa_entries r " +
+                "LEFT JOIN consent_records c ON c.ropa_entry_id = r.id " +
+                "WHERE r.fiduciary_id = ? AND r.status = 'active' " +
+                "GROUP BY r.id " +
+                "ORDER BY r.created_at DESC";
+        JSONArray result = new JSONArray();
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                JSONObject e = mapEntry(rs);
+                e.put("consent_count", rs.getLong("consent_count"));
+                result.add(e);
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return result;
     }
 
     // --- Utility helpers ---

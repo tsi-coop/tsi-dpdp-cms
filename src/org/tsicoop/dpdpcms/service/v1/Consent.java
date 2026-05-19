@@ -521,8 +521,9 @@ public class Consent implements Action {
             }
 
             // --- 4. Insert New WITHDRAWN Record (Immutability/Provenance) ---
-            String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at,language_selected,ip_address) " +
-                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', ?, ?, ?::jsonb, FALSE, NOW(), 'en', '[0:0:0:0:0:0:0:1]') RETURNING id";
+            UUID ropaEntryId = resolveRopaEntryId(conn, fiduciaryId, policyId);
+            String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at,language_selected,ip_address,ropa_entry_id) " +
+                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', ?, ?, ?::jsonb, FALSE, NOW(), 'en', '[0:0:0:0:0:0:0:1]', ?) RETURNING id";
 
             pstmt.close();
             pstmt = conn.prepareStatement(sqlInsertNew, Statement.RETURN_GENERATED_KEYS);
@@ -533,6 +534,7 @@ public class Consent implements Action {
             pstmt.setString(5, action);
             pstmt.setString(6, action);
             pstmt.setString(7, currentConsents.toJSONString());
+            pstmt.setObject(8, ropaEntryId);
 
             if (pstmt.executeUpdate() == 0) {
                 throw new SQLException("Creating withdrawal record failed.");
@@ -642,7 +644,7 @@ public class Consent implements Action {
         boolean recorded = false;
 
         String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
-        String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at, verification_log_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, TRUE, NOW(), NOW(),?) RETURNING id";
+        String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at, verification_log_id, ropa_entry_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, TRUE, NOW(), NOW(), ?, ?) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -655,6 +657,7 @@ public class Consent implements Action {
             pstmtDeactivate.executeUpdate();
 
             // 2. Insert the NEW consent record
+            UUID ropaEntryId = resolveRopaEntryId(conn, fiduciaryId, policyId);
             pstmtInsert = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
             pstmtInsert.setString(1, userId);
             pstmtInsert.setObject(2, fiduciaryId);
@@ -669,6 +672,7 @@ public class Consent implements Action {
             pstmtInsert.setString(11, userAgent);
             pstmtInsert.setString(12, dataPointConsents.toJSONString());
             pstmtInsert.setObject(13, verificationLogId);
+            pstmtInsert.setObject(14, ropaEntryId);
 
             int affectedRows = pstmtInsert.executeUpdate();
             if (affectedRows == 0) {
@@ -715,6 +719,24 @@ public class Consent implements Action {
      * @return An Optional containing the consent record JSONObject if found, otherwise empty.
      * @throws SQLException if a database access error occurs.
      */
+    private UUID resolveRopaEntryId(Connection conn, UUID fiduciaryId, String policyId) {
+        String sql = "SELECT id FROM ropa_entries WHERE fiduciary_id = ? AND linked_policy_ids @> ?::jsonb AND status = 'active' LIMIT 1";
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setString(2, "[\"" + policyId + "\"]");
+            rs = pstmt.executeQuery();
+            return rs.next() ? (UUID) rs.getObject(1) : null;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            try { if (rs != null) rs.close(); } catch (Exception ignored) {}
+            try { if (pstmt != null) pstmt.close(); } catch (Exception ignored) {}
+        }
+    }
+
     private Optional<JSONObject> getActiveConsentFromDb(String userId, UUID fiduciaryId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -763,7 +785,13 @@ public class Consent implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent FROM consent_records WHERE id = ?";
+        String sql = "SELECT cr.id, cr.user_id, cr.fiduciary_id, cr.policy_id, cr.policy_version, cr.timestamp, " +
+                "cr.jurisdiction, cr.language_selected, cr.consent_status_general, cr.consent_mechanism, " +
+                "cr.ip_address, cr.user_agent, cr.data_point_consents, cr.is_active_consent, " +
+                "cr.ropa_entry_id, re.activity_name AS ropa_activity_name " +
+                "FROM consent_records cr " +
+                "LEFT JOIN ropa_entries re ON re.id = cr.ropa_entry_id " +
+                "WHERE cr.id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -785,6 +813,9 @@ public class Consent implements Action {
                 consent.put("user_agent", rs.getString("user_agent"));
                 consent.put("data_point_consents", new JSONParser().parse(rs.getString("data_point_consents"))); // Parse JSONB
                 consent.put("is_active_consent", rs.getBoolean("is_active_consent"));
+                Object ropaId = rs.getObject("ropa_entry_id");
+                consent.put("ropa_entry_id", ropaId != null ? ropaId.toString() : null);
+                consent.put("ropa_activity_name", rs.getString("ropa_activity_name"));
                 return Optional.of(consent);
             }
         } catch (ParseException e) {

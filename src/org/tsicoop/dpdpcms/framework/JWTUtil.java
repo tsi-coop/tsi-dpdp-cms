@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -13,7 +14,15 @@ import java.util.Map;
 public class JWTUtil {
 
     private static final long EXPIRATION_TIME = 864000000; // 10 days
-    private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private static final Key SECRET_KEY = loadSecretKey();
+
+    private static Key loadSecretKey() {
+        String secret = System.getenv("JWT_SECRET");
+        if (secret == null || secret.trim().isEmpty()) {
+            throw new IllegalStateException("JWT_SECRET environment variable must be set");
+        }
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
 
     public static String generateAppLoginToken(String email, String type, String username, String role, String state, String city) {
         Map<String, String> claims = new HashMap<String,String>();

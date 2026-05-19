@@ -48,11 +48,14 @@ services:
       POSTGRES_DB: "${POSTGRES_DB:-tsi_cms}"
       POSTGRES_USER: "${POSTGRES_USER:-tsi_admin}"
       POSTGRES_PASSWD: "${POSTGRES_PASSWD:-secure_dev_password}"
-      TSI_DPDP_CMS_ENV: "${TSI_DPDP_CMS_ENV:-production}"
+      TSI_DPDP_CMS_ENV: "${TSI_DPDP_CMS_ENV:-local}"
       TSI_EXPORT_PATH: "${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}"
       TSI_KEYSTORE_PATH: "${TSI_KEYSTORE_PATH:-/etc/tsi/keystore.p12}"
       TSI_KEYSTORE_PASS: "${TSI_KEYSTORE_PASS:-changeit}"
       TSI_KEYSTORE_ALIAS: "${TSI_KEYSTORE_ALIAS:-tsi_fiduciary}"
+      # LOCAL EVALUATION DEFAULTS — override all of these in production via environment or secrets manager
+      JWT_SECRET: "${JWT_SECRET:-tsi-dpdp-cms-local-dev-secret-do-not-use-in-production}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-http://localhost:8080}"
     
     volumes:
       - "tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw"

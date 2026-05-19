@@ -65,16 +65,7 @@ public class Policy implements Action {
             String versionStr = (String) input.get("version");
             if(versionStr == null) versionStr = "";
             String jurisdiction = (String) input.get("jurisdiction");
-            UUID fiduciaryId = null;
-            String fiduciaryIdStr = (String) input.get("fiduciary_id");
-            if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
-                try {
-                    fiduciaryId = UUID.fromString(fiduciaryIdStr);
-                } catch (IllegalArgumentException e) {
-                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid 'fiduciary_id' format.", req.getRequestURI());
-                    return;
-                }
-            }
+            UUID fiduciaryId = resolveFiduciaryId(req);
 
             switch (func.toLowerCase()) {
                 case "list_policies":
@@ -127,8 +118,12 @@ public class Policy implements Action {
                 case "create_policy":
                     JSONObject policyContent = (JSONObject) input.get("policy_content");
 
-                    if (policyIdStr == null || policyIdStr.isEmpty() || fiduciaryId == null || jurisdiction == null || jurisdiction.isEmpty() || policyContent == null) {
-                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (policy_id, fiduciary_id, jurisdiction, policy_content) for 'create_policy'.", req.getRequestURI());
+                    if (policyIdStr == null || policyIdStr.isEmpty() || jurisdiction == null || jurisdiction.isEmpty() || policyContent == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (policy_id, jurisdiction, policy_content) for 'create_policy'.", req.getRequestURI());
+                        return;
+                    }
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Could not resolve fiduciary. DPO users are resolved automatically; admin users must supply 'fiduciary_id' in the request.", req.getRequestURI());
                         return;
                     }
 
@@ -164,20 +159,11 @@ public class Policy implements Action {
                     }
 
                     policyContent = (JSONObject) input.get("policy_content");
-                    jurisdiction = (String) input.get("jurisdiction"); // Jurisdiction can also be updated for draft
-                    fiduciaryIdStr = (String) input.get("fiduciary_id"); // Fiduciary can also be updated for draft
+                    jurisdiction = (String) input.get("jurisdiction");
 
-                    if (policyContent == null && fiduciaryIdStr == null) {
+                    if (policyContent == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "No fields provided for update for 'update_policy'.", req.getRequestURI());
                         return;
-                    }
-
-                    if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
-                        try { fiduciaryId = UUID.fromString(fiduciaryIdStr); } catch (IllegalArgumentException e) { /* handled below */ }
-                        if (fiduciaryId == null || !fiduciaryExists(fiduciaryId)) {
-                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Fiduciary with ID '" + fiduciaryIdStr + "' not found for update.", req.getRequestURI());
-                            return;
-                        }
                     }
 
                     output = updatePolicyInDb(policyIdStr, fiduciaryId, policyContent);
@@ -378,6 +364,47 @@ public class Policy implements Action {
     }
 
     // --- Helper Methods for Policy Management ---
+
+    /**
+     * Resolves the fiduciary ID from the authenticated operator's record.
+     * The JWT identifies the caller by email; we look up their fiduciary_id
+     * in the operators table so the frontend never needs to supply it.
+     */
+    private UUID resolveFiduciaryId(HttpServletRequest req) throws SQLException {
+        // 1. Derive from the authenticated operator's DB record (covers DPOs implicitly)
+        String authHeader = req.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String email = JWTUtil.getEmailFromToken(authHeader.substring(7));
+            PoolDB pool = new PoolDB();
+            Connection conn = null;
+            PreparedStatement pstmt = null;
+            ResultSet rs = null;
+            try {
+                conn = pool.getConnection();
+                pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE email = ?");
+                pstmt.setString(1, email);
+                rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    Object fid = rs.getObject("fiduciary_id");
+                    if (fid != null) return (UUID) fid;
+                }
+            } finally {
+                pool.cleanup(rs, pstmt, conn);
+            }
+        }
+
+        // 2. Fall back to request body — required for ADMIN users not bound to a fiduciary
+        try {
+            JSONObject input = InputProcessor.getInput(req);
+            if (input != null) {
+                String fidStr = (String) input.get("fiduciary_id");
+                if (fidStr != null && !fidStr.isEmpty()) {
+                    try { return UUID.fromString(fidStr); } catch (IllegalArgumentException e) { /* invalid format, ignore */ }
+                }
+            }
+        } catch (Exception e) { /* request body unavailable or unparseable */ }
+        return null;
+    }
 
     /**
      * Checks if a policy version already exists.
@@ -738,22 +765,32 @@ public class Policy implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ?";
         boolean success = false;
 
         try {
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
+
+            pstmt = conn.prepareStatement("UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ?");
             pstmt.setString(1, policyId);
             pstmt.executeUpdate();
+            pool.cleanup(null, pstmt, null);
+
+            // Retire any ROPA entries whose linked_policy_ids contains this policy
+            pstmt = conn.prepareStatement(
+                "UPDATE ropa_entries SET status = 'retired', updated_at = NOW() " +
+                "WHERE linked_policy_ids @> ?::jsonb AND status != 'retired'"
+            );
+            pstmt.setString(1, "[\"" + policyId + "\"]");
+            pstmt.executeUpdate();
+
             success = true;
         } finally {
             pool.cleanup(null, pstmt, conn);
         }
 
-        // Instrument audit log only after connection is returned to pool
         if (success) {
             new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId, "POLICY_DELETED", "ID: " + policyId);
+            new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId, "ROPA_AUTO_RETIRED", "Policy archived: " + policyId);
         }
     }
 }

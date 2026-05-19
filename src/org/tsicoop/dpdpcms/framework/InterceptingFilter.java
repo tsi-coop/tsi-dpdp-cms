@@ -101,12 +101,22 @@ public class InterceptingFilter implements Filter {
         String uri = req.getRequestURI();
         String servletPath = req.getServletPath(); // e.g., /api/v1/user, /api/v1/policy
 
-        // Set common response headers (CORS, Content-Type, Encoding)
-        // CORS headers are crucial for frontend access from different origins
-        res.setHeader("Access-Control-Allow-Origin", "*"); // For development, allow all. Restrict in production.
+        // CORS — origin driven by environment; defaults to deny-all if unset
+        String allowedOrigin = System.getenv("ALLOWED_ORIGINS");
+        if (allowedOrigin != null && !allowedOrigin.trim().isEmpty()) {
+            res.setHeader("Access-Control-Allow-Origin", allowedOrigin.trim());
+        }
         res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         res.setHeader("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-API-KEY");
         res.setHeader("Access-Control-Max-Age", "3600");
+
+        // Security headers
+        res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+        res.setHeader("Content-Security-Policy", "default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'");
+        res.setHeader("X-Frame-Options", "DENY");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+
         res.setCharacterEncoding("UTF-8");
         res.setContentType("application/json");
 

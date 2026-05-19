@@ -33,12 +33,12 @@ public class CESService {
                                                 int offset) throws SQLException {
         List<JSONObject> principals = new ArrayList<JSONObject>();
         String sql = null;
-        if(target == null || target.equalsIgnoreCase("FULL")) {
+        boolean targetFiltered = target != null && !target.equalsIgnoreCase("FULL");
+        if (targetFiltered) {
+            sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal WHERE fiduciary_id=? AND user_id=? LIMIT ? OFFSET ?";
+        } else {
             sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal WHERE fiduciary_id=? ORDER BY user_id LIMIT ? OFFSET ?";
-        }else{
-            sql = "SELECT fiduciary_id,user_id,last_consent_mechanism,last_ces_run FROM data_principal WHERE fiduciary_id=? AND user_id='"+target+"' LIMIT ? OFFSET ?";
         }
-        //System.out.println(sql);
         PreparedStatement stmt = null;
         ResultSet rs = null;
         JSONObject principal = null;
@@ -50,8 +50,14 @@ public class CESService {
             conn = pool.getConnection();
             stmt = conn.prepareStatement(sql);
             stmt.setObject(1, fiduciaryId);
-            stmt.setInt(2, limit);
-            stmt.setInt(3, offset);
+            if (targetFiltered) {
+                stmt.setString(2, target);
+                stmt.setInt(3, limit);
+                stmt.setInt(4, offset);
+            } else {
+                stmt.setInt(2, limit);
+                stmt.setInt(3, offset);
+            }
             rs = stmt.executeQuery();
             while (rs.next()) {
                 principal = new JSONObject();
@@ -267,7 +273,44 @@ public class CESService {
         }
     }
 
+    private JSONObject getRopaRetention(String fiduciaryId) {
+        String sql = "SELECT retention_period_days, retention_start_event FROM ropa_entries WHERE fiduciary_id = ? AND status = 'active' ORDER BY updated_at DESC LIMIT 1";
+        PoolDB pool = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, UUID.fromString(fiduciaryId));
+            rs = pstmt.executeQuery();
+            if (rs.next() && rs.getObject("retention_period_days") != null) {
+                JSONObject result = new JSONObject();
+                result.put("retention_period_days", rs.getLong("retention_period_days"));
+                result.put("retention_start_event", rs.getString("retention_start_event"));
+                return result;
+            }
+        } catch (Exception e) {
+            // non-blocking — fall back to JSONB expiry
+        } finally {
+            if (pool != null) pool.cleanup(rs, pstmt, conn);
+        }
+        return null;
+    }
+
     private void handleRetentionPurge(JSONObject recent, String principalId, String fiduciaryId, Timestamp lastCESRun, Timestamp tsFromInstant) throws SQLException{
+        Timestamp createdAt = (Timestamp) recent.get("created_at");
+
+        // Prefer ROPA-derived retention for COLLECTION start event; fall back to JSONB consent_expiry
+        JSONObject ropaRetention = getRopaRetention(fiduciaryId);
+        Long ropaRetentionDays = null;
+        boolean ropaCollection = false;
+        if (ropaRetention != null) {
+            ropaRetentionDays = (Long) ropaRetention.get("retention_period_days");
+            ropaCollection = "COLLECTION".equals(ropaRetention.get("retention_start_event"));
+        }
+
         JSONObject consent = null;
         String purposeId = null;
         boolean granted = false;
@@ -280,9 +323,14 @@ public class CESService {
             purposeId = (String) consent.get("data_point_id");
             granted = (boolean) consent.get("consent_granted");
             expiry = (String) consent.get("consent_expiry");
-            //System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
-            if(expiry != null){
-                tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
+            if (ropaRetentionDays != null && ropaCollection) {
+                tsExpiry = Timestamp.from(createdAt.toInstant().plus(ropaRetentionDays, ChronoUnit.DAYS));
+            } else if (expiry != null) {
+                tsExpiry = Timestamp.from(Instant.parse(expiry));
+            } else {
+                tsExpiry = null;
+            }
+            if(tsExpiry != null){
                 //System.out.println("TS Expiry:"+tsExpiry+" Instant:"+tsFromInstant);
                 if(tsExpiry.after(lastCESRun) && tsExpiry.before(tsFromInstant)){
                     // Identify Apps (Data Processors)

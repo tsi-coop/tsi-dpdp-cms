@@ -424,7 +424,8 @@
                 modalRecordStatus.innerHTML = createStatusBadge(record.consent_status_general, record.is_active_consent);
 
                 provenanceDetails.innerHTML = `
-                    <p><strong>Policy Ref:</strong> ${record.policy_id} (v${record.policy_version})</p>
+                    <p><strong>Policy Ref:</strong> ${record.policy_id} (v${record.policy_version || '—'})</p>
+                    ${record.ropa_entry_id ? `<p><strong>ROPA Entry:</strong> ${record.ropa_activity_name || record.ropa_entry_id}</p>` : ''}
                     <p><strong>Time:</strong> ${new Date(record.timestamp).toLocaleString()} (${record.consent_mechanism})</p>
                     <p><strong>IP:</strong> ${record.ip_address || 'N/A'} | <strong>User Agent:</strong> ${record.user_agent || 'N/A'}</p>
                 `;

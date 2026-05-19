@@ -176,7 +176,6 @@
   "required": [
     "_func",
     "policy_id",
-    "fiduciary_id",
     "policy_content"
   ]
 }

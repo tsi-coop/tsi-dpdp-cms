@@ -30,7 +30,8 @@ public class PoolDB extends DB {
                     // Database Connection Properties
                     String dbHost = SystemConfig.getAppConfig().getProperty("framework.db.host");
                     String dbName = SystemConfig.getAppConfig().getProperty("framework.db.name");
-                    config.setJdbcUrl(dbHost + "/" + dbName);
+                    String sslMode = "local".equals(System.getenv("TSI_DPDP_CMS_ENV")) ? "prefer" : "require";
+                    config.setJdbcUrl(dbHost + "/" + dbName + "?sslmode=" + sslMode);
                     config.setUsername(SystemConfig.getAppConfig().getProperty("framework.db.user"));
                     config.setPassword(SystemConfig.getAppConfig().getProperty("framework.db.password"));
 
