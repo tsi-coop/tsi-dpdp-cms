@@ -4,6 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>TSI DPDP CMS - User Dashboard</title>
   <!-- Load Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -280,9 +283,9 @@
         return {
             v: "1.0",
             uid: userId,
-            fid: latest ? latest.fiduciary_id : "N/A", // FIX: Extract Fiduciary ID from the result
+            fid: latest ? latest.fiduciary_id : "N/A",
             sync_url: `${API_BASE_URL}/client/wallet/sync`,
-            token: "SECURE_JWT_TOKEN_" + Math.random().toString(36).substr(2, 9),
+            sync_token: latest ? latest.sync_token : null,
             consents: latest ? latest.data_point_consents : {},
             policy_ref: latest ? `${latest.policy_id}-v${latest.policy_version}` : "N/A",
             generated_at: new Date().toISOString()

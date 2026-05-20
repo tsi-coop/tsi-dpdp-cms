@@ -161,10 +161,18 @@ public class Audit implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
 
+        // Build a hasher once per batch; null if TSI_LOOKUP_SALT is not configured.
+        LookupHasher hasher = null;
+        try {
+            hasher = new LookupHasher();
+        } catch (IllegalStateException ignored) {
+            System.err.println("[WARN] Audit: TSI_LOOKUP_SALT not set — user_id stored without pseudonymisation");
+        }
+
         try {
             pool = new PoolDB();
             conn = pool.getConnection();
-            
+
             // Ensure we have the last known hash from the DB if memory is empty (e.g. after restart)
             if (lastKnownHash == null) {
                 initLastKnownHash(conn);
@@ -174,6 +182,13 @@ public class Audit implements Action {
             pstmt = conn.prepareStatement(sql);
 
             for (AuditEntry log : batch) {
+                // Pseudonymise userId before hash chain and storage so PII is never written to the DB.
+                if (hasher != null) {
+                    try {
+                        log.userId = hasher.hashData(log.userId != null ? log.userId : "");
+                    } catch (Exception ignored) {}
+                }
+
                 String prevHash = lastKnownHash;
                 String currentHash = calculateHash(log, prevHash);
 

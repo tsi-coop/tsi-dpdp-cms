@@ -529,8 +529,6 @@
 
         const editable  = e.status === 'draft' || e.status === 'under_review';
         const canPublish = e.status === 'draft' || e.status === 'under_review';
-        const canRetire  = e.status === 'active';
-
         const retention = e.retention_period_days
             ? `${e.retention_period_days}d (${e.retention_start_event || '—'})`
             : '<span class="text-red-400 text-[10px] font-bold">NOT SET</span>';
@@ -539,7 +537,6 @@
             <button class="text-teal-700 hover:text-teal-900 font-bold text-xs mr-2" onclick="viewEntry('${e.id}')">View</button>
             ${editable  ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-2" onclick="openEditModal('${e.id}')">Edit</button>` : ''}
             ${canPublish ? `<button class="text-green-600 hover:text-green-800 font-bold text-xs mr-2" onclick="publishEntry('${e.id}', '${e.activity_name}')">Publish</button>` : ''}
-            ${canRetire  ? `<button class="text-gray-500 hover:text-gray-700 font-bold text-xs" onclick="retireEntry('${e.id}', '${e.activity_name}')">Retire</button>` : ''}
         `;
 
         tr.innerHTML = `

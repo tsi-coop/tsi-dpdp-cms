@@ -369,13 +369,15 @@
 
                 // 2. FETCH AUTHORITATIVE CONSENT DETAILS FROM SERVER (FRESH SYNC)
                 const detailRes = await syncWithBackend(fidId, userId, syncToken, syncUrl, { command: "GET_CONSENT_DETAILS" });
-                if (!detailRes || !detailRes.success) throw new Error("Registry Sync Failed: " + (detailRes ? detailRes.message : "Unreachable"));
+                if (!detailRes) throw new Error("Registry unreachable. Ensure backend is active.");
 
-                const rawConsents = detailRes.data_point_consents || {};
+                // Handle no-active-consent gracefully (withdrawn / erased state)
+                const noActiveConsent = !detailRes.success;
+                const rawConsents = detailRes.data_point_consents || (data.consents ? data.consents : {});
                 const mappedConsents = Array.isArray(rawConsents) ? rawConsents.map(c => ({
                     id: c.data_point_id || c.id,
                     name: c.purpose_agreed_to || c.name,
-                    status: c.consent_granted === true ? 'GRANTED' : 'WITHDRAWN',
+                    status: noActiveConsent ? 'WITHDRAWN' : (c.consent_granted === true ? 'GRANTED' : 'WITHDRAWN'),
                     mandatory: c.is_mandatory || false
                 })) : [];
 
@@ -383,11 +385,11 @@
                     id: fidId,
                     uid: userId,
                     name: realName,
-                    status: 'IDLE',
+                    status: noActiveConsent ? 'TERMINATED' : 'IDLE',
                     sync_url: syncUrl,
                     sync_token: syncToken,
                     consents: mappedConsents,
-                    audit: [{ phase: 'COLLECTION', action: 'PCA Imported & Registry Synced', time: 'Just now', actor: 'WALLET', status: 'VERIFIED' }]
+                    audit: [{ phase: 'COLLECTION', action: noActiveConsent ? 'PCA Imported — No Active Consent (Withdrawn/Erased)' : 'PCA Imported & Registry Synced', time: 'Just now', actor: 'WALLET', status: noActiveConsent ? 'TERMINATED' : 'VERIFIED' }]
                 };
 
                 state.fiduciaries.push(newFid);

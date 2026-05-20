@@ -4,6 +4,7 @@ x-db-credentials: &db-credentials
   POSTGRES_DB: "${POSTGRES_DB:-tsi_cms}"
   POSTGRES_USER: "${POSTGRES_USER:-tsi_admin}"
   POSTGRES_PASSWORD: "${POSTGRES_PASSWD:-secure_dev_password}"
+  DB_ENCRYPTION_KEY: "${DB_ENCRYPTION_KEY:-local-dev-enc-key-do-not-use-in-production}"
 
 services:
   # 1. PostgreSQL Database Service
@@ -32,7 +33,7 @@ services:
     image: "${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}"
     
     # DEVELOPERS: To build from local source, uncomment the block below
-    #build:
+    # build:
     #  context: .
     #  dockerfile: Dockerfile
     
@@ -55,6 +56,8 @@ services:
       TSI_KEYSTORE_ALIAS: "${TSI_KEYSTORE_ALIAS:-tsi_fiduciary}"
       # LOCAL EVALUATION DEFAULTS — override all of these in production via environment or secrets manager
       JWT_SECRET: "${JWT_SECRET:-tsi-dpdp-cms-local-dev-secret-do-not-use-in-production}"
+      DB_ENCRYPTION_KEY: "${DB_ENCRYPTION_KEY:-local-dev-enc-key-do-not-use-in-production}"
+      TSI_LOOKUP_SALT: "${TSI_LOOKUP_SALT:-local-dev-lookup-salt-do-not-use-in-production}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-http://localhost:8080}"
     
     volumes:

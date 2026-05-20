@@ -2,7 +2,6 @@ package org.tsicoop.dpdpcms.framework;
 
 import jakarta.servlet.ServletContext;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -61,7 +60,6 @@ public class SystemConfig {
     }
 
     public static JSONObject readJSONTemplate(String filePath) {
-        JSONParser parser = new JSONParser();
         JSONObject jsonObject = new JSONObject();
         StringBuffer buff = new StringBuffer();
         if(jsonTemplateCache.get(filePath) != null){
@@ -82,8 +80,8 @@ public class SystemConfig {
                     }
                 }
 
-                jsonObject = (JSONObject) parser.parse(buff.toString());
-                jsonTemplateCache.put(filePath,jsonObject);
+                jsonObject = JacksonUtil.parse(buff.toString());
+                jsonTemplateCache.put(filePath, jsonObject);
             } catch (Exception e) {
                 System.err.println("Error reading JSON file from path " + filePath + ": " + e.getMessage());
             }

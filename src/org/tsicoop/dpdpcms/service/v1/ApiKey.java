@@ -379,7 +379,8 @@ public class ApiKey implements Action {
         }
 
         if (success) {
-            new  Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "REVOKE_KEY", "Key:"+keyId);
+            InputProcessor.evictApiKeyCache(keyId.toString());
+            new Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "REVOKE_KEY", "Key:"+keyId);
         }
     }
 
@@ -410,7 +411,7 @@ public class ApiKey implements Action {
                     throw new SQLException("Cannot update status of a permanently REVOKED key.");
                 }
             }
-            // NOTE: Audit log service call would go here to log key status update.
+            InputProcessor.evictApiKeyCache(keyId.toString());
         } finally {
             pool.cleanup(null, pstmt, conn);
         }

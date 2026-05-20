@@ -122,13 +122,16 @@
         <!-- STEP 2: OTP VERIFICATION -->
         <section id="phase-otp" class="hidden fade-in text-center">
             <h2 class="text-xl font-bold text-slate-800 mb-2">Verify Guardian Identity</h2>
-            <p class="text-sm text-slate-500 mb-8">We've sent a code to the parent's mobile. Enter the 6-digit code below.</p>
+            <p class="text-sm text-slate-500 mb-4">We've sent a code to the parent's mobile. Enter the 6-digit code below.</p>
 
-            <div class="flex justify-center gap-2 mb-8">
-                <input type="text" maxlength="6" id="otp-input" class="w-48 text-center text-2xl font-black tracking-[0.5em] p-3 border-2 border-slate-200 rounded-xl focus:border-teal-600 outline-none" placeholder="------">
+            <div class="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mb-6">
+                <span class="text-amber-600 font-black text-xs uppercase tracking-widest">Demo OTP:</span>
+                <span class="font-black text-lg tracking-[0.3em] text-amber-700">123456</span>
             </div>
 
-            <p class="text-[10px] text-slate-400 italic mb-6">Demo Hint: Use 123456</p>
+            <div class="flex justify-center gap-2 mb-6">
+                <input type="text" maxlength="6" id="otp-input" class="w-48 text-center text-2xl font-black tracking-[0.5em] p-3 border-2 border-slate-200 rounded-xl focus:border-teal-600 outline-none" placeholder="123456">
+            </div>
             <button onclick="verifyOtpAndLoadPolicy()" class="btn-primary">Verify & Review Policy</button>
             <button onclick="switchPhase('identity')" class="mt-4 text-xs font-bold text-slate-400 hover:text-slate-600">Edit Details</button>
         </section>

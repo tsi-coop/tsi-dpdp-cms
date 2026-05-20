@@ -93,6 +93,21 @@ public class InterceptingFilter implements Filter {
         // Static initialization if needed
     }
 
+    /**
+     * Returns true when the request Origin is acceptable.
+     * Enforcement only activates when ALLOWED_ORIGINS env var is set and the Origin header is present.
+     */
+    private boolean isOriginAllowed(HttpServletRequest req) {
+        String origin = req.getHeader("Origin");
+        if (origin == null) return true;
+        String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
+        if (allowedOrigins == null || allowedOrigins.trim().isEmpty()) return true;
+        for (String allowed : allowedOrigins.split(",")) {
+            if (allowed.trim().equalsIgnoreCase(origin)) return true;
+        }
+        return false;
+    }
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
@@ -209,6 +224,13 @@ public class InterceptingFilter implements Filter {
         // --- Validate _func and specific permissions for POST requests ---
         if (!"POST".equalsIgnoreCase(method)) {
             res.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed");
+            return;
+        }
+
+        // Origin validation: for admin browser requests, reject if Origin is present but not in allowlist.
+        // Client API calls are server-to-server and typically have no Origin header — not checked.
+        if (ADMIN_URI_PATH.equalsIgnoreCase(apiCategory) && !isOriginAllowed(req)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Origin not permitted.", uri);
             return;
         }
 

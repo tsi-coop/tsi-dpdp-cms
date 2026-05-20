@@ -1,6 +1,7 @@
 package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.framework.*;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
@@ -46,13 +47,13 @@ public class Wallet implements Action {
             }
 
             // Security Check for protected lifecycle commands
-            if (syncToken == null || fiduciaryIdStr == null || userId == null) {
-                OutputProcessor.errorResponse(res, 400, "Bad Request", "Missing sync parameters (token, fid, or uid).", req.getRequestURI());
+            if (syncToken == null) {
+                OutputProcessor.errorResponse(res, 400, "Bad Request", "Missing sync_token.", req.getRequestURI());
                 return;
             }
 
-            // Load PrincipalContext based on provided credentials
-            PrincipalContext ctx = validateSyncToken(syncToken, fiduciaryIdStr, userId);
+            // userId and fiduciaryId are extracted from the signed token — request body values are not trusted
+            PrincipalContext ctx = validateSyncToken(syncToken);
             if (ctx == null) {
                 OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid or expired Sync Token.", req.getRequestURI());
                 return;
@@ -260,14 +261,16 @@ public class Wallet implements Action {
     }
 
     /**
-     * Maps the scoped Sync Token and provided User ID to the PrincipalContext.
+     * Validates the wallet sync token (a signed JWT with type=SYNC).
+     * userId and fiduciaryId are extracted from the token claims — the request body is not trusted.
      */
-    private PrincipalContext validateSyncToken(String token, String fiduciaryId, String userId) throws SQLException {
-        // In production, this would verify the token in a session/registry table linked to the userId.
-        if (token != null && (token.startsWith("SECURE_JWT_TOKEN_") || token.startsWith("BRH_SYNC_TK_") || token.startsWith("PCA_TOKEN_"))) {
-            return new PrincipalContext(userId, fiduciaryId);
-        }
-        return null;
+    private PrincipalContext validateSyncToken(String token) {
+        Claims claims = JWTUtil.getSyncClaimsFromToken(token);
+        if (claims == null) return null;
+        String tokenUserId = claims.getSubject();
+        String tokenFiduciaryId = (String) claims.get("fid");
+        if (tokenUserId == null || tokenFiduciaryId == null) return null;
+        return new PrincipalContext(tokenUserId, tokenFiduciaryId);
     }
 
     private static class PrincipalContext {

@@ -51,6 +51,9 @@ public class Operator implements Action {
                 case "login":
                     handleLogin(input, res, req);
                     break;
+                case "logout":
+                    handleLogout(req, res);
+                    break;
                 case "generate_recovery_key":
                     handleGenerateRecoveryKey(input, loginUserId, res, req);
                     break;
@@ -85,6 +88,12 @@ public class Operator implements Action {
     }
 
     private void handleLogin(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String clientIp = LoginRateLimiter.getClientIp(req);
+        if (!LoginRateLimiter.isAllowed(clientIp)) {
+            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many login attempts. Please try again later.", req.getRequestURI());
+            return;
+        }
+
         String identifier = (String) input.get("identifier");
         String password = (String) input.get("password");
 
@@ -104,11 +113,12 @@ public class Operator implements Action {
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(
-                "SELECT o.id, o.name, o.email, o.password_hash, o.status, o.role, o.fiduciary_id, f.name AS fiduciary_name " +
+                "SELECT o.id, o.name, " + DbEncryption.decryptCol("o.email_enc") + " AS email, o.password_hash, o.status, o.role, o.fiduciary_id, f.name AS fiduciary_name " +
                 "FROM operators o LEFT JOIN fiduciaries f ON o.fiduciary_id = f.id " +
-                "WHERE o.name = ? OR o.email = ?");
-            pstmt.setString(1, identifier);
-            pstmt.setString(2, identifier);
+                "WHERE o.name = ? OR o.email_hmac = " + DbEncryption.HMAC);
+            int loginIdx = DbEncryption.bindKey(pstmt, 1);    // param 1: decrypt key
+            pstmt.setString(loginIdx++, identifier);           // param 2: name match
+            DbEncryption.bindHmac(pstmt, loginIdx, identifier); // params 3,4: email_hmac match
             rs = pstmt.executeQuery();
 
             if (rs.next() && "ACTIVE".equals(rs.getString("status"))) {
@@ -143,12 +153,33 @@ public class Operator implements Action {
         }
 
         if (success) {
-            // Service type is ADMIN, Service Id is the user being authenticated (since loginUserId is null)
+            LoginRateLimiter.recordSuccess(clientIp);
             new Audit().logEventAsync(identifier, fidUid, serviceType, userUid, "LOGIN_SUCCESS", "Operator Access Granted");
             OutputProcessor.send(res, 200, out);
         }else{
             new Audit().logEventAsync(identifier, fidUid, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
             OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
+        }
+    }
+
+    private void handleLogout(HttpServletRequest req, HttpServletResponse res) {
+        try {
+            String authorization = req.getHeader("Authorization");
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                String token = authorization.substring(7);
+                String jti = JWTUtil.getJtiFromToken(token);
+                java.util.Date expiry = JWTUtil.getExpiryFromToken(token);
+                if (jti != null && expiry != null) {
+                    TokenBlocklist.revoke(jti, expiry.getTime());
+                }
+            }
+            JSONObject out = new JSONObject();
+            out.put("success", true);
+            out.put("message", "Logged out successfully.");
+            OutputProcessor.send(res, 200, out);
+        } catch (Exception e) {
+            System.err.println("[ERROR] Operator.handleLogout: " + e);
+            OutputProcessor.errorResponse(res, 500, "Internal Error", "Logout failed.", req.getRequestURI());
         }
     }
 
@@ -178,16 +209,19 @@ public class Operator implements Action {
         UUID newId = null;
 
         try {
-            String sql = "INSERT INTO operators (id, name, email, password_hash, role, status, fiduciary_id, created_at, last_updated_at) " +
-                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, 'ACTIVE', ?, NOW(), NOW()) RETURNING id";
+            String sql = "INSERT INTO operators (id, name, email_plaintext, email_enc, email_hmac, password_hash, role, status, fiduciary_id, created_at, last_updated_at) " +
+                    "VALUES (uuid_generate_v4(), ?, ?, " + DbEncryption.ENCRYPT + ", " + DbEncryption.HMAC + ", ?, ?, 'ACTIVE', ?, NOW(), NOW()) RETURNING id";
 
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, user);
-            pstmt.setString(2, mail);
-            pstmt.setString(3, passwordHasher.hashPassword(pass));
-            pstmt.setString(4, role);
-            pstmt.setObject(5, fid.equals(ADMIN_FID_UUID) ? null : fid);
+            int ci = 1;
+            pstmt.setString(ci++, user);
+            pstmt.setString(ci++, mail);                              // email_plaintext
+            ci = DbEncryption.bindEncrypt(pstmt, ci, mail);          // email_enc
+            ci = DbEncryption.bindHmac(pstmt, ci, mail);             // email_hmac
+            pstmt.setString(ci++, passwordHasher.hashPassword(pass));
+            pstmt.setString(ci++, role);
+            pstmt.setObject(ci++, fid.equals(ADMIN_FID_UUID) ? null : fid);
 
             rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -230,8 +264,10 @@ public class Operator implements Action {
         try {
             conn = pool.getConnection();
             // Fetch target email for audit principal
-            try (PreparedStatement p = conn.prepareStatement("SELECT email FROM operators WHERE id = ?")) {
-                p.setObject(1, uid);
+            try (PreparedStatement p = conn.prepareStatement(
+                    "SELECT " + DbEncryption.decryptCol("email_enc") + " AS email FROM operators WHERE id = ?")) {
+                int pi = DbEncryption.bindKey(p, 1);
+                p.setObject(pi, uid);
                 try (ResultSet rs = p.executeQuery()) {
                     if (rs.next()) targetEmail = rs.getString("email");
                 }
@@ -276,8 +312,10 @@ public class Operator implements Action {
         try {
             conn = pool.getConnection();
             // Fetch email for audit
-            try (PreparedStatement p = conn.prepareStatement("SELECT email FROM operators WHERE id = ?")) {
-                p.setObject(1, uid);
+            try (PreparedStatement p = conn.prepareStatement(
+                    "SELECT " + DbEncryption.decryptCol("email_enc") + " AS email FROM operators WHERE id = ?")) {
+                int pi = DbEncryption.bindKey(p, 1);
+                p.setObject(pi, uid);
                 try (ResultSet rs = p.executeQuery()) {
                     if (rs.next()) targetEmail = rs.getString("email");
                 }
@@ -320,8 +358,8 @@ public class Operator implements Action {
             conn = pool.getConnection();
             conn.setAutoCommit(false);
 
-            pstmt = conn.prepareStatement("SELECT id, recovery_key_hash, fiduciary_id FROM operators WHERE email = ? AND status = 'ACTIVE' FOR UPDATE");
-            pstmt.setString(1, email);
+            pstmt = conn.prepareStatement("SELECT id, recovery_key_hash, fiduciary_id FROM operators WHERE email_hmac = " + DbEncryption.HMAC + " AND status = 'ACTIVE' FOR UPDATE");
+            DbEncryption.bindHmac(pstmt, 1, email);
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
@@ -368,8 +406,10 @@ public class Operator implements Action {
 
         try {
             conn = pool.getConnection();
-            try (PreparedStatement p = conn.prepareStatement("SELECT email FROM operators WHERE id = ?")) {
-                p.setObject(1, uid);
+            try (PreparedStatement p = conn.prepareStatement(
+                    "SELECT " + DbEncryption.decryptCol("email_enc") + " AS email FROM operators WHERE id = ?")) {
+                int pi = DbEncryption.bindKey(p, 1);
+                p.setObject(pi, uid);
                 try (ResultSet rs = p.executeQuery()) {
                     if (rs.next()) targetEmail = rs.getString("email");
                 }
@@ -403,8 +443,8 @@ public class Operator implements Action {
 
         try {
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement("SELECT recovery_key_hash FROM operators WHERE email = ? AND status = 'ACTIVE'");
-            pstmt.setString(1, email);
+            pstmt = conn.prepareStatement("SELECT recovery_key_hash FROM operators WHERE email_hmac = " + DbEncryption.HMAC + " AND status = 'ACTIVE'");
+            DbEncryption.bindHmac(pstmt, 1, email);
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
@@ -428,12 +468,13 @@ public class Operator implements Action {
         JSONArray arr = new JSONArray();
 
         try {
-            String sql = "SELECT u.id, u.name, u.email, u.status, u.role, u.fiduciary_id, f.name as fiduciary_name " +
+            String sql = "SELECT u.id, u.name, " + DbEncryption.decryptCol("u.email_enc") + " AS email, u.status, u.role, u.fiduciary_id, f.name as fiduciary_name " +
                     "FROM operators u LEFT JOIN fiduciaries f ON u.fiduciary_id = f.id " +
                     "ORDER BY u.created_at DESC";
 
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
+            DbEncryption.bindKey(pstmt, 1);
             rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -462,8 +503,9 @@ public class Operator implements Action {
 
         try {
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement("SELECT id, name, email, fiduciary_id, role FROM operators WHERE id = ?");
-            pstmt.setObject(1, uid);
+            pstmt = conn.prepareStatement("SELECT id, name, " + DbEncryption.decryptCol("email_enc") + " AS email, fiduciary_id, role FROM operators WHERE id = ?");
+            int gi = DbEncryption.bindKey(pstmt, 1);
+            pstmt.setObject(gi, uid);
             rs = pstmt.executeQuery();
 
             if (rs.next()) {

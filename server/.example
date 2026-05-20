@@ -17,6 +17,14 @@ POSTGRES_USER=
 POSTGRES_PASSWD=
 
 # --- Application Configuration ---
+# JWT_SECRET: minimum 32 characters. Generate with: openssl rand -hex 32
+JWT_SECRET=<generate-with-openssl-rand-hex-32>
+# DB_ENCRYPTION_KEY: encrypts PII columns via pgcrypto. Never change after first use.
+# Generate with: openssl rand -hex 32
+DB_ENCRYPTION_KEY=<generate-with-openssl-rand-hex-32>
+# TSI_LOOKUP_SALT: HMAC salt for pseudonymising user IDs in audit logs.
+# Generate with: openssl rand -hex 32
+TSI_LOOKUP_SALT=<generate-with-openssl-rand-hex-32>
 TSI_DPDP_CMS_ENV=local
 TSI_DPDP_CMS_HOME=
 TSI_EXPORT_PATH=/var/lib/tsi/exports/

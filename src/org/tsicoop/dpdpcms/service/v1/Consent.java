@@ -86,7 +86,7 @@ public class Consent implements Action {
             // Extract common parameters for consent record operations
             String userId = (String) input.get("user_id"); // Data Principal's ID
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Fiduciary().getFiduciaryId(UUID.fromString(apiKey),apiSecret);
+            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Fiduciary().getFiduciaryId(UUID.fromString(apiKey != null ? apiKey : "00000000-0000-0000-0000-000000000000"),apiSecret);
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 try {
                     fiduciaryId = UUID.fromString(fiduciaryIdStr);
@@ -655,7 +655,14 @@ public class Consent implements Action {
             pstmtDeactivate.setObject(2, fiduciaryId);
             pstmtDeactivate.executeUpdate();
 
-            // 2. Insert the NEW consent record
+            // 2. Insert the NEW consent record — hash IP before storage
+            String storedIp = ipAddress;
+            try {
+                storedIp = new LookupHasher().hashData(ipAddress != null ? ipAddress : "0.0.0.0");
+            } catch (Exception ignored) {
+                // TSI_LOOKUP_SALT not set or SHA-256 unavailable — store original
+            }
+
             UUID ropaEntryId = resolveRopaEntryId(conn, fiduciaryId, policyId);
             pstmtInsert = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
             pstmtInsert.setString(1, userId);
@@ -667,7 +674,7 @@ public class Consent implements Action {
             pstmtInsert.setString(7, languageSelected);
             pstmtInsert.setString(8, consentStatusGeneral);
             pstmtInsert.setString(9, consentMechanism);
-            pstmtInsert.setString(10, ipAddress);
+            pstmtInsert.setString(10, storedIp);
             pstmtInsert.setString(11, userAgent);
             pstmtInsert.setString(12, dataPointConsents.toJSONString());
             pstmtInsert.setObject(13, verificationLogId);
@@ -684,6 +691,7 @@ public class Consent implements Action {
                 newConsentId = UUID.fromString(rs.getString(1));
                 output.put("consent_record_id", newConsentId.toString());
                 output.put("user_id", userId);
+                output.put("sync_token", JWTUtil.generateSyncToken(userId, fiduciaryId.toString()));
                 output.put("message", "Consent recorded successfully.");
             } else {
                 throw new SQLException("Recording consent failed, no ID obtained.");
@@ -869,6 +877,7 @@ public class Consent implements Action {
                 consent.put("user_agent", rs.getString("user_agent"));
                 consent.put("data_point_consents", new JSONParser().parse(rs.getString("data_point_consents")));
                 consent.put("is_active_consent", rs.getBoolean("is_active_consent"));
+                consent.put("sync_token", JWTUtil.generateSyncToken(rs.getString("user_id"), rs.getString("fiduciary_id")));
                 historyArray.add(consent);
             }
         } catch (ParseException e) {

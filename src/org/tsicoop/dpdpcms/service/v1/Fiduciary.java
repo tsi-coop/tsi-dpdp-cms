@@ -345,8 +345,9 @@ public class Fiduciary implements Action {
             params.add(primaryDomain);
         }
         if (email != null && !email.isEmpty()) {
-            sqlBuilder.append(" OR email = ?");
-            params.add(email);
+            sqlBuilder.append(" OR email_hmac = " + DbEncryption.HMAC);
+            params.add(email);              // HMAC value
+            params.add(DbEncryption.key()); // HMAC key
         }
         sqlBuilder.append(")"); // Close the OR group
 
@@ -401,8 +402,10 @@ public class Fiduciary implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, name, contact_person, email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at FROM fiduciaries WHERE status is not null");
+        StringBuilder sqlBuilder = new StringBuilder(
+                "SELECT id, name, contact_person, " + DbEncryption.decryptCol("email_enc") + " AS email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at FROM fiduciaries WHERE status is not null");
         List<Object> params = new ArrayList<>();
+        params.add(DbEncryption.key()); // param 1: decrypt key for email_enc
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
             sqlBuilder.append(" AND status = ?");
@@ -410,8 +413,7 @@ public class Fiduciary implements Action {
         }
 
         if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (name LIKE ? OR primary_domain LIKE ? OR email LIKE ?)");
-            params.add("%" + search + "%");
+            sqlBuilder.append(" AND (name LIKE ? OR primary_domain LIKE ?)");
             params.add("%" + search + "%");
             params.add("%" + search + "%");
         }
@@ -461,11 +463,16 @@ public class Fiduciary implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, name, contact_person, email, phone, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at FROM fiduciaries WHERE id = ?";
+        String sql = "SELECT id, name, contact_person, " +
+                DbEncryption.decryptCol("email_enc") + " AS email, " +
+                DbEncryption.decryptCol("phone_enc") + " AS phone, " +
+                "address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at FROM fiduciaries WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, fiduciaryId);
+            int pi = DbEncryption.bindKey(pstmt, 1);  // param 1: decrypt key for email_enc
+            pi = DbEncryption.bindKey(pstmt, pi);     // param 2: decrypt key for phone_enc
+            pstmt.setObject(pi, fiduciaryId);          // param 3: id
             rs = pstmt.executeQuery();
             if (rs.next()) {
                 JSONObject fiduciary = new JSONObject();
@@ -506,22 +513,43 @@ public class Fiduciary implements Action {
         PoolDB pool = new PoolDB();
         String fiduciaryId = null;
         boolean success = false;
-        String sql = "INSERT INTO fiduciaries (id, name, contact_person, email, phone, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
+        String sql = "INSERT INTO fiduciaries (id, name, contact_person, email_plaintext, email_enc, email_hmac, phone_plaintext, phone_enc, address, primary_domain, cms_cname, dns_txt_record_token, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at) " +
+                "VALUES (uuid_generate_v4(), ?, ?, ?, " + DbEncryption.ENCRYPT + ", " + DbEncryption.HMAC + ", ?, " + DbEncryption.ENCRYPT + ", ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            pstmt.setString(1, name);
-            pstmt.setString(2, contactPerson);
-            pstmt.setString(3, email);
-            pstmt.setString(4, phone);
-            pstmt.setString(5, address);
-            pstmt.setString(6, primaryDomain);
-            pstmt.setString(7, cmsCname);
-            pstmt.setString(8, dnsTxtToken);
-            pstmt.setString(9, "PENDING"); // Initial validation status
-            pstmt.setBoolean(10, isSignificant);
-            pstmt.setString(11, status);
+            int fi = 1;
+            pstmt.setString(fi++, name);
+            pstmt.setString(fi++, contactPerson);
+            // email (nullable)
+            if (email != null && !email.isEmpty()) {
+                pstmt.setString(fi++, email);                            // email_plaintext
+                fi = DbEncryption.bindEncrypt(pstmt, fi, email);        // email_enc
+                fi = DbEncryption.bindHmac(pstmt, fi, email);           // email_hmac
+            } else {
+                pstmt.setNull(fi++, java.sql.Types.VARCHAR);             // email_plaintext = NULL
+                pstmt.setNull(fi++, java.sql.Types.VARCHAR);             // ENCRYPT value = NULL
+                pstmt.setString(fi++, DbEncryption.key());               // ENCRYPT key
+                pstmt.setNull(fi++, java.sql.Types.VARCHAR);             // HMAC value = NULL
+                pstmt.setString(fi++, DbEncryption.key());               // HMAC key
+            }
+            // phone (nullable)
+            if (phone != null && !phone.isEmpty()) {
+                pstmt.setString(fi++, phone);                            // phone_plaintext
+                fi = DbEncryption.bindEncrypt(pstmt, fi, phone);        // phone_enc
+            } else {
+                pstmt.setNull(fi++, java.sql.Types.VARCHAR);             // phone_plaintext = NULL
+                pstmt.setNull(fi++, java.sql.Types.VARCHAR);             // ENCRYPT value = NULL
+                pstmt.setString(fi++, DbEncryption.key());               // ENCRYPT key
+            }
+            pstmt.setString(fi++, address);
+            pstmt.setString(fi++, primaryDomain);
+            pstmt.setString(fi++, cmsCname);
+            pstmt.setString(fi++, dnsTxtToken);
+            pstmt.setString(fi++, "PENDING"); // Initial validation status
+            pstmt.setBoolean(fi++, isSignificant);
+            pstmt.setString(fi++, status);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -568,8 +596,24 @@ public class Fiduciary implements Action {
 
         if (name != null && !name.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(name); }
         if (contactPerson != null) { sqlBuilder.append(", contact_person = ?"); params.add(contactPerson); }
-        if (email != null && !email.isEmpty()) { sqlBuilder.append(", email = ?"); params.add(email); }
-        if (phone != null) { sqlBuilder.append(", phone = ?"); params.add(phone); }
+        if (email != null && !email.isEmpty()) {
+            sqlBuilder.append(", email_plaintext = ?, email_enc = " + DbEncryption.ENCRYPT + ", email_hmac = " + DbEncryption.HMAC);
+            params.add(email);               // email_plaintext
+            params.add(email);               // ENCRYPT value
+            params.add(DbEncryption.key());  // ENCRYPT key
+            params.add(email);               // HMAC value
+            params.add(DbEncryption.key());  // HMAC key
+        }
+        if (phone != null) {
+            if (phone.isEmpty()) {
+                sqlBuilder.append(", phone_plaintext = NULL, phone_enc = NULL");
+            } else {
+                sqlBuilder.append(", phone_plaintext = ?, phone_enc = " + DbEncryption.ENCRYPT);
+                params.add(phone);               // phone_plaintext
+                params.add(phone);               // ENCRYPT value
+                params.add(DbEncryption.key());  // ENCRYPT key
+            }
+        }
         if (address != null) { sqlBuilder.append(", address = ?"); params.add(address); }
         if (primaryDomain != null && !primaryDomain.isEmpty()) { sqlBuilder.append(", primary_domain = ?"); params.add(primaryDomain); }
         if (cmsCname != null && !cmsCname.isEmpty()) { sqlBuilder.append(", cms_cname = ?"); params.add(cmsCname); }

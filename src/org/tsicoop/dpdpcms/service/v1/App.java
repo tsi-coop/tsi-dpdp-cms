@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.tsicoop.dpdpcms.util.Constants;
 
@@ -291,8 +290,14 @@ public class App implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, fiduciary_id, name, email, phone, dpa_reference, processing_purposes, status, created_at, last_updated_at FROM apps WHERE status IS NOT NULL");
+        StringBuilder sqlBuilder = new StringBuilder(
+                "SELECT id, fiduciary_id, name, " +
+                DbEncryption.decryptCol("email_enc") + " AS email, " +
+                DbEncryption.decryptCol("phone_enc") + " AS phone, " +
+                "dpa_reference, processing_purposes, status, created_at, last_updated_at FROM apps WHERE status IS NOT NULL");
         List<Object> params = new ArrayList<>();
+        params.add(DbEncryption.key()); // param 1: decrypt key for email_enc
+        params.add(DbEncryption.key()); // param 2: decrypt key for phone_enc
 
         if (fiduciaryId != null && !fiduciaryId.toString().isEmpty()) {
             sqlBuilder.append(" AND fiduciary_id = ?");
@@ -303,8 +308,7 @@ public class App implements Action {
             params.add(statusFilter);
         }
         if (search != null && !search.isEmpty()) {
-            sqlBuilder.append(" AND (name LIKE ? OR email LIKE ? OR dpa_reference LIKE ?)");
-            params.add("%" + search + "%");
+            sqlBuilder.append(" AND (name LIKE ? OR dpa_reference LIKE ?)");
             params.add("%" + search + "%");
             params.add("%" + search + "%");
         }
@@ -353,12 +357,17 @@ public class App implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT id, fiduciary_id, name, email, phone, dpa_reference, processing_purposes, status, created_at, last_updated_at FROM apps WHERE id = ? AND fiduciary_id = ?";
+        String sql = "SELECT id, fiduciary_id, name, " +
+                DbEncryption.decryptCol("email_enc") + " AS email, " +
+                DbEncryption.decryptCol("phone_enc") + " AS phone, " +
+                "dpa_reference, processing_purposes, status, created_at, last_updated_at FROM apps WHERE id = ? AND fiduciary_id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, appId);
-            pstmt.setObject(2, fiduciaryId);
+            int pi = DbEncryption.bindKey(pstmt, 1);  // param 1: decrypt key for email_enc
+            pi = DbEncryption.bindKey(pstmt, pi);     // param 2: decrypt key for phone_enc
+            pstmt.setObject(pi++, appId);              // param 3: appId
+            pstmt.setObject(pi, fiduciaryId);          // param 4: fiduciaryId
             rs = pstmt.executeQuery();
             if (rs.next()) {
                 JSONObject app = new JSONObject();
@@ -428,18 +437,36 @@ public class App implements Action {
         PoolDB pool = new PoolDB();
         boolean success = false;
         String appId = null;
-        String sql = "INSERT INTO apps (id, fiduciary_id, name, email, phone, dpa_reference, processing_purposes, status, created_at, last_updated_at) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?,?,NOW(),NOW()) RETURNING id";
+        String sql = "INSERT INTO apps (id, fiduciary_id, name, email_plaintext, email_enc, phone_plaintext, phone_enc, dpa_reference, processing_purposes, status, created_at, last_updated_at) " +
+                "VALUES (uuid_generate_v4(), ?, ?, ?, " + DbEncryption.ENCRYPT + ", ?, " + DbEncryption.ENCRYPT + ", ?, ?, ?, NOW(), NOW()) RETURNING id";
 
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            pstmt.setObject(1, fiduciaryId);
-            pstmt.setString(2, name);
-            pstmt.setString(3, email);
-            pstmt.setString(4, phone);
-            pstmt.setString(5, dpaReference);
-            pstmt.setString(6, processingPurposes);
-            pstmt.setString(7, "ACTIVE");
+            int ai = 1;
+            pstmt.setObject(ai++, fiduciaryId);
+            pstmt.setString(ai++, name);
+            // email (nullable)
+            if (email != null && !email.isEmpty()) {
+                pstmt.setString(ai++, email);                           // email_plaintext
+                ai = DbEncryption.bindEncrypt(pstmt, ai, email);       // email_enc
+            } else {
+                pstmt.setNull(ai++, java.sql.Types.VARCHAR);            // email_plaintext = NULL
+                pstmt.setNull(ai++, java.sql.Types.VARCHAR);            // ENCRYPT value = NULL
+                pstmt.setString(ai++, DbEncryption.key());              // ENCRYPT key
+            }
+            // phone (nullable)
+            if (phone != null && !phone.isEmpty()) {
+                pstmt.setString(ai++, phone);                           // phone_plaintext
+                ai = DbEncryption.bindEncrypt(pstmt, ai, phone);       // phone_enc
+            } else {
+                pstmt.setNull(ai++, java.sql.Types.VARCHAR);            // phone_plaintext = NULL
+                pstmt.setNull(ai++, java.sql.Types.VARCHAR);            // ENCRYPT value = NULL
+                pstmt.setString(ai++, DbEncryption.key());              // ENCRYPT key
+            }
+            pstmt.setString(ai++, dpaReference);
+            pstmt.setString(ai++, processingPurposes);
+            pstmt.setString(ai++, "ACTIVE");
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -481,8 +508,22 @@ public class App implements Action {
         List<Object> params = new ArrayList<>();
 
         if (name != null && !name.isEmpty()) { sqlBuilder.append(", name = ?"); params.add(name); }
-        if (email != null && !email.isEmpty()) { sqlBuilder.append(", email = ?"); params.add(email); }
-        if (phone != null) { sqlBuilder.append(", phone = ?"); params.add(phone); }
+        if (email != null && !email.isEmpty()) {
+            sqlBuilder.append(", email_plaintext = ?, email_enc = " + DbEncryption.ENCRYPT);
+            params.add(email);               // email_plaintext
+            params.add(email);               // ENCRYPT value
+            params.add(DbEncryption.key());  // ENCRYPT key
+        }
+        if (phone != null) {
+            if (phone.isEmpty()) {
+                sqlBuilder.append(", phone_plaintext = NULL, phone_enc = NULL");
+            } else {
+                sqlBuilder.append(", phone_plaintext = ?, phone_enc = " + DbEncryption.ENCRYPT);
+                params.add(phone);               // phone_plaintext
+                params.add(phone);               // ENCRYPT value
+                params.add(DbEncryption.key());  // ENCRYPT key
+            }
+        }
         if (dpaReference != null) { sqlBuilder.append(", dpa_reference = ?"); params.add(dpaReference); }
         if (processingPurposes != null) { sqlBuilder.append(", processing_purposes = ?"); params.add(processingPurposes); }
         sqlBuilder.append(" WHERE id = ? AND fiduciary_id = ?");

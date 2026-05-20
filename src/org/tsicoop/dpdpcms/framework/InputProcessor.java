@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.PasswordHasher;
 import org.tsicoop.dpdpcms.service.v1.Audit;
 import org.tsicoop.dpdpcms.util.Constants;
@@ -243,7 +242,7 @@ public class InputProcessor {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = null;
-        String sql = "SELECT id FROM operators WHERE email=?";
+        String sql = "SELECT id FROM operators WHERE email_hmac = " + DbEncryption.HMAC;
 
         authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
         if(authToken == null) return null;
@@ -253,7 +252,7 @@ public class InputProcessor {
             pool = new PoolDB();
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, email);
+            DbEncryption.bindHmac(pstmt, 1, email);
             rs = pstmt.executeQuery();
             if (rs.next()) {
                 loginUserId = UUID.fromString(rs.getString("id"));
@@ -290,6 +289,12 @@ public class InputProcessor {
         return role;
     }
 
+    /** Immediately evicts a revoked/deactivated API key from both in-process caches. */
+    public static void evictApiKeyCache(String apiKeyId) {
+        permissionsMap.remove(apiKeyId);
+        apiClientCache.entrySet().removeIf(e -> e.getKey().startsWith(apiKeyId + ":"));
+    }
+
     /** Returns the role from the database for the authenticated user, not from the JWT claim. */
     public static String getVerifiedRole(HttpServletRequest req) {
         JSONObject authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
@@ -304,8 +309,8 @@ public class InputProcessor {
         try {
             pool = new PoolDB();
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement("SELECT role FROM operators WHERE email = ? AND status = 'ACTIVE'");
-            pstmt.setString(1, email);
+            pstmt = conn.prepareStatement("SELECT role FROM operators WHERE email_hmac = " + DbEncryption.HMAC + " AND status = 'ACTIVE'");
+            DbEncryption.bindHmac(pstmt, 1, email);
             rs = pstmt.executeQuery();
             if (rs.next()) return rs.getString("role");
         } catch (Exception e) {
@@ -351,16 +356,13 @@ public class InputProcessor {
         return tokenDetails;
     }
 
-    public static JSONObject getInput(HttpServletRequest req) throws Exception{
+    public static JSONObject getInput(HttpServletRequest req) throws Exception {
         JSONObject input = null;
-        String inputs = null;
         try {
-            inputs = (String) req.getAttribute(InputProcessor.REQUEST_DATA);
-            if(inputs!=null) inputs = inputs.trim();
-            //System.out.println("inputs:"+inputs);
-            //inputs = applyRules(inputs);
-            input = (JSONObject) new JSONParser().parse(inputs);
-        }catch(Exception e){
+            String inputs = (String) req.getAttribute(InputProcessor.REQUEST_DATA);
+            if (inputs != null) inputs = inputs.trim();
+            input = JacksonUtil.parse(inputs);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return input;

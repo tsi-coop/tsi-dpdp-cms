@@ -381,8 +381,8 @@ public class Policy implements Action {
             ResultSet rs = null;
             try {
                 conn = pool.getConnection();
-                pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE email = ?");
-                pstmt.setString(1, email);
+                pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE email_hmac = " + DbEncryption.HMAC);
+                DbEncryption.bindHmac(pstmt, 1, email);
                 rs = pstmt.executeQuery();
                 if (rs.next()) {
                     Object fid = rs.getObject("fiduciary_id");
