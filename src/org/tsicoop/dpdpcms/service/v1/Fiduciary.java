@@ -286,14 +286,13 @@ public class Fiduciary implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         String fiduciaryId = null;
-        String sql = "SELECT fiduciary_id FROM api_keys WHERE id = ? AND key_value=?";
+        String sql = "SELECT fiduciary_id, key_value FROM api_keys WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, apiKey);
-            pstmt.setString(2, "HASHED_"+apiSecret);
             rs = pstmt.executeQuery();
-            if(rs.next())
+            if (rs.next() && new PasswordHasher().checkPassword(apiSecret, rs.getString("key_value")))
                 fiduciaryId = rs.getString("fiduciary_id");
         } finally {
             pool.cleanup(rs, pstmt, conn);

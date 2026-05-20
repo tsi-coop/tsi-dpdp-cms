@@ -1,6 +1,7 @@
 package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.framework.Action;
+import org.tsicoop.dpdpcms.framework.PasswordHasher;
 import org.tsicoop.dpdpcms.framework.PoolDB;
 import org.tsicoop.dpdpcms.framework.InputProcessor;
 import org.tsicoop.dpdpcms.framework.OutputProcessor;
@@ -195,13 +196,8 @@ public class ApiKey implements Action {
         return UUID.randomUUID().toString() + UUID.randomUUID().toString().replace("-", "");
     }
 
-    /**
-     * MOCK: Hashes the raw API key for secure database storage.
-     */
     private String hashApiKey(String rawKey) {
-        // In a real system, use BCrypt or Argon2 for secure hashing.
-        // For this example, we just return a simple hash for demonstration.
-        return "HASHED_" + rawKey;
+        return new PasswordHasher().hashPassword(rawKey);
     }
 
     /**
@@ -327,28 +323,25 @@ public class ApiKey implements Action {
         PoolDB pool = new PoolDB();
         UUID appId = null;
 
-        String sql = "SELECT app_id FROM api_keys WHERE id = ? AND key_value = ? AND status = 'ACTIVE'";
+        String sql = "SELECT app_id, key_value FROM api_keys WHERE id = ? AND status = 'ACTIVE'";
 
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, UUID.fromString(apiKey));
 
-            // Note: Matching the hashing pattern used in InputProcessor/Operator
-            pstmt.setString(2, "HASHED_" + apiSecret);
-
             rs = pstmt.executeQuery();
             if (rs.next()) {
-                String appIdStr = rs.getString("app_id");
-                if (appIdStr != null) {
-                    appId = UUID.fromString(appIdStr);
-
-                    // 3. Populate cache on successful lookup
-                    appCache.put(cacheKey, appId);
+                String storedHash = rs.getString("key_value");
+                if (new PasswordHasher().checkPassword(apiSecret, storedHash)) {
+                    String appIdStr = rs.getString("app_id");
+                    if (appIdStr != null) {
+                        appId = UUID.fromString(appIdStr);
+                        appCache.put(cacheKey, appId);
+                    }
                 }
             }
         } finally {
-            // Reliable resource cleanup
             pool.cleanup(rs, pstmt, conn);
         }
 

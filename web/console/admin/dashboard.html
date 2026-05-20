@@ -273,6 +273,11 @@
 </div>
 
 <script>
+        function esc(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+        }
+
         // --- Configuration ---
         const API_URL_DASHBOARD = '/api/v1/admin/admindash';
         const API_URL_JOBS = '/api/v1/admin/job';
@@ -346,10 +351,10 @@
                         ? `<tr><td colspan="4" class="p-4 text-center text-gray-500">No recent activity.</td></tr>`
                         : activities.map(a => `
                             <tr>
-                                <td class="px-4 py-3 text-sm text-gray-500 font-mono">${new Date(a.timestamp).toLocaleString()}</td>
-                                <td class="px-4 py-3 text-sm font-bold text-slate-700">${a.user_id || 'SYSTEM'}</td>
-                                <td class="px-4 py-3 text-sm"><span class="text-[10px] font-black uppercase text-teal-600">${a.audit_action}</span></td>
-                                <td class="px-4 py-3 text-sm text-gray-500 truncate max-w-xs">${a.context_details || '-'}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 font-mono">${esc(new Date(a.timestamp).toLocaleString())}</td>
+                                <td class="px-4 py-3 text-sm font-bold text-slate-700">${esc(a.user_id || 'SYSTEM')}</td>
+                                <td class="px-4 py-3 text-sm"><span class="text-[10px] font-black uppercase text-teal-600">${esc(a.audit_action)}</span></td>
+                                <td class="px-4 py-3 text-sm text-gray-500 truncate max-w-xs">${esc(a.context_details || '-')}</td>
                             </tr>
                         `).join('');
                 }
@@ -372,13 +377,13 @@
                         const statusColor = j.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : (j.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
                         return `
                             <tr class="hover:bg-slate-50 border-b border-slate-50">
-                                <td class="py-3 font-mono text-[10px] text-slate-400">...${j.id.slice(-8)}</td>
-                                <td class="py-3 font-bold text-[11px] text-slate-700">${j.subtype || j.job_type}</td>
-                                <td class="py-3 text-[10px] text-slate-500">${new Date(j.created_at).toLocaleDateString()}</td>
-                                <td class="py-3 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-black ${statusColor}">${j.status}</span></td>
+                                <td class="py-3 font-mono text-[10px] text-slate-400">...${esc(j.id.slice(-8))}</td>
+                                <td class="py-3 font-bold text-[11px] text-slate-700">${esc(j.subtype || j.job_type)}</td>
+                                <td class="py-3 text-[10px] text-slate-500">${esc(new Date(j.created_at).toLocaleDateString())}</td>
+                                <td class="py-3 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-black ${statusColor}">${esc(j.status)}</span></td>
                                 <td class="py-3 text-right">
                                     ${isComplete
-                                        ? `<button onclick="downloadJobFile('${j.id}')" class="text-teal-600 font-bold hover:underline text-[10px] uppercase flex items-center justify-end gap-1">
+                                        ? `<button data-jid="${esc(j.id)}" class="dl-job-btn text-teal-600 font-bold hover:underline text-[10px] uppercase flex items-center justify-end gap-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                             CSV
                                            </button>`
@@ -387,6 +392,9 @@
                             </tr>
                         `;
                     }).join('');
+                    tbody.querySelectorAll('.dl-job-btn').forEach(btn => {
+                        btn.addEventListener('click', () => downloadJobFile(btn.dataset.jid));
+                    });
                 }
             } catch (e) { console.error("Jobs load failed", e); }
         }

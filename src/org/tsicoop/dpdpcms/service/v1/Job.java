@@ -63,7 +63,8 @@ public class Job implements Action {
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Invalid Function", "Unsupported job operation: " + func, req.getRequestURI());
             }
         } catch (Exception e) {
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Service Error", e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Job.service: " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Service Error", "An internal error occurred.", req.getRequestURI());
         }
     }
 
@@ -156,14 +157,37 @@ public class Job implements Action {
         }
     }
 
+    private static final java.util.regex.Pattern UUID_PATTERN =
+            java.util.regex.Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+
     /**
      * Streams a completed CSV artifact to the client.
      */
     private void handleDownloadFile(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        if (req.getAttribute(InputProcessor.AUTH_TOKEN) == null) {
+            res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication required.");
+            return;
+        }
+
         String jobId = req.getParameter("job_id");
-        if (jobId == null || jobId.trim().isEmpty()) return;
+        if (jobId == null || !UUID_PATTERN.matcher(jobId.trim()).matches()) {
+            res.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid or missing job_id.");
+            return;
+        }
+        jobId = jobId.trim();
 
         File file = new File(EXPORT_DIR + jobId + ".csv");
+        try {
+            String canonical = file.getCanonicalPath();
+            if (!canonical.startsWith(new File(EXPORT_DIR).getCanonicalPath())) {
+                res.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid job_id.");
+                return;
+            }
+        } catch (IOException e) {
+            res.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid job_id.");
+            return;
+        }
+
         if (!file.exists()) {
             res.sendError(HttpServletResponse.SC_NOT_FOUND, "The requested export file is not available or has expired.");
             return;
@@ -189,7 +213,10 @@ public class Job implements Action {
 
     @Override
     public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
-        // Implement session/API key validation here
-        return true;
+        if (!"POST".equalsIgnoreCase(method)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method Not Allowed", "Only POST is supported.", req.getRequestURI());
+            return false;
+        }
+        return InputProcessor.validate(req, res);
     }
 }

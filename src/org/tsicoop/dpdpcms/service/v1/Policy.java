@@ -217,17 +217,17 @@ public class Policy implements Action {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "System Error: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Policy.service (SQL): " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "A database error occurred.", req.getRequestURI());
         } catch (ParseException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid JSON input: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Policy.service (parse): " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid request format.", req.getRequestURI());
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid UUID or date format in input: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Policy.service (arg): " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid input.", req.getRequestURI());
         } catch (Exception e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Policy.service: " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An internal error occurred.", req.getRequestURI());
         }
     }
 
@@ -284,9 +284,9 @@ public class Policy implements Action {
                     return false;
                 }
             }
-        }catch(Exception e){
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid JSON input: " + e.getMessage(), req.getRequestURI());
+        } catch (Exception e) {
+            System.err.println("[ERROR] Policy.validate: " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid request format.", req.getRequestURI());
         }
         return true;
     }

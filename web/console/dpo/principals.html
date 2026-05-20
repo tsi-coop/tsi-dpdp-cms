@@ -283,6 +283,11 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
     // --- Configuration ---
     const API_URL_CONSENT = '/api/v1/consent';
     const AUTH_TOKEN = localStorage.getItem('authToken');
@@ -331,16 +336,18 @@
         const isActive = record.is_active_consent;
 
         row.innerHTML = `
-            <td class="px-4 py-3 text-sm font-mono text-gray-700">...${record.id.slice(-8)}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${record.policy_id} (v${record.policy_version})</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${new Date(record.timestamp).toLocaleString()}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${record.consent_mechanism}</td>
+            <td class="px-4 py-3 text-sm font-mono text-gray-700">...${esc(record.id.slice(-8))}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(record.policy_id)} (v${esc(record.policy_version)})</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(new Date(record.timestamp).toLocaleString())}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(record.consent_mechanism)}</td>
             <td class="px-4 py-3 text-sm">${createStatusBadge(record.consent_status_general, isActive)}</td>
             <td class="px-4 py-3 text-sm font-bold text-slate-500">${isActive ? 'Yes' : 'No'}</td>
             <td class="px-4 py-3 text-sm">
-                <button class="text-indigo-600 hover:text-indigo-900 font-bold text-sm" onclick="viewConsentRecord('${userId}','${record.id}')">View Details</button>
+                <button data-uid="${esc(userId)}" data-rid="${esc(record.id)}" class="view-record-btn text-indigo-600 hover:text-indigo-900 font-bold text-sm">View Details</button>
             </td>
         `;
+        const btn = row.querySelector('.view-record-btn');
+        btn.addEventListener('click', () => viewConsentRecord(btn.dataset.uid, btn.dataset.rid));
         return row;
     }
 
@@ -402,7 +409,7 @@
 
     async function viewConsentRecord(userId, recordId) {
         showModal();
-        granularConsentDetails.innerHTML = `<p class="text-gray-500">Fetching record ${recordId}...</p>`;
+        granularConsentDetails.innerHTML = `<p class="text-gray-500">Fetching record ${esc(recordId)}...</p>`;
 
         try {
             const payload = {
@@ -424,10 +431,10 @@
                 modalRecordStatus.innerHTML = createStatusBadge(record.consent_status_general, record.is_active_consent);
 
                 provenanceDetails.innerHTML = `
-                    <p><strong>Policy Ref:</strong> ${record.policy_id} (v${record.policy_version || '—'})</p>
-                    ${record.ropa_entry_id ? `<p><strong>ROPA Entry:</strong> ${record.ropa_activity_name || record.ropa_entry_id}</p>` : ''}
-                    <p><strong>Time:</strong> ${new Date(record.timestamp).toLocaleString()} (${record.consent_mechanism})</p>
-                    <p><strong>IP:</strong> ${record.ip_address || 'N/A'} | <strong>User Agent:</strong> ${record.user_agent || 'N/A'}</p>
+                    <p><strong>Policy Ref:</strong> ${esc(record.policy_id)} (v${esc(record.policy_version || '—')})</p>
+                    ${record.ropa_entry_id ? `<p><strong>ROPA Entry:</strong> ${esc(record.ropa_activity_name || record.ropa_entry_id)}</p>` : ''}
+                    <p><strong>Time:</strong> ${esc(new Date(record.timestamp).toLocaleString())} (${esc(record.consent_mechanism)})</p>
+                    <p><strong>IP:</strong> ${esc(record.ip_address || 'N/A')} | <strong>User Agent:</strong> ${esc(record.user_agent || 'N/A')}</p>
                 `;
 
                 let detailsHtml = '';
@@ -442,7 +449,7 @@
 
                     detailsHtml += `
                         <div class="policy-detail-item">
-                            <p class="text-gray-800 font-medium">${purpose}:</p>
+                            <p class="text-gray-800 font-medium">${esc(purpose)}:</p>
                             <p class="ml-4">${statusBadge}</p>
                         </div>
                     `;

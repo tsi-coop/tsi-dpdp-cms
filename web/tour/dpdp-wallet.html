@@ -168,6 +168,11 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
     // --- State & Config ---
     let state = {
         fiduciaries: [],
@@ -267,7 +272,7 @@
             card.innerHTML = `
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-teal-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1"/><path d="M19 21V7H5v14"/><path d="M7 21v-4a2 2 0 0 1 4 0v4"/><path d="M13 21v-4a2 2 0 0 1 4 0v4"/></svg></div>
-                    <div><h3 class="font-black text-sm text-slate-800 tracking-tight">${f.name}</h3><div class="flex items-center gap-2 mt-0.5"><span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${statusColor}">${f.status}</span><span class="text-[9px] text-slate-400 font-bold">${f.consents.filter(c => c.status === 'GRANTED').length} Active Purposes</span></div></div>
+                    <div><h3 class="font-black text-sm text-slate-800 tracking-tight">${esc(f.name)}</h3><div class="flex items-center gap-2 mt-0.5"><span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${statusColor}">${esc(f.status)}</span><span class="text-[9px] text-slate-400 font-bold">${f.consents.filter(c => c.status === 'GRANTED').length} Active Purposes</span></div></div>
                 </div>
             `;
             list.appendChild(card);
@@ -280,7 +285,7 @@
         const isTerminated = f.status === 'TERMINATED';
 
         document.getElementById('details-sync-url').textContent = f.sync_url;
-        document.getElementById('details-header').innerHTML = `<h2 class="text-2xl font-black text-slate-800 tracking-tight leading-tight">${f.name}</h2><p class="text-[10px] text-slate-400 font-black uppercase mt-1">Verification Token: <span class="text-teal-600">${f.sync_token ? f.sync_token.substring(0, 12) : 'HANDOVER'}...</span></p>`;
+        document.getElementById('details-header').innerHTML = `<h2 class="text-2xl font-black text-slate-800 tracking-tight leading-tight">${esc(f.name)}</h2><p class="text-[10px] text-slate-400 font-black uppercase mt-1">Verification Token: <span class="text-teal-600">${esc(f.sync_token ? f.sync_token.substring(0, 12) : 'HANDOVER')}...</span></p>`;
 
         const consentsList = document.getElementById('details-consents');
         consentsList.innerHTML = `<div class="p-4 bg-slate-50 flex justify-between items-center"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Purpose Allowances</span></div>`;
@@ -288,7 +293,11 @@
             const row = document.createElement('div');
             row.className = "p-4 flex justify-between items-start";
             const canRevoke = !isTerminated && !c.mandatory && c.status === 'GRANTED' && f.status === 'IDLE';
-            row.innerHTML = `<div class="max-w-[70%]"><p class="text-xs font-black text-slate-800">${c.name}</p><p class="text-[10px] text-slate-400 mt-1 italic leading-tight">Current Status: ${c.status}</p></div><div class="flex flex-col items-end gap-2"><span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${c.status === 'GRANTED' ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}">${c.status}</span>${canRevoke ? `<button onclick="secureRevoke('${f.id}','${c.id}')" class="text-[9px] font-black text-red-500 hover:underline tracking-tighter">REVOKE RIGHTS</button>` : ''}</div>`;
+            row.innerHTML = `<div class="max-w-[70%]"><p class="text-xs font-black text-slate-800">${esc(c.name)}</p><p class="text-[10px] text-slate-400 mt-1 italic leading-tight">Current Status: ${esc(c.status)}</p></div><div class="flex flex-col items-end gap-2"><span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${c.status === 'GRANTED' ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}">${esc(c.status)}</span>${canRevoke ? `<button data-fid="${esc(f.id)}" data-cid="${esc(c.id)}" class="revoke-btn text-[9px] font-black text-red-500 hover:underline tracking-tighter">REVOKE RIGHTS</button>` : ''}</div>`;
+            if (canRevoke) {
+                const btn = row.querySelector('.revoke-btn');
+                if (btn) btn.addEventListener('click', () => secureRevoke(btn.dataset.fid, btn.dataset.cid));
+            }
             consentsList.appendChild(row);
         });
 
@@ -306,9 +315,11 @@
                 <div class="p-6 bg-red-600 rounded-[32px] text-white shadow-xl shadow-red-200 relative overflow-hidden group">
                     <h4 class="text-sm font-black mb-1 text-center uppercase tracking-tight">Global Erasure Request</h4>
                     <p class="text-[10px] text-red-100 leading-tight mb-5 text-center px-4">Permanently terminate data processing and trigger hard-purge.</p>
-                    <button onclick="secureErasure('${f.id}')" class="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] bg-white text-red-600 hover:shadow-2xl transition-all">Initiate Hard Purge</button>
+                    <button data-fid="${esc(f.id)}" class="erasure-btn w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] bg-white text-red-600 hover:shadow-2xl transition-all">Initiate Hard Purge</button>
                 </div>
             `;
+            const erasureBtn = actionsArea.querySelector('.erasure-btn');
+            if (erasureBtn) erasureBtn.addEventListener('click', () => secureErasure(erasureBtn.dataset.fid));
         }
     }
 
@@ -317,12 +328,12 @@
         list.innerHTML = '';
         state.fiduciaries.forEach(f => {
             const header = document.createElement('div');
-            header.innerHTML = `<p class="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-4">Origin: ${f.name}</p>`;
+            header.innerHTML = `<p class="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-4">Origin: ${esc(f.name)}</p>`;
             list.appendChild(header);
             f.audit.slice().reverse().forEach(log => {
                 const entry = document.createElement('div');
                 entry.className = "relative mb-6";
-                entry.innerHTML = `<div class="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 ${log.phase === 'ERASURE' ? 'bg-red-500' : 'bg-teal-500'}"></div><div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-teal-200"><div class="flex justify-between items-start mb-2"><span class="text-[7px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">${log.phase}</span><span class="text-[8px] text-slate-400 font-mono">${log.time}</span></div><p class="text-[10px] font-bold text-slate-700 leading-tight">${log.action}</p><div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-50"><span class="text-[8px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1">ACTOR: ${log.actor}</span><span class="text-[8px] font-black text-teal-600 uppercase italic">${log.status}</span></div></div>`;
+                entry.innerHTML = `<div class="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 ${log.phase === 'ERASURE' ? 'bg-red-500' : 'bg-teal-500'}"></div><div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-teal-200"><div class="flex justify-between items-start mb-2"><span class="text-[7px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">${esc(log.phase)}</span><span class="text-[8px] text-slate-400 font-mono">${esc(log.time)}</span></div><p class="text-[10px] font-bold text-slate-700 leading-tight">${esc(log.action)}</p><div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-50"><span class="text-[8px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1">ACTOR: ${esc(log.actor)}</span><span class="text-[8px] font-black text-teal-600 uppercase italic">${esc(log.status)}</span></div></div>`;
                 list.appendChild(entry);
             });
         });

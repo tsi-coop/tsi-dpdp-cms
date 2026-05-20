@@ -245,20 +245,20 @@ public class Consent implements Action {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "A database error occurred: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Consent.service (SQL): " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "A database error occurred.", req.getRequestURI());
         } catch (ParseException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid JSON input: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Consent.service (parse): " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid request format.", req.getRequestURI());
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid UUID or date format in input: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Consent.service (arg): " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid input.", req.getRequestURI());
         } catch (UnknownHostException e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid IP address format: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Consent.service (host): " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid input.", req.getRequestURI());
         } catch (Exception e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred: " + e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Consent.service: " + e);
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An internal error occurred.", req.getRequestURI());
         }
     }
 
@@ -293,10 +293,9 @@ public class Consent implements Action {
             if (rs.next()) {
                 logId = (UUID) rs.getObject(1);
             }
-        } catch(Exception e){
-            e.printStackTrace();
-        }
-        finally {
+        } catch (Exception e) {
+            System.err.println("[ERROR] Consent.logEvent: " + e);
+        } finally {
             pool.cleanup(rs,pstmt,conn);
         }
 

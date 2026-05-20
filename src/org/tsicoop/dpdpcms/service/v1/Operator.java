@@ -79,8 +79,8 @@ public class Operator implements Action {
                     OutputProcessor.errorResponse(res, 400, "Bad Request", "Unsupported function: " + func, req.getRequestURI());
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            OutputProcessor.errorResponse(res, 500, "Internal Error", e.getMessage(), req.getRequestURI());
+            System.err.println("[ERROR] Operator.service: " + e);
+            OutputProcessor.errorResponse(res, 500, "Internal Error", "An internal error occurred.", req.getRequestURI());
         }
     }
 
@@ -157,6 +157,11 @@ public class Operator implements Action {
         String mail = (String) input.get("email");
         String pass = (String) input.get("password");
         String role = (String) input.get("role");
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        if ("ADMIN".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(callerRole)) {
+            OutputProcessor.errorResponse(res, 403, "Forbidden", "Only ADMIN users may assign the ADMIN role.", req.getRequestURI());
+            return;
+        }
         String fidStr = (String) input.get("fiduciary_id");
         UUID fid = (fidStr != null && !fidStr.isEmpty()) ? UUID.fromString(fidStr) : ADMIN_FID_UUID;
 
@@ -201,6 +206,11 @@ public class Operator implements Action {
 
     private void handleUpdateUser(JSONObject input, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID uid = UUID.fromString((String) input.get("user_id"));
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        if ("DPO".equalsIgnoreCase(callerRole) && !uid.equals(loginUserId)) {
+            OutputProcessor.errorResponse(res, 403, "Forbidden", "DPO users may only update their own profile.", req.getRequestURI());
+            return;
+        }
         String user = (String) input.get("username");
         String pass = (String) input.get("password");
         String fidStr = (String) input.get("fiduciary_id");
@@ -278,9 +288,8 @@ public class Operator implements Action {
             pstmt.executeUpdate();
             success = true;
         } catch(Exception e) {
-            e.printStackTrace();
-        }finally
-        {
+            System.err.println("[ERROR] Operator.deactivateUser: " + e);
+        } finally {
             pool.cleanup(null, pstmt, conn);
         }
 

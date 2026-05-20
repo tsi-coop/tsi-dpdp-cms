@@ -6,6 +6,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.tsicoop.dpdpcms.framework.PasswordHasher;
+import org.tsicoop.dpdpcms.service.v1.Audit;
+import org.tsicoop.dpdpcms.util.Constants;
 
 import java.io.BufferedReader;
 import java.io.UnsupportedEncodingException;
@@ -25,8 +28,19 @@ public class InputProcessor {
 
     private static Map<String,Set<String>> permissionsMap = new ConcurrentHashMap<String, Set<String>>();
 
-    // Thread-safe cache for API client validity to minimize database round-trips
-    private static final Map<String, Boolean> apiClientCache = new ConcurrentHashMap<>();
+    private static final long API_CACHE_TTL_MS = 60_000L;
+
+    private static class CachedEntry {
+        final boolean valid;
+        final long expiresAt;
+        CachedEntry(boolean valid) {
+            this.valid = valid;
+            this.expiresAt = System.currentTimeMillis() + API_CACHE_TTL_MS;
+        }
+        boolean isExpired() { return System.currentTimeMillis() > expiresAt; }
+    }
+
+    private static final Map<String, CachedEntry> apiClientCache = new ConcurrentHashMap<>();
 
 
     /**
@@ -63,14 +77,12 @@ public class InputProcessor {
             try {
                 pool = new PoolDB();
                 conn = pool.getConnection();
-                // Permissions are stored as a comma-separated string (e.g., 'READ,WRITE')
-                String sql = "SELECT fiduciary_id, permissions FROM api_keys WHERE id = ? AND key_value = ? AND status = 'ACTIVE'";
+                String sql = "SELECT fiduciary_id, permissions, key_value FROM api_keys WHERE id = ? AND status = 'ACTIVE'";
                 pstmt = conn.prepareStatement(sql);
                 pstmt.setObject(1, UUID.fromString(key));
-                pstmt.setString(2, "HASHED_" + secret);
                 rs = pstmt.executeQuery();
 
-                if (rs.next()) {
+                if (rs.next() && new PasswordHasher().checkPassword(secret, rs.getString("key_value"))) {
                     req.setAttribute("fiduciary_id", rs.getObject("fiduciary_id"));
 
                     String rawPerms = rs.getString("permissions");
@@ -80,7 +92,7 @@ public class InputProcessor {
                             scopeSet.add(p.trim().toUpperCase());
                         }
                     }
-                    permissionsMap.put(key,scopeSet);
+                    permissionsMap.put(key, scopeSet);
                 }
             } catch (Exception e) {
                 System.err.println("Client Auth Failure: " + e.getMessage());
@@ -180,32 +192,29 @@ public class InputProcessor {
 
     private static boolean isValidApiClient(String apiKey, String apiSecret) throws SQLException {
         String cacheKey = apiKey + ":" + apiSecret;
-        // 1. Return from cache if available
-        if (apiClientCache.containsKey(cacheKey)) {
-            return apiClientCache.get(cacheKey);
+        CachedEntry cached = apiClientCache.get(cacheKey);
+        if (cached != null && !cached.isExpired()) {
+            return cached.valid;
         }
+        apiClientCache.remove(cacheKey);
 
         boolean valid = false;
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT status FROM api_keys WHERE id = ? AND key_value = ?";
-        //System.out.println("API Key:"+apiKey);
+        String sql = "SELECT status, key_value FROM api_keys WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, UUID.fromString(apiKey));
-            pstmt.setString(2, "HASHED_"+apiSecret);
             rs = pstmt.executeQuery();
-            if(rs.next()){
+            if (rs.next()) {
                 String status = rs.getString("status");
-                if(status.equalsIgnoreCase("ACTIVE")){
+                String storedHash = rs.getString("key_value");
+                if (status.equalsIgnoreCase("ACTIVE") && new PasswordHasher().checkPassword(apiSecret, storedHash)) {
                     valid = true;
-                }
-                // 2. Store result in cache to prevent redundant queries
-                if (valid) {
-                    apiClientCache.put(cacheKey, true);
+                    apiClientCache.put(cacheKey, new CachedEntry(true));
                 }
             }
         } finally {
@@ -281,6 +290,32 @@ public class InputProcessor {
         return role;
     }
 
+    /** Returns the role from the database for the authenticated user, not from the JWT claim. */
+    public static String getVerifiedRole(HttpServletRequest req) {
+        JSONObject authToken = (JSONObject) req.getAttribute(InputProcessor.AUTH_TOKEN);
+        if (authToken == null) return null;
+        String email = (String) authToken.get("email");
+        if (email == null) return null;
+
+        PoolDB pool = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT role FROM operators WHERE email = ? AND status = 'ACTIVE'");
+            pstmt.setString(1, email);
+            rs = pstmt.executeQuery();
+            if (rs.next()) return rs.getString("role");
+        } catch (Exception e) {
+            System.err.println("[ERROR] InputProcessor.getVerifiedRole: " + e);
+        } finally {
+            if (pool != null) pool.cleanup(rs, pstmt, conn);
+        }
+        return null;
+    }
+
     public static JSONObject getAdminAuthToken(HttpServletRequest req, HttpServletResponse res) throws Exception{
         JSONObject tokenDetails = null;
         String authorization = null;
@@ -301,10 +336,16 @@ public class InputProcessor {
                 tokenDetails.put("email",JWTUtil.getEmailFromToken(token));
                 tokenDetails.put("name",JWTUtil.getNameFromToken(token));
                 tokenDetails.put("role",JWTUtil.getRoleFromToken(token));
-                //System.out.println("name:"+JWTUtil.getUsernameFromToken(token)+" role:"+JWTUtil.getRoleFromToken(token));
+            } else if (token != null) {
+                String tokenPrefix = token.length() > 12 ? token.substring(0, 12) : token;
+                String sourceIp = req.getRemoteAddr();
+                new Audit().logEventAsync(
+                        tokenPrefix, UUID.fromString("00000000-0000-0000-0000-000000000000"),
+                        Constants.SERVICE_TYPE_SYSTEM, null,
+                        "JWT_VALIDATION_FAILED", "ip=" + sourceIp);
             }
-        }catch (Exception e){
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("[ERROR] InputProcessor.getAdminAuthToken: " + e);
         }
         //System.out.println("tokenDetails:"+tokenDetails);
         return tokenDetails;

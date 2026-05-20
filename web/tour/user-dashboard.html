@@ -229,6 +229,11 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
     // --- Configuration & Constants ---
     const API_BASE_URL = 'http://localhost:8080/api/v1';
     const LOCAL_USER_ID_KEY = 'ud_dp_user_id';
@@ -423,12 +428,12 @@
                     <p class="text-xs text-slate-500">Last Action: <strong>${mechanism.replace(/_/g, ' ')}</strong></p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="withdrawConsent('${userId}')" ${!canWithdraw ? 'disabled' : ''}
-                        class="px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all ${canWithdraw ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-600 hover:text-white border border-yellow-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
+                    <button data-uid="${esc(userId)}" ${!canWithdraw ? 'disabled' : ''}
+                        class="withdraw-btn px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all ${canWithdraw ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-600 hover:text-white border border-yellow-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
                         Withdraw All
                     </button>
-                    <button onclick="erasureRequest('${userId}')" ${!canErasure ? 'disabled' : ''}
-                        class="px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all ${canErasure ? 'bg-red-50 text-red-700 hover:bg-red-600 hover:text-white border border-red-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
+                    <button data-uid="${esc(userId)}" ${!canErasure ? 'disabled' : ''}
+                        class="erasure-btn px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all ${canErasure ? 'bg-red-50 text-red-700 hover:bg-red-600 hover:text-white border border-red-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
                         Erasure Request
                     </button>
                 </div>
@@ -459,19 +464,22 @@
 
             html += `
                 <tr class="hover:bg-slate-50">
-                    <td class="font-mono text-[10px] text-slate-400">...${rec.id.slice(-6)}</td>
-                    <td class="font-bold text-slate-700">${rec.policy_id} <span class="text-[10px] text-slate-400 font-medium">v${rec.policy_version}</span></td>
-                    <td class="text-slate-500">${formatTimestamp(rec.timestamp)}</td>
-                    <td class="text-slate-500 font-medium text-xs italic">${rec.consent_mechanism.replace(/_/g, ' ')}</td>
+                    <td class="font-mono text-[10px] text-slate-400">...${esc(rec.id.slice(-6))}</td>
+                    <td class="font-bold text-slate-700">${esc(rec.policy_id)} <span class="text-[10px] text-slate-400 font-medium">v${esc(rec.policy_version)}</span></td>
+                    <td class="text-slate-500">${esc(formatTimestamp(rec.timestamp))}</td>
+                    <td class="text-slate-500 font-medium text-xs italic">${esc(rec.consent_mechanism.replace(/_/g, ' '))}</td>
                     <td>${getStatusBadge(displayStatus)}</td>
                     <td>
-                        <button onclick="viewConsentDetails('${rec.id}')" class="text-teal-600 font-bold hover:underline">Verify Details</button>
+                        <button data-rid="${esc(rec.id)}" class="view-details-btn text-teal-600 font-bold hover:underline">Verify Details</button>
                     </td>
                 </tr>
             `;
         });
 
         contentArea.innerHTML = html + `</tbody></table></div><p class="text-[10px] text-slate-400 mt-4 italic">* Mandatory data points required for account functionality are retained until the account is closed.</p>`;
+        contentArea.querySelectorAll('.withdraw-btn').forEach(btn => btn.addEventListener('click', () => withdrawConsent(btn.dataset.uid)));
+        contentArea.querySelectorAll('.erasure-btn').forEach(btn => btn.addEventListener('click', () => erasureRequest(btn.dataset.uid)));
+        contentArea.querySelectorAll('.view-details-btn').forEach(btn => btn.addEventListener('click', () => viewConsentDetails(btn.dataset.rid)));
     }
 
     function renderGrievanceContent(requests) {
@@ -506,10 +514,10 @@
             requests.forEach(req => {
                 html += `
                     <tr class="hover:bg-slate-50">
-                        <td class="font-mono text-xs text-slate-500">${req.grievance_id}</td>
-                        <td class="font-bold text-slate-700 text-xs">${req.type.replace(/_/g, ' ')}</td>
-                        <td class="text-slate-600">${req.subject}</td>
-                        <td class="text-slate-500 font-medium">${formatTimestamp(req.due_date).split(',')[0]}</td>
+                        <td class="font-mono text-xs text-slate-500">${esc(req.grievance_id)}</td>
+                        <td class="font-bold text-slate-700 text-xs">${esc(req.type.replace(/_/g, ' '))}</td>
+                        <td class="text-slate-600">${esc(req.subject)}</td>
+                        <td class="text-slate-500 font-medium">${esc(formatTimestamp(req.due_date).split(',')[0])}</td>
                         <td>${getStatusBadge(req.status)}</td>
                     </tr>
                 `;
@@ -546,18 +554,18 @@
 
                 granular += `
                     <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-                        <span class="font-bold text-slate-700 text-xs">${item.purpose_agreed_to || key}</span>
-                        <span class="font-black text-[10px] ${effectivelyGranted ? 'text-green-600' : 'text-red-500'}">${statusText}</span>
+                        <span class="font-bold text-slate-700 text-xs">${esc(item.purpose_agreed_to || key)}</span>
+                        <span class="font-black text-[10px] ${effectivelyGranted ? 'text-green-600' : 'text-red-500'}">${esc(statusText)}</span>
                     </div>
                 `;
             }
             document.getElementById('granular-details-body').innerHTML = granular;
 
             document.getElementById('provenance-details-body').innerHTML = `
-                <p><strong>Policy Version:</strong> ${rec.policy_version}</p>
-                <p><strong>Mechanism:</strong> ${rec.consent_mechanism}</p>
-                <p><strong>Artifact Timestamp:</strong> ${formatTimestamp(rec.timestamp)}</p>
-                <p><strong>Session IP:</strong> ${rec.ip_address || 'Encrypted'}</p>
+                <p><strong>Policy Version:</strong> ${esc(rec.policy_version)}</p>
+                <p><strong>Mechanism:</strong> ${esc(rec.consent_mechanism)}</p>
+                <p><strong>Artifact Timestamp:</strong> ${esc(formatTimestamp(rec.timestamp))}</p>
+                <p><strong>Session IP:</strong> ${esc(rec.ip_address || 'Encrypted')}</p>
             `;
 
             document.getElementById('detail-modal-overlay').style.display = 'flex';

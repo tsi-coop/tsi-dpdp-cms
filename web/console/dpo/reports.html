@@ -149,6 +149,11 @@
 </main>
 
 <script>
+        function esc(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+        }
+
         const API_URL_JOBS = '/api/v1/admin/job';
         const FIDUCIARY_ID = localStorage.getItem('fiduciary_id') || 'fiduciary_hub_abc';
         const AUTH_TOKEN = localStorage.getItem('authToken');
@@ -192,15 +197,15 @@
 
                 return `
                     <tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="py-4 px-2 font-mono text-[11px] text-slate-500">...${job.id.slice(-12)}</td>
-                        <td class="py-4 px-2 font-bold text-slate-700">${job.subtype}</td>
-                        <td class="py-4 px-2 text-slate-500">${new Date(job.created_at).toLocaleString()}</td>
+                        <td class="py-4 px-2 font-mono text-[11px] text-slate-500">...${esc(job.id.slice(-12))}</td>
+                        <td class="py-4 px-2 font-bold text-slate-700">${esc(job.subtype)}</td>
+                        <td class="py-4 px-2 text-slate-500">${esc(new Date(job.created_at).toLocaleString())}</td>
                         <td class="py-4 px-2">
-                            <span class="status-pill ${statusColor}">${job.status}</span>
+                            <span class="status-pill ${statusColor}">${esc(job.status)}</span>
                         </td>
                         <td class="py-4 px-2 text-right">
                             ${isComplete
-                                ? `<button onclick="downloadFile('${job.id}')" class="text-teal-600 font-bold hover:underline flex items-center justify-end gap-1 ml-auto">
+                                ? `<button data-jid="${esc(job.id)}" class="dl-btn text-teal-600 font-bold hover:underline flex items-center justify-end gap-1 ml-auto">
                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                      Download CSV
                                    </button>`
@@ -209,6 +214,9 @@
                     </tr>
                 `;
             }).join('');
+            tbody.querySelectorAll('.dl-btn').forEach(btn => {
+                btn.addEventListener('click', () => downloadFile(btn.dataset.jid));
+            });
         }
 
         function getStatusColor(status) {
