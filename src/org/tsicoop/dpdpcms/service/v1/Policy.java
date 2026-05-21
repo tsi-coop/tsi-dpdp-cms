@@ -218,7 +218,10 @@ public class Policy implements Action {
 
         } catch (SQLException e) {
             System.err.println("[ERROR] Policy.service (SQL): " + e);
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database Error", "A database error occurred.", req.getRequestURI());
+            String sqlMsg = e.getMessage() != null ? e.getMessage() : "A database error occurred.";
+            int sqlStatus = sqlMsg.startsWith("Publication Conflict") || sqlMsg.startsWith("Publishing failed")
+                    ? HttpServletResponse.SC_CONFLICT : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+            OutputProcessor.errorResponse(res, sqlStatus, "Database Error", sqlMsg, req.getRequestURI());
         } catch (ParseException e) {
             System.err.println("[ERROR] Policy.service (parse): " + e);
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid request format.", req.getRequestURI());
@@ -684,9 +687,9 @@ public class Policy implements Action {
                 }
             }
 
-            // 2. Scan all currently ACTIVE policies for the fiduciary for potential collisions
+            // 2. Scan all currently ACTIVE/UNDER_REVIEW policies for the fiduciary for potential collisions
             Set<String> activePurposes = new HashSet<>();
-            String scanSql = "SELECT policy_content FROM consent_policies WHERE fiduciary_id = ? AND status = 'ACTIVE' AND (id != ? OR version != ?)";
+            String scanSql = "SELECT policy_content FROM consent_policies WHERE fiduciary_id = ? AND status IN ('ACTIVE', 'UNDER_REVIEW') AND (id != ? OR version != ?)";
             pstmtCheck = conn.prepareStatement(scanSql);
             pstmtCheck.setObject(1, fiduciaryId);
             pstmtCheck.setString(2, policyId);
@@ -703,8 +706,8 @@ public class Policy implements Action {
                 throw new SQLException("Publication Conflict: The following Purpose IDs are already defined in other active policies for this fiduciary: " + collisions + ". Please archive conflicting policies first.");
             }
 
-            // 4. Update target to ACTIVE
-            String activateSql = "UPDATE consent_policies SET status = 'ACTIVE', last_updated_at = NOW() WHERE id = ? AND version = ?";
+            // 4. Update target to UNDER_REVIEW — DPO activates via ROPA approval
+            String activateSql = "UPDATE consent_policies SET status = 'UNDER_REVIEW', last_updated_at = NOW() WHERE id = ? AND version = ?";
             pstmtActivate = conn.prepareStatement(activateSql);
             pstmtActivate.setString(1, policyId);
             pstmtActivate.setString(2, version);

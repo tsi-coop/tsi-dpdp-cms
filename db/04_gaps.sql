@@ -163,3 +163,12 @@ ALTER TABLE apps RENAME COLUMN phone TO phone_plaintext;
 -- Confirm fiduciaries / apps migration
 -- SELECT id, email_plaintext, email_enc IS NOT NULL AS encrypted FROM fiduciaries LIMIT 5;
 -- SELECT id, email_plaintext, email_enc IS NOT NULL AS encrypted FROM apps LIMIT 5;
+
+-- ============================================================
+-- ROPA: per-purpose derivation support
+-- Stores the originating purpose ID from the consent policy so
+-- the deriver can upsert (not duplicate) when a policy is re-published.
+-- ============================================================
+ALTER TABLE ropa_entries ADD COLUMN IF NOT EXISTS source_purpose_id VARCHAR(255);
+CREATE INDEX IF NOT EXISTS idx_ropa_entries_purpose_id
+    ON ropa_entries (fiduciary_id, source_purpose_id);

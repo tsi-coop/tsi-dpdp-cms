@@ -36,15 +36,15 @@ DATA SUBJECT CATEGORIES
 
 DATA CATEGORIES  (26 total)
 ------------------------------------------------------------------------
-  email_address                  business_name                  industry                    
-  city                           organization_type              business_start_year         
-  professional_name              college_type                   career_start_year           
-  disability                     household_income_range         website_usage_data          
-  device_info                    post                           meeting_invite              
-  enquiry                        rfp                            testimonial                 
-  discussion                     solution_details               service_details             
-  training_details               assessment_responses           grievance_note              
-  support_request                advise_request              
+  email_address                  business_name                  industry
+  city                           organization_type              business_start_year
+  professional_name              college_type                   career_start_year
+  disability                     household_income_range         website_usage_data
+  device_info                    post                           meeting_invite
+  enquiry                        rfp                            testimonial
+  discussion                     solution_details               service_details
+  training_details               assessment_responses           grievance_note
+  support_request                advise_request
 
 SECURITY MEASURES
 ------------------------------------------------------------------------
@@ -53,17 +53,27 @@ OWASP Top 10 compliance for web platform.
 
 DATA PROCESSORS  (3 declared)
 ------------------------------------------------------------------------
-  Name                         Country    Role                           Contact
-  ---------------------------- ---------- ------------------------------ ----------------------------
-  Amazon Web Services          IN         Cloud Hosting & Storage        aws-india-dpa@amazon.com
-  Google Analytics             US         Website Analytics              google-privacy@google.com
-  Hotjar                       IE         UX Analytics & Heatmaps        privacy@hotjar.com
+  Name            Country    Role                           Contact
+  --------------- ---------- ------------------------------ ----------------------------
+  AWS             IN         Cloud Hosting & Storage        aws-india-dpa@amazon.com
+  GoogleAnalytics US         Website Analytics              google-privacy@google.com
+  Hotjar          IE         UX Analytics & Heatmaps        privacy@hotjar.com
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                                Authorised Processors
+  -------------------------------------- ------------------------------
+  purpose_account_management             (unrestricted)
+  purpose_website_analytics             GoogleAnalytics, Hotjar
+  purpose_community_engagement           (unrestricted)
+  purpose_solution_service_training_showcase (unrestricted)
+  purpose_maturity_capability_assessment (unrestricted)
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
   Destination    Safeguard                                    Processor
   -------------- -------------------------------------------- ----------------------------
-  US             Standard Contractual Clauses (SCC)           Google Analytics
+  US             Standard Contractual Clauses (SCC)           GoogleAnalytics
   IE             Standard Contractual Clauses (SCC)           Hotjar
 
 RETENTION

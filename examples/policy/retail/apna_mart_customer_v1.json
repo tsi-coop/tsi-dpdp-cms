@@ -10,7 +10,7 @@
         "description": "To manage your Apna Rewards account, track points, and provide member-exclusive discounts. This is essential for participating in our rewards program.",
         "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
         "data_categories_involved": ["full_name", "mobile_number", "email_address", "date_of_birth"],
-        "recipients_or_third_parties": ["Loyalty Software Provider"],
+        "recipients_or_third_parties": ["MoEngage"],
         "retention_policy": "Duration of active membership plus 3 years.",
         "retention_duration_value": 3,
         "retention_duration_unit": "YEARS",
@@ -24,7 +24,7 @@
         "description": "To process your purchases, manage payments, and deliver products to your doorstep.",
         "legal_basis": "Contractual Necessity",
         "data_categories_involved": ["delivery_address", "payment_details", "purchase_history"],
-        "recipients_or_third_parties": ["Logistics Partners", "Payment Gateways"],
+        "recipients_or_third_parties": ["Delhivery", "Razorpay"],
         "retention_policy": "Statutory retention of 7 years for tax and financial audit purposes.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
@@ -38,7 +38,7 @@
         "description": "Analyzing your purchase patterns to suggest relevant products and send personalized festive offers.",
         "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
         "data_categories_involved": ["shopping_preferences", "browsing_history"],
-        "recipients_or_third_parties": ["Marketing Analytics Firm"],
+        "recipients_or_third_parties": ["MoEngage", "GoogleAnalytics"],
         "retention_policy": "Until consent is withdrawn or 2 years of inactivity.",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
@@ -64,10 +64,10 @@
       { "name": "Razorpay",        "country": "IN", "role": "Payment Gateway",                    "contact": "dpo@razorpay.com" },
       { "name": "Delhivery",       "country": "IN", "role": "Logistics & Last-Mile Delivery",      "contact": "privacy@delhivery.com" },
       { "name": "MoEngage",        "country": "IN", "role": "Customer Engagement & Push",          "contact": "privacy@moengage.com" },
-      { "name": "Google Analytics","country": "US", "role": "Website & App Analytics",             "contact": "google-privacy@google.com" }
+      { "name": "GoogleAnalytics", "country": "US", "role": "Website & App Analytics",             "contact": "google-privacy@google.com" }
     ],
     "cross_border_transfers": [
-      { "destination_country": "US", "safeguard": "Standard Contractual Clauses (SCC)", "processor": "Google Analytics" }
+      { "destination_country": "US", "safeguard": "Standard Contractual Clauses (SCC)", "processor": "GoogleAnalytics" }
     ],
     "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your data, correct it, withdraw consent for marketing, and request erasure after your financial obligations are settled.",
     "grievance_redressal_info": "For concerns, contact our DPO at: Email: care@apnamart.in | Phone: +91 11 2233 4455 | Address: Plot 12, Retail Park, Gurugram, Haryana.",
@@ -96,7 +96,7 @@
         "description": "आपके अपना रिवॉर्ड्स खाते का प्रबंधन करने और पॉइंट ट्रैक करने के लिए। यह हमारे रिवॉर्ड्स प्रोग्राम में भाग लेने के लिए अनिवार्य है।",
         "legal_basis": "अनुबंधात्मक आवश्यकता",
         "data_categories_involved": ["नाम", "मोबाइल नंबर", "ईमेल", "जन्म तिथि"],
-        "recipients_or_third_parties": ["लॉयल्टी सॉफ्टवेयर प्रदाता"],
+        "recipients_or_third_parties": ["MoEngage"],
         "retention_policy": "सक्रिय सदस्यता की अवधि और उसके बाद 3 वर्ष।",
         "retention_duration_value": 3,
         "retention_duration_unit": "YEARS",
@@ -110,7 +110,7 @@
         "description": "आपकी खरीदारी को संसाधित करने और उत्पादों को आपके घर तक पहुँचाने के लिए।",
         "legal_basis": "अनुबंधात्मक आवश्यकता",
         "data_categories_involved": ["डिलीवरी का पता", "भुगतान विवरण", "खरीद इतिहास"],
-        "recipients_or_third_parties": ["लॉजिस्टिक्स पार्टनर्स"],
+        "recipients_or_third_parties": ["Delhivery", "Razorpay"],
         "retention_policy": "टैक्स और ऑडिट उद्देश्यों के लिए 7 वर्ष का वैधानिक प्रतिधारण।",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
@@ -127,9 +127,7 @@
           "खरीदारी की प्राथमिकताएं",
           "ब्राउज़िंग इतिहास"
         ],
-        "recipients_or_third_parties": [
-          "मार्केटिंग एनालिटिक्स फर्म"
-        ],
+        "recipients_or_third_parties": ["MoEngage", "GoogleAnalytics"],
         "retention_policy": "सहमति वापस लेने तक या 2 साल की निष्क्रियता तक।",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",

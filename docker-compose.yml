@@ -33,7 +33,7 @@ services:
     image: "${IMAGE_NAME:-tsicoop/tsi-dpdp-cms:latest}"
     
     # DEVELOPERS: To build from local source, uncomment the block below
-    # build:
+    #build:
     #  context: .
     #  dockerfile: Dockerfile
     

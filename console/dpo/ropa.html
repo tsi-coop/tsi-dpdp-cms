@@ -114,7 +114,6 @@
         <div>
             <h1 class="text-2xl font-black text-slate-800 tracking-tight">ROPA Registry</h1>
             <p class="text-xs text-slate-400 mt-1 font-medium">Records of Processing Activities — DPDP Act 2023, Section 8</p>
-            <p class="text-xs text-amber-600 mt-1 font-semibold">Publishing a ROPA entry activates the linked policy for consent collection.</p>
         </div>
         <div class="flex gap-2 flex-wrap">
             <button onclick="exportRopa()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition">
@@ -150,7 +149,6 @@
                 <thead>
                     <tr class="table-header">
                         <th class="px-4 py-3 text-xs">Activity Name</th>
-                        <th class="px-4 py-3 text-xs">Policy</th>
                         <th class="px-4 py-3 text-xs">Legal Basis</th>
                         <th class="px-4 py-3 text-xs">Status</th>
                         <th class="px-4 py-3 text-xs">Retention</th>
@@ -159,12 +157,201 @@
                     </tr>
                 </thead>
                 <tbody id="ropa-table-body" class="bg-white divide-y divide-gray-200">
-                    <tr><td colspan="7" class="p-6 text-center text-gray-400 italic">Loading registry...</td></tr>
+                    <tr><td colspan="6" class="p-6 text-center text-gray-400 italic">Loading registry...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 </main>
+
+<!-- ===================== ENTRY FORM MODAL ===================== -->
+<div id="form-modal" class="modal-overlay">
+    <div class="modal-content wide">
+        <button class="modal-close-btn" onclick="closeFormModal()">&times;</button>
+        <div class="modal-header">
+            <h2 id="form-modal-title" class="text-xl font-bold primary-text">New ROPA Entry</h2>
+            <p class="text-xs text-slate-400 mt-1">All required fields must be completed before the entry can be published.</p>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="entry-id-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <!-- Activity Name -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Activity Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="f-activity-name" class="field-input" placeholder="e.g., KYC Data Processing for Account Opening">
+                </div>
+
+                <!-- Purpose -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Processing Purpose <span class="text-red-500">*</span></label>
+                    <textarea id="f-purpose" rows="2" class="field-input" placeholder="Describe the purpose(s) for processing this personal data..."></textarea>
+                </div>
+
+                <!-- Legal Basis -->
+                <div>
+                    <label class="field-label">Legal Basis <span class="text-red-500">*</span></label>
+                    <select id="f-legal-basis" class="field-input">
+                        <option value="">— Select —</option>
+                        <option value="consent">Consent</option>
+                        <option value="legal_obligation">Legal Obligation</option>
+                        <option value="vital_interest">Vital Interest</option>
+                        <option value="legitimate_use">Legitimate Use</option>
+                    </select>
+                </div>
+
+                <!-- Retention Period -->
+                <div>
+                    <label class="field-label">Retention Period (days) <span class="text-red-500">*</span></label>
+                    <input type="number" id="f-retention-days" class="field-input" placeholder="e.g., 1095 (= 3 years)" min="1">
+                </div>
+
+                <!-- Retention Start Event -->
+                <div>
+                    <label class="field-label">Retention Start Event <span class="text-red-500">*</span></label>
+                    <select id="f-retention-event" class="field-input">
+                        <option value="">— Select —</option>
+                        <option value="COLLECTION">COLLECTION — from when data was collected</option>
+                        <option value="CESSATION">CESSATION — from when processing ceased</option>
+                    </select>
+                </div>
+
+                <!-- Data Categories — chip input -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Data Categories <span class="text-red-500">*</span>
+                        <span class="font-normal text-slate-400 normal-case">— press Enter or click Add</span>
+                    </label>
+                    <div class="chip-area">
+                        <div id="data-cat-chips" class="chip-list"></div>
+                        <div class="flex gap-2">
+                            <input type="text" id="data-cat-input" class="field-input text-xs"
+                                   placeholder="e.g. mobile_number, aadhaar_hash, location"
+                                   onkeydown="if(event.key==='Enter'){addDataCategory();event.preventDefault();}">
+                            <button type="button" onclick="addDataCategory()" class="sub-btn-add whitespace-nowrap">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Subject Categories — chip input with presets -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Data Subject Categories <span class="text-red-500">*</span></label>
+                    <div class="chip-area">
+                        <div class="flex flex-wrap gap-1 mb-2">
+                            <span class="text-[10px] text-slate-400 font-semibold self-center mr-1">Quick add:</span>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('data_principal')">data_principal</button>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('minor')">minor</button>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('employee')">employee</button>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('customer')">customer</button>
+                            <button type="button" class="preset-tag" onclick="addSubjectPreset('job_applicant')">job_applicant</button>
+                        </div>
+                        <div id="subject-cat-chips" class="chip-list"></div>
+                        <div class="flex gap-2">
+                            <input type="text" id="subject-cat-input" class="field-input text-xs"
+                                   placeholder="or type a custom subject category…"
+                                   onkeydown="if(event.key==='Enter'){addSubjectCategory();event.preventDefault();}">
+                            <button type="button" onclick="addSubjectCategory()" class="sub-btn-add whitespace-nowrap">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Measures -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Security Measures <span class="text-red-500">*</span></label>
+                    <textarea id="f-security-measures" rows="2" class="field-input" placeholder="e.g., AES-256 encryption at rest, TLS 1.2+ in transit, role-based access control, audit logging"></textarea>
+                </div>
+
+                <!-- Data Processors — structured builder -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Data Processors
+                        <span class="font-normal text-slate-400 normal-case">— third parties processing data on your behalf</span>
+                    </label>
+                    <div id="processor-list"></div>
+                    <div id="processor-sub-form" class="sub-form hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="field-label">Processor Name <span class="text-red-500">*</span></label>
+                                <input type="text" id="proc-name" class="field-input text-sm" placeholder="e.g. Amazon Web Services">
+                            </div>
+                            <div>
+                                <label class="field-label">Country (ISO 3166-1) <span class="text-red-500">*</span></label>
+                                <input type="text" id="proc-country" class="field-input text-sm" placeholder="e.g. IN, US, SG" maxlength="3">
+                            </div>
+                            <div>
+                                <label class="field-label">Role / Purpose <span class="text-red-500">*</span></label>
+                                <input type="text" id="proc-role" class="field-input text-sm" placeholder="e.g. Cloud hosting and database storage">
+                            </div>
+                            <div>
+                                <label class="field-label">Contact Email <span class="font-normal text-slate-400">(optional)</span></label>
+                                <input type="email" id="proc-contact" class="field-input text-sm" placeholder="e.g. dpo@processor.com">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="confirmAddProcessor()" class="sub-btn-confirm">Add Processor</button>
+                            <button type="button" onclick="cancelAddProcessor()" class="sub-btn-cancel">Cancel</button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-processor-btn" onclick="showProcessorForm()" class="sub-btn-add mt-2">+ Add Processor</button>
+                </div>
+
+                <!-- Cross Border Transfers — structured builder -->
+                <div class="md:col-span-2">
+                    <label class="field-label">Cross Border Transfers
+                        <span class="font-normal text-slate-400 normal-case">— each requires a destination country and safeguard</span>
+                    </label>
+                    <div id="transfer-list"></div>
+                    <div id="transfer-sub-form" class="sub-form hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <label class="field-label">Destination Country <span class="text-red-500">*</span></label>
+                                <input type="text" id="xfer-country" class="field-input text-sm" placeholder="e.g. US, SG, GB" maxlength="3">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="field-label">Safeguard Mechanism <span class="text-red-500">*</span></label>
+                                <input type="text" id="xfer-safeguard" class="field-input text-sm" placeholder="e.g. Standard Contractual Clauses, Adequacy Decision">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="field-label">Processor Name <span class="font-normal text-slate-400">(optional)</span></label>
+                                <input type="text" id="xfer-processor" class="field-input text-sm" placeholder="Name of the processor receiving data cross-border">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="confirmAddTransfer()" class="sub-btn-confirm">Add Transfer</button>
+                            <button type="button" onclick="cancelAddTransfer()" class="sub-btn-cancel">Cancel</button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-transfer-btn" onclick="showTransferForm()" class="sub-btn-add mt-2">+ Add Transfer</button>
+                </div>
+
+                <!-- Linked Policy IDs — chip input -->
+                <div>
+                    <label class="field-label">Linked Policy IDs <span class="font-normal text-slate-400">(optional)</span></label>
+                    <div class="chip-area">
+                        <div id="linked-policy-chips" class="chip-list"></div>
+                        <div class="flex gap-2">
+                            <input type="text" id="linked-policy-input" class="field-input text-xs font-mono"
+                                   placeholder="e.g. WEB_PRIVACY_POLICY"
+                                   onkeydown="if(event.key==='Enter'){addLinkedPolicy();event.preventDefault();}">
+                            <button type="button" onclick="addLinkedPolicy()" class="sub-btn-add whitespace-nowrap">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- App ID -->
+                <div>
+                    <label class="field-label">App ID <span class="font-normal text-slate-400">(optional)</span></label>
+                    <input type="text" id="f-app-id" class="field-input font-mono text-xs" placeholder="UUID of the associated app">
+                </div>
+            </div>
+
+            <!-- Form error area -->
+            <div id="form-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700"></div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeFormModal()" class="bg-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
+            <button onclick="saveEntry()" class="primary-bg text-white px-6 py-2 rounded-md text-sm font-bold hover:bg-opacity-90">Save Entry</button>
+        </div>
+    </div>
+</div>
 
 <!-- ===================== VIEW / HISTORY MODAL ===================== -->
 <div id="view-modal" class="modal-overlay">
@@ -290,7 +477,7 @@
     // ---- Load entries ----
     async function loadEntries() {
         const tbody = document.getElementById('ropa-table-body');
-        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-400 italic">Syncing with registry...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">Syncing with registry...</td></tr>';
         const status = document.getElementById('status-filter').value;
         const basis  = document.getElementById('basis-filter').value;
 
@@ -304,64 +491,29 @@
             const data = await res.json();
             const entries = Array.isArray(data) ? data : (data.data || []);
             if (!entries.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">No ROPA entries found. When a policy admin publishes a policy, entries will appear here for your review.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No ROPA entries found. Publish a policy or create one manually.</td></tr>';
                 return;
             }
             tbody.innerHTML = '';
-            renderGrouped(entries, tbody);
+            entries.forEach(e => tbody.appendChild(buildRow(e)));
         } catch(err) {
-            tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-red-500 font-bold">API connection error.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-bold">API connection error.</td></tr>`;
         }
-    }
-
-    function renderGrouped(entries, tbody) {
-        const groups = {};
-        entries.forEach(e => {
-            const key = parseArr(e.linked_policy_ids)[0] || '__none__';
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(e);
-        });
-
-        // Preserve entry arrival order (SQL returns created_at DESC) so most-recent group appears first
-        const keys = [];
-        const seen = new Set();
-        entries.forEach(e => {
-            const key = parseArr(e.linked_policy_ids)[0] || '__none__';
-            if (key !== '__none__' && !seen.has(key)) { keys.push(key); seen.add(key); }
-        });
-        if (groups['__none__']) keys.push('__none__');
-
-        keys.forEach(key => {
-            const group = groups[key];
-            const label = key === '__none__' ? 'Other Processing Activities' : key;
-            const n = group.length;
-
-            const hdr = document.createElement('tr');
-            hdr.className = 'bg-teal-50 border-t-2 border-teal-200';
-            hdr.innerHTML = `
-                <td colspan="7" class="px-4 py-2">
-                    <span class="text-[10px] font-black text-teal-600 uppercase tracking-widest">Policy</span>
-                    <span class="font-mono font-bold text-teal-800 ml-2">${label}</span>
-                    <span class="text-xs text-teal-400 ml-3">${n} activit${n === 1 ? 'y' : 'ies'}</span>
-                </td>
-            `;
-            tbody.appendChild(hdr);
-            group.forEach(e => tbody.appendChild(buildRow(e)));
-        });
     }
 
     function buildRow(e) {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50/50 transition-colors';
 
+        const editable  = e.status === 'draft' || e.status === 'under_review';
         const canPublish = e.status === 'draft' || e.status === 'under_review';
         const retention = e.retention_period_days
             ? `${e.retention_period_days}d (${e.retention_start_event || '—'})`
             : '<span class="text-red-400 text-[10px] font-bold">NOT SET</span>';
-        const policy = parseArr(e.linked_policy_ids)[0] || '—';
 
         const actions = `
             <button class="text-teal-700 hover:text-teal-900 font-bold text-xs mr-2" onclick="viewEntry('${e.id}')">View</button>
+            ${editable  ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-2" onclick="openEditModal('${e.id}')">Edit</button>` : ''}
             ${canPublish ? `<button class="text-green-600 hover:text-green-800 font-bold text-xs mr-2" onclick="publishEntry('${e.id}', '${e.activity_name}')">Publish</button>` : ''}
         `;
 
@@ -370,7 +522,6 @@
                 <div class="truncate" title="${e.activity_name}">${e.activity_name}</div>
                 <div class="text-[10px] font-mono text-slate-400 mt-0.5">${e.id.slice(0,8)}…</div>
             </td>
-            <td class="px-4 py-4 text-xs font-mono text-indigo-600 whitespace-nowrap">${policy}</td>
             <td class="px-4 py-4 text-xs text-slate-500 whitespace-nowrap capitalize">${(e.legal_basis||'').replace(/_/g,' ')}</td>
             <td class="px-4 py-4 whitespace-nowrap">${statusBadge(e.status)}</td>
             <td class="px-4 py-4 text-xs text-slate-500 whitespace-nowrap">${retention}</td>
@@ -380,10 +531,254 @@
         return tr;
     }
 
+    // ---- Form state (structured arrays replace raw JSON textareas) ----
+    let formDataCategories   = [];
+    let formSubjectCategories = [];
+    let formProcessors       = [];
+    let formCrossTransfers   = [];
+    let formLinkedPolicies   = [];
+
+    // ---- Chip helpers ----
+    function renderChips(containerId, arr, removeFn) {
+        const el = document.getElementById(containerId);
+        el.innerHTML = arr.map((item, i) =>
+            `<span class="chip">${item}<button type="button" class="chip-remove" onclick="${removeFn}(${i})">&times;</button></span>`
+        ).join('');
+    }
+
+    function addDataCategory() {
+        const inp = document.getElementById('data-cat-input');
+        const val = inp.value.trim();
+        if (val && !formDataCategories.includes(val)) {
+            formDataCategories.push(val);
+            renderChips('data-cat-chips', formDataCategories, 'removeDataCategory');
+        }
+        inp.value = '';
+    }
+    function removeDataCategory(i) { formDataCategories.splice(i,1); renderChips('data-cat-chips', formDataCategories, 'removeDataCategory'); }
+
+    function addSubjectPreset(val) {
+        if (!formSubjectCategories.includes(val)) {
+            formSubjectCategories.push(val);
+            renderChips('subject-cat-chips', formSubjectCategories, 'removeSubjectCategory');
+        }
+    }
+    function addSubjectCategory() {
+        const inp = document.getElementById('subject-cat-input');
+        const val = inp.value.trim();
+        if (val && !formSubjectCategories.includes(val)) {
+            formSubjectCategories.push(val);
+            renderChips('subject-cat-chips', formSubjectCategories, 'removeSubjectCategory');
+        }
+        inp.value = '';
+    }
+    function removeSubjectCategory(i) { formSubjectCategories.splice(i,1); renderChips('subject-cat-chips', formSubjectCategories, 'removeSubjectCategory'); }
+
+    function addLinkedPolicy() {
+        const inp = document.getElementById('linked-policy-input');
+        const val = inp.value.trim();
+        if (val && !formLinkedPolicies.includes(val)) {
+            formLinkedPolicies.push(val);
+            renderChips('linked-policy-chips', formLinkedPolicies, 'removeLinkedPolicy');
+        }
+        inp.value = '';
+    }
+    function removeLinkedPolicy(i) { formLinkedPolicies.splice(i,1); renderChips('linked-policy-chips', formLinkedPolicies, 'removeLinkedPolicy'); }
+
+    // ---- Processor builder ----
+    function showProcessorForm() {
+        document.getElementById('processor-sub-form').classList.remove('hidden');
+        document.getElementById('add-processor-btn').classList.add('hidden');
+        document.getElementById('proc-name').focus();
+    }
+    function cancelAddProcessor() {
+        ['proc-name','proc-country','proc-role','proc-contact'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('processor-sub-form').classList.add('hidden');
+        document.getElementById('add-processor-btn').classList.remove('hidden');
+    }
+    function confirmAddProcessor() {
+        const name    = document.getElementById('proc-name').value.trim();
+        const country = document.getElementById('proc-country').value.trim().toUpperCase();
+        const role    = document.getElementById('proc-role').value.trim();
+        const contact = document.getElementById('proc-contact').value.trim();
+        if (!name || !role) { showFormError('Processor name and role are required.'); return; }
+        const obj = { name, country: country || 'IN', role };
+        if (contact) obj.contact = contact;
+        formProcessors.push(obj);
+        renderProcessors();
+        cancelAddProcessor();
+    }
+    function removeProcessor(i) { formProcessors.splice(i,1); renderProcessors(); }
+    function renderProcessors() {
+        const el = document.getElementById('processor-list');
+        el.innerHTML = formProcessors.map((p, i) => `
+            <div class="struct-card">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="font-bold text-slate-700 text-sm">${p.name}</span>
+                        <span class="text-[10px] font-mono font-bold text-teal-600 ml-2 bg-teal-50 px-1.5 py-0.5 rounded">${p.country}</span>
+                    </div>
+                    <button type="button" onclick="removeProcessor(${i})" class="text-red-400 hover:text-red-600 text-xs font-bold">Remove</button>
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5">${p.role}</div>
+                ${p.contact ? `<div class="text-[10px] text-slate-400 mt-0.5">${p.contact}</div>` : ''}
+            </div>`).join('');
+    }
+
+    // ---- Cross-border transfer builder ----
+    function showTransferForm() {
+        document.getElementById('transfer-sub-form').classList.remove('hidden');
+        document.getElementById('add-transfer-btn').classList.add('hidden');
+        document.getElementById('xfer-country').focus();
+    }
+    function cancelAddTransfer() {
+        ['xfer-country','xfer-safeguard','xfer-processor'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('transfer-sub-form').classList.add('hidden');
+        document.getElementById('add-transfer-btn').classList.remove('hidden');
+    }
+    function confirmAddTransfer() {
+        const country   = document.getElementById('xfer-country').value.trim().toUpperCase();
+        const safeguard = document.getElementById('xfer-safeguard').value.trim();
+        const processor = document.getElementById('xfer-processor').value.trim();
+        if (!country || !safeguard) { showFormError('Destination country and safeguard are required.'); return; }
+        const obj = { destination_country: country, safeguard };
+        if (processor) obj.processor = processor;
+        formCrossTransfers.push(obj);
+        renderTransfers();
+        cancelAddTransfer();
+    }
+    function removeTransfer(i) { formCrossTransfers.splice(i,1); renderTransfers(); }
+    function renderTransfers() {
+        const el = document.getElementById('transfer-list');
+        el.innerHTML = formCrossTransfers.map((t, i) => `
+            <div class="struct-card">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="font-bold text-slate-700 text-sm">${t.destination_country}</span>
+                        <span class="text-xs text-slate-500 ml-2">${t.safeguard}</span>
+                    </div>
+                    <button type="button" onclick="removeTransfer(${i})" class="text-red-400 hover:text-red-600 text-xs font-bold">Remove</button>
+                </div>
+                ${t.processor ? `<div class="text-[10px] text-slate-400 mt-0.5">Processor: ${t.processor}</div>` : ''}
+            </div>`).join('');
+    }
+
+    // ---- Edit Form ----
+    async function openEditModal(id) {
+        clearForm();
+        document.getElementById('form-modal-title').textContent = 'Edit ROPA Entry';
+        document.getElementById('form-modal').style.display = 'flex';
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ _func: 'get_entry', id })
+            });
+            const e = await res.json();
+            document.getElementById('entry-id-hidden').value       = e.id;
+            document.getElementById('f-activity-name').value       = e.activity_name || '';
+            document.getElementById('f-purpose').value             = e.purpose || '';
+            document.getElementById('f-legal-basis').value         = e.legal_basis || '';
+            document.getElementById('f-retention-days').value      = e.retention_period_days || '';
+            document.getElementById('f-retention-event').value     = e.retention_start_event || '';
+            document.getElementById('f-security-measures').value   = e.security_measures || '';
+            document.getElementById('f-app-id').value              = e.app_id || '';
+
+            formDataCategories    = parseArr(e.data_categories);
+            formSubjectCategories = parseArr(e.data_subject_categories);
+            formProcessors        = parseArr(e.processors);
+            formCrossTransfers    = parseArr(e.cross_border_transfers);
+            formLinkedPolicies    = parseArr(e.linked_policy_ids);
+
+            renderChips('data-cat-chips',     formDataCategories,   'removeDataCategory');
+            renderChips('subject-cat-chips',  formSubjectCategories,'removeSubjectCategory');
+            renderChips('linked-policy-chips',formLinkedPolicies,   'removeLinkedPolicy');
+            renderProcessors();
+            renderTransfers();
+        } catch(err) { alert('Failed to load entry.'); closeFormModal(); }
+    }
+
+    function closeFormModal() {
+        document.getElementById('form-modal').style.display = 'none';
+        clearForm();
+    }
+
+    function clearForm() {
+        ['f-activity-name','f-purpose','f-retention-days','f-security-measures','f-app-id'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('f-legal-basis').value     = '';
+        document.getElementById('f-retention-event').value = '';
+        document.getElementById('form-error').classList.add('hidden');
+
+        formDataCategories = []; formSubjectCategories = [];
+        formProcessors     = []; formCrossTransfers    = []; formLinkedPolicies = [];
+
+        ['data-cat-chips','subject-cat-chips','linked-policy-chips'].forEach(id => {
+            document.getElementById(id).innerHTML = '';
+        });
+        document.getElementById('processor-list').innerHTML = '';
+        document.getElementById('transfer-list').innerHTML  = '';
+        cancelAddProcessor();
+        cancelAddTransfer();
+
+        ['data-cat-input','subject-cat-input','linked-policy-input'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+    }
+
     function parseArr(val) {
         if (!val) return [];
         if (Array.isArray(val)) return val;
         try { return JSON.parse(val); } catch(e) { return []; }
+    }
+
+    async function saveEntry() {
+        const entryId = document.getElementById('entry-id-hidden').value;
+        const isEdit  = !!entryId;
+
+        const payload = {
+            _func:                   isEdit ? 'update_entry' : 'create_entry',
+            fiduciary_id:            FIDUCIARY_ID,
+            activity_name:           document.getElementById('f-activity-name').value.trim(),
+            purpose:                 document.getElementById('f-purpose').value.trim(),
+            legal_basis:             document.getElementById('f-legal-basis').value,
+            retention_period_days:   parseInt(document.getElementById('f-retention-days').value) || undefined,
+            retention_start_event:   document.getElementById('f-retention-event').value || undefined,
+            security_measures:       document.getElementById('f-security-measures').value.trim() || undefined,
+            app_id:                  document.getElementById('f-app-id').value.trim() || undefined,
+            data_categories:          formDataCategories,
+            data_subject_categories:  formSubjectCategories,
+            processors:               formProcessors,
+            cross_border_transfers:   formCrossTransfers,
+            linked_policy_ids:        formLinkedPolicies,
+        };
+        if (isEdit) payload.id = entryId;
+
+        if (!payload.activity_name || !payload.purpose || !payload.legal_basis) {
+            showFormError('Activity name, purpose, and legal basis are required.'); return;
+        }
+
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                closeFormModal();
+                loadEntries();
+            } else {
+                showFormError(data.message || data.error || 'Save failed.');
+            }
+        } catch(err) { showFormError('Network error.'); }
+    }
+
+    function showFormError(msg) {
+        const el = document.getElementById('form-error');
+        el.textContent = msg;
+        el.classList.remove('hidden');
     }
 
     // ---- View / Completeness ----
@@ -588,7 +983,7 @@
         }
         function parseJ(v) { if (!v) return []; if (Array.isArray(v)) return v; try { return JSON.parse(v); } catch(e) { return []; } }
 
-        function entryBlock(e) {
+        const entryBlocks = entries.map(e => {
             const cats       = parseJ(e.data_categories);
             const subjects   = parseJ(e.data_subject_categories);
             const procs      = parseJ(e.processors);
@@ -637,28 +1032,6 @@
                 <div><div class="field-label">Withdrawn Consents</div><div class="field-value">${e.inactive_consent_count != null ? e.inactive_consent_count : 0}</div></div>
               </div>
             </div>`;
-        }
-
-        // Group entries by first linked policy
-        const pdfGroups = {};
-        entries.forEach(e => {
-            const key = parseJ(e.linked_policy_ids)[0] || '__none__';
-            if (!pdfGroups[key]) pdfGroups[key] = [];
-            pdfGroups[key].push(e);
-        });
-        const pdfKeys = Object.keys(pdfGroups).filter(k => k !== '__none__').sort();
-        if (pdfGroups['__none__']) pdfKeys.push('__none__');
-        const policyCount = pdfKeys.filter(k => k !== '__none__').length;
-
-        const entryBlocks = pdfKeys.map(key => {
-            const group = pdfGroups[key];
-            const label = key === '__none__' ? 'Other Processing Activities' : key;
-            const hdr = `<div style="background:#f0fdfa;border-left:4px solid #0d9488;padding:10px 20px;margin:8px 0 0;">
-              <span style="font-size:0.6rem;font-weight:800;color:#0d9488;text-transform:uppercase;letter-spacing:0.1em">Policy</span>
-              <span style="font-family:monospace;font-weight:700;color:#134e4a;margin-left:8px">${label}</span>
-              <span style="font-size:0.75rem;color:#5eead4;margin-left:10px">${group.length} activit${group.length===1?'y':'ies'}</span>
-            </div>`;
-            return hdr + group.map(entryBlock).join('');
         }).join('');
 
         const html = `<!DOCTYPE html>
@@ -673,7 +1046,7 @@
   <div class="page-hdr">
     <div class="page-hdr-label">DPDP Act, 2023 &nbsp;·&nbsp; Records of Processing Activities &nbsp;·&nbsp; Active Entries Only</div>
     <h1>ROPA Register — ${fiduciary}</h1>
-    <p>Generated: ${generated} &nbsp;·&nbsp; ${entries.length} activit${entries.length===1?'y':'ies'} across ${policyCount} polic${policyCount===1?'y':'ies'}</p>
+    <p>Generated: ${generated} &nbsp;·&nbsp; ${entries.length} active processing activit${entries.length===1?'y':'ies'}</p>
   </div>
   <div class="register">${entryBlocks}</div>
   <div class="footer">Generated by TSI DPDP CMS &nbsp;·&nbsp; ${generated}</div>
@@ -706,10 +1079,27 @@
         loadEntries();
     });
 
-    window.viewEntry    = viewEntry;
-    window.publishEntry = publishEntry;
-    window.retireEntry  = retireEntry;
-    window.exportRopa   = exportRopa;
+    window.openEditModal      = openEditModal;
+    window.viewEntry          = viewEntry;
+    window.publishEntry       = publishEntry;
+    window.retireEntry        = retireEntry;
+    window.exportRopa         = exportRopa;
+    // Chip & builder functions referenced from inline onclick handlers
+    window.removeDataCategory   = removeDataCategory;
+    window.addDataCategory      = addDataCategory;
+    window.addSubjectPreset     = addSubjectPreset;
+    window.addSubjectCategory   = addSubjectCategory;
+    window.removeSubjectCategory= removeSubjectCategory;
+    window.addLinkedPolicy      = addLinkedPolicy;
+    window.removeLinkedPolicy   = removeLinkedPolicy;
+    window.showProcessorForm    = showProcessorForm;
+    window.cancelAddProcessor   = cancelAddProcessor;
+    window.confirmAddProcessor  = confirmAddProcessor;
+    window.removeProcessor      = removeProcessor;
+    window.showTransferForm     = showTransferForm;
+    window.cancelAddTransfer    = cancelAddTransfer;
+    window.confirmAddTransfer   = confirmAddTransfer;
+    window.removeTransfer       = removeTransfer;
 </script>
 </body>
 </html>

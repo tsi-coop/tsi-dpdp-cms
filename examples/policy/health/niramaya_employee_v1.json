@@ -10,7 +10,7 @@
         "description": "To process monthly salaries, deduct professional tax, and manage Provident Fund (PF) and ESI contributions. This is a mandatory requirement for employment.",
         "legal_basis": "Contractual Necessity / Statutory Obligation",
         "data_categories_involved": ["full_name", "bank_account_details", "pan_number", "aadhaar_number", "salary_details"],
-        "recipients_or_third_parties": ["Tax Authorities", "Banking Partners", "EPFO"],
+        "recipients_or_third_parties": ["Greytip", "EPFO"],
         "retention_policy": "Statutory retention of 10 years after resignation/termination for audit purposes.",
         "retention_duration_value": 10,
         "retention_duration_unit": "YEARS",
@@ -24,7 +24,7 @@
         "description": "To enroll employees and their dependents in group health insurance and manage wellness programs.",
         "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
         "data_categories_involved": ["dependent_details", "health_declaration", "contact_information"],
-        "recipients_or_third_parties": ["Insurance Provider", "TPA"],
+        "recipients_or_third_parties": ["HDFCLife"],
         "retention_policy": "Duration of active employment plus 2 years.",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
@@ -38,7 +38,7 @@
         "description": "To evaluate work performance, track training progress, and determine promotions or increments.",
         "legal_basis": "Legitimate Use / Employment (DPDP Act, Section 7(i))",
         "data_categories_involved": ["performance_appraisals", "training_records", "attendance_logs"],
-        "recipients_or_third_parties": ["HR Management Software"],
+        "recipients_or_third_parties": ["Greytip"],
         "retention_policy": "Retained during the tenure of employment plus 5 years.",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
@@ -63,9 +63,9 @@
     "data_subject_categories": ["employee"],
     "security_measures": "Encrypted payroll database, access restricted to HR and Finance teams, audit logs for all sensitive record access, MFA on HRMS.",
     "processors": [
-      { "name": "Greytip Software",   "country": "IN", "role": "Payroll & HRMS Platform",          "contact": "support@greytip.com" },
-      { "name": "HDFC Life Insurance","country": "IN", "role": "Group Health Insurance Provider",   "contact": "compliance@hdfclife.com" },
-      { "name": "EPFO (Government)",  "country": "IN", "role": "Provident Fund Administration",    "contact": "epfo@nic.in" }
+      { "name": "Greytip",  "country": "IN", "role": "Payroll & HRMS Platform",          "contact": "support@greytip.com" },
+      { "name": "HDFCLife", "country": "IN", "role": "Group Health Insurance Provider",   "contact": "compliance@hdfclife.com" },
+      { "name": "EPFO",     "country": "IN", "role": "Provident Fund Administration",    "contact": "epfo@nic.in" }
     ],
     "cross_border_transfers": [],
     "data_principal_rights_summary": "As an employee, you have the right to access your employment records, correct any inaccuracies, and raise grievances regarding data handling. Requests for erasure are subject to statutory retention requirements for financial and labor law compliance.",
@@ -95,7 +95,7 @@
         "description": "मासिक वेतन संसाधित करने, टैक्स काटने और भविष्य निधि (PF) और ESI योगदान का प्रबंधन करने के लिए। यह रोजगार के लिए एक अनिवार्य आवश्यकता है।",
         "legal_basis": "अनुबंधात्मक आवश्यकता / वैधानिक बाध्यता",
         "data_categories_involved": ["पूरा नाम", "बैंक खाता विवरण", "पैन नंबर", "आधार नंबर", "वेतन विवरण"],
-        "recipients_or_third_parties": ["कर अधिकारी", "बैंकिंग भागीदार", "EPFO"],
+        "recipients_or_third_parties": ["Greytip", "EPFO"],
         "retention_policy": "ऑडिट उद्देश्यों के लिए इस्तीफे/छंटनी के बाद 10 वर्ष का वैधानिक प्रतिधारण।",
         "retention_duration_value": 10,
         "retention_duration_unit": "YEARS",
@@ -109,7 +109,7 @@
         "description": "कर्मचारियों और उनके आश्रितों को समूह स्वास्थ्य बीमा में नामांकित करने के लिए।",
         "legal_basis": "अनुबंधात्मक आवश्यकता",
         "data_categories_involved": ["आश्रितों का विवरण", "स्वास्थ्य घोषणा", "संपर्क जानकारी"],
-        "recipients_or_third_parties": ["बीमा प्रदाता"],
+        "recipients_or_third_parties": ["HDFCLife"],
         "retention_policy": "सक्रिय रोजगार की अवधि और उसके बाद 2 वर्ष।",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
@@ -127,9 +127,7 @@
           "प्रशिक्षण रिकॉर्ड",
           "उपस्थिति लॉग"
         ],
-        "recipients_or_third_parties": [
-          "HR प्रबंधन सॉफ्टवेयर"
-        ],
+        "recipients_or_third_parties": ["Greytip"],
         "retention_policy": "रोजगार की अवधि और उसके बाद 5 वर्षों तक सुरक्षित रखा जाएगा।",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",

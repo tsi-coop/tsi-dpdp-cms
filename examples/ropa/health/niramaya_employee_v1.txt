@@ -33,10 +33,10 @@ DATA SUBJECT CATEGORIES
 
 DATA CATEGORIES  (11 total)
 ------------------------------------------------------------------------
-  full_name                      bank_account_details           pan_number                  
-  aadhaar_number                 salary_details                 dependent_details           
-  health_declaration             contact_information            performance_appraisals      
-  training_records               attendance_logs             
+  full_name                      bank_account_details           pan_number
+  aadhaar_number                 salary_details                 dependent_details
+  health_declaration             contact_information            performance_appraisals
+  training_records               attendance_logs
 
 SECURITY MEASURES
 ------------------------------------------------------------------------
@@ -45,11 +45,19 @@ audit logs for all sensitive record access, MFA on HRMS.
 
 DATA PROCESSORS  (3 declared)
 ------------------------------------------------------------------------
-  Name                         Country    Role                           Contact
-  ---------------------------- ---------- ------------------------------ ----------------------------
-  Greytip Software             IN         Payroll & HRMS Platform        support@greytip.com
-  HDFC Life Insurance          IN         Group Health Insurance Provider compliance@hdfclife.com
-  EPFO (Government)            IN         Provident Fund Administration  epfo@nic.in
+  Name           Country    Role                           Contact
+  -------------- ---------- ------------------------------ ----------------------------
+  Greytip        IN         Payroll & HRMS Platform        support@greytip.com
+  HDFCLife       IN         Group Health Insurance Provider compliance@hdfclife.com
+  EPFO           IN         Provident Fund Administration  epfo@nic.in
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_payroll_tax              Greytip, EPFO
+  purpose_employee_benefits        HDFCLife
+  purpose_performance_training     Greytip
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------

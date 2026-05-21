@@ -258,6 +258,7 @@
                 <select id="status-filter" class="p-2 border border-gray-300 rounded-md text-sm bg-white outline-none focus:ring-2 focus:ring-teal-600">
                     <option value="ALL" selected>All Statuses</option>
                     <option value="ACTIVE">ACTIVE</option>
+                    <option value="UNDER_REVIEW">UNDER REVIEW</option>
                     <option value="DRAFT">DRAFT</option>
                     <option value="ARCHIVED">ARCHIVED</option>
                 </select>
@@ -324,8 +325,24 @@
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
                     <!-- Reduced width Content Pane -->
                     <div class="lg:col-span-3">
-                        <label for="policy-content-input" class="block text-sm font-medium text-gray-700 font-bold mb-2">Policy Content (Multilingual JSON)</label>
-                        <textarea id="policy-content-input" name="policy_content" rows="18" required placeholder='Paste valid policy JSON here...' class="mt-1 block w-full p-4 border border-gray-300 rounded-md shadow-sm font-mono text-xs focus:ring-2 focus:ring-teal-600 outline-none min-h-[400px] bg-slate-50"></textarea>
+                        <label class="block text-sm font-medium text-gray-700 font-bold mb-2">Policy JSON File</label>
+                        <div id="policy-file-zone"
+                             class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-teal-400 transition-colors"
+                             onclick="document.getElementById('policy-file-input').click()"
+                             ondragover="event.preventDefault()" ondrop="handleFileDrop(event)">
+                            <input type="file" id="policy-file-input" accept=".json" class="hidden" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                            <p class="text-sm font-semibold text-slate-600">Click to upload or drag &amp; drop</p>
+                            <p class="text-xs text-slate-400 mt-1">.json files only — provided by your system designer</p>
+                            <p id="policy-file-name" class="text-xs font-mono text-teal-700 mt-2 hidden"></p>
+                        </div>
+                        <div id="policy-preview" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Policy Preview</p>
+                            <div id="preview-title" class="text-sm font-bold text-slate-800"></div>
+                            <div id="preview-purposes" class="space-y-1"></div>
+                            <div id="preview-processors" class="text-xs text-slate-500 mt-1"></div>
+                            <div id="preview-subjects" class="text-xs text-slate-500"></div>
+                        </div>
                     </div>
 
                     <!-- Widened Validation Quick Tips sidebar -->
@@ -386,7 +403,8 @@
 
     let timeout; // Debounce
     let tableBody, searchInput, statusFilter, policyModalOverlay, policyForm, errorMessageP;
-    let policyIdHidden, policyIdInput, policyJurisdictionSelect, policyContentInput, policyViewDetails, policyJsonOutput;
+    let policyIdHidden, policyIdInput, policyJurisdictionSelect, policyViewDetails, policyJsonOutput;
+    let parsedPolicyJson = null;
 
     async function loadPolicies() {
         const searchTerm = searchInput.value || "";
@@ -435,6 +453,7 @@
     function createStatusBadge(status) {
         const colors = {
             'ACTIVE': 'bg-green-100 text-green-800',
+            'UNDER_REVIEW': 'bg-blue-100 text-blue-800',
             'DRAFT': 'bg-yellow-100 text-yellow-800',
             'ARCHIVED': 'bg-gray-100 text-gray-800'
         };
@@ -445,6 +464,7 @@
         const row = document.createElement('tr');
         row.className = "hover:bg-slate-50/50 transition-colors";
         const isDraft = policy.status === 'DRAFT';
+        const isUnderReview = policy.status === 'UNDER_REVIEW';
         const isArchived = policy.status === 'ARCHIVED';
 
         const actionsHtml = `
@@ -457,7 +477,10 @@
         row.innerHTML = `
             <td class="px-4 py-4 whitespace-nowrap text-sm font-bold text-slate-800">${policy.id}</td>
             <td class="px-4 py-4 whitespace-nowrap text-sm text-slate-500">${policy.jurisdiction}</td>
-            <td class="px-4 py-4 whitespace-nowrap">${createStatusBadge(policy.status)}</td>
+            <td class="px-4 py-4 whitespace-nowrap">
+                ${createStatusBadge(policy.status)}
+                ${isUnderReview ? '<div class="text-[10px] text-blue-500 mt-0.5">Pending DPO ROPA approval</div>' : ''}
+            </td>
             <td class="px-4 py-4 whitespace-nowrap text-xs text-slate-400 font-medium">${new Date(policy.effective_date).toLocaleDateString()}</td>
             <td class="px-4 py-4 whitespace-nowrap">${actionsHtml}</td>
         `;
@@ -495,7 +518,10 @@
             policyIdHidden.value = id;
             policyJurisdictionSelect.value = p.jurisdiction;
             const content = typeof p.policy_content === 'string' ? JSON.parse(p.policy_content) : p.policy_content;
-            policyContentInput.value = JSON.stringify(content, null, 2);
+            parsedPolicyJson = content;
+            await renderPolicyPreview(content);
+            document.getElementById('policy-file-name').textContent = '(loaded from existing draft)';
+            document.getElementById('policy-file-name').classList.remove('hidden');
 
         } catch(e) { alert("Load Failed."); }
     }
@@ -558,6 +584,10 @@
         policyIdInput.disabled = false;
         policyViewDetails.classList.add('hidden');
         document.getElementById('save-policy-btn').textContent = isEdit ? 'Update Draft' : 'Save Draft';
+        // Reset file upload state
+        parsedPolicyJson = null;
+        document.getElementById('policy-file-name').classList.add('hidden');
+        document.getElementById('policy-preview').classList.add('hidden');
         policyModalOverlay.style.display = 'flex';
     }
 
@@ -578,8 +608,25 @@
         policyIdHidden = document.getElementById('policy-id-hidden');
         policyIdInput = document.getElementById('policy-id-input');
         policyJurisdictionSelect = document.getElementById('policy-jurisdiction-select');
-        policyContentInput = document.getElementById('policy-content-input');
         policyViewDetails = document.getElementById('policy-view-details');
+
+        document.getElementById('policy-file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                try {
+                    parsedPolicyJson = JSON.parse(evt.target.result);
+                    await renderPolicyPreview(parsedPolicyJson);
+                    document.getElementById('policy-file-name').textContent = file.name;
+                    document.getElementById('policy-file-name').classList.remove('hidden');
+                } catch(err) {
+                    alert('Invalid JSON file: ' + err.message);
+                    parsedPolicyJson = null;
+                }
+            };
+            reader.readAsText(file);
+        });
         policyJsonOutput = document.getElementById('policy-json-output');
 
         document.getElementById('add-policy-btn').onclick = () => showModal('Create New Policy Version');
@@ -593,8 +640,8 @@
         policyForm.onsubmit = async (e) => {
             e.preventDefault();
             const isEditing = !!policyIdHidden.value;
-            let json;
-            try { json = JSON.parse(policyContentInput.value); } catch (e) { alert("Invalid JSON Content."); return; }
+            if (!parsedPolicyJson) { alert("Please upload a policy JSON file."); return; }
+            const json = parsedPolicyJson;
 
             const payload = {
                 "_func": isEditing ? "update_policy" : "create_policy",
@@ -638,6 +685,81 @@
         };
         loadPolicies();
     });
+
+    function handleFileDrop(e) {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (!file || !file.name.endsWith('.json')) { alert('Please drop a .json file.'); return; }
+        const reader = new FileReader();
+        reader.onload = async function(evt) {
+            try {
+                parsedPolicyJson = JSON.parse(evt.target.result);
+                await renderPolicyPreview(parsedPolicyJson);
+                document.getElementById('policy-file-name').textContent = file.name;
+                document.getElementById('policy-file-name').classList.remove('hidden');
+            } catch(err) {
+                alert('Invalid JSON file: ' + err.message);
+                parsedPolicyJson = null;
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function fetchRegisteredAppNames() {
+        try {
+            const res = await fetch('/api/v1/admin/app', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ _func: 'list_apps', fiduciary_id: localStorage.getItem('fiduciary_id') })
+            });
+            const data = await res.json();
+            const apps = Array.isArray(data) ? data : (data.data || data.apps || []);
+            return new Set(apps.map(a => (a.name || '').toLowerCase()));
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    async function renderPolicyPreview(json) {
+        const lang = Object.keys(json)[0];
+        const block = json[lang];
+        if (!block) return;
+
+        document.getElementById('preview-title').textContent = block.title || '(no title)';
+
+        const registeredNames = await fetchRegisteredAppNames();
+
+        const purposes = block.data_processing_purposes || [];
+        document.getElementById('preview-purposes').innerHTML =
+            `<p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">${purposes.length} Processing Purpose(s)</p>` +
+            purposes.map(p => {
+                const rtpHtml = (p.recipients_or_third_parties || []).map(name => {
+                    const matched = registeredNames.size === 0 || registeredNames.has(name.toLowerCase());
+                    return matched
+                        ? `<span class="text-teal-600 text-[10px] font-mono bg-teal-50 px-1.5 py-0.5 rounded">${name}</span>`
+                        : `<span class="text-amber-700 text-[10px] font-mono bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded" title="No App registered with this name">⚠ ${name}</span>`;
+                }).join(' ');
+                return `
+                <div class="flex flex-wrap gap-2 text-xs items-center py-0.5">
+                    <span class="font-semibold text-slate-700">${p.name || p.id}</span>
+                    <span class="text-slate-300">·</span>
+                    <span class="text-slate-500 capitalize">${(p.legal_basis || '').replace(/_/g,' ')}</span>
+                    <span class="text-slate-300">·</span>
+                    <span class="text-slate-400">${(p.data_categories_involved || []).length} data cat(s)</span>
+                    ${rtpHtml ? `<span class="text-slate-300">·</span>${rtpHtml}` : ''}
+                </div>`;
+            }).join('');
+
+        const procs = block.processors || [];
+        document.getElementById('preview-processors').textContent =
+            procs.length ? `Processors: ${procs.map(p => p.name).join(', ')}` : 'No processors declared';
+
+        const subjects = block.data_subject_categories || [];
+        document.getElementById('preview-subjects').textContent =
+            subjects.length ? `Data subjects: ${subjects.join(', ')}` : '';
+
+        document.getElementById('policy-preview').classList.remove('hidden');
+    }
 
     window.viewPolicy = viewPolicy;
     window.editPolicy = editPolicy;

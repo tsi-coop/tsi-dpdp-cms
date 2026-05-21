@@ -34,9 +34,9 @@ DATA SUBJECT CATEGORIES
 
 DATA CATEGORIES  (9 total)
 ------------------------------------------------------------------------
-  full_name                      mobile_number                  email_address               
-  date_of_birth                  delivery_address               payment_details             
-  purchase_history               shopping_preferences           browsing_history            
+  full_name                      mobile_number                  email_address
+  date_of_birth                  delivery_address               payment_details
+  purchase_history               shopping_preferences           browsing_history
 
 SECURITY MEASURES
 ------------------------------------------------------------------------
@@ -45,18 +45,26 @@ AES-256 encrypted customer PII at rest.
 
 DATA PROCESSORS  (4 declared)
 ------------------------------------------------------------------------
-  Name                         Country    Role                           Contact
-  ---------------------------- ---------- ------------------------------ ----------------------------
-  Razorpay                     IN         Payment Gateway                dpo@razorpay.com
-  Delhivery                    IN         Logistics & Last-Mile Delivery privacy@delhivery.com
-  MoEngage                     IN         Customer Engagement & Push     privacy@moengage.com
-  Google Analytics             US         Website & App Analytics        google-privacy@google.com
+  Name            Country    Role                           Contact
+  --------------- ---------- ------------------------------ ----------------------------
+  Razorpay        IN         Payment Gateway                dpo@razorpay.com
+  Delhivery       IN         Logistics & Last-Mile Delivery privacy@delhivery.com
+  MoEngage        IN         Customer Engagement & Push     privacy@moengage.com
+  GoogleAnalytics US         Website & App Analytics        google-privacy@google.com
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_account_loyalty          MoEngage
+  purpose_order_fulfillment        Delhivery, Razorpay
+  purpose_personalized_offers      MoEngage, GoogleAnalytics
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
   Destination    Safeguard                                    Processor
   -------------- -------------------------------------------- ----------------------------
-  US             Standard Contractual Clauses (SCC)           Google Analytics
+  US             Standard Contractual Clauses (SCC)           GoogleAnalytics
 
 RETENTION
 ------------------------------------------------------------------------

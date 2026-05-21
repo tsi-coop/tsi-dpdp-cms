@@ -169,6 +169,11 @@ public class Ropa implements Action {
         new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId,
                 "ROPA_ENTRY_PUBLISHED", "id:" + entryId);
 
+        // Activate each linked policy if all its non-retired ROPA entries are now active
+        for (String policyId : parseLinkedPolicyIds(existing.get("linked_policy_ids"))) {
+            activatePolicyIfComplete(policyId, fiduciaryId);
+        }
+
         JSONObject out = new JSONObject();
         out.put("success", true);
         out.put("message", "ROPA entry published.");
@@ -223,7 +228,8 @@ public class Ropa implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "ROPA entry not found.", req.getRequestURI());
             return;
         }
-        entry.put("consent_count", getConsentCountForEntry(entryId));
+        entry.put("consent_count", getConsentCountForEntry(entryId, true));
+        entry.put("inactive_consent_count", getConsentCountForEntry(entryId, false));
         entry.put("history", getHistoryForEntry(entryId));
         OutputProcessor.send(res, HttpServletResponse.SC_OK, entry);
     }
@@ -260,7 +266,7 @@ public class Ropa implements Action {
             "ID", "Activity Name", "Purpose", "Legal Basis", "Data Categories",
             "Data Subject Categories", "Retention Period Days", "Retention Start Event",
             "Processors", "Cross Border Transfers", "Security Measures",
-            "Status", "Version", "Created At", "Consent Count"
+            "Status", "Version", "Created At", "Active Consent Count", "Withdrawn Consent Count"
         });
 
         for (Object obj : entries) {
@@ -273,7 +279,8 @@ public class Ropa implements Action {
                 s(e, "security_measures"), s(e, "status"),
                 e.get("version") != null ? e.get("version").toString() : "",
                 s(e, "created_at"),
-                e.get("consent_count") != null ? e.get("consent_count").toString() : "0"
+                e.get("consent_count") != null ? e.get("consent_count").toString() : "0",
+                e.get("inactive_consent_count") != null ? e.get("inactive_consent_count").toString() : "0"
             });
         }
         csv.flush();
@@ -469,7 +476,7 @@ public class Ropa implements Action {
         String sql = "SELECT id, fiduciary_id, app_id, activity_name, purpose, legal_basis, " +
                 "data_categories, data_subject_categories, retention_period_days, retention_start_event, " +
                 "processors, cross_border_transfers, security_measures, dpo_id, linked_policy_ids, " +
-                "status, version, created_at, updated_at FROM ropa_entries WHERE id = ?";
+                "source_purpose_id, status, version, created_at, updated_at FROM ropa_entries WHERE id = ?";
 
         PoolDB pool = new PoolDB();
         Connection conn = null;
@@ -489,27 +496,32 @@ public class Ropa implements Action {
     private JSONArray listEntries(UUID fiduciaryId, String statusFilter, String legalBasisFilter,
                                    String appIdStr, int page, int limit) throws SQLException {
         StringBuilder sql = new StringBuilder(
-                "SELECT id, fiduciary_id, app_id, activity_name, purpose, legal_basis, " +
-                "data_categories, data_subject_categories, retention_period_days, retention_start_event, " +
-                "processors, cross_border_transfers, security_measures, dpo_id, linked_policy_ids, " +
-                "status, version, created_at, updated_at FROM ropa_entries WHERE fiduciary_id = ?");
+                "SELECT r.id, r.fiduciary_id, r.app_id, r.activity_name, r.purpose, r.legal_basis, " +
+                "r.data_categories, r.data_subject_categories, r.retention_period_days, r.retention_start_event, " +
+                "r.processors, r.cross_border_transfers, r.security_measures, r.dpo_id, r.linked_policy_ids, " +
+                "r.source_purpose_id, r.status, r.version, r.created_at, r.updated_at, " +
+                "COUNT(c.id) FILTER (WHERE c.is_active_consent = TRUE)  AS consent_count, " +
+                "COUNT(c.id) FILTER (WHERE c.is_active_consent = FALSE) AS inactive_consent_count " +
+                "FROM ropa_entries r " +
+                "LEFT JOIN consent_records c ON c.ropa_entry_id = r.id " +
+                "WHERE r.fiduciary_id = ?");
 
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
-            sql.append(" AND status = ?");
+            sql.append(" AND r.status = ?");
             params.add(statusFilter);
         }
         if (legalBasisFilter != null && !legalBasisFilter.isEmpty()) {
-            sql.append(" AND legal_basis = ?");
+            sql.append(" AND r.legal_basis = ?");
             params.add(legalBasisFilter);
         }
         if (appIdStr != null && !appIdStr.isEmpty()) {
-            sql.append(" AND app_id = ?");
+            sql.append(" AND r.app_id = ?");
             try { params.add(UUID.fromString(appIdStr)); } catch (Exception ignored) {}
         }
-        sql.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
+        sql.append(" GROUP BY r.id ORDER BY r.created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
 
@@ -523,7 +535,12 @@ public class Ropa implements Action {
             pstmt = conn.prepareStatement(sql.toString());
             for (int i = 0; i < params.size(); i++) pstmt.setObject(i + 1, params.get(i));
             rs = pstmt.executeQuery();
-            while (rs.next()) result.add(mapEntry(rs));
+            while (rs.next()) {
+                JSONObject e = mapEntry(rs);
+                e.put("consent_count", rs.getLong("consent_count"));
+                e.put("inactive_consent_count", rs.getLong("inactive_consent_count"));
+                result.add(e);
+            }
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
@@ -577,6 +594,7 @@ public class Ropa implements Action {
         e.put("security_measures",      rs.getString("security_measures"));
         e.put("dpo_id",                 rs.getObject("dpo_id") != null ? rs.getObject("dpo_id").toString() : null);
         e.put("linked_policy_ids",      rs.getString("linked_policy_ids"));
+        e.put("source_purpose_id",      rs.getString("source_purpose_id"));
         e.put("status",                 rs.getString("status"));
         e.put("version",                rs.getLong("version"));
         e.put("created_at",             rs.getTimestamp("created_at").toInstant().toString());
@@ -584,8 +602,8 @@ public class Ropa implements Action {
         return e;
     }
 
-    private long getConsentCountForEntry(UUID entryId) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM consent_records WHERE ropa_entry_id = ?";
+    private long getConsentCountForEntry(UUID entryId, boolean active) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM consent_records WHERE ropa_entry_id = ? AND is_active_consent = ?";
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -594,6 +612,7 @@ public class Ropa implements Action {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, entryId);
+            pstmt.setBoolean(2, active);
             rs = pstmt.executeQuery();
             return rs.next() ? rs.getLong(1) : 0L;
         } finally {
@@ -605,7 +624,9 @@ public class Ropa implements Action {
         String sql = "SELECT r.id, r.fiduciary_id, r.app_id, r.activity_name, r.purpose, r.legal_basis, " +
                 "r.data_categories, r.data_subject_categories, r.retention_period_days, r.retention_start_event, " +
                 "r.processors, r.cross_border_transfers, r.security_measures, r.dpo_id, r.linked_policy_ids, " +
-                "r.status, r.version, r.created_at, r.updated_at, COUNT(c.id) AS consent_count " +
+                "r.source_purpose_id, r.status, r.version, r.created_at, r.updated_at, " +
+                "COUNT(c.id) FILTER (WHERE c.is_active_consent = TRUE)  AS consent_count, " +
+                "COUNT(c.id) FILTER (WHERE c.is_active_consent = FALSE) AS inactive_consent_count " +
                 "FROM ropa_entries r " +
                 "LEFT JOIN consent_records c ON c.ropa_entry_id = r.id " +
                 "WHERE r.fiduciary_id = ? AND r.status = 'active' " +
@@ -624,6 +645,7 @@ public class Ropa implements Action {
             while (rs.next()) {
                 JSONObject e = mapEntry(rs);
                 e.put("consent_count", rs.getLong("consent_count"));
+                e.put("inactive_consent_count", rs.getLong("inactive_consent_count"));
                 result.add(e);
             }
         } finally {
@@ -675,5 +697,52 @@ public class Ropa implements Action {
     @Override
     public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
         return "POST".equalsIgnoreCase(method) && InputProcessor.validate(req, res);
+    }
+
+    // --- Policy activation on ROPA approval ---
+
+    @SuppressWarnings("unchecked")
+    private List<String> parseLinkedPolicyIds(Object val) {
+        List<String> ids = new ArrayList<>();
+        if (val == null) return ids;
+        try {
+            JSONArray arr = val instanceof JSONArray
+                    ? (JSONArray) val
+                    : (JSONArray) new JSONParser().parse(val.toString());
+            for (Object o : arr) if (o != null) ids.add(o.toString());
+        } catch (Exception ignored) {}
+        return ids;
+    }
+
+    private void activatePolicyIfComplete(String policyId, UUID fiduciaryId) {
+        String countSql = "SELECT COUNT(*) FROM ropa_entries " +
+                "WHERE linked_policy_ids @> ?::jsonb AND fiduciary_id = ? " +
+                "AND status NOT IN ('active', 'retired')";
+        String activateSql = "UPDATE consent_policies SET status = 'ACTIVE', last_updated_at = NOW() " +
+                "WHERE id = ? AND status = 'UNDER_REVIEW'";
+        PoolDB pool = null;
+        Connection conn = null; PreparedStatement pstmt = null; ResultSet rs = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(countSql);
+            pstmt.setString(1, "[\"" + policyId + "\"]");
+            pstmt.setObject(2, fiduciaryId);
+            rs = pstmt.executeQuery();
+            if (rs.next() && rs.getLong(1) == 0) {
+                pool.cleanup(rs, pstmt, null);
+                rs = null; pstmt = null;
+                pstmt = conn.prepareStatement(activateSql);
+                pstmt.setString(1, policyId);
+                if (pstmt.executeUpdate() > 0) {
+                    new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE,
+                            fiduciaryId, "POLICY_ACTIVATED_BY_DPO", "policy:" + policyId);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Policy activation check failed for " + policyId + ": " + e.getMessage());
+        } finally {
+            if (pool != null) try { pool.cleanup(rs, pstmt, conn); } catch (Exception ignored) {}
+        }
     }
 }

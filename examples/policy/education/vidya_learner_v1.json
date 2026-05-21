@@ -10,7 +10,7 @@
         "description": "To create your learning profile, enable course access, and manage subscriptions. This is essential for using the Vidya platform.",
         "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
         "data_categories_involved": ["full_name", "email_address", "grade_level", "school_name", "profile_photo"],
-        "recipients_or_third_parties": ["Identity Auth Services"],
+        "recipients_or_third_parties": ["GoogleFirebase"],
         "retention_policy": "Duration of active enrollment plus 5 years for academic record portability.",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
@@ -25,7 +25,7 @@
         "description": "To track your course completion, quiz scores, and time spent on modules to provide certificates and performance insights.",
         "legal_basis": "Contractual Necessity",
         "data_categories_involved": ["assessment_scores", "video_watch_time", "assignment_submissions"],
-        "recipients_or_third_parties": ["Cloud Hosting Partners"],
+        "recipients_or_third_parties": ["AWS"],
         "retention_policy": "7 years for compliance with educational record standards.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
@@ -40,7 +40,7 @@
         "description": "Using your past learning behavior to suggest relevant supplementary materials and advanced courses.",
         "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
         "data_categories_involved": ["search_history", "interest_tags", "learning_patterns"],
-        "recipients_or_third_parties": ["AI Content Engine"],
+        "recipients_or_third_parties": [],
         "retention_policy": "Until consent is withdrawn or 2 years of inactivity.",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
@@ -82,12 +82,12 @@
     "data_subject_categories": ["minor", "data_principal"],
     "security_measures": "COPPA-aligned safeguards for minors — no behavioural advertising, AES-256 encrypted learning records, parental consent workflows, TLS 1.3.",
     "processors": [
-      { "name": "Amazon Web Services", "country": "IN", "role": "Cloud Hosting (Mumbai Region)",   "contact": "aws-india-dpa@amazon.com" },
-      { "name": "Google Firebase",     "country": "US", "role": "Push Notifications & Auth",       "contact": "google-privacy@google.com" },
-      { "name": "Razorpay",            "country": "IN", "role": "Fee & Subscription Payments",     "contact": "dpo@razorpay.com" }
+      { "name": "AWS",           "country": "IN", "role": "Cloud Hosting (Mumbai Region)",   "contact": "aws-india-dpa@amazon.com" },
+      { "name": "GoogleFirebase","country": "US", "role": "Push Notifications & Auth",       "contact": "google-privacy@google.com" },
+      { "name": "Razorpay",      "country": "IN", "role": "Fee & Subscription Payments",     "contact": "dpo@razorpay.com" }
     ],
     "cross_border_transfers": [
-      { "destination_country": "US", "safeguard": "Standard Contractual Clauses (SCC)", "processor": "Google Firebase" }
+      { "destination_country": "US", "safeguard": "Standard Contractual Clauses (SCC)", "processor": "GoogleFirebase" }
     ],
     "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your academic data, update your profile, withdraw consent for recommendations, and request data erasure after finishing your courses.",
     "grievance_redressal_info": "For concerns, contact our DPO at: Email: privacy@vidyaedtech.in | Phone: +91 22 5544 3322 | Address: 5th Floor, Gyan Bhavan, Powai, Mumbai, Maharashtra.",
@@ -116,7 +116,7 @@
         "description": "आपकी प्रोफाइल बनाने और पाठ्यक्रम तक पहुंच प्रदान करने के लिए। विद्या प्लेटफॉर्म का उपयोग करने के लिए यह अनिवार्य है।",
         "legal_basis": "अनुबंधात्मक आवश्यकता",
         "data_categories_involved": ["नाम", "ईमेल", "कक्षा", "स्कूल का नाम"],
-        "recipients_or_third_parties": ["पहचान सत्यापन सेवाएं"],
+        "recipients_or_third_parties": ["GoogleFirebase"],
         "retention_policy": "सक्रिय नामांकन की अवधि और उसके बाद 5 वर्ष।",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
@@ -150,9 +150,7 @@
           "रुचि टैग",
           "सीखने के पैटर्न"
         ],
-        "recipients_or_third_parties": [
-          "एआई कंटेंट इंजन"
-        ],
+        "recipients_or_third_parties": [],
         "retention_policy": "सहमति वापस लेने तक या 2 साल की निष्क्रियता तक।",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",

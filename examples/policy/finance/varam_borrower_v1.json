@@ -10,7 +10,7 @@
         "description": "To verify your identity and prevent fraud using government-issued identifiers. This is a mandatory regulatory requirement for financial services.",
         "legal_basis": "Statutory Obligation (PMLA & DPDP Act)",
         "data_categories_involved": ["full_name", "pan_card", "masked_aadhaar", "photo", "voter_id"],
-        "recipients_or_third_parties": ["CERSAI", "Verification Agencies"],
+        "recipients_or_third_parties": ["CERSAI"],
         "retention_policy": "Statutory retention of 5 years after account closure as per RBI norms.",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
@@ -24,7 +24,7 @@
         "description": "To evaluate your creditworthiness and determine loan eligibility based on financial history.",
         "legal_basis": "Contractual Necessity (DPDP Act, Section 7(b))",
         "data_categories_involved": ["income_details", "bank_statements", "existing_loan_info", "employment_status"],
-        "recipients_or_third_parties": ["Credit Bureaus (CIBIL, Equifax)"],
+        "recipients_or_third_parties": ["CIBIL"],
         "retention_policy": "Duration of the loan evaluation plus 2 years for internal audit.",
         "retention_duration_value": 2,
         "retention_duration_unit": "MONTHS",
@@ -38,7 +38,7 @@
         "description": "To transfer funds to your bank account and manage the repayment cycle, including field visits if required.",
         "legal_basis": "Contractual Necessity",
         "data_categories_involved": ["bank_account_no", "ifsc_code", "current_location", "contact_number"],
-        "recipients_or_third_parties": ["Banking Partners", "Collection Agencies"],
+        "recipients_or_third_parties": [],
         "retention_policy": "Until the loan is fully repaid plus 7 years for financial record-keeping.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
@@ -52,7 +52,7 @@
         "description": "To inform you about new loan products, insurance top-ups, and financial literacy programs.",
         "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
         "data_categories_involved": ["mobile_number", "email_address"],
-        "recipients_or_third_parties": [],
+        "recipients_or_third_parties": ["Twilio"],
         "retention_policy": "Until consent is withdrawn.",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
@@ -81,13 +81,13 @@
     "data_subject_categories": ["customer"],
     "security_measures": "AES-256 encryption at rest, TLS 1.3 in transit, CERSAI-compliant data vaulting, role-based access with MFA.",
     "processors": [
-      { "name": "Amazon Web Services", "country": "IN", "role": "Cloud Hosting & Storage",          "contact": "aws-india-dpa@amazon.com" },
-      { "name": "CIBIL (TransUnion)",  "country": "IN", "role": "Credit Bureau Enquiry",            "contact": "compliance@cibil.com" },
-      { "name": "CERSAI",              "country": "IN", "role": "Central Registry Verification",    "contact": "helpdesk@cersai.org.in" },
-      { "name": "Twilio Inc.",         "country": "US", "role": "OTP & SMS Delivery",               "contact": "privacy@twilio.com" }
+      { "name": "AWS",    "country": "IN", "role": "Cloud Hosting & Storage",          "contact": "aws-india-dpa@amazon.com" },
+      { "name": "CIBIL",  "country": "IN", "role": "Credit Bureau Enquiry",            "contact": "compliance@cibil.com" },
+      { "name": "CERSAI", "country": "IN", "role": "Central Registry Verification",    "contact": "helpdesk@cersai.org.in" },
+      { "name": "Twilio", "country": "US", "role": "OTP & SMS Delivery",               "contact": "privacy@twilio.com" }
     ],
     "cross_border_transfers": [
-      { "destination_country": "US", "safeguard": "Standard Contractual Clauses (SCC)", "processor": "Twilio Inc." }
+      { "destination_country": "US", "safeguard": "Standard Contractual Clauses (SCC)", "processor": "Twilio" }
     ],
     "data_principal_rights_summary": "Under the DPDP Act 2023, you have the right to access your loan data, correct inaccuracies, withdraw consent for marketing, and request data erasure after all statutory and financial obligations are met.",
     "grievance_redressal_info": "For concerns, contact our Nodal Officer / DPO at: Email: compliance@varamcredit.in | Phone: +91 44 2233 4455 | Address: 10, Artha Towers, Mount Road, Chennai, Tamil Nadu.",
@@ -116,7 +116,7 @@
         "description": "அரசு வழங்கிய அடையாள அட்டைகள் மூலம் உங்கள் அடையாளத்தை உறுதிப்படுத்த. நிதிச் சேவைகளுக்கு இது கட்டாயத் தேவையாகும்.",
         "legal_basis": "சட்டப்பூர்வ கடமை (PMLA & DPDP சட்டம்)",
         "data_categories_involved": ["பெயர்", "பான் கார்டு", "ஆதார் எண்", "புகைப்படம்"],
-        "recipients_or_third_parties": ["சரிபார்ப்பு முகமைகள்"],
+        "recipients_or_third_parties": ["CERSAI"],
         "retention_policy": "கணக்கு மூடப்பட்ட பிறகு 5 ஆண்டுகளுக்குப் பராமரிக்கப்படும்.",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
@@ -135,9 +135,7 @@
           "தற்போதைய கடன் விவரங்கள்",
           "வேலைவாய்ப்பு நிலை"
         ],
-        "recipients_or_third_parties": [
-          "கடன் தகவல் பணியகங்கள் (CIBIL, Equifax)"
-        ],
+        "recipients_or_third_parties": ["CIBIL"],
         "retention_policy": "கடன் மதிப்பீட்டு காலம் மற்றும் உள் தணிக்கைக்காக கூடுதலாக 2 மாதங்கள்.",
         "retention_duration_value": 2,
         "retention_duration_unit": "MONTHS",
@@ -156,10 +154,7 @@
           "தற்போதைய இருப்பிடம்",
           "தொடர்பு எண்"
         ],
-        "recipients_or_third_parties": [
-          "வங்கி கூட்டாளர்கள்",
-          "வசூல் முகமைகள்"
-        ],
+        "recipients_or_third_parties": [],
         "retention_policy": "கடன் முழுமையாக திருப்பிச் செலுத்தப்படும் வரை மற்றும் நிதி பதிவு பராமரிப்புக்காக கூடுதலாக 7 ஆண்டுகள்.",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",

@@ -35,11 +35,11 @@ DATA SUBJECT CATEGORIES
 
 DATA CATEGORIES  (15 total)
 ------------------------------------------------------------------------
-  full_name                      pan_card                       masked_aadhaar              
-  photo                          voter_id                       income_details              
-  bank_statements                existing_loan_info             employment_status           
-  bank_account_no                ifsc_code                      current_location            
-  contact_number                 mobile_number                  email_address               
+  full_name                      pan_card                       masked_aadhaar
+  photo                          voter_id                       income_details
+  bank_statements                existing_loan_info             employment_status
+  bank_account_no                ifsc_code                      current_location
+  contact_number                 mobile_number                  email_address
 
 SECURITY MEASURES
 ------------------------------------------------------------------------
@@ -48,18 +48,27 @@ vaulting, role-based access with MFA.
 
 DATA PROCESSORS  (4 declared)
 ------------------------------------------------------------------------
-  Name                         Country    Role                           Contact
-  ---------------------------- ---------- ------------------------------ ----------------------------
-  Amazon Web Services          IN         Cloud Hosting & Storage        aws-india-dpa@amazon.com
-  CIBIL (TransUnion)           IN         Credit Bureau Enquiry          compliance@cibil.com
-  CERSAI                       IN         Central Registry Verification  helpdesk@cersai.org.in
-  Twilio Inc.                  US         OTP & SMS Delivery             privacy@twilio.com
+  Name           Country    Role                           Contact
+  -------------- ---------- ------------------------------ ----------------------------
+  AWS            IN         Cloud Hosting & Storage        aws-india-dpa@amazon.com
+  CIBIL          IN         Credit Bureau Enquiry          compliance@cibil.com
+  CERSAI         IN         Central Registry Verification  helpdesk@cersai.org.in
+  Twilio         US         OTP & SMS Delivery             privacy@twilio.com
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_kyc_identity             CERSAI
+  purpose_credit_scoring           CIBIL
+  purpose_loan_servicing           (unrestricted)
+  purpose_marketing_offers         Twilio
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
   Destination    Safeguard                                    Processor
   -------------- -------------------------------------------- ----------------------------
-  US             Standard Contractual Clauses (SCC)           Twilio Inc.
+  US             Standard Contractual Clauses (SCC)           Twilio
 
 RETENTION
 ------------------------------------------------------------------------

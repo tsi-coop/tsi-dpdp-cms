@@ -338,7 +338,9 @@ public class Consent implements Action {
             conn.setAutoCommit(false);
 
             // --- STEP 3: RETRIEVE ACTIVE CONSENT RECORD ---
-                String sqlConsent = "SELECT data_point_consents, is_active_consent, created_at FROM consent_records " +
+                String capturedPolicyId = null;
+                String capturedPolicyVersion = null;
+                String sqlConsent = "SELECT data_point_consents, is_active_consent, created_at, policy_id, policy_version FROM consent_records " +
                     "WHERE user_id = ? AND fiduciary_id = ? " +
                     "ORDER BY created_at DESC LIMIT 1";
 
@@ -356,6 +358,8 @@ public class Consent implements Action {
 
                         boolean active= rs.getBoolean("is_active_consent");
                         String consentsJson = rs.getString("data_point_consents");
+                        capturedPolicyId = rs.getString("policy_id");
+                        capturedPolicyVersion = rs.getString("policy_version");
 
                         if (!active) {
                             result.put("message", "Consent record exists but is INACTIVE/REVOKED.");
@@ -394,6 +398,20 @@ public class Consent implements Action {
                         }
 
                         if (granted != null && granted) {
+                            // Processor authorization check — name-based, no hard links
+                            String appName = getAppNameForAuth(appId);
+                            if (appName != null && capturedPolicyId != null) {
+                                JSONObject policyContent = getPolicyContentByVersion(
+                                        capturedPolicyId, capturedPolicyVersion, UUID.fromString(fiduciaryId));
+                                if (policyContent != null
+                                        && !isProcessorAuthorized(appName, requiredPurposeId, policyContent)) {
+                                    granted = false;
+                                    result.put("message", "Processor '" + appName + "' is not authorised for purpose: " + requiredPurposeId);
+                                    logConsentValidations(conn, UUID.fromString(fiduciaryId), appId, userId, requiredPurposeId, "PROCESSOR_DENIED");
+                                }
+                            }
+                        }
+                        if (Boolean.TRUE.equals(granted)) {
                             result.put("success", true);
                             result.put("consent_granted", true);
                             result.put("message", "Consent granted for purpose: " + requiredPurposeId);
@@ -607,7 +625,7 @@ public class Consent implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         JSONObject retval = null;
-        String sql = "SELECT policy_content FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ?";
+        String sql = "SELECT policy_content FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ? AND status = 'ACTIVE'";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -955,5 +973,70 @@ public class Consent implements Action {
         auditContext.put("anonymous_id", anonymousUserId);
         auditContext.put("principal", authenticatedUserId);
         new Audit().logEventAsync(authenticatedUserId, fiduciaryId, Constants.SERVICE_TYPE_APP, appId , Constants.ACTION_LINK_USER, auditContext.toJSONString());
+    }
+
+    // --- Processor authorization helpers ---
+
+    private String getAppNameForAuth(UUID appId) {
+        if (appId == null) return null;
+        String sql = "SELECT name FROM apps WHERE id = ?";
+        PoolDB pool = null;
+        Connection conn = null; PreparedStatement pstmt = null; ResultSet rs = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, appId);
+            rs = pstmt.executeQuery();
+            return rs.next() ? rs.getString("name") : null;
+        } catch (Exception e) {
+            return null; // fail-open
+        } finally {
+            if (pool != null) try { pool.cleanup(rs, pstmt, conn); } catch (Exception ignored) {}
+        }
+    }
+
+    private JSONObject getPolicyContentByVersion(String policyId, String version, UUID fiduciaryId) {
+        if (policyId == null || version == null) return null;
+        String sql = "SELECT policy_content FROM consent_policies WHERE id = ? AND version = ? AND fiduciary_id = ?";
+        PoolDB pool = null;
+        Connection conn = null; PreparedStatement pstmt = null; ResultSet rs = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, policyId);
+            pstmt.setString(2, version);
+            pstmt.setObject(3, fiduciaryId);
+            rs = pstmt.executeQuery();
+            if (!rs.next()) return null;
+            return (JSONObject) new JSONParser().parse(rs.getString("policy_content"));
+        } catch (Exception e) {
+            return null; // fail-open
+        } finally {
+            if (pool != null) try { pool.cleanup(rs, pstmt, conn); } catch (Exception ignored) {}
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean isProcessorAuthorized(String appName, String purposeId, JSONObject policyContent) {
+        try {
+            String lang = (String) policyContent.keySet().iterator().next();
+            JSONObject block = (JSONObject) policyContent.get(lang);
+            if (block == null) return true;
+            JSONArray purposes = (JSONArray) block.get("data_processing_purposes");
+            if (purposes == null) return true;
+            for (Object o : purposes) {
+                JSONObject p = (JSONObject) o;
+                if (!purposeId.equalsIgnoreCase((String) p.get("id"))) continue;
+                Object rtp = p.get("recipients_or_third_parties");
+                if (!(rtp instanceof JSONArray) || ((JSONArray) rtp).isEmpty()) return true;
+                for (Object r : (JSONArray) rtp) {
+                    if (r != null && appName.equalsIgnoreCase(r.toString())) return true;
+                }
+                return false; // rtp is non-empty and appName not found
+            }
+        } catch (Exception ignored) {}
+        return true; // purpose not found or parse error — fail-open
     }
 }

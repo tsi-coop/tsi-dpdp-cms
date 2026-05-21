@@ -37,10 +37,10 @@ DATA SUBJECT CATEGORIES
 
 DATA CATEGORIES  (12 total)
 ------------------------------------------------------------------------
-  full_name                      email_address                  grade_level                 
-  school_name                    profile_photo                  assessment_scores           
-  video_watch_time               assignment_submissions         search_history              
-  interest_tags                  learning_patterns              mobile_number               
+  full_name                      email_address                  grade_level
+  school_name                    profile_photo                  assessment_scores
+  video_watch_time               assignment_submissions         search_history
+  interest_tags                  learning_patterns              mobile_number
 
 SECURITY MEASURES
 ------------------------------------------------------------------------
@@ -49,17 +49,26 @@ AES-256 encrypted learning records, parental consent workflows, TLS 1.3.
 
 DATA PROCESSORS  (3 declared)
 ------------------------------------------------------------------------
-  Name                         Country    Role                           Contact
-  ---------------------------- ---------- ------------------------------ ----------------------------
-  Amazon Web Services          IN         Cloud Hosting (Mumbai Region)  aws-india-dpa@amazon.com
-  Google Firebase              US         Push Notifications & Auth      google-privacy@google.com
-  Razorpay                     IN         Fee & Subscription Payments    dpo@razorpay.com
+  Name           Country    Role                           Contact
+  -------------- ---------- ------------------------------ ----------------------------
+  AWS            IN         Cloud Hosting (Mumbai Region)  aws-india-dpa@amazon.com
+  GoogleFirebase US         Push Notifications & Auth      google-privacy@google.com
+  Razorpay       IN         Fee & Subscription Payments    dpo@razorpay.com
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_account_management       GoogleFirebase
+  purpose_learning_tracking        AWS
+  purpose_ai_recommendations       (unrestricted)
+  purpose_scholarship_alerts       (unrestricted)
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
   Destination    Safeguard                                    Processor
   -------------- -------------------------------------------- ----------------------------
-  US             Standard Contractual Clauses (SCC)           Google Firebase
+  US             Standard Contractual Clauses (SCC)           GoogleFirebase
 
 RETENTION
 ------------------------------------------------------------------------
