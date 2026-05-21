@@ -12,6 +12,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [Functional Overview - Video](https://youtu.be/d85ye4BoFbM)
 
+[ROPA Definition & Reporting - Video](https://youtu.be/7XGQIDDAw28)
+
 [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
 [Consent Enforcement Service - Video](https://youtu.be/_i9znxthbOA)
