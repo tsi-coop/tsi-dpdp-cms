@@ -101,7 +101,7 @@ public class InterceptingFilter implements Filter {
         String origin = req.getHeader("Origin");
         if (origin == null) return true;
         String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
-        if (allowedOrigins == null || allowedOrigins.trim().isEmpty()) return true;
+        if (allowedOrigins == null || allowedOrigins.trim().isEmpty()) return false;
         for (String allowed : allowedOrigins.split(",")) {
             if (allowed.trim().equalsIgnoreCase(origin)) return true;
         }

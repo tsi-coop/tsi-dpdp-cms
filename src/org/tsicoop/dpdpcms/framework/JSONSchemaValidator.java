@@ -74,6 +74,9 @@ public class JSONSchemaValidator {
     }
 
     public Set<ValidationMessage> validateSchema(String _func, JSONObject input) throws Exception{
+        if (_func == null || !_func.matches("^[a-z][a-z0-9_]*$")) {
+            return Set.of();
+        }
         Set<ValidationMessage> errors = null;
         InputStream is = new ByteArrayInputStream(input.toJSONString().getBytes());
         JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);

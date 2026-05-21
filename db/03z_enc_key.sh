@@ -4,7 +4,11 @@
 # Runs after 03_ropa.sql and before 04_gaps.sql (alphabetical order).
 set -e
 
-ENC_KEY="${DB_ENCRYPTION_KEY:-local-dev-enc-key-do-not-use-in-production}"
+if [ -z "${DB_ENCRYPTION_KEY}" ]; then
+  echo "ERROR: DB_ENCRYPTION_KEY is not set. Refusing to configure database with an insecure key." >&2
+  exit 1
+fi
+ENC_KEY="${DB_ENCRYPTION_KEY}"
 
 psql -v ON_ERROR_STOP=1 \
      --username "$POSTGRES_USER" \

@@ -39,11 +39,15 @@ public class LoginRateLimiter {
         buckets.remove(ip);
     }
 
-    /** Extracts the client IP, preferring X-Forwarded-For when present. */
+    /** Extracts the client IP. Only trusts X-Forwarded-For when the request comes from a known proxy. */
     public static String getClientIp(HttpServletRequest req) {
-        String xff = req.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.trim().isEmpty()) {
-            return xff.split(",")[0].trim();
+        String trustedProxy = System.getenv("TRUSTED_PROXY");
+        if (trustedProxy != null && !trustedProxy.isBlank()
+                && trustedProxy.equals(req.getRemoteAddr())) {
+            String xff = req.getHeader("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                return xff.split(",")[0].trim();
+            }
         }
         return req.getRemoteAddr();
     }

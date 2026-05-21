@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Policy Configuration Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --tsi-primary: #006A67; }
+        body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #333; }
+        .container { padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
+
+        .section-card { background: white; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 32px; }
+        .section-title { font-size: 1.1rem; font-weight: 800; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px; }
+
+        /* Code blocks — VS Code dark theme */
+        .code-label { background-color: #2d2d2d; color: #858585; padding: 7px 18px; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom: 1px solid #3e3e3e; display: flex; justify-content: space-between; align-items: center; }
+        .code-wrap { background-color: #1e1e1e; color: #d4d4d4; padding: 22px 24px; border-radius: 10px; font-family: 'Cascadia Code', 'Fira Mono', 'ui-monospace', monospace; font-size: 0.875rem; line-height: 1.8; overflow-x: auto; margin: 0 0 20px 0; white-space: pre; }
+        .code-wrap.attached { border-top-left-radius: 0; border-top-right-radius: 0; }
+
+        /* ROPA plain-text blocks — warm terminal */
+        .ropa-label { background-color: #2a2118; color: #8c7355; padding: 7px 18px; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom: 1px solid #3d3022; }
+        .ropa-block { background-color: #1f1a14; color: #c9bfb0; padding: 22px 24px; border-radius: 10px; font-family: 'Cascadia Code', 'Fira Mono', 'ui-monospace', monospace; font-size: 0.875rem; line-height: 1.8; overflow-x: auto; margin: 0 0 20px 0; border-left: 3px solid #6b5a3e; white-space: pre; }
+        .ropa-block.attached { border-top-left-radius: 0; border-top-right-radius: 0; }
+
+        /* VS Code-inspired syntax colours */
+        .k { color: #9cdcfe; }           /* JSON key — light blue */
+        .s { color: #ce9178; }           /* string value — warm peach */
+        .b { color: #569cd6; }           /* boolean — medium blue */
+        .n { color: #b5cea8; }           /* number — soft green */
+        .c { color: #6a9955; }           /* comment — readable green */
+
+        /* ROPA block colours */
+        .ropa-head { color: #dcdcaa; font-weight: 700; }   /* section headers — pale yellow */
+        .ropa-val  { color: #ce9178; }                      /* values — warm peach (matches .s) */
+        .ropa-hi   { color: #4ec9b0; }                      /* highlighted names — teal */
+
+        /* Arrow mapping */
+        .map-row { display: grid; grid-template-columns: 1fr 48px 1fr; gap: 0; margin-bottom: 24px; align-items: start; }
+        .map-arrow { display: flex; align-items: center; justify-content: center; padding-top: 10px; color: #006A67; font-size: 1.4rem; font-weight: 900; }
+
+        /* Field table */
+        .field-table th { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; padding: 10px 12px; border-bottom: 2px solid #e2e8f0; text-align: left; }
+        .field-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.87rem; vertical-align: top; }
+        .field-table tr:last-child td { border-bottom: none; }
+        .mono { font-family: ui-monospace, monospace; font-size: 0.78rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #0f172a; white-space: nowrap; }
+
+        /* Step pill */
+        .step-pill { display: inline-flex; align-items: center; gap: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; padding: 6px 14px; border-radius: 99px; font-size: 0.78rem; font-weight: 800; margin-bottom: 16px; }
+
+        /* Nuance box */
+        .nuance-box { background: #fefce8; border-left: 4px solid #f59e0b; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 0.88rem; line-height: 1.6; }
+        .nuance-box strong { color: #92400e; }
+
+        /* Example table */
+        .ex-table th { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: #64748b; padding: 8px 12px; border-bottom: 2px solid #e2e8f0; text-align: left; }
+        .ex-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; }
+        .ex-table tr:last-child td { border-bottom: none; }
+
+        .back-link { color: #006A67; font-weight: 700; text-decoration: none; font-size: 0.875rem; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<header class="bg-white py-8 px-6 border-b border-slate-200 shadow-sm">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <div>
+            <a href="index.html" class="back-link">← Back to Tour</a>
+            <h1 class="text-2xl font-extrabold text-slate-900 mt-1">Policy Configuration Guide</h1>
+            <p class="text-slate-500 mt-1 text-sm">How to translate a ROPA requirements document into a consent policy JSON.</p>
+        </div>
+        <span class="text-xs font-black uppercase tracking-widest bg-teal-50 text-teal-700 border border-teal-200 px-3 py-1 rounded-full">Config Reference</span>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- Intro -->
+    <div class="section-card">
+        <div class="section-title">Start Here: The ROPA Document</div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+            Before writing any JSON, the DPO hands you a plain-text ROPA requirements document. It captures every data processing activity, the processors authorised for each, retention periods, and cross-border transfers. Your job as the engineer is to translate this into the policy JSON that the system ingests.
+        </p>
+        <p class="text-slate-600 text-sm leading-relaxed mb-5">
+            The walkthrough below uses <span class="mono">examples/ropa/retail/apna_mart_customer_v1.txt</span> as the source and builds toward <span class="mono">examples/policy/retail/apna_mart_customer_v1.json</span>. Every section of the ROPA document maps to a specific JSON field — nothing is invented.
+        </p>
+        <div class="ropa-label">examples/ropa/retail/apna_mart_customer_v1.txt</div>
+        <div class="ropa-block attached">
+<span class="ropa-head">PROCESSING ACTIVITY</span>
+  Activity Name : <span class="ropa-val">apna_mart_customer_v1</span>
+  Legal Basis   : <span class="ropa-val">CONSENT</span>
+  Purpose       :
+    - <span class="ropa-hi">Account &amp; Loyalty Management</span>
+    - <span class="ropa-hi">Order Fulfillment &amp; Delivery</span>
+    - <span class="ropa-hi">Personalized Recommendations</span>
+
+<span class="ropa-head">DATA SUBJECT CATEGORIES</span>
+  - <span class="ropa-val">customer</span>
+
+<span class="ropa-head">DATA CATEGORIES  (9 total)</span>
+  <span class="ropa-val">full_name</span>  <span class="ropa-val">mobile_number</span>  <span class="ropa-val">email_address</span>  <span class="ropa-val">date_of_birth</span>
+  <span class="ropa-val">delivery_address</span>  <span class="ropa-val">payment_details</span>  <span class="ropa-val">purchase_history</span>
+  <span class="ropa-val">shopping_preferences</span>  <span class="ropa-val">browsing_history</span>
+
+<span class="ropa-head">DATA PROCESSORS  (4 declared)</span>
+  Razorpay        IN    Payment Gateway                dpo@razorpay.com
+  Delhivery       IN    Logistics &amp; Last-Mile Delivery  privacy@delhivery.com
+  MoEngage        IN    Customer Engagement &amp; Push     privacy@moengage.com
+  GoogleAnalytics US    Website &amp; App Analytics        google-privacy@google.com
+
+<span class="ropa-head">PURPOSE-PROCESSOR MAPPING</span>
+  purpose_account_loyalty     → <span class="ropa-hi">MoEngage</span>
+  purpose_order_fulfillment   → <span class="ropa-hi">Delhivery, Razorpay</span>
+  purpose_personalized_offers → <span class="ropa-hi">MoEngage, GoogleAnalytics</span>
+
+<span class="ropa-head">CROSS-BORDER TRANSFERS</span>
+  US    Standard Contractual Clauses (SCC)    GoogleAnalytics
+
+<span class="ropa-head">RETENTION</span>
+  Period      : 2555 days  (approx. 7.0 years)
+  Start Event : CESSATION</div>
+        <p class="text-slate-500 text-xs italic">This is what the DPO gives you. The steps below show how each section becomes JSON.</p>
+    </div>
+
+    <!-- Step 1: Purposes -->
+    <div class="section-card">
+        <div class="step-pill"><span>Step 1</span> Turn each purpose into a JSON entry</div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-5">
+            Each purpose listed under <span class="mono">Purpose</span> in the ROPA document becomes one object in <span class="mono">data_processing_purposes</span>. The <span class="mono">id</span> you assign here is the <span class="mono">purpose_id</span> used everywhere in the system — consent records, ROPA entries, and the <span class="mono">validate_consent</span> API. Use a consistent snake_case naming convention that matches the purpose-processor mapping table in the ROPA document.
+        </p>
+        <div class="map-row">
+            <div>
+                <div class="ropa-label">ROPA: Purpose list</div>
+                <div class="ropa-block attached">
+  - <span class="ropa-hi">Account &amp; Loyalty Management</span>
+  - <span class="ropa-hi">Order Fulfillment &amp; Delivery</span>
+  - <span class="ropa-hi">Personalized Recommendations</span></div>
+            </div>
+            <div class="map-arrow">→</div>
+            <div>
+                <div class="code-label">JSON: data_processing_purposes</div>
+                <div class="code-wrap attached">
+[
+  { <span class="k">"id"</span>: <span class="s">"purpose_account_loyalty"</span>,    ... },
+  { <span class="k">"id"</span>: <span class="s">"purpose_order_fulfillment"</span>,   ... },
+  { <span class="k">"id"</span>: <span class="s">"purpose_personalized_offers"</span>, ... }
+]</div>
+            </div>
+        </div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-4">A fully expanded purpose entry looks like this:</p>
+        <div class="code-label">Single purpose — full structure</div>
+        <div class="code-wrap attached">
+{
+  <span class="k">"id"</span>:                       <span class="s">"purpose_order_fulfillment"</span>,
+  <span class="k">"name"</span>:                     <span class="s">"Order Fulfillment &amp; Delivery"</span>,
+  <span class="k">"description"</span>:             <span class="s">"To process purchases, manage payments, and deliver to your doorstep."</span>,
+  <span class="k">"legal_basis"</span>:             <span class="s">"Contractual Necessity"</span>,
+  <span class="k">"data_categories_involved"</span>: [<span class="s">"delivery_address"</span>, <span class="s">"payment_details"</span>, <span class="s">"purchase_history"</span>],
+  <span class="k">"recipients_or_third_parties"</span>: [<span class="s">"Delhivery"</span>, <span class="s">"Razorpay"</span>],   <span class="c">// filled in Step 3</span>
+  <span class="k">"retention_policy"</span>:        <span class="s">"Statutory retention of 7 years for tax and audit purposes."</span>,
+  <span class="k">"retention_duration_value"</span>: <span class="n">7</span>,
+  <span class="k">"retention_duration_unit"</span>:  <span class="s">"YEARS"</span>,
+  <span class="k">"retention_start_event"</span>:   <span class="s">"CESSATION"</span>,
+  <span class="k">"is_mandatory_for_service"</span>: <span class="b">true</span>,
+  <span class="k">"is_sensitive"</span>:            <span class="b">false</span>
+}</div>
+        <table class="field-table w-full mt-4">
+            <thead><tr><th>Field</th><th>Allowed values</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td><span class="mono">retention_duration_unit</span></td><td><span class="mono">YEARS</span>, <span class="mono">MONTHS</span>, <span class="mono">DAYS</span></td><td>The ROPA doc gives days (2555). Convert to the most readable unit — here 7 YEARS.</td></tr>
+                <tr><td><span class="mono">retention_start_event</span></td><td><span class="mono">COLLECTION</span>, <span class="mono">CESSATION</span></td><td><span class="mono">CESSATION</span> = clock starts when the service relationship ends. Use for transactional data. Use <span class="mono">COLLECTION</span> for analytics or marketing data.</td></tr>
+                <tr><td><span class="mono">is_mandatory_for_service</span></td><td><span class="mono">true</span>, <span class="mono">false</span></td><td>Set <span class="mono">true</span> for purposes without which the service cannot function (order, payment). The UI will lock the toggle for these.</td></tr>
+                <tr><td><span class="mono">is_sensitive</span></td><td><span class="mono">true</span>, <span class="mono">false</span></td><td>Set <span class="mono">true</span> for financial, biometric, health, or government-ID data.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Step 2: Data dictionary -->
+    <div class="section-card">
+        <div class="step-pill"><span>Step 2</span> Build the data dictionary</div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-5">
+            Every data category listed in the ROPA document needs a corresponding entry in <span class="mono">data_categories_details</span>. The <span class="mono">id</span> here must match exactly what you used in each purpose's <span class="mono">data_categories_involved</span>. Write a plain-language description for each — this is what the Data Principal reads in the consent notice.
+        </p>
+        <div class="map-row">
+            <div>
+                <div class="ropa-label">ROPA: Data Categories</div>
+                <div class="ropa-block attached">
+  <span class="ropa-val">full_name</span>
+  <span class="ropa-val">mobile_number</span>
+  <span class="ropa-val">email_address</span>
+  <span class="ropa-val">delivery_address</span>
+  <span class="ropa-val">payment_details</span>
+  <span class="ropa-val">purchase_history</span>
+  ...</div>
+            </div>
+            <div class="map-arrow">→</div>
+            <div>
+                <div class="code-label">JSON: data_categories_details</div>
+                <div class="code-wrap attached">
+[
+  {
+    <span class="k">"id"</span>:          <span class="s">"full_name"</span>,
+    <span class="k">"name"</span>:        <span class="s">"Full Name"</span>,
+    <span class="k">"description"</span>: <span class="s">"Customer name for billing and delivery."</span>
+  },
+  {
+    <span class="k">"id"</span>:          <span class="s">"payment_details"</span>,
+    <span class="k">"name"</span>:        <span class="s">"Payment Details"</span>,
+    <span class="k">"description"</span>: <span class="s">"Card or UPI details for order processing."</span>
+  },
+  ...
+]</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Processor registry -->
+    <div class="section-card">
+        <div class="step-pill"><span>Step 3</span> Build the processor registry</div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-5">
+            The DATA PROCESSORS table in the ROPA document maps directly to the top-level <span class="mono">processors</span> array. Include every processor listed — this is the master registry the ROPA module reads to populate the compliance register.
+        </p>
+        <div class="map-row">
+            <div>
+                <div class="ropa-label">ROPA: Data Processors</div>
+                <div class="ropa-block attached">
+  Razorpay   IN  Payment Gateway        dpo@razorpay.com
+  Delhivery  IN  Logistics &amp; Delivery   privacy@delhivery.com
+  MoEngage   IN  Customer Engagement    privacy@moengage.com
+  GoogleAna  US  Website Analytics      google-privacy@google.com</div>
+            </div>
+            <div class="map-arrow">→</div>
+            <div>
+                <div class="code-label">JSON: processors</div>
+                <div class="code-wrap attached">
+[
+  { <span class="k">"name"</span>: <span class="s">"Razorpay"</span>,        <span class="k">"country"</span>: <span class="s">"IN"</span>,
+    <span class="k">"role"</span>: <span class="s">"Payment Gateway"</span>,
+    <span class="k">"contact"</span>: <span class="s">"dpo@razorpay.com"</span> },
+  { <span class="k">"name"</span>: <span class="s">"Delhivery"</span>,       <span class="k">"country"</span>: <span class="s">"IN"</span>,
+    <span class="k">"role"</span>: <span class="s">"Logistics &amp; Last-Mile Delivery"</span>,
+    <span class="k">"contact"</span>: <span class="s">"privacy@delhivery.com"</span> },
+  { <span class="k">"name"</span>: <span class="s">"MoEngage"</span>,        <span class="k">"country"</span>: <span class="s">"IN"</span>,
+    <span class="k">"role"</span>: <span class="s">"Customer Engagement &amp; Push"</span>,
+    <span class="k">"contact"</span>: <span class="s">"privacy@moengage.com"</span> },
+  { <span class="k">"name"</span>: <span class="s">"GoogleAnalytics"</span>,  <span class="k">"country"</span>: <span class="s">"US"</span>,
+    <span class="k">"role"</span>: <span class="s">"Website &amp; App Analytics"</span>,
+    <span class="k">"contact"</span>: <span class="s">"google-privacy@google.com"</span> }
+]</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 4: Purpose-processor mapping -->
+    <div class="section-card">
+        <div class="step-pill"><span>Step 4</span> Map processors to each purpose</div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+            This is the most important nuance. Declaring a processor in the registry (Step 3) does not authorise it for every purpose. The ROPA document's PURPOSE-PROCESSOR MAPPING table tells you exactly which processors go into each purpose's <span class="mono">recipients_or_third_parties</span> field.
+        </p>
+        <div class="nuance-box">
+            <strong>Why this matters:</strong> A Data Processor calling <span class="mono">validate_consent</span> only receives a granted response for the specific purposes they are authorised for. Razorpay cannot process data for <span class="mono">purpose_personalized_offers</span> even if the Data Principal has consented to it, because Razorpay is not listed under that purpose.
+        </div>
+        <div class="map-row">
+            <div>
+                <div class="ropa-label">ROPA: Purpose-Processor Mapping</div>
+                <div class="ropa-block attached">
+  purpose_account_loyalty
+      → <span class="ropa-hi">MoEngage</span>
+
+  purpose_order_fulfillment
+      → <span class="ropa-hi">Delhivery, Razorpay</span>
+
+  purpose_personalized_offers
+      → <span class="ropa-hi">MoEngage, GoogleAnalytics</span></div>
+            </div>
+            <div class="map-arrow">→</div>
+            <div>
+                <div class="code-label">JSON: recipients_or_third_parties per purpose</div>
+                <div class="code-wrap attached">
+{ <span class="k">"id"</span>: <span class="s">"purpose_account_loyalty"</span>,
+  <span class="k">"recipients_or_third_parties"</span>: [<span class="s">"MoEngage"</span>],
+  ... },
+
+{ <span class="k">"id"</span>: <span class="s">"purpose_order_fulfillment"</span>,
+  <span class="k">"recipients_or_third_parties"</span>: [<span class="s">"Delhivery"</span>, <span class="s">"Razorpay"</span>],
+  ... },
+
+{ <span class="k">"id"</span>: <span class="s">"purpose_personalized_offers"</span>,
+  <span class="k">"recipients_or_third_parties"</span>: [<span class="s">"MoEngage"</span>, <span class="s">"GoogleAnalytics"</span>],
+  ... }</div>
+            </div>
+        </div>
+        <p class="text-slate-600 text-sm leading-relaxed mt-2">If a purpose is processed entirely in-house with no third party, set the field to an empty array: <span class="mono">"recipients_or_third_parties": []</span>.</p>
+    </div>
+
+    <!-- Step 5: Cross-border -->
+    <div class="section-card">
+        <div class="step-pill"><span>Step 5</span> Declare cross-border transfers</div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-5">
+            Any processor in a country other than India (country code not <span class="mono">IN</span>) must be declared in <span class="mono">cross_border_transfers</span> with the applicable data protection safeguard. The ROPA document lists these explicitly.
+        </p>
+        <div class="map-row">
+            <div>
+                <div class="ropa-label">ROPA: Cross-Border Transfers</div>
+                <div class="ropa-block attached">
+  US  Standard Contractual
+      Clauses (SCC)
+      GoogleAnalytics</div>
+            </div>
+            <div class="map-arrow">→</div>
+            <div>
+                <div class="code-label">JSON: cross_border_transfers</div>
+                <div class="code-wrap attached">
+[
+  {
+    <span class="k">"destination_country"</span>: <span class="s">"US"</span>,
+    <span class="k">"safeguard"</span>: <span class="s">"Standard Contractual Clauses (SCC)"</span>,
+    <span class="k">"processor"</span>: <span class="s">"GoogleAnalytics"</span>
+  }
+]</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 6: Multilingual -->
+    <div class="section-card">
+        <div class="step-pill"><span>Step 6</span> Add regional languages</div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+            Once the English content is complete, duplicate the entire <span class="mono">"en"</span> block under a new language key (<span class="mono">"ta"</span>, <span class="mono">"hi"</span>, <span class="mono">"kn"</span>, etc.) and translate only the display text. The <span class="mono">id</span> values for purposes and data categories must remain identical across all language variants.
+        </p>
+        <div class="code-label">Top-level structure with two languages</div>
+        <div class="code-wrap attached">
+{
+  <span class="k">"en"</span>: {
+    <span class="k">"title"</span>: <span class="s">"Apna Mart Retail - Data &amp; Privacy Policy"</span>,
+    <span class="k">"data_processing_purposes"</span>: [
+      { <span class="k">"id"</span>: <span class="s">"purpose_account_loyalty"</span>, <span class="k">"name"</span>: <span class="s">"Account &amp; Loyalty Management"</span>, ... }
+    ],
+    ...
+  },
+  <span class="k">"ta"</span>: {
+    <span class="k">"title"</span>: <span class="s">"அப்னா மார்ட் - தரவு மற்றும் தனியுரிமைக் கொள்கை"</span>,
+    <span class="k">"data_processing_purposes"</span>: [
+      { <span class="k">"id"</span>: <span class="s">"purpose_account_loyalty"</span>, <span class="k">"name"</span>: <span class="s">"கணக்கு மற்றும் விசுவாசம் மேலாண்மை"</span>, ... }
+    ],   <span class="c">// id is identical — only name and description change</span>
+    ...
+  }
+}</div>
+    </div>
+
+    <!-- Example Policies -->
+    <div class="section-card">
+        <div class="section-title">Reference Examples</div>
+        <p class="text-slate-600 text-sm leading-relaxed mb-6">
+            Each sector below has a complete ROPA requirements document and the corresponding policy JSON. Read the ROPA txt first, then open the JSON to see the full translation applied.
+        </p>
+        <table class="ex-table w-full">
+            <thead><tr><th>Sector</th><th>ROPA Template</th><th>Policy JSON</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td class="font-semibold text-slate-700">Finance / Microlending</td>
+                    <td><span class="mono">examples/ropa/finance/varam_borrower_v1.txt</span></td>
+                    <td><span class="mono">examples/policy/finance/varam_borrower_v1.json</span></td>
+                </tr>
+                <tr>
+                    <td class="font-semibold text-slate-700">Retail / E-commerce</td>
+                    <td><span class="mono">examples/ropa/retail/apna_mart_customer_v1.txt</span></td>
+                    <td><span class="mono">examples/policy/retail/apna_mart_customer_v1.json</span></td>
+                </tr>
+                <tr>
+                    <td class="font-semibold text-slate-700">Healthcare</td>
+                    <td><span class="mono">examples/ropa/health/niramaya_patient_v1.txt</span></td>
+                    <td><span class="mono">examples/policy/health/niramaya_patient_v1.json</span></td>
+                </tr>
+                <tr>
+                    <td class="font-semibold text-slate-700">Education</td>
+                    <td><span class="mono">examples/ropa/education/vidya_learner_v1.txt</span></td>
+                    <td><span class="mono">examples/policy/education/vidya_learner_v1.json</span></td>
+                </tr>
+                <tr>
+                    <td class="font-semibold text-slate-700">Social Platform</td>
+                    <td><span class="mono">examples/ropa/social/tsi_digital_hub_member_v1.txt</span></td>
+                    <td><span class="mono">examples/policy/social/tsi_digital_hub_member_v1.json</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-center mt-2 mb-10">
+        <a href="index.html" class="back-link">← Return to Tour Index</a>
+    </div>
+
+</div>
+</body>
+</html>

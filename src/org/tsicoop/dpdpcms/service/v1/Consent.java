@@ -397,20 +397,6 @@ public class Consent implements Action {
                             }
                         }
 
-                        if (granted != null && granted) {
-                            // Processor authorization check — name-based, no hard links
-                            String appName = getAppNameForAuth(appId);
-                            if (appName != null && capturedPolicyId != null) {
-                                JSONObject policyContent = getPolicyContentByVersion(
-                                        capturedPolicyId, capturedPolicyVersion, UUID.fromString(fiduciaryId));
-                                if (policyContent != null
-                                        && !isProcessorAuthorized(appName, requiredPurposeId, policyContent)) {
-                                    granted = false;
-                                    result.put("message", "Processor '" + appName + "' is not authorised for purpose: " + requiredPurposeId);
-                                    logConsentValidations(conn, UUID.fromString(fiduciaryId), appId, userId, requiredPurposeId, "PROCESSOR_DENIED");
-                                }
-                            }
-                        }
                         if (Boolean.TRUE.equals(granted)) {
                             result.put("success", true);
                             result.put("consent_granted", true);
