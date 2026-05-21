@@ -268,6 +268,19 @@ public class JobManager implements ServletContextListener {
             case "ADMIN_LOGS":
                 sql = "SELECT timestamp, user_id as user, audit_action as action, context_details as details FROM audit_logs WHERE service_type='ADMIN_CONSOLE' AND fiduciary_id=? AND timestamp BETWEEN ? AND ? ORDER BY timestamp asc";
                 break;
+            case "ROPA_REPORT":
+                sql = "SELECT r.activity_name, r.source_purpose_id as purpose_id, r.purpose, r.legal_basis, " +
+                      "cp.id as policy_id, " +
+                      "cr.user_id as data_principal, cr.consent_status_general as consent_status, " +
+                      "cr.consent_mechanism, " +
+                      "cr.timestamp as consent_timestamp, cr.jurisdiction, cr.language_selected " +
+                      "FROM ropa_entries r " +
+                      "JOIN consent_policies cp ON r.linked_policy_ids @> jsonb_build_array(cp.id) " +
+                      "JOIN consent_records cr ON cr.policy_id = cp.id AND cr.fiduciary_id = r.fiduciary_id " +
+                      "WHERE r.fiduciary_id = ? AND r.status = 'active' " +
+                      "AND cr.timestamp BETWEEN ? AND ? " +
+                      "ORDER BY r.id, cr.timestamp DESC";
+                break;
             default:
                 throw new Exception("Unknown Export Subtype: " + subtype);
         }

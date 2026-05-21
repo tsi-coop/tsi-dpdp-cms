@@ -503,7 +503,7 @@ public class Ropa implements Action {
                 "COUNT(c.id) FILTER (WHERE c.is_active_consent = TRUE)  AS consent_count, " +
                 "COUNT(c.id) FILTER (WHERE c.is_active_consent = FALSE) AS inactive_consent_count " +
                 "FROM ropa_entries r " +
-                "LEFT JOIN consent_records c ON c.ropa_entry_id = r.id " +
+                "LEFT JOIN consent_records c ON r.linked_policy_ids @> jsonb_build_array(c.policy_id) " +
                 "WHERE r.fiduciary_id = ?");
 
         List<Object> params = new ArrayList<>();
@@ -603,7 +603,9 @@ public class Ropa implements Action {
     }
 
     private long getConsentCountForEntry(UUID entryId, boolean active) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM consent_records WHERE ropa_entry_id = ? AND is_active_consent = ?";
+        String sql = "SELECT COUNT(*) FROM consent_records cr " +
+                "JOIN ropa_entries r ON r.linked_policy_ids @> jsonb_build_array(cr.policy_id) " +
+                "WHERE r.id = ? AND cr.is_active_consent = ?";
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -628,7 +630,7 @@ public class Ropa implements Action {
                 "COUNT(c.id) FILTER (WHERE c.is_active_consent = TRUE)  AS consent_count, " +
                 "COUNT(c.id) FILTER (WHERE c.is_active_consent = FALSE) AS inactive_consent_count " +
                 "FROM ropa_entries r " +
-                "LEFT JOIN consent_records c ON c.ropa_entry_id = r.id " +
+                "LEFT JOIN consent_records c ON r.linked_policy_ids @> jsonb_build_array(c.policy_id) " +
                 "WHERE r.fiduciary_id = ? AND r.status = 'active' " +
                 "GROUP BY r.id " +
                 "ORDER BY r.created_at DESC";

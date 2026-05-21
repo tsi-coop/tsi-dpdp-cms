@@ -148,9 +148,8 @@ public class InterceptingFilter implements Filter {
         }
 
         if ("GET".equalsIgnoreCase(method) && uri.contains("/admin/job")) {
-            // Forward to Job service
-            // The Wallet service handles its own 'validateSyncToken' logic internally
             InputProcessor.processInput(req, res);
+            InputProcessor.processAdminHeader(req, res);
             new Job().post(req, res);
             return;
         }
