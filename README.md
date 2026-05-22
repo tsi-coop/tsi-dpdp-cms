@@ -67,27 +67,29 @@ Follow the Guided Journey:
 
 2. Org Configuration: Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies.
 
-3. Consent Collector: Experience the notice and capture workflow from a Data Principal's perspective.
+3. ROPA Definition and Reporting: Define Records of Processing Activities for every data processing purpose, validate DPO accountability fields, and generate compliance reports. 
 
-4. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
+4. Consent Collector: Experience the notice and capture workflow from a Data Principal's perspective.
 
-5. User Dashboard: Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
+5. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
 
-6. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity.
+6. User Dashboard: Exercise principal rights: view consent artifacts, withdraw permissions, and submit grievances.
 
-7. DPO Console Tour: Comprehensive video walkthrough of the administrative console for managing compliance workflows.
+7. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity.
 
-8. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks.
+8. DPO Console Tour: Comprehensive video walkthrough of the administrative console for managing compliance workflows.
 
-9. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
+9. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks.
 
-10. DPDP Wallet Demo: Experience portable privacy. Checkout the [DPDP Wallet](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via) concept, then download your PCA from the User Dashboard to manage your processing rights independently.
+10. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
 
-11. Password Recovery: Explore the "break-glass" account recovery mechanism using secure Master Recovery Keys.
+11. DPDP Wallet Demo: Experience portable privacy. Checkout the [DPDP Wallet](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via) concept, then download your PCA from the User Dashboard to manage your processing rights independently.
 
-12. Legal Module: Explore the crystallization of immutable audit trails into cryptographically signed, BSA Section 62-compliant digital evidence artifacts for court and regulatory submission.
+12. Password Recovery: Explore the "break-glass" account recovery mechanism using secure Master Recovery Keys.
 
-13. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed voice affirmations for processing purposes.
+13. Legal Module: Explore the crystallization of immutable audit trails into cryptographically signed, BSA Section 62-compliant digital evidence artifacts for court and regulatory submission.
+
+14. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed voice affirmations for processing purposes.
 
 ## Developers
 
