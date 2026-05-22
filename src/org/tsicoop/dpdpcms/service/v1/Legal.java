@@ -89,7 +89,8 @@ public class Legal implements Action {
                 }
             }
 
-            // 2. Fetch relevant audit trail for the Principal (Validated Hash Chain)
+            // 2. Flush buffered audit events before querying so the trail is complete
+            new Audit().logEvents();
             JSONArray evidenceTrail = fetchValidatedTrail(conn, userId, fiduciaryId);
             
             // 3. Capture Environmental Metadata (BSA S.62 Chain of Custody)
@@ -298,13 +299,28 @@ public class Legal implements Action {
         JSONArray trail = new JSONArray();
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        
+
+        String hashedUid = null;
+        try {
+            hashedUid = new LookupHasher().hashData(uid != null ? uid : "");
+        } catch (Exception ignored) {}
+
+        UUID adminFid = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
+        // Broad search: match user_id or context_details.
+        // Also check both the specific Fiduciary ID AND the System Admin ID (for background jobs).
         String sql = "SELECT timestamp, audit_action, current_log_hash, prev_log_hash FROM audit_logs " +
-                     "WHERE user_id = ? AND fiduciary_id = ? ORDER BY timestamp ASC";
+                     "WHERE (user_id ILIKE ? OR user_id = ? OR context_details ILIKE ?) " +
+                     "AND (fiduciary_id = ? OR fiduciary_id = ?) " +
+                     "ORDER BY timestamp ASC";
         try {
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, uid);
-            pstmt.setObject(2, fid);
+            pstmt.setString(1, "%" + uid + "%");
+            pstmt.setString(2, hashedUid != null ? hashedUid : uid);
+            pstmt.setString(3, "%" + uid + "%");
+            pstmt.setObject(4, fid);
+            pstmt.setObject(5, adminFid);
+            
             rs = pstmt.executeQuery();
             while (rs.next()) {
                 JSONObject entry = new JSONObject();

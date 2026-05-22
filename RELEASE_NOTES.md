@@ -1,5 +1,11 @@
 # Release Notes
 
+### v0.4.1
+**Legal Module & Audit Reliability**
+- **Fixed Consent Trace Missing:** Resolved a critical bug where the Legal Module evidence trail was empty due to mismatches between pseudonymised User IDs and query parameters.
+
+---
+
 ### v0.4
 This release focuses on compliance readiness and platform hardening.
 

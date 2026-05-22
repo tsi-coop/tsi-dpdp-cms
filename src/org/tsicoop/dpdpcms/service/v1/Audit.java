@@ -144,30 +144,8 @@ public class Audit implements Action {
     public synchronized void logEvents() {
         if (auditCache.isEmpty()) return;
 
-        List<AuditEntry> batch = new ArrayList<>();
-        AuditEntry entry;
-        while ((entry = auditCache.poll()) != null) {
-            batch.add(entry);
-            if (batch.size() >= 500) break; 
-        }
-
-        if (batch.isEmpty()) return;
-
-        // SQL updated to support Hash Chaining columns
-        String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details, prev_log_hash, current_log_hash) " +
-                "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
         PoolDB pool = null;
         Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        // Build a hasher once per batch; null if TSI_LOOKUP_SALT is not configured.
-        LookupHasher hasher = null;
-        try {
-            hasher = new LookupHasher();
-        } catch (IllegalStateException ignored) {
-            System.err.println("[WARN] Audit: TSI_LOOKUP_SALT not set — user_id stored without pseudonymisation");
-        }
 
         try {
             pool = new PoolDB();
@@ -178,45 +156,71 @@ public class Audit implements Action {
                 initLastKnownHash(conn);
             }
 
-            conn.setAutoCommit(false);
-            pstmt = conn.prepareStatement(sql);
-
-            for (AuditEntry log : batch) {
-                // Pseudonymise userId before hash chain and storage so PII is never written to the DB.
-                if (hasher != null) {
-                    try {
-                        log.userId = hasher.hashData(log.userId != null ? log.userId : "");
-                    } catch (Exception ignored) {}
-                }
-
-                String prevHash = lastKnownHash;
-                String currentHash = calculateHash(log, prevHash);
-
-                pstmt.setObject(1, log.fiduciaryId);
-                pstmt.setTimestamp(2, log.eventtime);
-                pstmt.setString(3, log.userId);
-                pstmt.setString(4, log.serviceType);
-                pstmt.setObject(5, log.serviceId);
-                pstmt.setString(6, log.auditAction);
-                pstmt.setString(7, log.contextDetails);
-                pstmt.setString(8, prevHash);
-                pstmt.setString(9, currentHash);
-                pstmt.addBatch();
-
-                // Update state for next record in batch
-                lastKnownHash = currentHash;
+            // Build a hasher once per batch; null if TSI_LOOKUP_SALT is not configured.
+            LookupHasher hasher = null;
+            try {
+                hasher = new LookupHasher();
+            } catch (IllegalStateException ignored) {
+                // Warning logged once per execution if salt missing
             }
 
-            pstmt.executeBatch();
-            conn.commit();
+            while (!auditCache.isEmpty()) {
+                List<AuditEntry> batch = new ArrayList<>();
+                AuditEntry entry;
+                while ((entry = auditCache.poll()) != null) {
+                    batch.add(entry);
+                    if (batch.size() >= 500) break;
+                }
+
+                if (batch.isEmpty()) break;
+
+                String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details, prev_log_hash, current_log_hash) " +
+                        "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    conn.setAutoCommit(false);
+
+                    for (AuditEntry log : batch) {
+                        // Use a local variable for the stored ID to avoid double-hashing if the batch is re-queued on failure
+                        String storedUserId = log.userId;
+                        if (hasher != null) {
+                            try {
+                                storedUserId = hasher.hashData(log.userId != null ? log.userId : "");
+                            } catch (Exception ignored) {}
+                        }
+
+                        String prevHash = lastKnownHash;
+                        String currentHash = calculateHash(log, storedUserId, prevHash);
+
+                        pstmt.setObject(1, log.fiduciaryId);
+                        pstmt.setTimestamp(2, log.eventtime);
+                        pstmt.setString(3, storedUserId);
+                        pstmt.setString(4, log.serviceType);
+                        pstmt.setObject(5, log.serviceId);
+                        pstmt.setString(6, log.auditAction);
+                        pstmt.setString(7, log.contextDetails);
+                        pstmt.setString(8, prevHash);
+                        pstmt.setString(9, currentHash);
+                        pstmt.addBatch();
+
+                        lastKnownHash = currentHash;
+                    }
+
+                    pstmt.executeBatch();
+                    conn.commit();
+                } catch (Exception e) {
+                    conn.rollback();
+                    System.err.println("CRITICAL: Failed to write audit batch: " + e.getMessage());
+                    // Re-queue on failure for retry
+                    for (AuditEntry failed : batch) auditCache.add(failed);
+                    lastKnownHash = null; // Force re-init from DB on next attempt
+                    break; // Exit the loop on failure
+                }
+            }
         } catch (Exception e) {
-            System.err.println("CRITICAL: Failed to write audit batch: " + e.getMessage());
-            // Re-queue on failure
-            for (AuditEntry failed : batch) auditCache.add(failed);
-            // Reset lastKnownHash to force re-initialization from DB on next attempt
-            lastKnownHash = null; 
+            System.err.println("Audit Flush Error: " + e.getMessage());
         } finally {
-            pool.cleanup(null, pstmt, conn);
+            if (pool != null && conn != null) pool.cleanup(null, null, conn);
         }
     }
 
@@ -237,11 +241,11 @@ public class Audit implements Action {
     /**
      * Calculates SHA-256 hash of (Current Record Data + Previous Record Hash).
      */
-    private String calculateHash(AuditEntry entry, String prevHash) throws NoSuchAlgorithmException {
+    private String calculateHash(AuditEntry entry, String storedUserId, String prevHash) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         String dataToHash = prevHash + 
                             entry.fiduciaryId.toString() + 
-                            entry.userId + 
+                            storedUserId + 
                             entry.auditAction + 
                             entry.eventtime.getTime() + 
                             (entry.contextDetails != null ? entry.contextDetails : "");
