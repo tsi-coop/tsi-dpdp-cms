@@ -1,5 +1,13 @@
 # Release Notes
 
+### v0.4.2
+**Policy Publishing & ROPA Usability**
+- **Clearer publish flow:** The policy publish confirmation now accurately describes what happens — the policy enters ROPA review, not immediate activation — so DPOs are not surprised when the status shows "Under Review".
+- **Next-step prompt after publish:** After submitting a policy for ROPA review, the DPO is offered a direct jump to the ROPA screen to validate and publish the auto-derived entries, removing the need to navigate there manually.
+- **Review ROPA action on policy rows:** Policies sitting in "Under Review" now show a "Review ROPA" link in the actions column, making it easy to return to the ROPA screen on subsequent visits without hunting through the nav.
+
+---
+
 ### v0.4.1
 **Legal Module & Audit Reliability**
 - **Fixed Consent Trace Missing:** Resolved a critical bug where the Legal Module evidence trail was empty due to mismatches between pseudonymised User IDs and query parameters.

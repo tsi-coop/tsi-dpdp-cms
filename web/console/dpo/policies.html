@@ -471,6 +471,7 @@
             <button class="text-indigo-600 hover:text-indigo-900 font-bold text-xs mr-3" onclick="viewPolicy('${policy.id}', '${policy.fiduciary_id}')">View</button>
             ${isDraft ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-3" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}')">Edit</button>` : ''}
             ${isDraft ? `<button class="text-green-600 hover:text-green-800 font-bold text-xs mr-3" onclick="publishPolicy('${policy.id}', '${policy.fiduciary_id}')">Publish</button>` : ''}
+            ${isUnderReview ? `<a href="ropa.html" class="text-blue-600 hover:text-blue-800 font-bold text-xs mr-3">Review ROPA</a>` : ''}
             ${!isArchived ? `<button class="text-red-600 hover:text-red-800 font-bold text-xs" onclick="deletePolicy('${policy.id}', '${policy.fiduciary_id}')">Delete</button>` : ''}
         `;
 
@@ -527,7 +528,7 @@
     }
 
     async function publishPolicy(id, fid) {
-        if(!confirm("Are you sure you want to transition this policy to ACTIVE status?")) return;
+        if(!confirm("Submit this policy for ROPA review?\n\nROPA entries will be auto-derived from the policy's purposes. The policy becomes ACTIVE only after the DPO validates and publishes all ROPA entries on the ROPA screen.")) return;
         try {
             const res = await fetch(API_URL_POLICY, {
                 method: 'POST',
@@ -538,9 +539,10 @@
             const data = await res.json();
 
             if (res.ok) {
-                alert("Published successfully!");
+                const goNow = confirm("Policy submitted for ROPA review.\n\nROPA entries have been auto-generated and are awaiting DPO validation.\n\nGo to the ROPA screen now to review and publish each entry?");
                 statusFilter.value = 'ALL';
                 loadPolicies();
+                if (goNow) window.location.href = 'ropa.html';
             } else {
                 // Display specific conflict or error message from backend (e.g. Purpose Conflict)
                 const errorMsg = data.message || data.error || "Publication failed.";
