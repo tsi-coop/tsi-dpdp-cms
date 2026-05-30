@@ -52,7 +52,7 @@ See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 
 ### Binary
 
-Check out [v0.4.2 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.4.2)
+Check out [v0.4.3 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.4.3)
 
 ## Post-Installation Steps
 
