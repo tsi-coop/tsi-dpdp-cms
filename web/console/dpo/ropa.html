@@ -114,7 +114,7 @@
         <div>
             <h1 class="text-2xl font-black text-slate-800 tracking-tight">ROPA Registry</h1>
             <p class="text-xs text-slate-400 mt-1 font-medium">Records of Processing Activities — DPDP Act 2023, Section 8</p>
-            <p class="text-xs text-amber-600 mt-1 font-semibold">Publishing a ROPA entry activates the linked policy for consent collection.</p>
+            <p class="text-xs text-slate-400 mt-1 font-medium">Use the Policies screen to publish ROPA entries when activating a policy.</p>
         </div>
         <div class="flex gap-2 flex-wrap">
             <button onclick="exportRopa()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition">
@@ -354,7 +354,6 @@
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50/50 transition-colors';
 
-        const canPublish = e.status === 'draft' || e.status === 'under_review';
         const retention = e.retention_period_days
             ? `${e.retention_period_days}d (${e.retention_start_event || '—'})`
             : '<span class="text-red-400 text-[10px] font-bold">NOT SET</span>';
@@ -362,7 +361,6 @@
 
         const actions = `
             <button class="text-teal-700 hover:text-teal-900 font-bold text-xs mr-2" onclick="viewEntry('${e.id}')">View</button>
-            ${canPublish ? `<button class="text-green-600 hover:text-green-800 font-bold text-xs mr-2" onclick="publishEntry('${e.id}', '${e.activity_name}')">Publish</button>` : ''}
         `;
 
         tr.innerHTML = `
@@ -475,25 +473,7 @@
         document.getElementById('view-modal').style.display = 'none';
     }
 
-    // ---- Publish / Retire ----
-    async function publishEntry(id, name) {
-        if (!confirm(`Publish "${name}"?\n\nThis will transition the entry to ACTIVE status. All required fields must be complete.`)) return;
-        const res = await fetch(API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-            body: JSON.stringify({ _func: 'publish_entry', id })
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-            loadEntries();
-        } else {
-            const msg = data.missing_fields
-                ? `Cannot publish. Missing fields:\n• ${data.missing_fields.join('\n• ')}`
-                : (data.message || 'Publish failed.');
-            alert(msg);
-        }
-    }
-
+    // ---- Retire ----
     async function retireEntry(id, name) {
         if (!confirm(`Retire "${name}"?\n\nThis entry will be marked as retired. This cannot be undone.`)) return;
         const res = await fetch(API, {
@@ -706,10 +686,9 @@
         loadEntries();
     });
 
-    window.viewEntry    = viewEntry;
-    window.publishEntry = publishEntry;
-    window.retireEntry  = retireEntry;
-    window.exportRopa   = exportRopa;
+    window.viewEntry   = viewEntry;
+    window.retireEntry = retireEntry;
+    window.exportRopa  = exportRopa;
 </script>
 </body>
 </html>

@@ -300,7 +300,8 @@
         </button>
 
         <div class="modal-header">
-            <h2 id="modal-title" class="text-2xl font-semibold primary-text">Create New Policy Version</h2>
+            <h2 id="modal-title" class="text-2xl font-semibold primary-text">Create New Policy</h2>
+            <p id="modal-step-hint" class="text-xs text-slate-400 mt-1 hidden"></p>
         </div>
 
         <form id="policy-form" method="POST" class="flex flex-col flex-1 overflow-hidden">
@@ -375,8 +376,7 @@
 
             <div class="modal-footer">
                 <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors">Cancel</button>
-                <button type="button" id="publish-policy-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 hidden">Publish Active</button>
-                <button type="submit" id="save-policy-btn" class="primary-bg text-white px-8 py-2 rounded-md text-sm font-bold hover:bg-opacity-90 transition-all shadow-md">Save Draft</button>
+                <button type="submit" id="save-policy-btn" class="primary-bg text-white px-8 py-2 rounded-md text-sm font-bold hover:bg-opacity-90 transition-all shadow-md">Next →</button>
             </div>
         </form>
 
@@ -389,6 +389,103 @@
                     Close Viewer
                 </button>
             </div>
+        </div>
+
+        <!-- ROPA REVIEW PANEL (shown inline after policy publish) -->
+        <div id="ropa-review-panel" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+            <div class="modal-body">
+                <div class="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl mb-5">
+                    <span class="text-green-600 text-lg font-black mt-0.5">✓</span>
+                    <div>
+                        <p class="font-bold text-green-800 text-sm">Policy submitted — ROPA entries generated</p>
+                        <p class="text-xs text-green-600 mt-0.5">Review and publish each entry below to activate the policy. Your DPO accountability is recorded automatically on publish.</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="table-header">
+                                <th class="px-4 py-3 text-sm text-left">Activity Name</th>
+                                <th class="px-4 py-3 text-sm text-left">Legal Basis</th>
+                                <th class="px-4 py-3 text-sm text-left">Status</th>
+                                <th class="px-4 py-3 text-sm text-left">Retention</th>
+                                <th class="px-4 py-3 text-sm text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ropa-review-tbody" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="5" class="p-4 text-center text-gray-400 italic">Loading ROPA entries...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-xs text-slate-400 mt-4 font-medium">Publishing all entries will activate the policy and enable consent collection.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ROPA Entry Detail Modal (secondary overlay shown on top of policy modal) -->
+<div id="ropa-entry-modal" class="modal-overlay" style="z-index: 1100;">
+    <div class="modal-content" style="max-width: 1000px;">
+        <button type="button" class="modal-close-btn" onclick="closeRopaEntryModal()">&times;</button>
+        <div class="modal-header">
+            <h2 id="rem-title" class="text-xl font-bold primary-text">ROPA Entry Details</h2>
+            <p id="rem-subtitle" class="text-xs text-slate-400 mt-1"></p>
+        </div>
+        <div class="modal-body">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Legal Basis</p>
+                            <p id="rem-legal-basis" class="text-sm font-semibold text-slate-700 mt-1">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retention</p>
+                            <p id="rem-retention" class="text-sm font-semibold text-slate-700 mt-1">—</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Purpose</p>
+                            <p id="rem-purpose" class="text-sm text-slate-600 mt-1">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Categories</p>
+                            <p id="rem-data-categories" class="text-xs font-mono text-slate-600 mt-1 break-words">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Subjects</p>
+                            <p id="rem-data-subjects" class="text-xs font-mono text-slate-600 mt-1 break-words">—</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Security Measures</p>
+                            <p id="rem-security" class="text-sm text-slate-600 mt-1">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Processors</p>
+                            <p id="rem-processors" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cross-Border Transfers</p>
+                            <p id="rem-cross-border" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">DPDP Completeness Checklist</p>
+                        <div id="rem-checklist" class="space-y-1">
+                            <p class="text-xs text-slate-400 italic">Loading...</p>
+                        </div>
+                        <div id="rem-completeness-banner" class="hidden mt-4 p-2 rounded-lg text-center text-xs font-bold"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="rem-publish-btn" class="bg-green-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-700 hidden" onclick="publishRopaEntryFromModal()">Publish Entry</button>
+            <button type="button" onclick="closeRopaEntryModal()" class="bg-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close</button>
         </div>
     </div>
 </div>
@@ -470,8 +567,7 @@
         const actionsHtml = `
             <button class="text-indigo-600 hover:text-indigo-900 font-bold text-xs mr-3" onclick="viewPolicy('${policy.id}', '${policy.fiduciary_id}')">View</button>
             ${isDraft ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-3" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}')">Edit</button>` : ''}
-            ${isDraft ? `<button class="text-green-600 hover:text-green-800 font-bold text-xs mr-3" onclick="publishPolicy('${policy.id}', '${policy.fiduciary_id}')">Publish</button>` : ''}
-            ${isUnderReview ? `<a href="ropa.html" class="text-blue-600 hover:text-blue-800 font-bold text-xs mr-3">Review ROPA</a>` : ''}
+            ${isUnderReview ? `<button class="text-blue-600 hover:text-blue-800 font-bold text-xs mr-3" onclick="reviewRopa('${policy.id}')">Review ROPA</button>` : ''}
             ${!isArchived ? `<button class="text-red-600 hover:text-red-800 font-bold text-xs" onclick="deletePolicy('${policy.id}', '${policy.fiduciary_id}')">Delete</button>` : ''}
         `;
 
@@ -527,33 +623,6 @@
         } catch(e) { alert("Load Failed."); }
     }
 
-    async function publishPolicy(id, fid) {
-        if(!confirm("Submit this policy for ROPA review?\n\nROPA entries will be auto-derived from the policy's purposes. The policy becomes ACTIVE only after the DPO validates and publishes all ROPA entries on the ROPA screen.")) return;
-        try {
-            const res = await fetch(API_URL_POLICY, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify({ "_func": "publish_policy", "policy_id": id, "fiduciary_id": fid })
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                const goNow = confirm("Policy submitted for ROPA review.\n\nROPA entries have been auto-generated and are awaiting DPO validation.\n\nGo to the ROPA screen now to review and publish each entry?");
-                statusFilter.value = 'ALL';
-                loadPolicies();
-                if (goNow) window.location.href = 'ropa.html';
-            } else {
-                // Display specific conflict or error message from backend (e.g. Purpose Conflict)
-                const errorMsg = data.message || data.error || "Publication failed.";
-                alert("Publication Error: " + errorMsg);
-            }
-        } catch (e) {
-            console.error("Publish Error:", e);
-            alert("Network Error: Registry is unreachable.");
-        }
-    }
-
     async function deletePolicy(id, fid) {
         if (!confirm(`Confirm Permanent Deletion of [${id}]?`)) return;
         try {
@@ -585,7 +654,11 @@
         policyIdHidden.value = '';
         policyIdInput.disabled = false;
         policyViewDetails.classList.add('hidden');
-        document.getElementById('save-policy-btn').textContent = isEdit ? 'Update Draft' : 'Save Draft';
+        document.getElementById('ropa-review-panel').style.display = 'none';
+        document.getElementById('save-policy-btn').textContent = 'Next →';
+        const stepHint = document.getElementById('modal-step-hint');
+        stepHint.textContent = 'Step 1 of 2 — Upload policy JSON';
+        stepHint.classList.remove('hidden');
         // Reset file upload state
         parsedPolicyJson = null;
         document.getElementById('policy-file-name').classList.add('hidden');
@@ -595,6 +668,9 @@
 
     function closeModal() {
         policyModalOverlay.style.display = 'none';
+        document.getElementById('ropa-review-panel').style.display = 'none';
+        document.getElementById('modal-step-hint').classList.add('hidden');
+        currentReviewPolicyId = null;
         loadPolicies();
     }
 
@@ -665,9 +741,21 @@
                 });
                 const data = await res.json();
                 if (res.ok && (data.success || data.policy_id)) {
-                    alert("Draft Saved.");
-                    statusFilter.value = 'ALL';
-                    closeModal();
+                    const savedPolicyId = data.policy_id || (isEditing ? policyIdHidden.value : policyIdInput.value.trim());
+                    const fidId = localStorage.getItem('fiduciary_id');
+                    const pubRes = await fetch(API_URL_POLICY, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                        body: JSON.stringify({ "_func": "publish_policy", "policy_id": savedPolicyId, "fiduciary_id": fidId })
+                    });
+                    const pubData = await pubRes.json();
+                    if (pubRes.ok) {
+                        statusFilter.value = 'ALL';
+                        loadPolicies();
+                        await showRopaReviewPanel(savedPolicyId);
+                    } else {
+                        alert("Publication Error: " + (pubData.message || pubData.error || "Failed to derive ROPA entries."));
+                    }
                 } else {
                     if (data.error && typeof data.error === 'string' && data.error.startsWith('[')) {
                         const inner = data.error.substring(1, data.error.length - 1);
@@ -763,12 +851,199 @@
         document.getElementById('policy-preview').classList.remove('hidden');
     }
 
+    // ---- ROPA Review Panel state ----
+    let currentReviewPolicyId = null;
+    let currentViewingEntryId = null;
+
+    async function reviewRopa(policyId) {
+        document.getElementById('modal-title').textContent = `ROPA Review — ${policyId}`;
+        policyForm.classList.add('hidden');
+        policyViewDetails.classList.add('hidden');
+        policyModalOverlay.style.display = 'flex';
+        await showRopaReviewPanel(policyId);
+    }
+
+    async function showRopaReviewPanel(policyId) {
+        currentReviewPolicyId = policyId;
+        document.getElementById('modal-title').textContent = `ROPA Review — ${policyId}`;
+        const stepHint = document.getElementById('modal-step-hint');
+        stepHint.textContent = 'Step 2 of 2 — Review & publish ROPA entries';
+        stepHint.classList.remove('hidden');
+        policyForm.classList.add('hidden');
+        policyViewDetails.classList.add('hidden');
+        const panel = document.getElementById('ropa-review-panel');
+        panel.style.display = 'flex';
+        await loadRopaReviewEntries(policyId);
+    }
+
+    async function loadRopaReviewEntries(policyId) {
+        const tbody = document.getElementById('ropa-review-tbody');
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">Loading ROPA entries...</td></tr>';
+        try {
+            const res = await fetch('/api/v1/admin/ropa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ _func: 'list_entries', fiduciary_id: localStorage.getItem('fiduciary_id'), status: '', limit: 100 })
+            });
+            const data = await res.json();
+            const allEntries = Array.isArray(data) ? data : (data.data || []);
+            const entries = allEntries.filter(e => parseRopaArr(e.linked_policy_ids).includes(policyId));
+            if (!entries.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400 italic">No ROPA entries found for this policy.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '';
+            entries.forEach(e => tbody.appendChild(buildRopaReviewRow(e)));
+        } catch(err) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-bold">Failed to load ROPA entries.</td></tr>';
+        }
+    }
+
+    function buildRopaReviewRow(e) {
+        const tr = document.createElement('tr');
+        tr.id = `ropa-row-${e.id}`;
+        tr.className = 'hover:bg-slate-50/50 transition-colors';
+        const canPublish = e.status === 'draft' || e.status === 'under_review';
+        const retention = e.retention_period_days
+            ? `${e.retention_period_days}d (${e.retention_start_event || '—'})`
+            : '<span class="text-red-400 text-[10px] font-bold">NOT SET</span>';
+        const statusColors = { draft: 'bg-yellow-100 text-yellow-800', active: 'bg-green-100 text-green-800', under_review: 'bg-blue-100 text-blue-800' };
+        const badge = `<span class="px-2 py-0.5 text-[10px] font-black rounded-full uppercase ${statusColors[e.status] || 'bg-gray-100 text-gray-600'}">${e.status}</span>`;
+        const escapedName = e.activity_name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const actions = `
+            <button class="text-teal-700 hover:text-teal-900 font-bold text-xs mr-2" onclick="viewRopaEntryInline('${e.id}')">View</button>
+            ${canPublish ? `<button class="text-green-600 hover:text-green-800 font-bold text-xs" onclick="publishRopaEntry('${e.id}', '${escapedName}')">Publish</button>` : '<span class="text-green-600 font-bold text-xs">Active</span>'}
+        `;
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-sm font-bold text-slate-800 max-w-[240px]">
+                <div class="truncate" title="${e.activity_name}">${e.activity_name}</div>
+                <div class="text-[10px] font-mono text-slate-400 mt-0.5">${e.id.slice(0,8)}…</div>
+            </td>
+            <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap capitalize">${(e.legal_basis||'').replace(/_/g,' ')}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${badge}</td>
+            <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">${retention}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${actions}</td>
+        `;
+        return tr;
+    }
+
+    async function viewRopaEntryInline(id) {
+        currentViewingEntryId = id;
+        const modal = document.getElementById('ropa-entry-modal');
+        modal.style.display = 'flex';
+        document.getElementById('rem-checklist').innerHTML = '<p class="text-xs text-slate-400 italic">Loading...</p>';
+        try {
+            const [entryRes, validateRes] = await Promise.all([
+                fetch('/api/v1/admin/ropa', { method:'POST', headers:{ 'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}` }, body: JSON.stringify({ _func:'get_entry', id }) }),
+                fetch('/api/v1/admin/ropa', { method:'POST', headers:{ 'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}` }, body: JSON.stringify({ _func:'validate_completeness', id }) })
+            ]);
+            const e = await entryRes.json();
+            const v = await validateRes.json();
+            document.getElementById('rem-title').textContent = e.activity_name || 'Entry';
+            document.getElementById('rem-subtitle').textContent = `ID: ${e.id} • Status: ${e.status} • v${e.version}`;
+            document.getElementById('rem-legal-basis').textContent = (e.legal_basis || '—').replace(/_/g,' ');
+            document.getElementById('rem-purpose').textContent = e.purpose || '—';
+            document.getElementById('rem-retention').textContent = e.retention_period_days ? `${e.retention_period_days} days (${e.retention_start_event || '—'})` : '—';
+            document.getElementById('rem-security').textContent = e.security_measures || '—';
+            document.getElementById('rem-data-categories').textContent = prettyRopaJson(e.data_categories);
+            document.getElementById('rem-data-subjects').textContent = prettyRopaJson(e.data_subject_categories);
+            document.getElementById('rem-processors').textContent = prettyRopaJson(e.processors);
+            document.getElementById('rem-cross-border').textContent = prettyRopaJson(e.cross_border_transfers);
+            const pubBtn = document.getElementById('rem-publish-btn');
+            pubBtn.dataset.name = e.activity_name;
+            const canPublish = e.status === 'draft' || e.status === 'under_review';
+            canPublish ? pubBtn.classList.remove('hidden') : pubBtn.classList.add('hidden');
+            renderRopaChecklist(v);
+        } catch(err) {
+            document.getElementById('rem-checklist').innerHTML = '<p class="text-xs text-red-500">Failed to load.</p>';
+        }
+    }
+
+    function renderRopaChecklist(v) {
+        const checkEl = document.getElementById('rem-checklist');
+        const banner  = document.getElementById('rem-completeness-banner');
+        const allFields = [
+            'activity_name','purpose','legal_basis','data_categories','data_subject_categories',
+            'retention_period_days','retention_start_event','security_measures','cross_border_transfers'
+        ];
+        const missingArr = Array.isArray(v.missing_fields) ? v.missing_fields.map(f => f.split(' ')[0]) : [];
+        const missing = new Set(missingArr);
+        checkEl.innerHTML = allFields.map(f => {
+            const ok = !Array.from(missing).some(m => m.startsWith(f));
+            const label = f.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+            return `<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;padding:4px 0;color:${ok?'#16a34a':'#dc2626'}">
+                <span>${ok ? '✓' : '✗'}</span><span>${label}</span>
+            </div>`;
+        }).join('');
+        const nonDpoMissing = missingArr.filter(f => !f.startsWith('dpo_id'));
+        if (v.complete || nonDpoMissing.length === 0) {
+            banner.textContent = '✓ Ready to publish — your DPO accountability will be recorded automatically';
+            banner.className = 'mt-4 p-2 rounded-lg text-center text-xs font-bold bg-green-100 text-green-700';
+        } else {
+            banner.textContent = `${nonDpoMissing.length} field(s) incomplete`;
+            banner.className = 'mt-4 p-2 rounded-lg text-center text-xs font-bold bg-amber-100 text-amber-700';
+        }
+        banner.classList.remove('hidden');
+    }
+
+    function closeRopaEntryModal() {
+        document.getElementById('ropa-entry-modal').style.display = 'none';
+        currentViewingEntryId = null;
+    }
+
+    async function publishRopaEntryFromModal() {
+        const id = currentViewingEntryId;
+        const name = document.getElementById('rem-publish-btn').dataset.name || 'this entry';
+        if (!confirm(`Publish "${name}"?\n\nThis will transition the entry to ACTIVE status. All required fields must be complete.`)) return;
+        await doPublishRopaEntry(id);
+        closeRopaEntryModal();
+    }
+
+    async function publishRopaEntry(id, name) {
+        if (!confirm(`Publish "${name}"?\n\nThis will transition the entry to ACTIVE status. All required fields must be complete.`)) return;
+        await doPublishRopaEntry(id);
+    }
+
+    async function doPublishRopaEntry(id) {
+        const res = await fetch('/api/v1/admin/ropa', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify({ _func: 'publish_entry', id })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            if (currentReviewPolicyId) await loadRopaReviewEntries(currentReviewPolicyId);
+        } else {
+            const msg = data.missing_fields
+                ? `Cannot publish. Missing fields:\n• ${data.missing_fields.join('\n• ')}`
+                : (data.message || 'Publish failed.');
+            alert(msg);
+        }
+    }
+
+    function parseRopaArr(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        try { return JSON.parse(val); } catch(e) { return []; }
+    }
+
+    function prettyRopaJson(val) {
+        if (val == null) return '—';
+        if (typeof val === 'string') {
+            try { return JSON.stringify(JSON.parse(val), null, 0); } catch(e) { return val; }
+        }
+        return JSON.stringify(val);
+    }
+
     window.viewPolicy = viewPolicy;
     window.editPolicy = editPolicy;
-    window.publishPolicy = publishPolicy;
     window.deletePolicy = deletePolicy;
     window.closeModal = closeModal;
-    window.toggleRopaPanel = toggleRopaPanel;
+    window.reviewRopa = reviewRopa;
+    window.viewRopaEntryInline = viewRopaEntryInline;
+    window.publishRopaEntry = publishRopaEntry;
+    window.publishRopaEntryFromModal = publishRopaEntryFromModal;
+    window.closeRopaEntryModal = closeRopaEntryModal;
     window.addPolicySubjectPreset = addPolicySubjectPreset;
     window.removePolicySubjectCategory = removePolicySubjectCategory;
     window.showPolicyProcessorForm = showPolicyProcessorForm;

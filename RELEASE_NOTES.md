@@ -1,5 +1,14 @@
 # Release Notes
 
+### v0.4.3
+**Policy Publish - Two-Step Wizard**
+- **Single popup, no page hops:** Creating and activating a policy is now a two-step wizard entirely within the policy popup. Step 1 uploads the JSON and sets the policy ID; clicking "Next →" derives ROPA entries in the background and transitions directly to Step 2, with no separate Publish button and no redirect to the ROPA screen.
+- **Inline ROPA review:** The derived ROPA entries appear in Step 2 of the same popup. DPOs can open each entry's detail view (with the DPDP completeness checklist) and publish it without leaving the modal. The policy becomes ACTIVE once all entries are published.
+- **ROPA screen is now monitoring-only:** The ROPA Registry screen retains its full view, filter, and export (CSV/PDF) capabilities but no longer exposes a Publish action. All ROPA publishing now happens through the policy wizard, keeping the two workflows clearly separated.
+- **Existing Under Review policies:** Policies already sitting in "Under Review" show a "Review ROPA" button that opens the popup directly at Step 2, so in-flight work is not disrupted.
+
+---
+
 ### v0.4.2
 **Policy Publishing & ROPA Usability**
 - **Clearer publish flow:** The policy publish confirmation now accurately describes what happens - the policy enters ROPA review, not immediate activation - so DPOs are not surprised when the status shows "Under Review".
