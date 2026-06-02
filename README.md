@@ -91,6 +91,10 @@ Follow the Guided Journey:
 
 14. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed voice affirmations for processing purposes.
 
+## Implementation Guide
+
+[TSI DPDP CMS Implementation Guide](docs/implementation-guide.md) - end-to-end walkthrough covering data discovery, RoPA authoring, JSON schema compilation, DPIA, and production deployment.
+
 ## Developers
 
 ### Prerequisites
