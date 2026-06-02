@@ -22,11 +22,19 @@ COMPLIANCE LIFECYCLE
 PROCESSING ACTIVITY
 ------------------------------------------------------------------------
   Activity Name : apna_mart_customer_v1
-  Legal Basis   : CONSENT
+  Legal Basis   : MIXED
   Purpose       :
     - Account & Loyalty Management
     - Order Fulfillment & Delivery
     - Personalized Recommendations
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_account_loyalty          Contractual Necessity
+  purpose_order_fulfillment        Contractual Necessity
+  purpose_personalized_offers      Consent
 
 DATA SUBJECT CATEGORIES
 ------------------------------------------------------------------------
@@ -66,10 +74,13 @@ CROSS-BORDER TRANSFERS
   -------------- -------------------------------------------- ----------------------------
   US             Standard Contractual Clauses (SCC)           GoogleAnalytics
 
-RETENTION
+RETENTION BY PURPOSE
 ------------------------------------------------------------------------
-  Period      : 2555 days  (approx. 7.0 years)
-  Start Event : CESSATION
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_account_loyalty          3 YEARS         CESSATION
+  purpose_order_fulfillment        7 YEARS         CESSATION
+  purpose_personalized_offers      2 YEARS         COLLECTION
 
 LINKED CONSENT POLICY
 ------------------------------------------------------------------------

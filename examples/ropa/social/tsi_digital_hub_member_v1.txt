@@ -22,13 +22,23 @@ COMPLIANCE LIFECYCLE
 PROCESSING ACTIVITY
 ------------------------------------------------------------------------
   Activity Name : tsi_digital_hub_member_v1
-  Legal Basis   : CONSENT
+  Legal Basis   : MIXED
   Purpose       :
     - Account Registration & Management
     - Website Analytics & Performance
     - Community Engagement
     - Solutions and Services Showcase
     - Maturity Assessments
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                                       Legal Basis
+  --------------------------------------------- -------------------------------------------
+  purpose_account_management                    Contractual Necessity
+  purpose_website_analytics                     Consent
+  purpose_community_engagement                  Consent
+  purpose_solution_service_training_showcase    Consent
+  purpose_maturity_capability_assessment        Consent
 
 DATA SUBJECT CATEGORIES
 ------------------------------------------------------------------------
@@ -63,11 +73,11 @@ PURPOSE-PROCESSOR MAPPING
 ------------------------------------------------------------------------
   Purpose                                Authorised Processors
   -------------------------------------- ------------------------------
-  purpose_account_management             (unrestricted)
+  purpose_account_management             AWS
   purpose_website_analytics             GoogleAnalytics, Hotjar
-  purpose_community_engagement           (unrestricted)
-  purpose_solution_service_training_showcase (unrestricted)
-  purpose_maturity_capability_assessment (unrestricted)
+  purpose_community_engagement           AWS
+  purpose_solution_service_training_showcase AWS
+  purpose_maturity_capability_assessment AWS
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
@@ -76,10 +86,15 @@ CROSS-BORDER TRANSFERS
   US             Standard Contractual Clauses (SCC)           GoogleAnalytics
   IE             Standard Contractual Clauses (SCC)           Hotjar
 
-RETENTION
+RETENTION BY PURPOSE
 ------------------------------------------------------------------------
-  Period      : 2555 days  (approx. 7.0 years)
-  Start Event : CESSATION
+  Purpose                                       Period          Start Event
+  --------------------------------------------- --------------- --------------------
+  purpose_account_management                    7 YEARS         CESSATION
+  purpose_website_analytics                     24 MONTHS       COLLECTION
+  purpose_community_engagement                  2 YEARS         CESSATION
+  purpose_solution_service_training_showcase    3 YEARS         CESSATION
+  purpose_maturity_capability_assessment        3 YEARS         CESSATION
 
 LINKED CONSENT POLICY
 ------------------------------------------------------------------------

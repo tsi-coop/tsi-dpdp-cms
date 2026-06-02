@@ -21,11 +21,19 @@ COMPLIANCE LIFECYCLE
 PROCESSING ACTIVITY
 ------------------------------------------------------------------------
   Activity Name : niramaya_employee_v1
-  Legal Basis   : CONSENT
+  Legal Basis   : CONTRACTUAL NECESSITY / STATUTORY OBLIGATION / LEGITIMATE USE
   Purpose       :
     - Payroll, Taxation & Compliance
     - Health Insurance & Benefits
     - Performance Review & Skill Development
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_payroll_tax              Contractual Necessity / Statutory Obligation
+  purpose_employee_benefits        Contractual Necessity
+  purpose_performance_training     Legitimate Use / Employment
 
 DATA SUBJECT CATEGORIES
 ------------------------------------------------------------------------
@@ -63,10 +71,13 @@ CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
   No cross-border transfers.
 
-RETENTION
+RETENTION BY PURPOSE
 ------------------------------------------------------------------------
-  Period      : 3650 days  (approx. 10.0 years)
-  Start Event : CESSATION
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_payroll_tax              10 YEARS        CESSATION
+  purpose_employee_benefits        2 YEARS         CESSATION
+  purpose_performance_training     5 YEARS         CESSATION
 
 LINKED CONSENT POLICY
 ------------------------------------------------------------------------

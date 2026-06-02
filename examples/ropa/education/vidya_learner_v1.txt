@@ -23,12 +23,21 @@ COMPLIANCE LIFECYCLE
 PROCESSING ACTIVITY
 ------------------------------------------------------------------------
   Activity Name : vidya_learner_v1
-  Legal Basis   : CONSENT
+  Legal Basis   : MIXED
   Purpose       :
     - Student Account & Profile
     - Learning Progress & Assessment
     - Personalized AI Recommendations
     - Scholarship & Career Alerts
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_account_management       Contractual Necessity
+  purpose_learning_tracking        Contractual Necessity
+  purpose_ai_recommendations       Consent
+  purpose_scholarship_alerts       Consent
 
 DATA SUBJECT CATEGORIES
 ------------------------------------------------------------------------
@@ -61,8 +70,8 @@ PURPOSE-PROCESSOR MAPPING
   -------------------------------- ------------------------------
   purpose_account_management       GoogleFirebase
   purpose_learning_tracking        AWS
-  purpose_ai_recommendations       (unrestricted)
-  purpose_scholarship_alerts       (unrestricted)
+  purpose_ai_recommendations       AWS
+  purpose_scholarship_alerts       AWS
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
@@ -70,10 +79,14 @@ CROSS-BORDER TRANSFERS
   -------------- -------------------------------------------- ----------------------------
   US             Standard Contractual Clauses (SCC)           GoogleFirebase
 
-RETENTION
+RETENTION BY PURPOSE
 ------------------------------------------------------------------------
-  Period      : 2555 days  (approx. 7.0 years)
-  Start Event : CESSATION
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_account_management       5 YEARS         CESSATION
+  purpose_learning_tracking        7 YEARS         CESSATION
+  purpose_ai_recommendations       2 YEARS         COLLECTION
+  purpose_scholarship_alerts       2 YEARS         COLLECTION
 
 LINKED CONSENT POLICY
 ------------------------------------------------------------------------

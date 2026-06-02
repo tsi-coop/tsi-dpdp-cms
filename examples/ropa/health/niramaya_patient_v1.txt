@@ -22,12 +22,21 @@ COMPLIANCE LIFECYCLE
 PROCESSING ACTIVITY
 ------------------------------------------------------------------------
   Activity Name : niramaya_patient_v1
-  Legal Basis   : CONSENT
+  Legal Basis   : MIXED
   Purpose       :
     - Patient Registration & Appointments
     - Electronic Health Records (EHR)
     - Billing, Payments & Insurance
     - Wellness Updates & Newsletters
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_patient_management       Contractual Necessity
+  purpose_medical_records          Legitimate Use / Healthcare Provision
+  purpose_billing_payments         Contractual Necessity
+  purpose_wellness_updates         Consent
 
 DATA SUBJECT CATEGORIES
 ------------------------------------------------------------------------
@@ -59,18 +68,22 @@ PURPOSE-PROCESSOR MAPPING
   Purpose                          Authorised Processors
   -------------------------------- ------------------------------
   purpose_patient_management       Practo
-  purpose_medical_records          (unrestricted)
+  purpose_medical_records          AWS
   purpose_billing_payments         Razorpay
-  purpose_wellness_updates         (unrestricted)
+  purpose_wellness_updates         AWS
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
   No cross-border transfers.
 
-RETENTION
+RETENTION BY PURPOSE
 ------------------------------------------------------------------------
-  Period      : 3650 days  (approx. 10.0 years)
-  Start Event : CESSATION
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_patient_management       3 YEARS         CESSATION
+  purpose_medical_records          10 YEARS        CESSATION
+  purpose_billing_payments         7 YEARS         CESSATION
+  purpose_wellness_updates         1 YEAR          COLLECTION
 
 LINKED CONSENT POLICY
 ------------------------------------------------------------------------

@@ -22,12 +22,21 @@ COMPLIANCE LIFECYCLE
 PROCESSING ACTIVITY
 ------------------------------------------------------------------------
   Activity Name : varam_borrower_v1
-  Legal Basis   : CONSENT
+  Legal Basis   : MIXED
   Purpose       :
     - KYC & Identity Verification
     - Credit Assessment & Scoring
     - Loan Disbursement & Collections
     - Promotional Offers & New Products
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_kyc_identity             Statutory Obligation (PMLA & DPDP Act)
+  purpose_credit_scoring           Contractual Necessity
+  purpose_loan_servicing           Contractual Necessity
+  purpose_marketing_offers         Consent
 
 DATA SUBJECT CATEGORIES
 ------------------------------------------------------------------------
@@ -61,7 +70,7 @@ PURPOSE-PROCESSOR MAPPING
   -------------------------------- ------------------------------
   purpose_kyc_identity             CERSAI
   purpose_credit_scoring           CIBIL
-  purpose_loan_servicing           (unrestricted)
+  purpose_loan_servicing           AWS
   purpose_marketing_offers         Twilio
 
 CROSS-BORDER TRANSFERS
@@ -70,10 +79,14 @@ CROSS-BORDER TRANSFERS
   -------------- -------------------------------------------- ----------------------------
   US             Standard Contractual Clauses (SCC)           Twilio
 
-RETENTION
+RETENTION BY PURPOSE
 ------------------------------------------------------------------------
-  Period      : 2555 days  (approx. 7.0 years)
-  Start Event : CESSATION
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_kyc_identity             5 YEARS         CESSATION
+  purpose_credit_scoring           2 MONTHS        COLLECTION
+  purpose_loan_servicing           7 YEARS         CESSATION
+  purpose_marketing_offers         2 YEARS         COLLECTION
 
 LINKED CONSENT POLICY
 ------------------------------------------------------------------------
