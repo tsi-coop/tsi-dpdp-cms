@@ -16,7 +16,7 @@ Because the engine operates purely at the execution layer, it has no inherent co
 
 ---
 
-## 2. Phase 1: Data Discovery & RoPA Cataloging
+## 2. Data Discovery & RoPA Cataloging
 
 ### Step 1: The App-by-App Questionnaire
 
@@ -201,7 +201,7 @@ before publishing the ROPA entry.
 
 ---
 
-## 3. Phase 2: Technical Mapping & JSON Compilation
+## 3. Technical Mapping & JSON Compilation
 
 ### Step 1: Map the Data Flow
 
@@ -336,7 +336,7 @@ The engineering team converts the DPO's text blueprint into a structured JSON fi
 
 ---
 
-## 4. Phase 3: Pre-Production Risk Operations
+## 4. Pre-Production Risk Operations
 
 ### Step 1: Document-Based DPIAs
 
@@ -383,7 +383,7 @@ With no vendor dashboard, the DPO runs email-driven compliance reviews for third
 
 ---
 
-## 5. Phase 4: Production Deployment & Lifecycle Execution
+## 5. Production Deployment & Lifecycle Execution
 
 ### 1. Policy Creation and Publishing via the DPO Console
 
