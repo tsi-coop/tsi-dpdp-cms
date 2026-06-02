@@ -29,6 +29,7 @@ PROCESSING ACTIVITY
     - Learning Progress & Assessment
     - Personalized AI Recommendations
     - Scholarship & Career Alerts
+    - Fee & Subscription Payments
 
 LEGAL BASIS BY PURPOSE
 ------------------------------------------------------------------------
@@ -38,18 +39,20 @@ LEGAL BASIS BY PURPOSE
   purpose_learning_tracking        Contractual Necessity
   purpose_ai_recommendations       Consent
   purpose_scholarship_alerts       Consent
+  purpose_fee_payment              Contractual Necessity
 
 DATA SUBJECT CATEGORIES
 ------------------------------------------------------------------------
   - minor
   - data_principal
 
-DATA CATEGORIES  (12 total)
+DATA CATEGORIES  (13 total)
 ------------------------------------------------------------------------
   full_name                      email_address                  grade_level
   school_name                    profile_photo                  assessment_scores
   video_watch_time               assignment_submissions         search_history
   interest_tags                  learning_patterns              mobile_number
+  payment_details
 
 SECURITY MEASURES
 ------------------------------------------------------------------------
@@ -72,6 +75,7 @@ PURPOSE-PROCESSOR MAPPING
   purpose_learning_tracking        AWS
   purpose_ai_recommendations       AWS
   purpose_scholarship_alerts       AWS
+  purpose_fee_payment              Razorpay
 
 CROSS-BORDER TRANSFERS
 ------------------------------------------------------------------------
@@ -87,6 +91,7 @@ RETENTION BY PURPOSE
   purpose_learning_tracking        7 YEARS         CESSATION
   purpose_ai_recommendations       2 YEARS         COLLECTION
   purpose_scholarship_alerts       2 YEARS         COLLECTION
+  purpose_fee_payment              7 YEARS         CESSATION
 
 LINKED CONSENT POLICY
 ------------------------------------------------------------------------
