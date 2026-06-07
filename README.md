@@ -73,21 +73,23 @@ Follow the Guided Journey:
 
 4. User Rights Management: Notice & capture, purpose-limited verification, and exercise of rights: view artifacts, withdraw, and grievances.
 
-5. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity.
+5. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
 
-6. DPO Console Tour: Comprehensive video walkthrough of the administrative console for managing compliance workflows.
+6. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity.
 
-7. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks.
+7. DPO Console Tour: Comprehensive video walkthrough of the administrative console for managing compliance workflows.
 
-8. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
+8. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks.
 
-9. DPDP Wallet Demo: Experience portable privacy. Checkout the [DPDP Wallet](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via) concept, then download your PCA from the User Dashboard to manage your processing rights independently.
+9. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18.
 
-10. Password Recovery: Explore the "break-glass" account recovery mechanism using secure Master Recovery Keys.
+10. DPDP Wallet Demo: Experience portable privacy. Checkout the [DPDP Wallet](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via) concept, then download your PCA from the User Dashboard to manage your processing rights independently.
 
-11. Legal Module: Explore the crystallization of immutable audit trails into cryptographically signed, BSA Section 62-compliant digital evidence artifacts for court and regulatory submission.
+11. Password Recovery: Explore the "break-glass" account recovery mechanism using secure Master Recovery Keys.
 
-12. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed voice affirmations for processing purposes.
+12. Legal Module: Explore the crystallization of immutable audit trails into cryptographically signed, BSA Section 62-compliant digital evidence artifacts for court and regulatory submission.
+
+13. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed voice affirmations for processing purposes.
 
 ## Implementation Guide
 

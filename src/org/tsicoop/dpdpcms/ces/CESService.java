@@ -97,14 +97,26 @@ public class CESService {
 
         Timestamp newCESRun = Timestamp.from(Instant.now());
         JSONObject recent = getRecentConsent(principalId);
-        if(recent == null) return;
+        if(recent == null) {
+            System.out.println("[CES DEBUG] processPrincipal: no recent consent record found for principal=" + principalId + " -- skipping");
+            return;
+        }
         Timestamp createdAt = (Timestamp) recent.get("created_at");
         //System.out.println("Processing:"+principalId);
         mechanism = (String) recent.get("mechanism");
+        System.out.println("[CES DEBUG] processPrincipal: principal=" + principalId
+                + " mechanism=" + mechanism
+                + " recordCreatedAt=" + createdAt
+                + " lastCESRun=" + lastCESRun
+                + " createdAtAfterLastCESRun=" + createdAt.after(lastCESRun));
         if (mechanism.equalsIgnoreCase(Constants.ACTION_ERASURE_REQUEST)) {
             if(createdAt.after(lastCESRun)){
+                System.out.println("[CES DEBUG] processPrincipal: dispatching to handleErasure for principal=" + principalId);
                 handleErasure(recent, principalId, fiduciaryId, newCESRun);
                 updatePrincipalComplianceMetadata(fiduciaryId, principalId, mechanism, newCESRun);
+            } else {
+                System.out.println("[CES DEBUG] processPrincipal: ERASURE_REQUEST found but record createdAt=" + createdAt
+                        + " is NOT after lastCESRun=" + lastCESRun + " -- handleErasure will NOT run for principal=" + principalId);
             }
         } else {
             handleRetentionNotification(recent, principalId, fiduciaryId, lastCESRun, newCESRun);
@@ -141,6 +153,11 @@ public class CESService {
                 recent.put("mechanism",mechanism);
                 recent.put("created_at",createdAt);
                 recent.put("consents",consents);
+                System.out.println("[CES DEBUG] getRecentConsent: principal=" + principalId
+                        + " recordId=" + recordId + " mechanism=" + mechanism
+                        + " createdAt=" + createdAt + " consents=" + consents.toJSONString());
+            } else {
+                System.out.println("[CES DEBUG] getRecentConsent: NO consent_records row found for principal=" + principalId);
             }
         }catch(Exception e){
             e.printStackTrace();
@@ -156,50 +173,50 @@ public class CESService {
     private void handleErasure(JSONObject recent, String principalId, String fiduciaryId, Timestamp newCESRun) throws Exception{
         JSONObject consent = null;
         String purposeId = null;
-        boolean granted = false;
-        String expiry = null;
-        Timestamp tsExpiry = null;
-        boolean enforced = false;
         JSONArray consents = (JSONArray) recent.get("consents");
+        System.out.println("[CES DEBUG] handleErasure: principal=" + principalId + " fiduciary=" + fiduciaryId
+                + " consentCount=" + consents.size() + " consents=" + consents.toJSONString());
         Iterator<JSONObject> consentIt = consents.iterator();
         while(consentIt.hasNext()){
             consent = (JSONObject) consentIt.next();
             purposeId = (String) consent.get("data_point_id");
-            granted = (boolean) consent.get("consent_granted");
-            expiry = (String) consent.get("consent_expiry");
-            //System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
-            if(expiry != null){
-                tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
-                if(tsExpiry.before(newCESRun)){
-                    // Identify Apps (Data Processors)
-                    List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
-                    Iterator<JSONObject> appidIt = appids.iterator();
-                    while(appidIt.hasNext()){
-                        JSONObject appidJSON = (JSONObject) appidIt.next();
-                        String appid = (String) appidJSON.get("app_id");
-                        System.out.println("Enforcing Purge for Principal: " + principalId + " | App: "+ appid+" | Purpose: " + purposeId);
-                        // Create Purge Request
-                        insertPurgeRequest( principalId,
-                                            fiduciaryId,
-                                            purposeId,
-                                            appid,
-                                            Constants.PURGE_TRIGGER_ERASURE,
-                                            Constants.EVENT_PURGE_INITIATED);
-                        // Send purge notification to data processor
-                        insertNotification( "APP",
-                                            appid,
-                                            fiduciaryId,
-                                            Constants.NOTIF_PURGE_INIT);
-                        // log audit event
-                        JSONObject auditContext = new JSONObject();
-                        auditContext.put("principal", principalId);
-                        auditContext.put("trigger", Constants.PURGE_TRIGGER_ERASURE);
-                        auditContext.put("app", new App().getAppName(UUID.fromString(appid), UUID.fromString(fiduciaryId)));
-                        auditContext.put("purpose",purposeId);
+            // An explicit erasure request must be enforced immediately for every purpose the
+            // principal had consented to -- it must not wait for consent_expiry/retention to
+            // lapse (that gating belongs to handleRetentionPurge).
+            List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
+            System.out.println("[CES DEBUG] handleErasure: principal=" + principalId + " purpose=" + purposeId
+                    + " resolvedAppCount=" + appids.size() + " apps=" + appids);
+            if (appids.isEmpty()) {
+                System.out.println("[CES DEBUG] handleErasure: NO apps found in consent_validations for principal=" + principalId
+                        + " fiduciary=" + fiduciaryId + " purpose=" + purposeId + " -- no purge_requests will be created for this purpose");
+            }
+            Iterator<JSONObject> appidIt = appids.iterator();
+            while(appidIt.hasNext()){
+                JSONObject appidJSON = (JSONObject) appidIt.next();
+                String appid = (String) appidJSON.get("app_id");
+                System.out.println("Enforcing Purge for Principal: " + principalId + " | App: "+ appid+" | Purpose: " + purposeId);
+                // Create Purge Request
+                JSONObject purgeResult = insertPurgeRequest( principalId,
+                                    fiduciaryId,
+                                    purposeId,
+                                    appid,
+                                    Constants.PURGE_TRIGGER_ERASURE,
+                                    Constants.EVENT_PURGE_INITIATED);
+                System.out.println("[CES DEBUG] handleErasure: insertPurgeRequest result=" + purgeResult
+                        + " principal=" + principalId + " app=" + appid + " purpose=" + purposeId);
+                // Send purge notification to data processor
+                insertNotification( "APP",
+                                    appid,
+                                    fiduciaryId,
+                                    Constants.NOTIF_PURGE_INIT);
+                // log audit event
+                JSONObject auditContext = new JSONObject();
+                auditContext.put("principal", principalId);
+                auditContext.put("trigger", Constants.PURGE_TRIGGER_ERASURE);
+                auditContext.put("app", new App().getAppName(UUID.fromString(appid), UUID.fromString(fiduciaryId)));
+                auditContext.put("purpose",purposeId);
 
-                        new Audit().logEventAsync(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", auditContext.toJSONString());
-                    }
-                }
+                new Audit().logEventAsync(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null , "PURGE_INITIATION", auditContext.toJSONString());
             }
         }
     }
@@ -229,7 +246,12 @@ public class CESService {
                 appIdObj.put("app_id", rs.getString("app_id"));
                 appIds.add(appIdObj);
             }
+            System.out.println("[CES DEBUG] getAppIdsByPurpose: SELECT DISTINCT app_id FROM consent_validations WHERE user_id='"
+                    + userId + "' AND fiduciary_id='" + fiduciaryId + "' AND purpose_id='" + purposeId
+                    + "' -> " + appIds.size() + " row(s)");
         } catch (IllegalArgumentException e) {
+            System.out.println("[CES DEBUG] getAppIdsByPurpose: failed to parse fiduciaryId='" + fiduciaryId
+                    + "' as UUID for userId=" + userId + " purposeId=" + purposeId + " -- " + e.getMessage());
             // Handle UUID parsing issues
             return appIds;
         } finally {
@@ -404,7 +426,24 @@ public class CESService {
             if (rs.next()) {
                 response.put("success", true);
                 response.put("id", rs.getObject("id").toString());
+                System.out.println("[CES DEBUG] insertPurgeRequest: INSERTED purge_requests id=" + response.get("id")
+                        + " user_id=" + userId + " fiduciary_id=" + fiduciaryId + " purpose_id=" + purposeId
+                        + " app_id=" + appId + " trigger_event=" + triggerEvent + " status=" + status);
+            } else {
+                System.out.println("[CES DEBUG] insertPurgeRequest: INSERT returned no row (no id) for user_id=" + userId
+                        + " fiduciary_id=" + fiduciaryId + " purpose_id=" + purposeId + " app_id=" + appId);
             }
+        } catch (SQLException e) {
+            System.out.println("[CES DEBUG] insertPurgeRequest: SQLException while inserting purge_requests for user_id=" + userId
+                    + " fiduciary_id=" + fiduciaryId + " purpose_id=" + purposeId + " app_id=" + appId
+                    + " trigger_event=" + triggerEvent + " -- " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        } catch (IllegalArgumentException e) {
+            System.out.println("[CES DEBUG] insertPurgeRequest: invalid UUID -- fiduciary_id='" + fiduciaryId
+                    + "' app_id='" + appId + "' user_id=" + userId + " purpose_id=" + purposeId + " -- " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         } finally {
             pool.cleanup(rs,stmt,conn);
         }

@@ -452,6 +452,24 @@ public class Consent implements Action {
         return result;
     }
 
+    /**
+     * Registers/refreshes the data_principal record for a user so the CES batch job
+     * (which enumerates principals from this table) picks them up on its next run.
+     * Resetting last_ces_run to NULL forces a fresh evaluation of the latest consent action.
+     */
+    private void upsertDataPrincipal(Connection conn, UUID fiduciaryId, String userId, String lastConsentMechanism) throws SQLException {
+        String sql = "INSERT INTO data_principal (user_id, fiduciary_id, last_consent_mechanism, last_ces_run) " +
+                "VALUES (?, ?, ?, NULL) " +
+                "ON CONFLICT (user_id) DO UPDATE SET " +
+                "last_consent_mechanism = EXCLUDED.last_consent_mechanism, last_ces_run = NULL";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, userId);
+            stmt.setObject(2, fiduciaryId);
+            stmt.setString(3, lastConsentMechanism);
+            stmt.executeUpdate();
+        }
+    }
+
     private void logConsentValidations(Connection conn, UUID fiduciaryId, UUID appId, String userId, String purpose_id, String status) throws SQLException{
         // Upsert Data Principal Record
         String upsertDataPrincipalSql = "INSERT INTO consent_validations (fiduciary_id,app_id,user_id,purpose_id,status) VALUES (?,?,?,?,?)";
@@ -606,6 +624,10 @@ public class Consent implements Action {
                 throw new SQLException("Creating withdrawal record failed.");
             }
 
+            // Register/refresh the data_principal record so the CES batch job picks this principal up
+            // (resets last_ces_run to NULL, ensuring the new WITHDRAWN/ERASURE_REQUEST record is evaluated)
+            upsertDataPrincipal(conn, fiduciaryId, userId, action);
+
             UUID newRecordId = null;
             try (ResultSet newRs = pstmt.getGeneratedKeys()) {
                 if (newRs.next()) {
@@ -751,6 +773,9 @@ public class Consent implements Action {
             if (affectedRows == 0) {
                 throw new SQLException("Recording consent failed, no rows affected.");
             }
+
+            // Register/refresh the data_principal record so the CES batch job picks this principal up
+            upsertDataPrincipal(conn, fiduciaryId, userId, consentMechanism);
 
             rs = pstmtInsert.getGeneratedKeys();
             UUID newConsentId;
