@@ -188,7 +188,9 @@ public class CESService {
                     + " resolvedAppCount=" + appids.size() + " apps=" + appids);
             if (appids.isEmpty()) {
                 System.out.println("[CES DEBUG] handleErasure: NO apps found in consent_validations for principal=" + principalId
-                        + " fiduciary=" + fiduciaryId + " purpose=" + purposeId + " -- no purge_requests will be created for this purpose");
+                        + " fiduciary=" + fiduciaryId + " purpose=" + purposeId + " -- recording orphan compliance event so DPO is not blind to this");
+                recordOrphanComplianceEvent(principalId, fiduciaryId, purposeId, Constants.PURGE_TRIGGER_ERASURE,
+                        "Erasure request received but no linked data processor found for this purpose — manual review/erasure confirmation required.");
             }
             Iterator<JSONObject> appidIt = appids.iterator();
             while(appidIt.hasNext()){
@@ -357,6 +359,12 @@ public class CESService {
                 if(tsExpiry.after(lastCESRun) && tsExpiry.before(tsFromInstant)){
                     // Identify Apps (Data Processors)
                     List<JSONObject> appids = getAppIdsByPurpose(principalId, fiduciaryId, purposeId);
+                    if (appids.isEmpty()) {
+                        System.out.println("[CES DEBUG] handleRetentionPurge: NO apps found in consent_validations for principal=" + principalId
+                                + " fiduciary=" + fiduciaryId + " purpose=" + purposeId + " -- recording orphan compliance event so DPO is not blind to this");
+                        recordOrphanComplianceEvent(principalId, fiduciaryId, purposeId, Constants.PURGE_TRIGGER_EXPIRY,
+                                "Consent/retention period expired but no linked data processor found for this purpose — manual review/erasure confirmation required.");
+                    }
                     Iterator<JSONObject> appidIt = appids.iterator();
                     while(appidIt.hasNext()){
                         JSONObject appidJSON = (JSONObject) appidIt.next();
@@ -448,6 +456,69 @@ public class CESService {
             pool.cleanup(rs,stmt,conn);
         }
         return response;
+    }
+
+    /**
+     * Records a visible compliance event for a purpose that has no linked data
+     * processor (getAppIdsByPurpose returned an empty list). Without this, an
+     * erasure request or a retention/consent expiry for such a purpose would
+     * silently disappear -- there is no app to send a purge to, so no
+     * purge_requests row and no DPO-visible trace would ever be created.
+     * Inserts a purge_requests row with app_id = NULL so the DPO can see it
+     * in the compliance console and confirm manual review/erasure.
+     */
+    private void recordOrphanComplianceEvent(String principalId,
+                                              String fiduciaryId,
+                                              String purposeId,
+                                              String triggerEvent,
+                                              String details) throws SQLException {
+        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, purpose_id, app_id, trigger_event, status, details) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id";
+
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        PoolDB pool = null;
+        Connection conn = null;
+
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+
+            stmt = conn.prepareStatement(sql);
+
+            stmt.setString(1, principalId);
+            stmt.setObject(2, UUID.fromString(fiduciaryId));
+            stmt.setString(3, purposeId);
+            stmt.setNull(4, Types.OTHER);
+            stmt.setString(5, triggerEvent);
+            stmt.setString(6, Constants.EVENT_PURGE_INITIATED);
+            stmt.setString(7, details);
+
+            rs = stmt.executeQuery();
+            if (rs.next()) {
+                System.out.println("[CES DEBUG] recordOrphanComplianceEvent: INSERTED purge_requests id=" + rs.getObject("id")
+                        + " principal=" + principalId + " fiduciary=" + fiduciaryId + " purpose=" + purposeId
+                        + " trigger_event=" + triggerEvent + " app_id=NULL");
+            } else {
+                System.out.println("[CES DEBUG] recordOrphanComplianceEvent: INSERT returned no row (no id) for principal=" + principalId
+                        + " fiduciary=" + fiduciaryId + " purpose=" + purposeId);
+            }
+        } catch (SQLException e) {
+            System.out.println("[CES DEBUG] recordOrphanComplianceEvent: SQLException while inserting orphan purge_requests for principal=" + principalId
+                    + " fiduciary=" + fiduciaryId + " purpose=" + purposeId + " trigger_event=" + triggerEvent + " -- " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        } finally {
+            pool.cleanup(rs, stmt, conn);
+        }
+
+        JSONObject auditContext = new JSONObject();
+        auditContext.put("principal", principalId);
+        auditContext.put("trigger", triggerEvent);
+        auditContext.put("app", "No Linked Processor");
+        auditContext.put("purpose", purposeId);
+        auditContext.put("details", details);
+        new Audit().logEventAsync(principalId, UUID.fromString(fiduciaryId), "SYSTEM", null, Constants.EVENT_PURGE_INITIATED, auditContext.toJSONString());
     }
 
     /**
