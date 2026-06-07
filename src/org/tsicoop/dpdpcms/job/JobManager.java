@@ -276,7 +276,14 @@ public class JobManager implements ServletContextListener {
                       "cr.timestamp as consent_timestamp, cr.jurisdiction, cr.language_selected " +
                       "FROM ropa_entries r " +
                       "JOIN consent_policies cp ON r.linked_policy_ids @> jsonb_build_array(cp.id) " +
-                      "JOIN consent_records cr ON cr.policy_id = cp.id AND cr.fiduciary_id = r.fiduciary_id " +
+                      "JOIN LATERAL (" +
+                      "  SELECT DISTINCT ON (cri.user_id) cri.user_id, cri.consent_status_general, cri.consent_mechanism, " +
+                      "         cri.timestamp, cri.jurisdiction, cri.language_selected " +
+                      "  FROM consent_records cri, jsonb_array_elements(cri.data_point_consents) AS dp " +
+                      "  WHERE cri.policy_id = cp.id AND cri.fiduciary_id = r.fiduciary_id " +
+                      "    AND dp->>'data_point_id' = r.source_purpose_id " +
+                      "  ORDER BY cri.user_id, cri.created_at DESC" +
+                      ") cr ON TRUE " +
                       "WHERE r.fiduciary_id = ? AND r.status = 'active' " +
                       "AND cr.timestamp BETWEEN ? AND ? " +
                       "ORDER BY r.id, cr.timestamp DESC";

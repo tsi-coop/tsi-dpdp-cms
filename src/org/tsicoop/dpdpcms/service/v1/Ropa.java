@@ -500,13 +500,14 @@ public class Ropa implements Action {
                 "r.data_categories, r.data_subject_categories, r.retention_period_days, r.retention_start_event, " +
                 "r.processors, r.cross_border_transfers, r.security_measures, r.dpo_id, r.linked_policy_ids, " +
                 "r.source_purpose_id, r.status, r.version, r.created_at, r.updated_at, " +
-                "COUNT(c.id) FILTER (WHERE c.is_active_consent = TRUE AND c.purpose_granted = TRUE) AS consent_count, " +
-                "COUNT(c.id) FILTER (WHERE c.is_active_consent = FALSE) AS inactive_consent_count " +
+                "COUNT(*) FILTER (WHERE c.consent_granted = TRUE) AS consent_count, " +
+                "COUNT(*) FILTER (WHERE c.consent_granted = FALSE) AS inactive_consent_count " +
                 "FROM ropa_entries r " +
                 "LEFT JOIN LATERAL (" +
-                "  SELECT cr.id, cr.is_active_consent, (dp->>'consent_granted')::boolean AS purpose_granted " +
+                "  SELECT DISTINCT ON (cr.user_id) cr.user_id, (dp->>'consent_granted')::boolean AS consent_granted " +
                 "  FROM consent_records cr, jsonb_array_elements(cr.data_point_consents) AS dp " +
-                "  WHERE cr.fiduciary_id = r.fiduciary_id AND dp->>'data_point_id' = r.source_purpose_id" +
+                "  WHERE cr.fiduciary_id = r.fiduciary_id AND dp->>'data_point_id' = r.source_purpose_id " +
+                "  ORDER BY cr.user_id, cr.created_at DESC" +
                 ") c ON TRUE " +
                 "WHERE r.fiduciary_id = ?");
 
@@ -607,17 +608,14 @@ public class Ropa implements Action {
     }
 
     private long getConsentCountForEntry(UUID entryId, boolean active) throws SQLException {
-        String sql = active
-            ? "SELECT COUNT(*) FROM ropa_entries r " +
-              "JOIN consent_records cr ON cr.fiduciary_id = r.fiduciary_id " +
-              "JOIN LATERAL jsonb_array_elements(cr.data_point_consents) AS dp " +
-              "  ON dp->>'data_point_id' = r.source_purpose_id " +
-              "WHERE r.id = ? AND cr.is_active_consent = TRUE AND (dp->>'consent_granted')::boolean = TRUE"
-            : "SELECT COUNT(*) FROM ropa_entries r " +
-              "JOIN consent_records cr ON cr.fiduciary_id = r.fiduciary_id " +
-              "JOIN LATERAL jsonb_array_elements(cr.data_point_consents) AS dp " +
-              "  ON dp->>'data_point_id' = r.source_purpose_id " +
-              "WHERE r.id = ? AND cr.is_active_consent = FALSE";
+        String sql = "SELECT COUNT(*) FROM ropa_entries r " +
+                "JOIN LATERAL (" +
+                "  SELECT DISTINCT ON (cr.user_id) cr.user_id, (dp->>'consent_granted')::boolean AS consent_granted " +
+                "  FROM consent_records cr, jsonb_array_elements(cr.data_point_consents) AS dp " +
+                "  WHERE cr.fiduciary_id = r.fiduciary_id AND dp->>'data_point_id' = r.source_purpose_id " +
+                "  ORDER BY cr.user_id, cr.created_at DESC" +
+                ") latest ON TRUE " +
+                "WHERE r.id = ? AND latest.consent_granted = " + (active ? "TRUE" : "FALSE");
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -638,13 +636,14 @@ public class Ropa implements Action {
                 "r.data_categories, r.data_subject_categories, r.retention_period_days, r.retention_start_event, " +
                 "r.processors, r.cross_border_transfers, r.security_measures, r.dpo_id, r.linked_policy_ids, " +
                 "r.source_purpose_id, r.status, r.version, r.created_at, r.updated_at, " +
-                "COUNT(c.id) FILTER (WHERE c.is_active_consent = TRUE AND c.purpose_granted = TRUE) AS consent_count, " +
-                "COUNT(c.id) FILTER (WHERE c.is_active_consent = FALSE) AS inactive_consent_count " +
+                "COUNT(*) FILTER (WHERE c.consent_granted = TRUE) AS consent_count, " +
+                "COUNT(*) FILTER (WHERE c.consent_granted = FALSE) AS inactive_consent_count " +
                 "FROM ropa_entries r " +
                 "LEFT JOIN LATERAL (" +
-                "  SELECT cr.id, cr.is_active_consent, (dp->>'consent_granted')::boolean AS purpose_granted " +
+                "  SELECT DISTINCT ON (cr.user_id) cr.user_id, (dp->>'consent_granted')::boolean AS consent_granted " +
                 "  FROM consent_records cr, jsonb_array_elements(cr.data_point_consents) AS dp " +
-                "  WHERE cr.fiduciary_id = r.fiduciary_id AND dp->>'data_point_id' = r.source_purpose_id" +
+                "  WHERE cr.fiduciary_id = r.fiduciary_id AND dp->>'data_point_id' = r.source_purpose_id " +
+                "  ORDER BY cr.user_id, cr.created_at DESC" +
                 ") c ON TRUE " +
                 "WHERE r.fiduciary_id = ? AND r.status = 'active' " +
                 "GROUP BY r.id " +
