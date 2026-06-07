@@ -1,0 +1,125 @@
+========================================================================
+ROPA REQUIREMENTS DOCUMENT
+Activity : stratus_visitor_v1
+Sector   : Datacentre / Colocation & Cloud Hosting
+Standard : Digital Personal Data Protection Act, 2023 (India)
+========================================================================
+
+DESCRIPTION
+------------------------------------------------------------------------
+ROPA requirements for Stratus Data Centers' visitor and client-contact
+consent policy. Covers visitor identity verification, biometric access
+control, CCTV surveillance, health & safety compliance, client account
+and billing management, support ticketing, and marketing communications
+across Stratus's Tier III/Tier IV colocation and cloud-hosting campuses.
+
+COMPLIANCE LIFECYCLE
+------------------------------------------------------------------------
+  1. DPO defined requirements in this template
+  2. Engineer configured policy (stratus_visitor_v1)
+  3. System auto-derived ROPA draft on publish
+  4. DPO verified draft against this template
+  5. DPO published (dpo_id auto-recorded)
+
+PROCESSING ACTIVITY
+------------------------------------------------------------------------
+  Activity Name : stratus_visitor_v1
+  Legal Basis   : MIXED
+  Purpose       :
+    - Visitor Identity Verification & Registration
+    - Biometric Access Control
+    - CCTV Surveillance & Incident Monitoring
+    - Health, Safety & Emergency Preparedness
+    - Client Account & Billing Management
+    - Support Ticketing & Service Communications
+    - Marketing Communications & Event Invitations
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_account_billing          Contractual Necessity
+  purpose_biometric_access         Legitimate Use (Critical Infrastructure Security)
+  purpose_cctv_surveillance        Legitimate Use (Facility Security)
+  purpose_health_safety            Statutory Obligation
+  purpose_marketing_comms          Consent
+  purpose_support_ticketing        Contractual Necessity
+  purpose_visitor_registration     Statutory Obligation
+
+DATA SUBJECT CATEGORIES
+------------------------------------------------------------------------
+  - visitor
+  - client_contact
+  - contractor
+
+DATA CATEGORIES  (21 total)
+------------------------------------------------------------------------
+  full_name                      govt_id_number                 photograph
+  company_name                   host_employee_name             vehicle_number
+  fingerprint_template           facial_scan                    access_card_id
+  zone_movement_logs             cctv_footage                   entry_exit_timestamp
+  emergency_contact_details      health_declaration             safety_induction_ack
+  contact_person_name            designation                    business_email
+  business_phone                 billing_address                gstin
+
+SECURITY MEASURES
+------------------------------------------------------------------------
+ISO/IEC 27001:2022-certified Information Security Management System;
+biometric data stored only as irreversible, encrypted templates (never
+raw fingerprint or facial images) per the "reasonable security
+safeguards" required under Section 8(5) of the DPDP Act; AES-256
+encryption at rest and TLS 1.3 in transit; CCTV footage stored on
+encrypted, access-logged NVRs with role-based retrieval; Tier III/Tier
+IV facility controls audited to Uptime Institute standards; quarterly
+access-control reviews and mandatory multi-factor authentication for
+all administrative systems.
+
+DATA PROCESSORS  (4 declared)
+------------------------------------------------------------------------
+  Name                     Country    Role                                Contact
+  ------------------------ ---------- ----------------------------------- ----------------------------
+  Matrix ComSec            IN         Biometric Access Control Integrator support@matrixcomsec.com
+  CP Plus Security Systems IN         CCTV Infrastructure & Monitoring    privacy@cpplusworld.com
+  Zoho Corporation         IN         CRM, Billing & Marketing Platform   privacy@zohocorp.com
+  Freshworks Inc.          US         Support Helpdesk & Ticketing        privacy@freshworks.com
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_visitor_registration     (Internal — Security Operations)
+  purpose_biometric_access         Matrix ComSec
+  purpose_cctv_surveillance        CP Plus Security Systems
+  purpose_health_safety            (Internal — Facilities & HR)
+  purpose_account_billing          Zoho Corporation
+  purpose_support_ticketing        Freshworks Inc.
+  purpose_marketing_comms          Zoho Corporation
+
+CROSS-BORDER TRANSFERS
+------------------------------------------------------------------------
+  Destination    Safeguard                                    Processor
+  -------------- -------------------------------------------- ----------------------------
+  US             Standard Contractual Clauses (SCC)           Freshworks Inc.
+
+RETENTION BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_visitor_registration     1 YEARS         COLLECTION
+  purpose_biometric_access         6 MONTHS        CESSATION
+  purpose_cctv_surveillance        90 DAYS         COLLECTION
+  purpose_health_safety            3 YEARS         CESSATION
+  purpose_account_billing          8 YEARS         CESSATION
+  purpose_support_ticketing        3 YEARS         CESSATION
+  purpose_marketing_comms          2 YEARS         COLLECTION
+
+LINKED CONSENT POLICY
+------------------------------------------------------------------------
+  - stratus_visitor_v1
+
+========================================================================
+NOTE: This document records the DPO's ROPA requirements before system
+configuration. Once the corresponding consent policy is published, the
+system will auto-derive a ROPA draft. The DPO should verify the draft
+against this document before publishing the ROPA entry.
+========================================================================
