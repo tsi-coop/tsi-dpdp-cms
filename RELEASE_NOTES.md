@@ -1,5 +1,11 @@
 # Release Notes
 
+### v0.4.4
+**User Rights Management**
+- Replaced the separate Consent Collector, Consent Verifier, and User Dashboard tour entries with a single "User Rights Management" video guide for the Authenticated Principal, covering notice & capture, purpose-limited verification, and exercise of rights: view artifacts, withdraw, and grievances.
+
+---
+
 ### v0.4.3
 **Policy Publish - Two-Step Wizard**
 - **Single popup, no page hops:** Creating and activating a policy is now a two-step wizard entirely within the policy popup. Step 1 uploads the JSON and sets the policy ID; clicking "Next →" derives ROPA entries in the background and transitions directly to Step 2, with no separate Publish button and no redirect to the ROPA screen.
