@@ -16,10 +16,12 @@ public class JWTUtil {
 
     private static final long EXPIRATION_TIME = 864000000L;          // 10 days — admin sessions
     private static final long SYNC_TOKEN_EXPIRY = 31536000000L;      // 365 days — wallet sync tokens
+    private static final long PRINCIPAL_TOKEN_EXPIRY = 86400000L;    // 24 hours — data principal portal sessions
     private static final Key SECRET_KEY = loadSecretKey();
 
-    private static final String CLAIM_TYPE  = "type";
-    private static final String TYPE_SYNC   = "SYNC";
+    private static final String CLAIM_TYPE       = "type";
+    private static final String TYPE_SYNC        = "SYNC";
+    private static final String TYPE_PRINCIPAL   = "PRINCIPAL";
 
     private static Key loadSecretKey() {
         String secret = System.getenv("JWT_SECRET");
@@ -60,6 +62,36 @@ public class JWTUtil {
         return createToken(claims, userId, SYNC_TOKEN_EXPIRY);
     }
 
+    /**
+     * Issues a 24-hour portal session token for a data principal.
+     * Encodes userId as subject and fiduciaryId as the "fid" claim.
+     * type=PRINCIPAL prevents it from being accepted on admin API paths.
+     */
+    public static String generatePrincipalToken(String userId, String fiduciaryId) {
+        Map<String, String> claims = new HashMap<>();
+        claims.put(CLAIM_TYPE, TYPE_PRINCIPAL);
+        claims.put("fid", fiduciaryId);
+        return createToken(claims, userId, PRINCIPAL_TOKEN_EXPIRY);
+    }
+
+    /**
+     * Validates a principal portal token.
+     * Returns the claims on success, or null when invalid/expired/revoked/wrong type.
+     */
+    public static Claims getPrincipalClaims(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(SECRET_KEY).build()
+                    .parseClaimsJws(token).getBody();
+            if (!TYPE_PRINCIPAL.equals(claims.get(CLAIM_TYPE))) return null;
+            String jti = claims.getId();
+            if (jti != null && TokenBlocklist.isRevoked(jti)) return null;
+            return claims;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private static String createToken(Map<String, String> claims, String subject, long expiryMs) {
         return Jwts.builder()
                 .setClaims(claims)
@@ -82,8 +114,9 @@ public class JWTUtil {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(SECRET_KEY).build()
                     .parseClaimsJws(token).getBody();
-            // Reject wallet sync tokens from admin auth paths
-            if (TYPE_SYNC.equals(claims.get(CLAIM_TYPE))) return false;
+            // Reject scoped tokens (SYNC, PRINCIPAL) from admin auth paths
+            String tokenType = (String) claims.get(CLAIM_TYPE);
+            if (TYPE_SYNC.equals(tokenType) || TYPE_PRINCIPAL.equals(tokenType)) return false;
             String jti = claims.getId();
             if (jti != null && TokenBlocklist.isRevoked(jti)) return false;
             return true;

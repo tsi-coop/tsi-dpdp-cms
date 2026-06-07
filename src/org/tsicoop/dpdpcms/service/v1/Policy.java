@@ -68,6 +68,15 @@ public class Policy implements Action {
             UUID fiduciaryId = resolveFiduciaryId(req);
 
             switch (func.toLowerCase()) {
+                case "list_active_policies":
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_active_policies'.", req.getRequestURI());
+                        return;
+                    }
+                    outputArray = listActivePoliciesFromDb(fiduciaryId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    break;
+
                 case "list_policies":
                     String statusFilter = (String) input.get("status");
                     String search = (String) input.get("search");
@@ -448,6 +457,56 @@ public class Policy implements Action {
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
+    }
+
+    /**
+     * Returns all ACTIVE policies for a fiduciary (title + metadata only, no policy_content body).
+     * Used by the data principal portal to build the policy selector.
+     */
+    private JSONArray listActivePoliciesFromDb(UUID fiduciaryId) throws SQLException {
+        JSONArray result = new JSONArray();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        String sql = "SELECT id, version, jurisdiction, effective_date, policy_content " +
+                "FROM consent_policies WHERE fiduciary_id = ? AND status = 'ACTIVE' AND effective_date <= NOW() " +
+                "ORDER BY effective_date DESC";
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                JSONObject entry = new JSONObject();
+                entry.put("policy_id", rs.getString("id"));
+                entry.put("version", rs.getString("version"));
+                entry.put("jurisdiction", rs.getString("jurisdiction"));
+                entry.put("effective_date", rs.getTimestamp("effective_date").toInstant().toString());
+                // Extract display title from the multilingual policy_content JSONB
+                String title = extractPolicyTitle(rs.getString("policy_content"));
+                entry.put("title", title);
+                result.add(entry);
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return result;
+    }
+
+    /**
+     * Extracts the policy title from the multilingual policy_content JSONB string.
+     * Prefers the "en" language entry; falls back to the first available language.
+     */
+    private String extractPolicyTitle(String policyContentJson) {
+        try {
+            JSONObject map = (JSONObject) new org.json.simple.parser.JSONParser().parse(policyContentJson);
+            JSONObject langContent = map.containsKey("en") ? (JSONObject) map.get("en") : (JSONObject) map.values().iterator().next();
+            if (langContent != null && langContent.containsKey("title")) {
+                return (String) langContent.get("title");
+            }
+        } catch (Exception ignored) {}
+        return "Policy";
     }
 
     /**

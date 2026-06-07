@@ -72,9 +72,28 @@ public class Grievance implements Action {
 
             String userId = (String) input.get("user_id");
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = input.get("fiduciary_id") != null ? (String) input.get("fiduciary_id") : new Fiduciary().getFiduciaryId(UUID.fromString(apiKey != null ? apiKey : "00000000-0000-0000-0000-000000000000"), apiSecret);
+            String fiduciaryIdStr = input.get("fiduciary_id") != null ? (String) input.get("fiduciary_id") : null;
+            // When called via PRINCIPAL JWT, fiduciary_id is stamped on request attributes by InterceptingFilter
+            if (fiduciaryIdStr == null) {
+                Object fidAttr = req.getAttribute("fiduciary_id");
+                if (fidAttr != null) fiduciaryIdStr = fidAttr.toString();
+            }
+            // Fall back to API key lookup when fiduciary_id is still unresolved
+            if (fiduciaryIdStr == null) {
+                fiduciaryIdStr = new Fiduciary().getFiduciaryId(UUID.fromString(apiKey != null ? apiKey : "00000000-0000-0000-0000-000000000000"), apiSecret);
+            }
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 fiduciaryId = UUID.fromString(fiduciaryIdStr);
+            }
+
+            // Security guard: when authenticated via PRINCIPAL JWT, enforce that user_id matches the token subject
+            Boolean viaPrincipalJwt = (Boolean) req.getAttribute("auth_via_principal_jwt");
+            if (Boolean.TRUE.equals(viaPrincipalJwt) && userId != null) {
+                String principalUserId = (String) req.getAttribute("principal_user_id");
+                if (!userId.equals(principalUserId)) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "User ID mismatch: token does not authorize access to the requested principal.", req.getRequestURI());
+                    return;
+                }
             }
 
             switch (func.toLowerCase()) {

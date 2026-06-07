@@ -16,8 +16,13 @@ public class InterceptingFilter implements Filter {
     private static final String URL_DELIMITER = "/";
     private static final String ADMIN_URI_PATH = "admin";
     private static final String CLIENT_URI_PATH = "client";
-
     private static final String BOOTSTRAP_URI_PATH = "bootstrap";
+    private static final String PUBLIC_URI_PATH = "public";
+
+    private static final Set<String> PUBLIC_ALLOWED_FUNCS = new HashSet<>(Arrays.asList(
+            "principal_login",
+            "list_active_fiduciaries"
+    ));
     private static final String API_PREFIX = "/api/v1/"; // Assuming API paths are /api/v1/user, /api/v1/policy etc.
 
     // Whitelist of _func values allowed for client API calls
@@ -39,8 +44,8 @@ public class InterceptingFilter implements Filter {
             "update_purge_status",
             "list_notifications",
             "mark_notification_read",
-            "record_parent_consent"
-            // Add other client-facing functions as needed
+            "record_parent_consent",
+            "list_active_policies"
     ));
 
     private static final Set<String> ADMIN_NOAUTH_FUNCS = new HashSet<>(Arrays.asList(
@@ -78,6 +83,7 @@ public class InterceptingFilter implements Filter {
         CLIENT_FUNC_SCOPES.put("get_policy", SCOPE_READ);
         CLIENT_FUNC_SCOPES.put("get_active_policy", SCOPE_READ);
         CLIENT_FUNC_SCOPES.put("list_notifications", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("list_active_policies", SCOPE_READ);
 
         // --- PURGE SCOPE ---
         CLIENT_FUNC_SCOPES.put("list_purge_requests", SCOPE_PURGE);
@@ -190,11 +196,14 @@ public class InterceptingFilter implements Filter {
                     serviceName = pathSegments[1]; // e.g., /api/v1/admin/policy -> serviceName "policy"
                 }
             } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(pathSegments[0])){
-                // If it's directly /api/v1/user or /api/v1/policy, assume it's an admin endpoint by default
-                // Or, you could make it explicitly invalid if not prefixed with /admin or /client
-                apiCategory = BOOTSTRAP_URI_PATH; // Default to admin if no explicit category
+                apiCategory = BOOTSTRAP_URI_PATH;
                 if (pathSegments.length >= 2) {
-                    serviceName = pathSegments[1]; // e.g., /api/v1/admin/policy -> serviceName "policy"
+                    serviceName = pathSegments[1];
+                }
+            } else if (PUBLIC_URI_PATH.equalsIgnoreCase(pathSegments[0])){
+                apiCategory = PUBLIC_URI_PATH;
+                if (pathSegments.length >= 2) {
+                    serviceName = pathSegments[1];
                 }
             }else{
                 apiCategory = ADMIN_URI_PATH; // Default to admin if no explicit category
@@ -260,10 +269,24 @@ public class InterceptingFilter implements Filter {
                 }
 
                 String requiredScope = CLIENT_FUNC_SCOPES.get(func.toLowerCase());
-                // B. Authenticate Credentials (API Key/Secret)
-                if (InputProcessor.processClientHeader(req, res)) {
-                    // RBAC Verification
-                    // InputProcessor.hasPermission checks if the API Key/Token possesses the required scope (READ/WRITE/PURGE)
+
+                // Try PRINCIPAL Bearer JWT first (data principal self-service portal)
+                String authHeader = req.getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    io.jsonwebtoken.Claims pc = JWTUtil.getPrincipalClaims(authHeader.substring(7));
+                    if (pc != null) {
+                        if (SCOPE_PURGE.equals(requiredScope)) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "PURGE operations are not permitted via Principal tokens.", uri);
+                            return;
+                        }
+                        req.setAttribute("fiduciary_id", pc.get("fid"));
+                        req.setAttribute("principal_user_id", pc.getSubject());
+                        req.setAttribute("auth_via_principal_jwt", Boolean.TRUE);
+                        authenticated = true;
+                    }
+                }
+                // Fall back to API Key/Secret if no valid principal token
+                if (!authenticated && InputProcessor.processClientHeader(req, res)) {
                     if (InputProcessor.hasPermission(req, requiredScope)) {
                         authenticated = true;
                     }
@@ -273,11 +296,16 @@ public class InterceptingFilter implements Filter {
                     authenticated = true;
                 } else {
                     authenticated = InputProcessor.processAdminHeader(req, res);
-                    //authenticated = true; // go easy for now
                 }
-            }else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(apiCategory)){
+            } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(apiCategory)){
                 authenticated = true;
-            }else {
+            } else if (PUBLIC_URI_PATH.equalsIgnoreCase(apiCategory)) {
+                if (!PUBLIC_ALLOWED_FUNCS.contains(func.toLowerCase())) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Function '" + func + "' is not allowed on the public API.", uri);
+                    return;
+                }
+                authenticated = true;
+            } else {
                 // If no category specified, or unknown category, deny by default
                 errorMessage = "API category not specified or recognized. Access denied.";
             }

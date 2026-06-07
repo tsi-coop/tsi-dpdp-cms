@@ -86,12 +86,31 @@ public class Consent implements Action {
             // Extract common parameters for consent record operations
             String userId = (String) input.get("user_id"); // Data Principal's ID
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Fiduciary().getFiduciaryId(UUID.fromString(apiKey != null ? apiKey : "00000000-0000-0000-0000-000000000000"),apiSecret);
+            String fiduciaryIdStr = input.get("fiduciary_id") != null ? (String) input.get("fiduciary_id") : null;
+            // When called via PRINCIPAL JWT, fiduciary_id is stamped on request attributes by InterceptingFilter
+            if (fiduciaryIdStr == null) {
+                Object fidAttr = req.getAttribute("fiduciary_id");
+                if (fidAttr != null) fiduciaryIdStr = fidAttr.toString();
+            }
+            // Fall back to API key lookup when fiduciary_id is still unresolved
+            if (fiduciaryIdStr == null) {
+                fiduciaryIdStr = new Fiduciary().getFiduciaryId(UUID.fromString(apiKey != null ? apiKey : "00000000-0000-0000-0000-000000000000"), apiSecret);
+            }
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 try {
                     fiduciaryId = UUID.fromString(fiduciaryIdStr);
                 } catch (IllegalArgumentException e) {
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid 'fiduciary_id' format.", req.getRequestURI());
+                    return;
+                }
+            }
+
+            // Security guard: when authenticated via PRINCIPAL JWT, enforce that user_id matches the token subject
+            Boolean viaPrincipalJwt = (Boolean) req.getAttribute("auth_via_principal_jwt");
+            if (Boolean.TRUE.equals(viaPrincipalJwt) && userId != null) {
+                String principalUserId = (String) req.getAttribute("principal_user_id");
+                if (!userId.equals(principalUserId)) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "User ID mismatch: token does not authorize access to the requested principal.", req.getRequestURI());
                     return;
                 }
             }
@@ -147,7 +166,8 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'user_id' and 'fiduciary_id' are required for 'get_active_consent'.", req.getRequestURI());
                         return;
                     }
-                    Optional<JSONObject> activeConsentOptional = getActiveConsentFromDb(userId, fiduciaryId);
+                    String activeConsentPolicyId = (String) input.get("policy_id"); // optional — scope to a specific policy
+                    Optional<JSONObject> activeConsentOptional = getActiveConsentFromDb(userId, fiduciaryId, activeConsentPolicyId);
                     if (activeConsentOptional.isPresent()) {
                         output = activeConsentOptional.get();
                         OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
@@ -213,30 +233,31 @@ public class Consent implements Action {
                     break;
 
                 case "withdraw_consent":
-                    // --- Extract Withdrawal Parameters ---
                     userId = (String) input.get("user_id");
                     reason = (String) input.get("reason");
+                    String withdrawPolicyId = (String) input.get("policy_id"); // optional — scope to a specific policy
+                    JSONArray withdrawPurposeIds = (JSONArray) input.get("purpose_ids"); // optional — scope to specific purposes
 
                     if (userId == null || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
                         return;
                     }
 
-                    result = withdrawConsent(userId, fiduciaryId, serviceType, serviceId, false);
+                    result = withdrawConsent(userId, fiduciaryId, withdrawPolicyId, serviceType, serviceId, false, withdrawPurposeIds);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
-
                     break;
+
                 case "erasure_request":
-                    // --- Extract Withdrawal Parameters ---
                     userId = (String) input.get("user_id");
                     reason = (String) input.get("reason");
+                    String erasurePolicyId = (String) input.get("policy_id"); // optional — scope to a specific policy
 
                     if (userId == null || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
                         return;
                     }
 
-                    result = withdrawConsent(userId, fiduciaryId, serviceType, serviceId, true);
+                    result = withdrawConsent(userId, fiduciaryId, erasurePolicyId, serviceType, serviceId, true, null);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
                     break;
                 default:
@@ -463,7 +484,8 @@ public class Consent implements Action {
      * @return JSONObject indicating success.
      * @throws SQLException
      */
-    private JSONObject withdrawConsent(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, boolean erasure) throws SQLException {
+    private JSONObject withdrawConsent(String userId, UUID fiduciaryId, String scopedPolicyId,
+                                       String serviceType, UUID serviceId, boolean erasure, JSONArray purposeIds) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -474,10 +496,15 @@ public class Consent implements Action {
         if(erasure)
             action = Constants.ACTION_ERASURE_REQUEST;
 
-        // --- 1. Find the current ACTIVE record and Policy context ---
-        // This query also ensures the user exists and has a record.
-        String sqlSelectActive = "SELECT id, policy_id, policy_version, data_point_consents FROM consent_records " +
-                "WHERE user_id = ? AND fiduciary_id = ? ORDER BY timestamp DESC LIMIT 1";
+        // --- 1. Find the most-recent consent record, optionally scoped to a specific policy ---
+        String sqlSelectActive;
+        if (scopedPolicyId != null && !scopedPolicyId.isEmpty()) {
+            sqlSelectActive = "SELECT id, policy_id, policy_version, data_point_consents FROM consent_records " +
+                    "WHERE user_id = ? AND fiduciary_id = ? AND policy_id = ? ORDER BY timestamp DESC LIMIT 1";
+        } else {
+            sqlSelectActive = "SELECT id, policy_id, policy_version, data_point_consents FROM consent_records " +
+                    "WHERE user_id = ? AND fiduciary_id = ? ORDER BY timestamp DESC LIMIT 1";
+        }
 
         UUID oldRecordId = null;
         JSONArray currentConsents = null;
@@ -492,6 +519,9 @@ public class Consent implements Action {
             pstmt = conn.prepareStatement(sqlSelectActive);
             pstmt.setString(1, userId);
             pstmt.setObject(2, fiduciaryId);
+            if (scopedPolicyId != null && !scopedPolicyId.isEmpty()) {
+                pstmt.setString(3, scopedPolicyId);
+            }
             rs = pstmt.executeQuery();
 
             if (!rs.next()) {
@@ -514,19 +544,51 @@ public class Consent implements Action {
 
             // --- 3. Determine New (Denied) Consents ---
 
-            // Check if policy exists (important for provenance)
+            boolean partialWithdrawal = !erasure && purposeIds != null && !purposeIds.isEmpty();
+            boolean newIsActive;
+
             JSONObject policy = getPolicy(policyId, policyVersion, fiduciaryId);
-            if (policy != null) {
-                // Determine consent expiry
-                currentConsents = CESUtil.appendConsentExpiry(          policy,
-                                                                        currentConsents,
-                                                                        action);
+
+            if (partialWithdrawal) {
+                // Partial withdrawal: only withdraw the specified purposes.
+                // appendConsentExpiry forces consent_granted=false on every entry when called with
+                // ACTION_CONSENT_WITHDRAWN, so we must split the array, process each half with the
+                // correct action, then merge — otherwise all purposes get wiped.
+                java.util.Set<String> toWithdraw = new java.util.HashSet<>();
+                for (Object pid : purposeIds) toWithdraw.add(pid.toString());
+
+                JSONArray withdrawGroup = new JSONArray();
+                JSONArray keepGroup    = new JSONArray();
+                for (Object obj : currentConsents) {
+                    JSONObject dp = (JSONObject) obj;
+                    if (toWithdraw.contains((String) dp.get("data_point_id"))) {
+                        withdrawGroup.add(dp);
+                    } else {
+                        keepGroup.add(dp);
+                    }
+                }
+
+                if (policy != null) {
+                    withdrawGroup = CESUtil.appendConsentExpiry(policy, withdrawGroup, action);
+                    keepGroup     = CESUtil.appendConsentExpiry(policy, keepGroup, Constants.ACTION_CONSENT_GIVEN);
+                }
+
+                currentConsents = new JSONArray();
+                currentConsents.addAll(withdrawGroup);
+                currentConsents.addAll(keepGroup);
+                newIsActive = true;
+            } else {
+                // Full withdrawal / erasure: all purposes denied, record becomes inactive.
+                if (policy != null) {
+                    currentConsents = CESUtil.appendConsentExpiry(policy, currentConsents, action);
+                }
+                newIsActive = false;
             }
 
             // --- 4. Insert New WITHDRAWN Record (Immutability/Provenance) ---
             UUID ropaEntryId = resolveRopaEntryId(conn, fiduciaryId, policyId);
             String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at,language_selected,ip_address,ropa_entry_id) " +
-                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', ?, ?, ?::jsonb, FALSE, NOW(), 'en', '[0:0:0:0:0:0:0:1]', ?) RETURNING id";
+                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', ?, ?, ?::jsonb, ?, NOW(), 'en', '[0:0:0:0:0:0:0:1]', ?) RETURNING id";
 
             pstmt.close();
             pstmt = conn.prepareStatement(sqlInsertNew, Statement.RETURN_GENERATED_KEYS);
@@ -537,7 +599,8 @@ public class Consent implements Action {
             pstmt.setString(5, action);
             pstmt.setString(6, action);
             pstmt.setString(7, currentConsents.toJSONString());
-            pstmt.setObject(8, ropaEntryId);
+            pstmt.setBoolean(8, newIsActive);
+            pstmt.setObject(9, ropaEntryId);
 
             if (pstmt.executeUpdate() == 0) {
                 throw new SQLException("Creating withdrawal record failed.");
@@ -748,17 +811,23 @@ public class Consent implements Action {
         }
     }
 
-    private Optional<JSONObject> getActiveConsentFromDb(String userId, UUID fiduciaryId) throws SQLException {
+    private Optional<JSONObject> getActiveConsentFromDb(String userId, UUID fiduciaryId, String policyId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
         String sql = "SELECT id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent FROM consent_records WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
+        if (policyId != null && !policyId.isEmpty()) {
+            sql += " AND policy_id = ?";
+        }
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, userId);
             pstmt.setObject(2, fiduciaryId);
+            if (policyId != null && !policyId.isEmpty()) {
+                pstmt.setString(3, policyId);
+            }
             rs = pstmt.executeQuery();
             if (rs.next()) {
                 JSONObject consent = new JSONObject();

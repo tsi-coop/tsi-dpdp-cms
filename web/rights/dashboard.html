@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>My Privacy Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --tsi-primary: #006A67; --tsi-dark: #0f172a; }
+        body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; background-color: #f4fbf9; color: #333; }
+        .container { padding: 24px 20px; max-width: 1000px; margin: 0 auto; }
+
+        /* Header */
+        .portal-header { background: white; border-bottom: 1px solid #e2e8f0; padding: 0 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .header-inner { max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 60px; }
+
+        /* Tabs */
+        .tab-bar { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+        .tab-btn { padding: 14px 22px; font-weight: 600; font-size: 0.875rem; color: #64748b; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; cursor: pointer; transition: all 0.2s; }
+        .tab-btn:hover { color: var(--tsi-primary); background: #f0fdfa; }
+        .tab-btn.active { color: var(--tsi-primary); border-bottom-color: var(--tsi-primary); background: white; }
+
+        /* Cards */
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .info-card { background: white; padding: 20px 24px; border-radius: 12px; border-left: 5px solid var(--tsi-primary); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        /* Tables */
+        .dash-table { width: 100%; border-collapse: collapse; }
+        .dash-table th { background: #f8fafc; text-transform: uppercase; font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .dash-table td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
+        .dash-table tr:hover td { background: #f8fafc; }
+
+        /* Buttons */
+        .btn-primary { background-color: var(--tsi-primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.875rem; transition: all 0.2s; }
+        .btn-primary:hover { background-color: #004F4C; transform: translateY(-1px); }
+        .btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; }
+        .btn-danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; transition: all 0.2s; }
+        .btn-danger:hover { background: #b91c1c; color: white; }
+        .btn-warn { background: #fefce8; color: #a16207; border: 1px solid #fde68a; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; transition: all 0.2s; }
+        .btn-warn:hover { background: #a16207; color: white; }
+        .btn-link { background: none; border: none; color: var(--tsi-primary); font-weight: 700; font-size: 0.8rem; cursor: pointer; text-decoration: underline; padding: 0; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 32px; border-radius: 12px; max-width: 620px; width: 95%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); }
+
+        /* Toggle switches */
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; background: #f8fafc; }
+        .toggle-row.mandatory { opacity: 0.7; }
+        .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; inset: 0; background-color: #cbd5e1; border-radius: 24px; cursor: pointer; transition: .3s; }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
+        input:checked + .toggle-slider { background-color: var(--tsi-primary); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+        input:disabled + .toggle-slider { cursor: not-allowed; }
+
+        /* Purpose details */
+        .purpose-desc { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+
+        /* Success banner */
+        .success-banner { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; padding: 12px 16px; border-radius: 8px; font-weight: 600; font-size: 0.875rem; margin-bottom: 20px; display: none; }
+
+        /* Spinner */
+        .spinner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: #64748b; }
+        .spin-ring { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--tsi-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Self-verify section */
+        .verify-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-top: 28px; }
+        .verify-result { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.875rem; padding: 8px 16px; border-radius: 8px; margin-top: 12px; }
+        .verify-granted { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+        .verify-denied { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+        /* Grievance form */
+        .grievance-form { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; margin-top: 16px; }
+        .grievance-form label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #475569; margin-bottom: 6px; letter-spacing: 0.05em; }
+        .grievance-form input, .grievance-form select, .grievance-form textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem; box-sizing: border-box; margin-bottom: 16px; font-family: inherit; outline: none; }
+        .grievance-form input:focus, .grievance-form select:focus, .grievance-form textarea:focus { border-color: var(--tsi-primary); }
+
+        /* Profile strip */
+        .profile-strip { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<!-- Sticky Header -->
+<div class="portal-header">
+    <div class="header-inner">
+        <div style="display:flex;align-items:center;gap:16px;">
+            <a href="https://tsicoop.org" target="_blank">
+                <img src="https://tsicoop.org/logo.svg" alt="TSI" style="height:36px;">
+            </a>
+            <div>
+                <div id="header-fiduciary" style="font-size:0.8rem;font-weight:700;color:var(--tsi-primary);text-transform:uppercase;letter-spacing:0.05em;"></div>
+                <div id="header-user" style="font-size:0.75rem;color:#64748b;"></div>
+            </div>
+        </div>
+        <button onclick="handleLogout()" style="font-size:0.8rem;font-weight:700;color:#b91c1c;background:none;border:none;cursor:pointer;text-decoration:underline;">Logout</button>
+    </div>
+</div>
+
+<!-- Main content -->
+<div class="container">
+    <h1 style="color:var(--tsi-dark);font-size:1.75rem;font-weight:800;margin:20px 0 6px;">My Privacy Dashboard</h1>
+    <p style="color:#64748b;font-size:0.875rem;margin:0 0 16px;">Manage your consent preferences and data rights.</p>
+
+    <!-- Privacy Consent Card / QR strip -->
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+            <div style="width:42px;height:42px;background:#f0fdfa;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--tsi-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div style="min-width:0;">
+                <div id="pca-user-id" style="font-size:0.9rem;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="pca-fiduciary" style="font-size:0.75rem;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div style="margin-top:8px;">
+                    <span style="font-size:0.65rem;padding:2px 8px;border-radius:9999px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;">Active Session</span>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+            <div id="qrcode-container" style="padding:6px;background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);"></div>
+            <button onclick="downloadPCA()" style="background:none;border:none;font-size:0.65rem;font-weight:800;color:var(--tsi-primary);text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download PCA
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab panel -->
+    <div class="card overflow-hidden">
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="setTab('consent')">Manage Consent</button>
+            <button class="tab-btn"        onclick="setTab('history')">Consent History</button>
+            <button class="tab-btn"        onclick="setTab('grievance')">Requests & Grievances</button>
+        </div>
+        <div id="tab-content" style="padding: 28px; min-height: 400px;">
+            <div class="spinner"><div class="spin-ring"></div><p>Loading...</p></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Consent Record Details -->
+<div id="detail-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px;">
+            <div>
+                <h2 style="margin:0;font-size:1.15rem;font-weight:700;color:var(--tsi-dark);">Consent Record Details</h2>
+                <p id="modal-record-ref" style="margin:4px 0 0;font-size:0.7rem;font-family:monospace;color:#94a3b8;"></p>
+            </div>
+            <button onclick="document.getElementById('detail-modal').style.display='none'" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#94a3b8;">&times;</button>
+        </div>
+        <h3 style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin-bottom:12px;">Purpose Allowances</h3>
+        <div id="modal-purposes"></div>
+        <h3 style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin:20px 0 12px;">Compliance Context</h3>
+        <div id="modal-provenance" style="background:#f8fafc;border-radius:8px;padding:16px;font-size:0.8rem;color:#475569;line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- Withdraw-consent purpose-selection modal -->
+<div id="withdraw-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:500px;">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
+            <div>
+                <h2 style="margin:0;font-size:1.1rem;font-weight:700;color:var(--tsi-dark);">Withdraw Consent</h2>
+                <p id="withdraw-modal-title" style="margin:4px 0 0;font-size:0.8rem;color:#64748b;"></p>
+            </div>
+            <button id="withdraw-modal-close" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#94a3b8;">&times;</button>
+        </div>
+        <p style="margin:0 0 6px;font-size:0.8rem;color:#64748b;">Select the purposes you wish to withdraw consent for.</p>
+        <p style="margin:0 0 14px;font-size:0.75rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 10px;">Withdrawing mandatory purposes will restrict or terminate your access to the service.</p>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+            <button id="withdraw-select-all" style="background:none;border:none;font-size:0.75rem;color:var(--tsi-primary);font-weight:700;cursor:pointer;text-decoration:underline;">Deselect All</button>
+        </div>
+        <div id="withdraw-purpose-list" style="max-height:340px;overflow-y:auto;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+            <button id="withdraw-cancel-btn" style="background:#f8fafc;border:1px solid #e2e8f0;color:#475569;padding:9px 18px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.875rem;">Cancel</button>
+            <button id="withdraw-submit-btn" class="btn-warn" style="padding:9px 18px;font-size:0.875rem;">Withdraw Selected</button>
+        </div>
+    </div>
+</div>
+
+<script src="portal.js"></script>
+<script>
+    // ── Session bootstrap ───────────────────────────────────────────────
+    let SESSION = null;
+
+    function handleLogout() {
+        clearSession();
+        window.location.href = 'index.html';
+    }
+
+    // ── Tab management ──────────────────────────────────────────────────
+    const tabs = ['consent', 'history', 'grievance'];
+    let activeTab = 'consent';
+
+    function setTab(tab) {
+        activeTab = tab;
+        document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+            btn.classList.toggle('active', tabs[i] === tab);
+        });
+        loadTab(tab);
+    }
+
+    async function loadTab(tab) {
+        const area = document.getElementById('tab-content');
+        area.innerHTML = '<div class="spinner"><div class="spin-ring"></div><p>Loading...</p></div>';
+        if (tab === 'consent')   await renderConsentTab(area);
+        if (tab === 'history')   await renderHistoryTab(area);
+        if (tab === 'grievance') await renderGrievanceTab(area);
+    }
+
+    // ── Tab 1: Manage Consent ───────────────────────────────────────────
+    let currentPolicy = null;
+    let currentLangContent = null;
+    let currentLang = 'en';
+    let activePolicyEntry = null; // the { policy_id, title, ... } currently shown
+
+    async function renderConsentTab(area) {
+        const policies = SESSION.policies || [];
+        if (policies.length === 0) {
+            area.innerHTML = '<p style="color:#64748b;text-align:center;padding:40px;">No active consent policy found for this organisation.</p>';
+            return;
+        }
+
+        // Default to the first policy; preserve selection if already set
+        if (!activePolicyEntry || !policies.find(p => p.policy_id === activePolicyEntry.policy_id)) {
+            activePolicyEntry = policies[0];
+        }
+
+        // Render policy selector pills (only when there are multiple policies)
+        let selectorHtml = '';
+        if (policies.length > 1) {
+            const pills = policies.map(p => {
+                const isActive = p.policy_id === activePolicyEntry.policy_id;
+                return `<button onclick="selectPolicy('${esc(p.policy_id)}')" style="padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;border:2px solid ${isActive ? 'var(--tsi-primary)' : '#e2e8f0'};background:${isActive ? 'var(--tsi-primary)' : 'white'};color:${isActive ? 'white' : '#475569'};transition:all 0.2s;">${esc(p.title || p.policy_id)}</button>`;
+            }).join('');
+            selectorHtml = `
+                <div style="margin-bottom:20px;">
+                    <p style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin:0 0 8px;">Select Policy</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">${pills}</div>
+                </div>`;
+        }
+
+        area.innerHTML = selectorHtml + '<div id="preference-center-body"><div class="spinner"><div class="spin-ring"></div><p>Loading policy...</p></div></div>';
+
+        await loadPolicyPreferenceCenter(activePolicyEntry.policy_id);
+    }
+
+    async function selectPolicy(policyId) {
+        const policies = SESSION.policies || [];
+        activePolicyEntry = policies.find(p => p.policy_id === policyId) || activePolicyEntry;
+        // Re-render the full tab so selector pills update
+        await renderConsentTab(document.getElementById('tab-content'));
+    }
+
+    async function loadPolicyPreferenceCenter(policyId) {
+        const centerArea = document.getElementById('preference-center-body');
+        if (!centerArea) return;
+
+        const [policy, activeConsent] = await Promise.all([
+            apiCall('/api/v1/client/policy', 'get_policy', { policy_id: policyId }),
+            apiCall('/api/v1/client/consent', 'get_active_consent', {
+                user_id: SESSION.userId,
+                fiduciary_id: SESSION.fiduciaryId,
+                policy_id: policyId
+            })
+        ]);
+
+        if (!policy || !policy.policy_content) {
+            centerArea.innerHTML = '<p style="color:#64748b;text-align:center;padding:40px;">Policy content unavailable. Please contact the organisation.</p>';
+            return;
+        }
+
+        currentPolicy = policy;
+        const policyMap = resolvePolicyContent(policy);
+        currentLang = getPreferredLanguage(policyMap);
+        currentLangContent = policyMap[currentLang];
+        document.documentElement.lang = currentLang;
+
+        let existingPrefs = {};
+        if (activeConsent && activeConsent.data_point_consents) {
+            const dpc = activeConsent.data_point_consents;
+            if (Array.isArray(dpc)) {
+                dpc.forEach(p => { existingPrefs[p.data_point_id] = !!p.consent_granted; });
+            } else if (typeof dpc === 'object') {
+                Object.keys(dpc).forEach(k => { existingPrefs[k] = !!(dpc[k].consent_granted); });
+            }
+        }
+
+        renderPreferenceCenter(centerArea, policyMap, existingPrefs);
+    }
+
+    function renderPreferenceCenter(area, policyMap, existingPrefs) {
+        const langs = Object.keys(policyMap);
+        const lc = currentLangContent;
+        if (!lc) { area.innerHTML = '<p style="color:#64748b;text-align:center;padding:40px;">Policy content unavailable.</p>'; return; }
+
+        let purposeHtml = (lc.data_processing_purposes || []).map(p => {
+            const checked = existingPrefs[p.id] !== undefined ? existingPrefs[p.id] : p.is_mandatory_for_service;
+            const disabled = p.is_mandatory_for_service ? 'disabled' : '';
+            return `
+            <div class="toggle-row ${p.is_mandatory_for_service ? 'mandatory' : ''}">
+                <div style="flex:1;padding-right:16px;">
+                    <div style="font-weight:700;font-size:0.875rem;color:#1e293b;">${esc(p.name)}</div>
+                    <div class="purpose-desc">${esc(p.description || '')}</div>
+                    ${p.is_mandatory_for_service ? '<span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;color:#0891b2;">Required for service</span>' : ''}
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-${esc(p.id)}" ${checked ? 'checked' : ''} ${disabled}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>`;
+        }).join('');
+
+        let langOptions = langs.map(l => `<option value="${l}" ${l === currentLang ? 'selected' : ''}>${l.toUpperCase()}</option>`).join('');
+
+        area.innerHTML = `
+            <div id="save-success" class="success-banner">Your consent preferences have been saved.</div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <div>
+                    <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">${esc(lc.title || 'Consent Preferences')}</h2>
+                    <p style="margin:4px 0 0;font-size:0.8rem;color:#64748b;">${esc(lc.general_purpose_description || '')}</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:0.7rem;color:#64748b;font-weight:700;text-transform:uppercase;">Language:</span>
+                    <select id="lang-select" style="font-size:0.8rem;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;outline:none;" onchange="changeLang(this.value)">${langOptions}</select>
+                </div>
+            </div>
+
+            <div id="purposes-list">${purposeHtml}</div>
+
+            <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+                <button class="btn-primary" onclick="savePreferences()">Save My Preferences</button>
+            </div>
+        `;
+    }
+
+    function changeLang(lang) {
+        const policyMap = resolvePolicyContent(currentPolicy);
+        currentLang = lang;
+        currentLangContent = policyMap[lang];
+        document.documentElement.lang = lang;
+        const prefs = getCurrentToggles();
+        const area = document.getElementById('preference-center-body') || document.getElementById('tab-content');
+        renderPreferenceCenter(area, policyMap, prefs);
+    }
+
+    function getCurrentToggles() {
+        const prefs = {};
+        (currentLangContent.data_processing_purposes || []).forEach(p => {
+            const el = document.getElementById('toggle-' + p.id);
+            if (el) prefs[p.id] = el.checked;
+        });
+        return prefs;
+    }
+
+    async function savePreferences() {
+        const prefs = getCurrentToggles();
+        const purposes = currentLangContent.data_processing_purposes || [];
+        const dataPointConsents = purposes.map(p => ({
+            data_point_id: p.id,
+            consent_granted: prefs[p.id] !== undefined ? prefs[p.id] : p.is_mandatory_for_service,
+            purpose_agreed_to: p.name,
+            timestamp_updated: new Date().toISOString()
+        }));
+
+        const result = await apiCall('/api/v1/client/consent', 'record_consent', {
+            user_id: SESSION.userId,
+            fiduciary_id: SESSION.fiduciaryId,
+            policy_id: activePolicyEntry ? activePolicyEntry.policy_id : currentPolicy.policy_id,
+            language_selected: currentLang,
+            consent_mechanism: 'save_preferences_center',
+            data_point_consents: dataPointConsents
+        });
+
+        const banner = document.getElementById('save-success');
+        if (result && (result.success || result.consent_record_id || result.id)) {
+            banner.style.display = 'block';
+            setTimeout(() => { banner.style.display = 'none'; }, 4000);
+        } else {
+            banner.style.display = 'block';
+            banner.style.background = '#fef2f2';
+            banner.style.color = '#b91c1c';
+            banner.style.borderColor = '#fecaca';
+            banner.textContent = 'Failed to save preferences. Please try again.';
+            setTimeout(() => { banner.style.display = 'none'; banner.style.background = ''; banner.style.color = ''; banner.style.borderColor = ''; banner.textContent = 'Your consent preferences have been saved.'; }, 5000);
+        }
+    }
+
+    // ── Tab 2: Consent History (grouped by policy) ─────────────────────
+    let historyCache = [];
+    let policyPurposesForVerify = [];
+    let historyPolicyMap = {}; // { policyId: [{id, name, is_mandatory}] }
+
+    async function renderHistoryTab(area) {
+        // Fetch history and all policy content in parallel
+        const [historyResult, ...policyResults] = await Promise.all([
+            apiCall('/api/v1/client/consent', 'list_consent_history', {
+                user_id: SESSION.userId,
+                fiduciary_id: SESSION.fiduciaryId,
+                limit: 100
+            }),
+            ...(SESSION.policies || []).map(p =>
+                apiCall('/api/v1/client/policy', 'get_policy', { policy_id: p.policy_id })
+            )
+        ]);
+
+        historyCache = Array.isArray(historyResult) ? historyResult : (historyResult && historyResult.data ? historyResult.data : []);
+
+        // Build historyPolicyMap and policyPurposesForVerify from fetched policy content
+        historyPolicyMap = {};
+        const verifyPurposesSeen = new Map();
+        (SESSION.policies || []).forEach((p, i) => {
+            const policy = policyResults[i];
+            if (!policy) return;
+            const policyMap = resolvePolicyContent(policy); // handles string or object policy_content
+            if (!policyMap || typeof policyMap !== 'object') return;
+            const langContent = policyMap[currentLang || 'en'] || policyMap['en'] || Object.values(policyMap)[0];
+            if (!langContent) return;
+            const purposes = (langContent.data_processing_purposes || []).map(dp => ({
+                id: dp.id,
+                name: dp.name,
+                is_mandatory: !!dp.is_mandatory_for_service
+            }));
+            historyPolicyMap[p.policy_id] = purposes;
+            purposes.forEach(dp => {
+                if (!verifyPurposesSeen.has(dp.id)) verifyPurposesSeen.set(dp.id, dp.name);
+            });
+        });
+        policyPurposesForVerify = Array.from(verifyPurposesSeen.entries()).map(([id, name]) => ({ id, name }));
+
+        // Refresh QR now that we have sync_token from the latest consent record
+        if (historyCache.length > 0) updateQR();
+
+        if (historyCache.length === 0) {
+            area.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#94a3b8;">
+                <p style="font-size:1rem;font-weight:600;">No consent records found.</p>
+                <p style="font-size:0.875rem;">Your consent records will appear here once you save preferences.</p>
+            </div>${renderSelfVerify()}`;
+            return;
+        }
+
+        // Group records by policy_id (preserving insertion order = most-recent first)
+        const grouped = {};
+        historyCache.forEach(rec => {
+            if (!grouped[rec.policy_id]) grouped[rec.policy_id] = [];
+            grouped[rec.policy_id].push(rec);
+        });
+
+        // Build HTML: one section per policy
+        let sectionsHtml = '';
+        for (const [policyId, records] of Object.entries(grouped)) {
+            const policyTitle = getPolicyTitle(policyId) || policyId;
+            // Find the most-recent active record for this policy to determine eligibility
+            const latestActive = records.find(r => r.is_active_consent) || records[0];
+            const mechanism = latestActive.consent_mechanism || '';
+            // canWithdraw: record must be active and not a full erasure
+            const canWithdraw = latestActive.is_active_consent === true && mechanism !== 'ERASURE_REQUEST';
+            const canErasure  = mechanism !== 'ERASURE_REQUEST';
+
+            const btnId = 'pid-' + policyId.replace(/[^a-zA-Z0-9]/g, '_');
+
+            let rows = records.map(rec => {
+                const mech = rec.consent_mechanism || '';
+                let displayStatus;
+                if (mech === 'ERASURE_REQUEST') {
+                    displayStatus = 'ERASURE_REQUEST';
+                } else if (mech === 'CONSENT_WITHDRAWN') {
+                    const dpc = Array.isArray(rec.data_point_consents)
+                        ? rec.data_point_consents
+                        : Object.values(rec.data_point_consents || {});
+                    const allWithdrawn = dpc.length > 0 && dpc.every(p => p.consent_granted === false);
+                    displayStatus = allWithdrawn ? 'WITHDRAWN' : 'PARTIALLY WITHDRAWN';
+                } else {
+                    displayStatus = 'ACTIVE';
+                }
+                return `<tr>
+                    <td style="font-family:monospace;font-size:0.7rem;color:#94a3b8;">...${esc(rec.id.slice(-6))}</td>
+                    <td style="color:#64748b;">${esc(formatTimestamp(rec.timestamp))}</td>
+                    <td style="color:#64748b;font-size:0.8rem;font-style:italic;">${esc(mech.replace(/_/g,' '))}</td>
+                    <td>${getStatusBadge(displayStatus)}</td>
+                    <td><button class="btn-link view-detail-btn" data-rid="${esc(rec.id)}">Details</button></td>
+                </tr>`;
+            }).join('');
+
+            sectionsHtml += `
+                <div style="margin-bottom:28px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px 10px 0 0;border-bottom:none;">
+                        <div>
+                            <div style="font-size:0.875rem;font-weight:700;color:#1e293b;">${esc(policyTitle)}</div>
+                            <div style="font-size:0.7rem;font-family:monospace;color:#94a3b8;margin-top:2px;">${esc(policyId)}</div>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn-warn withdraw-policy-btn"
+                                data-policy-id="${esc(policyId)}" data-policy-title="${esc(policyTitle)}"
+                                id="w-${esc(btnId)}"
+                                ${canWithdraw ? '' : 'disabled'} style="${canWithdraw ? '' : 'opacity:0.4;cursor:not-allowed;'}">
+                                Withdraw
+                            </button>
+                            <button class="btn-danger erasure-policy-btn"
+                                data-policy-id="${esc(policyId)}" data-policy-title="${esc(policyTitle)}"
+                                id="e-${esc(btnId)}"
+                                ${canErasure ? '' : 'disabled'} style="${canErasure ? '' : 'opacity:0.4;cursor:not-allowed;'}">
+                                Erasure Request
+                            </button>
+                        </div>
+                    </div>
+                    <div style="overflow-x:auto;border:1px solid #e2e8f0;border-radius:0 0 10px 10px;">
+                        <table class="dash-table">
+                            <thead><tr>
+                                <th>Ref</th><th>Timestamp</th><th>Mechanism</th><th>Status</th><th>Action</th>
+                            </tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+        }
+
+        area.innerHTML = `
+            <h2 style="margin:0 0 6px;font-size:1rem;font-weight:700;color:#1e293b;">Consent History</h2>
+            <p style="margin:0 0 20px;font-size:0.8rem;color:#64748b;">Records are grouped by consent policy. Use Withdraw or Erasure Request to act on a specific policy.</p>
+            ${sectionsHtml}
+            <p style="font-size:0.7rem;color:#94a3b8;margin-top:4px;font-style:italic;">* Mandatory data is retained until account closure.</p>
+            ${renderSelfVerify()}
+        `;
+
+        area.querySelectorAll('.view-detail-btn').forEach(btn => {
+            btn.addEventListener('click', () => viewConsentDetail(btn.dataset.rid));
+        });
+        area.querySelectorAll('.withdraw-policy-btn').forEach(btn => {
+            btn.addEventListener('click', () => openWithdrawModal(btn.dataset.policyId, btn.dataset.policyTitle));
+        });
+        area.querySelectorAll('.erasure-policy-btn').forEach(btn => {
+            btn.addEventListener('click', () => erasureRequest(btn.dataset.policyId, btn.dataset.policyTitle));
+        });
+    }
+
+    function renderSelfVerify() {
+        const options = policyPurposesForVerify.map(p =>
+            `<option value="${esc(p.id)}">${esc(p.name)}</option>`
+        ).join('');
+        const hasOptions = policyPurposesForVerify.length > 0;
+        return `
+            <div class="verify-box" style="margin-top:20px;">
+                <h3 style="margin:0 0 8px;font-size:0.875rem;font-weight:700;color:#1e293b;">Verify My Consent for a Purpose</h3>
+                <p style="margin:0 0 14px;font-size:0.8rem;color:#64748b;">Check whether your consent is currently active for a specific data processing purpose.</p>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    ${hasOptions
+                        ? `<select id="verify-purpose" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.875rem;outline:none;">${options}</select>`
+                        : `<input type="text" id="verify-purpose-text" placeholder="Enter Purpose ID" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.875rem;width:220px;outline:none;">`
+                    }
+                    <button class="btn-primary" onclick="checkConsent()" style="padding:9px 16px;">Check Status</button>
+                </div>
+                <div id="verify-result"></div>
+            </div>
+        `;
+    }
+
+    async function checkConsent() {
+        const selectEl = document.getElementById('verify-purpose');
+        const inputEl  = document.getElementById('verify-purpose-text');
+        const purposeId = selectEl ? selectEl.value : (inputEl ? inputEl.value.trim() : '');
+        if (!purposeId) return;
+
+        const result = await apiCall('/api/v1/client/consent', 'validate_consent', {
+            user_id: SESSION.userId,
+            fiduciary_id: SESSION.fiduciaryId,
+            required_purpose_id: purposeId
+        });
+
+        const container = document.getElementById('verify-result');
+        if (result && result.consent_granted) {
+            container.innerHTML = `<div class="verify-result verify-granted">✓ Consent Active — you have granted consent for this purpose.</div>`;
+        } else {
+            container.innerHTML = `<div class="verify-result verify-denied">✕ No Active Consent — consent has not been granted for this purpose.</div>`;
+        }
+    }
+
+    async function viewConsentDetail(recordId) {
+        const rec = await apiCall('/api/v1/client/consent', 'get_consent_record_details', { record_id: recordId });
+        if (!rec || !rec.id) return;
+
+        document.getElementById('modal-record-ref').textContent = 'Record: ' + rec.id;
+        const isWithdrawal = rec.consent_mechanism === 'CONSENT_WITHDRAWN';
+        const isErasure    = rec.consent_mechanism === 'ERASURE_REQUEST';
+
+        const dpc = rec.data_point_consents || {};
+        let purposeHtml = '';
+        const entries = Array.isArray(dpc) ? dpc : Object.values(dpc);
+        entries.forEach(item => {
+            // Use the actual per-purpose consent_granted value from the record.
+            // Do NOT blanket-override to false — partial withdrawals have a mix of true/false.
+            const granted = item.consent_granted === true;
+            let label = granted ? '✓ GRANTED' : (isErasure ? '✕ ERASED' : isWithdrawal ? '✕ WITHDRAWN' : '✕ DENIED');
+            let color = granted ? '#15803d' : '#b91c1c';
+            purposeHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:8px;">
+                <span style="font-weight:700;font-size:0.8rem;color:#1e293b;">${esc(item.purpose_agreed_to || item.data_point_id)}</span>
+                <span style="font-weight:800;font-size:0.75rem;color:${color};">${label}</span>
+            </div>`;
+        });
+
+        document.getElementById('modal-purposes').innerHTML = purposeHtml || '<p style="color:#94a3b8;font-size:0.8rem;">No purpose data available.</p>';
+        document.getElementById('modal-provenance').innerHTML = `
+            <p><strong>Policy:</strong> ${esc(rec.policy_id)} v${esc(rec.policy_version)}</p>
+            <p><strong>Mechanism:</strong> ${esc(rec.consent_mechanism)}</p>
+            <p><strong>Timestamp:</strong> ${esc(formatTimestamp(rec.timestamp))}</p>
+            <p><strong>Session IP:</strong> ${esc(rec.ip_address || 'Encrypted')}</p>
+        `;
+        document.getElementById('detail-modal').style.display = 'flex';
+    }
+
+    function openWithdrawModal(policyId, policyTitle) {
+        // Find the most-recent active record for this policy
+        const records = historyCache.filter(r => r.policy_id === policyId);
+        const latestActive = records.find(r => r.is_active_consent) || records[0];
+        if (!latestActive) return;
+
+        const dpc = Array.isArray(latestActive.data_point_consents)
+            ? latestActive.data_point_consents
+            : Object.values(latestActive.data_point_consents || {});
+
+        const policyPurposes = historyPolicyMap[policyId] || [];
+
+        // All purposes are eligible for withdrawal (including mandatory)
+        const eligible = dpc.map(dp => {
+            const pInfo = policyPurposes.find(p => p.id === dp.data_point_id);
+            return {
+                id: dp.data_point_id,
+                name: dp.purpose_agreed_to || dp.data_point_id,
+                active: dp.consent_granted === true,
+                mandatory: pInfo ? pInfo.is_mandatory : false
+            };
+        });
+
+        const modal = document.getElementById('withdraw-modal');
+        document.getElementById('withdraw-modal-title').textContent = policyTitle || policyId;
+        modal.dataset.policyId = policyId;
+
+        const listEl = document.getElementById('withdraw-purpose-list');
+        if (eligible.length === 0) {
+            listEl.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:12px;">No eligible purposes found for withdrawal.</p>';
+        } else {
+            listEl.innerHTML = eligible.map(p => `
+                <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:8px;cursor:${p.active ? 'pointer' : 'default'};opacity:${p.active ? '1' : '0.55'};">
+                    <input type="checkbox" class="withdraw-purpose-chk" value="${esc(p.id)}"
+                        ${p.active ? 'checked' : 'disabled'}
+                        style="margin-top:2px;width:15px;height:15px;accent-color:var(--tsi-primary);cursor:${p.active ? 'pointer' : 'not-allowed'};">
+                    <span>
+                        <span style="display:block;font-weight:700;font-size:0.85rem;color:#1e293b;">${esc(p.name)}</span>
+                        <span style="font-size:0.7rem;color:${p.active ? (p.mandatory ? '#b45309' : '#15803d') : '#94a3b8'};">
+                            ${p.active ? (p.mandatory ? 'Active · Required for service' : 'Active') : 'Already Withdrawn'}
+                        </span>
+                    </span>
+                </label>
+            `).join('');
+        }
+
+        // Select All toggle
+        const selAllBtn = document.getElementById('withdraw-select-all');
+        selAllBtn.textContent = 'Deselect All';
+        selAllBtn.onclick = () => {
+            const chks = modal.querySelectorAll('.withdraw-purpose-chk:not(:disabled)');
+            const allChecked = Array.from(chks).every(c => c.checked);
+            chks.forEach(c => { c.checked = !allChecked; });
+            selAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+        };
+
+        modal.style.display = 'flex';
+    }
+
+    async function withdrawConsent(policyId, purposeIds) {
+        const body = { user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId, language_selected: currentLang || 'en', reason: 'Withdrawn via My Privacy Dashboard.' };
+        if (policyId) body.policy_id = policyId;
+        if (purposeIds && purposeIds.length > 0) body.purpose_ids = purposeIds;
+        const result = await apiCall('/api/v1/client/consent', 'withdraw_consent', body);
+        if (result && result.success) {
+            await renderHistoryTab(document.getElementById('tab-content'));
+        } else {
+            alert('Withdrawal request failed. Please try again.');
+        }
+    }
+
+    async function erasureRequest(policyId, policyTitle) {
+        const label = policyTitle ? `"${policyTitle}"` : 'the selected policy';
+        if (!confirm(`Request COMPLETE erasure of your data under ${label}? This action is irreversible.`)) return;
+        const body = { user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId, language_selected: currentLang || 'en', reason: 'Erasure requested via My Privacy Dashboard.' };
+        if (policyId) body.policy_id = policyId;
+        const result = await apiCall('/api/v1/client/consent', 'erasure_request', body);
+        if (result && result.success) {
+            await renderHistoryTab(document.getElementById('tab-content'));
+        } else {
+            alert('Erasure request failed. Please try again.');
+        }
+    }
+
+    // ── Tab 3: Requests & Grievances ────────────────────────────────────
+    let showGrievanceForm = false;
+
+    async function renderGrievanceTab(area) {
+        const result = await apiCall('/api/v1/client/grievance', 'list_user_grievances', {
+            user_id: SESSION.userId,
+            fiduciary_id: SESSION.fiduciaryId
+        });
+        const list = Array.isArray(result) ? result : (result && result.data ? result.data : []);
+        showGrievanceForm = false;
+        renderGrievanceView(area, list);
+    }
+
+    function renderGrievanceView(area, list) {
+        let rows = list.length === 0
+            ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:#94a3b8;font-style:italic;">No requests or grievances submitted yet.</td></tr>`
+            : list.map(r => `<tr>
+                <td style="font-family:monospace;font-size:0.75rem;color:#64748b;">${esc(r.grievance_id)}</td>
+                <td style="font-weight:700;font-size:0.8rem;color:#1e293b;">${esc((r.type||'').replace(/_/g,' '))}</td>
+                <td style="color:#64748b;">${esc(r.subject)}</td>
+                <td style="color:#64748b;">${esc(r.due_date ? formatTimestamp(r.due_date).split(',')[0] : 'N/A')}</td>
+                <td>${getStatusBadge(r.status)}</td>
+            </tr>`).join('');
+
+        area.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <div>
+                    <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">Requests & Grievances</h2>
+                    <p style="margin:4px 0 0;font-size:0.8rem;color:#64748b;">Your formal data rights requests and compliance inquiries.</p>
+                </div>
+                <button class="btn-primary" onclick="toggleGrievanceForm()" id="new-grievance-btn">+ New Request</button>
+            </div>
+            <div id="grievance-form-container" style="display:none;">
+                <div class="grievance-form">
+                    <h3 style="margin:0 0 20px;font-size:0.875rem;font-weight:700;color:#1e293b;">Submit a New Request</h3>
+                    <label>Request Category</label>
+                    <select id="g-type">
+                        <option value="GENERAL_COMPLAINT">General Inquiry</option>
+                        <option value="ERASURE_REQUEST">Right to Erasure (Deletion)</option>
+                        <option value="DATA_ACCESS_REQUEST">Data Portability Request</option>
+                        <option value="CORRECTION_REQUEST">Correction Request</option>
+                    </select>
+                    <label>Subject</label>
+                    <input type="text" id="g-subject" placeholder="Brief summary of your request">
+                    <label>Detailed Description</label>
+                    <textarea id="g-description" rows="4" placeholder="Explain your request in detail..."></textarea>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;">
+                        <button onclick="toggleGrievanceForm()" style="background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:10px 16px;">Cancel</button>
+                        <button class="btn-primary" id="submit-grievance-btn" onclick="submitGrievance()">Submit Request</button>
+                    </div>
+                    <div id="g-error" style="display:none;color:#b91c1c;font-size:0.8rem;margin-top:10px;"></div>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="dash-table">
+                    <thead><tr><th>ID</th><th>Type</th><th>Subject</th><th>Deadline</th><th>Status</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    function toggleGrievanceForm() {
+        showGrievanceForm = !showGrievanceForm;
+        const fc = document.getElementById('grievance-form-container');
+        const btn = document.getElementById('new-grievance-btn');
+        if (fc) fc.style.display = showGrievanceForm ? 'block' : 'none';
+        if (btn) btn.textContent = showGrievanceForm ? '✕ Cancel' : '+ New Request';
+    }
+
+    async function submitGrievance() {
+        const type    = document.getElementById('g-type').value;
+        const subject = document.getElementById('g-subject').value.trim();
+        const desc    = document.getElementById('g-description').value.trim();
+        const errEl   = document.getElementById('g-error');
+        const btn     = document.getElementById('submit-grievance-btn');
+
+        errEl.style.display = 'none';
+        if (!subject || !desc) {
+            errEl.textContent = 'Subject and description are required.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+
+        const result = await apiCall('/api/v1/client/grievance', 'submit_grievance', {
+            user_id: SESSION.userId,
+            fiduciary_id: SESSION.fiduciaryId,
+            type, subject, description: desc
+        });
+
+        if (result && result.success) {
+            await renderGrievanceTab(document.getElementById('tab-content'));
+        } else {
+            errEl.textContent = (result && result.message) || 'Submission failed. Please try again.';
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Submit Request';
+        }
+    }
+
+    // ── Privacy Consent Artifact (PCA) & QR ────────────────────────────
+    function generatePCAArtifact() {
+        const latest = historyCache.length > 0 ? historyCache[0] : null;
+        return {
+            v: "1.0",
+            uid: SESSION ? SESSION.userId : null,
+            fid: SESSION ? SESSION.fiduciaryId : null,
+            sync_url: PORTAL_BASE_URL + '/api/v1/client/wallet/sync',
+            sync_token: latest ? latest.sync_token : null,
+            consents: latest ? latest.data_point_consents : [],
+            policy_ref: latest ? `${latest.policy_id}-v${latest.policy_version}` : 'N/A',
+            generated_at: new Date().toISOString()
+        };
+    }
+
+    function updateQR() {
+        const container = document.getElementById('qrcode-container');
+        container.innerHTML = '';
+        new QRCode(container, {
+            text: JSON.stringify(generatePCAArtifact()),
+            width: 80,
+            height: 80,
+            colorDark: '#006A67',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    }
+
+    function downloadPCA() {
+        const artifact = generatePCAArtifact();
+        const blob = new Blob([JSON.stringify(artifact, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `TSI_Consent_Artifact_${artifact.uid || 'export'}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // ── Bootstrap ───────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        SESSION = requireAuth();
+        if (!SESSION) return;
+
+        document.getElementById('header-fiduciary').textContent = SESSION.fiduciaryName;
+        document.getElementById('header-user').textContent = 'Logged in as: ' + SESSION.userId;
+
+        // Populate privacy card
+        document.getElementById('pca-user-id').textContent = SESSION.userId;
+        document.getElementById('pca-fiduciary').textContent = SESSION.fiduciaryName;
+
+        // Fetch the latest consent record in the background to get a valid sync_token
+        // before the user visits the History tab, so the downloaded PCA is always complete.
+        apiCall('/api/v1/client/consent', 'list_consent_history', {
+            user_id: SESSION.userId,
+            fiduciary_id: SESSION.fiduciaryId,
+            limit: 1
+        }).then(result => {
+            const records = Array.isArray(result) ? result : (result && result.data ? result.data : []);
+            if (records.length > 0 && historyCache.length === 0) historyCache = records;
+            updateQR();
+        });
+
+        setTab('consent');
+    });
+
+    // Close detail modal on backdrop click
+    document.getElementById('detail-modal').addEventListener('click', function(e) {
+        if (e.target === this) this.style.display = 'none';
+    });
+
+    // Withdraw modal: close on backdrop click, close button, and cancel button
+    const _wModal = document.getElementById('withdraw-modal');
+    _wModal.addEventListener('click', function(e) {
+        if (e.target === this) this.style.display = 'none';
+    });
+    document.getElementById('withdraw-modal-close').addEventListener('click', () => {
+        _wModal.style.display = 'none';
+    });
+    document.getElementById('withdraw-cancel-btn').addEventListener('click', () => {
+        _wModal.style.display = 'none';
+    });
+    document.getElementById('withdraw-submit-btn').addEventListener('click', async () => {
+        const selected = Array.from(_wModal.querySelectorAll('.withdraw-purpose-chk:checked')).map(el => el.value);
+        if (selected.length === 0) {
+            alert('Please select at least one purpose to withdraw.');
+            return;
+        }
+        _wModal.style.display = 'none';
+        await withdrawConsent(_wModal.dataset.policyId, selected);
+    });
+</script>
+</body>
+</html>
