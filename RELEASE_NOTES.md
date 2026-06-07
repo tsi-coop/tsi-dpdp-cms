@@ -4,6 +4,11 @@
 **User Rights Management**
 - Replaced the separate Consent Collector, Consent Verifier, and User Dashboard tour entries with a single "User Rights Management" video guide for the Authenticated Principal, covering notice & capture, purpose-limited verification, and exercise of rights: view artifacts, withdraw, and grievances.
 
+**Bug Fixes**
+- Fixed erasure requests not generating compliance enforcement (purge request) records - removed an overly strict expiry gate that blocked immediate enforcement, and ensured principals are registered for the compliance batch job as soon as they give or withdraw consent.
+- Fixed silent loss of compliance visibility when a purpose has no linked data processor - erasure requests and retention/consent expiries for such purposes now create a DPO-visible compliance record flagged for manual review, and the Compliance console and exports no longer hide these records.
+- Fixed inflated consent counts in ROPA reporting - "Withdrawn Consent Count" on the ROPA export and the row totals in the ROPA Report (Reports section) were counting every historical consent record revision instead of each principal's current decision, overstating figures by roughly 2-3x; both now show accurate, current-state counts.
+
 ---
 
 ### v0.4.3
