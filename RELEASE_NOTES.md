@@ -1,5 +1,12 @@
 # Release Notes
 
+### v0.4.5
+**Partner White-Labeling (Brand Name Configuration)**
+- Operators can now set a single environment variable - `BRAND_NAME` - at deployment time to replace "TSI DPDP CMS" with their own brand across every user-facing surface: console login and navigation, the Data Principal rights portal, the evaluator tour, and generated report footers.
+- The brand string is capped at 12 characters (matching the length of "TSI DPDP CMS") to guarantee a consistent, overflow-free layout in all UI chrome without any redesign - every layout that works today provably works for any compliant partner name.
+
+---
+
 ### v0.4.4
 **User Rights Management**
 - Replaced the separate Consent Collector, Consent Verifier, and User Dashboard tour entries with a single "User Rights Management" video guide for the Authenticated Principal, covering notice & capture, purpose-limited verification, and exercise of rights: view artifacts, withdraw, and grievances.
