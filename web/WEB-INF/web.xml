@@ -28,10 +28,29 @@
 		<filter-name>TSI_DPDP_CMS</filter-name>
 		<filter-class>org.tsicoop.dpdpcms.framework.InterceptingFilter</filter-class>
 	</filter>
-	
+
 	<filter-mapping>
 		<filter-name>TSI_DPDP_CMS</filter-name>
 		<url-pattern>/api/*</url-pattern>
+		<dispatcher>REQUEST</dispatcher>
+		<dispatcher>FORWARD</dispatcher>
+	</filter-mapping>
+
+	<!--
+      Partner/reseller white-labeling: rewrites the brand name in served HTML
+      when BRAND_NAME is configured (see BrandConfig / BrandingFilter). The
+      *.html mapping covers every static page — console, rights portal, tour,
+      login — including welcome-file forwards (e.g. '/' -> '/index.html').
+      No-ops when BRAND_NAME is unset, so default deployments are unaffected.
+    -->
+	<filter>
+		<filter-name>BRANDING_FILTER</filter-name>
+		<filter-class>org.tsicoop.dpdpcms.framework.BrandingFilter</filter-class>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>BRANDING_FILTER</filter-name>
+		<url-pattern>*.html</url-pattern>
 		<dispatcher>REQUEST</dispatcher>
 		<dispatcher>FORWARD</dispatcher>
 	</filter-mapping>

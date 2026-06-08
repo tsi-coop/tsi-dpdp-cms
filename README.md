@@ -405,6 +405,16 @@ The same five guardrails, mapped onto the bare-metal Jetty deployment described 
     ```
     Schedule it the same way via `crontab -e`, ship the encrypted bundle to immutable offsite/object storage, and test restores periodically.
 
+### White-Labeling for Partners & Resellers
+
+Partners and resellers can rebrand the entire UI - console, login screens, the data-principal rights portal, the evaluator tour, and report footers - with a single environment variable:
+
+```bash
+BRAND_NAME=Acme Privacy
+```
+
+`BRAND_NAME` is capped at **12 characters**, the exact length of the default brand "TSI DPDP CMS". The cap is intentional: it guarantees any compliant partner name is a drop-in replacement that fits every layout (sidebar widths, title bars, report footers) without redesign or risk of overflow. If `BRAND_NAME` is set but exceeds the limit, the application refuses to start with a clear error - the same fail-fast behavior as `JWT_SECRET` and `DB_ENCRYPTION_KEY`. Leave it unset to keep the default branding; nothing else changes.
+
 
 ## License & Contributions
 

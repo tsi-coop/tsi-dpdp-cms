@@ -21,3 +21,10 @@ TSI_KEYSTORE_PATH=/var/lib/tsi/consentmgr.p12
 TSI_KEYSTORE_PASS=changeit
 TSI_KEYSTORE_ALIAS=abc-consentmgr
 
+# --- White-labeling (optional) ---
+# BRAND_NAME: partner/reseller brand shown throughout the UI instead of the
+# default "TSI DPDP CMS". Max 12 characters — the app refuses to start if this
+# is exceeded (the limit matches the default brand's length, so any compliant
+# value is guaranteed to fit existing layouts without redesign).
+# BRAND_NAME=Acme Privacy
+

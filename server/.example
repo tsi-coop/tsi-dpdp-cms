@@ -28,3 +28,10 @@ TSI_LOOKUP_SALT=<generate-with-openssl-rand-hex-32>
 TSI_DPDP_CMS_ENV=local
 TSI_DPDP_CMS_HOME=
 TSI_EXPORT_PATH=/var/lib/tsi/exports/
+
+# --- White-labeling (optional) ---
+# BRAND_NAME: partner/reseller brand shown throughout the UI instead of the
+# default "TSI DPDP CMS". Max 12 characters — the app refuses to start if this
+# is exceeded (the limit matches the default brand's length, so any compliant
+# value is guaranteed to fit existing layouts without redesign).
+# BRAND_NAME=Acme Privacy

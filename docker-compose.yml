@@ -59,7 +59,12 @@ services:
       DB_ENCRYPTION_KEY: "${DB_ENCRYPTION_KEY:-local-dev-enc-key-do-not-use-in-production}"
       TSI_LOOKUP_SALT: "${TSI_LOOKUP_SALT:-local-dev-lookup-salt-do-not-use-in-production}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-http://localhost:8080}"
-    
+      # White-labeling (optional): partner/reseller brand shown throughout the UI
+      # instead of the default "TSI DPDP CMS". Max 12 characters - the app refuses
+      # to start if BRAND_NAME exceeds this (matches the default brand's length,
+      # so any compliant value is guaranteed to fit existing layouts).
+      BRAND_NAME: "${BRAND_NAME:-TSI DPDP CMS}"
+
     volumes:
       - "tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw"
     
