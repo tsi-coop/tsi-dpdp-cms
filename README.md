@@ -34,6 +34,8 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [DPDP Inclusion: Interactive Voice Consent using Sarvam AI](https://techadvisory.substack.com/p/dpdp-inclusion-voice-consent-gateway)
 
+[Partner White Labeling - Video](https://youtu.be/DyU4GI_3-DY)
+
 ## Release Notes
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
