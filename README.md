@@ -91,6 +91,8 @@ Follow the Guided Journey:
 
 13. Voice Consent Gateway: Experience hands-free, granular consent collection using Sarvam AI (TTS/STT) to obtain informed voice affirmations for processing purposes.
 
+14. Partner White Labeling: See how the `BRAND_NAME` environment variable rebrands the console, rights portal, tour, and report footers for partner deployments.
+
 ## Implementation Guide
 
 [TSI DPDP CMS Implementation Guide](docs/implementation-guide.md) - end-to-end walkthrough covering data discovery, RoPA authoring, JSON schema compilation, DPIA, and production deployment.

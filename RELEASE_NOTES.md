@@ -1,5 +1,12 @@
 # Release Notes
 
+### v0.4.6
+**Bug Fixes**
+- Fixed the DPO Dashboard not being scoped to the logged-in DPO's fiduciary - the metric tiles (active policies, consents, data principals, purge requests, grievances, ROPA counts) and the pending grievances queue now filter by the current fiduciary instead of showing figures across all fiduciaries.
+- Fixed Data Principals being unable to interact with multiple Data Fiduciaries - `data_principal` now keys on the composite (`user_id`, `fiduciary_id`) instead of `user_id` alone, so the same principal ID can hold separate consent records per fiduciary. The Consent Enforcement Service now also looks up each principal's most recent consent scoped to the correct fiduciary. Existing deployments should run `db/05_fix_data_principal_pk.sql` to migrate the schema.
+
+---
+
 ### v0.4.5
 **Partner White-Labeling (Brand Name Configuration)**
 - Operators can now set a single environment variable - `BRAND_NAME` - at deployment time to replace "TSI DPDP CMS" with their own brand across every user-facing surface: console login and navigation, the Data Principal rights portal, the evaluator tour, and generated report footers.
