@@ -96,7 +96,7 @@ public class CESService {
          */
 
         Timestamp newCESRun = Timestamp.from(Instant.now());
-        JSONObject recent = getRecentConsent(principalId);
+        JSONObject recent = getRecentConsent(principalId, fiduciaryId);
         if(recent == null) {
             System.out.println("[CES DEBUG] processPrincipal: no recent consent record found for principal=" + principalId + " -- skipping");
             return;
@@ -125,7 +125,7 @@ public class CESService {
         }
     }
 
-    private JSONObject getRecentConsent(String principalId) throws Exception{
+    private JSONObject getRecentConsent(String principalId, String fiduciaryId) throws Exception{
         //System.out.println("Inside getRecentConsent:"+principalId);
         JSONObject recent = null;
         PreparedStatement stmt = null;
@@ -136,12 +136,13 @@ public class CESService {
         PoolDB pool = null;
         Connection conn = null;
 
-        String checkSql = "SELECT id, consent_mechanism, data_point_consents, created_at FROM consent_records WHERE user_id = ? order by created_at desc LIMIT 1";
+        String checkSql = "SELECT id, consent_mechanism, data_point_consents, created_at FROM consent_records WHERE user_id = ? AND fiduciary_id = ? ORDER BY created_at DESC LIMIT 1";
         try{
             pool = new PoolDB();
             conn = pool.getConnection();
             stmt = conn.prepareStatement(checkSql);
             stmt.setString(1, principalId);
+            stmt.setObject(2, UUID.fromString(fiduciaryId));
             rs = stmt.executeQuery();
             if (rs.next()) {
                 String recordId = rs.getString("id");

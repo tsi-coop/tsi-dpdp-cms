@@ -460,7 +460,7 @@ public class Consent implements Action {
     private void upsertDataPrincipal(Connection conn, UUID fiduciaryId, String userId, String lastConsentMechanism) throws SQLException {
         String sql = "INSERT INTO data_principal (user_id, fiduciary_id, last_consent_mechanism, last_ces_run) " +
                 "VALUES (?, ?, ?, NULL) " +
-                "ON CONFLICT (user_id) DO UPDATE SET " +
+                "ON CONFLICT (user_id, fiduciary_id) DO UPDATE SET " +
                 "last_consent_mechanism = EXCLUDED.last_consent_mechanism, last_ces_run = NULL";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, userId);
@@ -1021,7 +1021,7 @@ public class Consent implements Action {
             // 3. Upsert Data Principal with Minor Metadata
             String upsertSql = "INSERT INTO data_principal (user_id, fiduciary_id, age_category, guardian_id, verification_status) " +
                     "VALUES (?, ?, ?, ?, ?) " +
-                    "ON CONFLICT (user_id) DO UPDATE SET " +
+                    "ON CONFLICT (user_id, fiduciary_id) DO UPDATE SET " +
                     "age_category = EXCLUDED.age_category, guardian_id = EXCLUDED.guardian_id, verification_status = EXCLUDED.verification_status";
 
             try (PreparedStatement pstmt = conn.prepareStatement(upsertSql)) {

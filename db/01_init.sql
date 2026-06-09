@@ -163,14 +163,15 @@ CREATE TABLE IF NOT EXISTS api_keys (
 -- 9. Table: data_principal
 --
 CREATE TABLE IF NOT EXISTS data_principal (
-    user_id VARCHAR(255) PRIMARY KEY , -- Data Principal's ID
+    user_id VARCHAR(255) NOT NULL, -- Data Principal's ID
     fiduciary_id UUID NOT NULL REFERENCES fiduciaries(id),
     last_consent_mechanism VARCHAR(100),
     age_category VARCHAR(20) DEFAULT 'ADULT', -- ADULT, MINOR
     guardian_id VARCHAR(255),                 -- Links to Guardian's Principal ID
     verification_status VARCHAR(20) DEFAULT 'NOT_VERIFIED',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_ces_run TIMESTAMP
+    last_ces_run TIMESTAMP,
+    PRIMARY KEY (user_id, fiduciary_id)
 );
 
 --

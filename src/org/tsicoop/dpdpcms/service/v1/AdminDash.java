@@ -120,12 +120,13 @@ public class AdminDash implements Action {
 
     /**
      * Retrieves counts for Active Policies, Consents, Principals, Purge Requests,
-     * and Grievances, filtered by a specific date range.
+     * and Grievances, filtered by fiduciary and a specific date range.
      */
     private JSONObject getDpoMetrics(JSONObject input) throws SQLException {
         JSONObject metrics = new JSONObject();
         String start = (String) input.get("start_date");
         String end = (String) input.get("end_date");
+        UUID fiduciaryId = UUID.fromString((String) input.get("fiduciary_id"));
 
         PoolDB pool = new PoolDB();
         Connection conn = null;
@@ -133,29 +134,28 @@ public class AdminDash implements Action {
         try {
             conn = pool.getConnection();
 
-            // 1. # Active Policy (Count policies created or existing in period that are active)
-            metrics.put("active_policies", getCount(conn, pool, "SELECT COUNT(*) FROM consent_policies WHERE status = 'ACTIVE' AND created_at >= ?::timestamp AND created_at <= ?::timestamp", start, end));
+            // 1. # Active Policy
+            metrics.put("active_policies", getCount(conn, pool, "SELECT COUNT(*) FROM consent_policies WHERE fiduciary_id = ? AND status = 'ACTIVE' AND created_at >= ?::timestamp AND created_at <= ?::timestamp", fiduciaryId, start, end));
 
             // 2. # Consents
-            metrics.put("total_consents", getCount(conn, pool, "SELECT COUNT(*) FROM consent_records WHERE timestamp >= ?::timestamp AND timestamp <= ?::timestamp", start, end));
+            metrics.put("total_consents", getCount(conn, pool, "SELECT COUNT(*) FROM consent_records WHERE fiduciary_id = ? AND timestamp >= ?::timestamp AND timestamp <= ?::timestamp", fiduciaryId, start, end));
 
             // 3. # Data Principals
-            metrics.put("data_principals", getCount(conn, pool, "SELECT COUNT(*) FROM data_principal WHERE created_at >= ?::timestamp AND created_at <= ?::timestamp", start, end));
+            metrics.put("data_principals", getCount(conn, pool, "SELECT COUNT(*) FROM data_principal WHERE fiduciary_id = ? AND created_at >= ?::timestamp AND created_at <= ?::timestamp", fiduciaryId, start, end));
 
             // 4. Purge Requests (Total and Pending)
-            metrics.put("purge_total", getCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE initiated_at >= ?::timestamp AND initiated_at <= ?::timestamp", start, end));
-            metrics.put("purge_pending", getCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE status NOT IN ('PURGE_COMPLETED','LEGAL_HOLD_APPLIED') AND initiated_at >= ?::timestamp AND initiated_at <= ?::timestamp", start, end));
+            metrics.put("purge_total", getCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE fiduciary_id = ? AND initiated_at >= ?::timestamp AND initiated_at <= ?::timestamp", fiduciaryId, start, end));
+            metrics.put("purge_pending", getCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE fiduciary_id = ? AND status NOT IN ('PURGE_COMPLETED','LEGAL_HOLD_APPLIED') AND initiated_at >= ?::timestamp AND initiated_at <= ?::timestamp", fiduciaryId, start, end));
 
             // 5. Grievances (Total and Pending)
-            metrics.put("grievances_total", getCount(conn, pool, "SELECT COUNT(*) FROM grievances WHERE submission_timestamp >= ?::timestamp AND submission_timestamp <= ?::timestamp", start, end));
-            metrics.put("grievances_pending", getCount(conn, pool, "SELECT COUNT(*) FROM grievances WHERE status NOT IN ('RESOLVED') AND submission_timestamp >= ?::timestamp AND submission_timestamp <= ?::timestamp", start, end));
+            metrics.put("grievances_total", getCount(conn, pool, "SELECT COUNT(*) FROM grievances WHERE fiduciary_id = ? AND submission_timestamp >= ?::timestamp AND submission_timestamp <= ?::timestamp", fiduciaryId, start, end));
+            metrics.put("grievances_pending", getCount(conn, pool, "SELECT COUNT(*) FROM grievances WHERE fiduciary_id = ? AND status NOT IN ('RESOLVED') AND submission_timestamp >= ?::timestamp AND submission_timestamp <= ?::timestamp", fiduciaryId, start, end));
 
             // 6. ROPA entries by status
-            metrics.put("ropa_active", getCount(conn, pool, "SELECT COUNT(*) FROM ropa_entries WHERE status = 'active' AND created_at >= ?::timestamp AND created_at <= ?::timestamp", start, end));
-            metrics.put("ropa_draft",  getCount(conn, pool, "SELECT COUNT(*) FROM ropa_entries WHERE status = 'draft'  AND created_at >= ?::timestamp AND created_at <= ?::timestamp", start, end));
+            metrics.put("ropa_active", getCount(conn, pool, "SELECT COUNT(*) FROM ropa_entries WHERE fiduciary_id = ? AND status = 'active' AND created_at >= ?::timestamp AND created_at <= ?::timestamp", fiduciaryId, start, end));
+            metrics.put("ropa_draft",  getCount(conn, pool, "SELECT COUNT(*) FROM ropa_entries WHERE fiduciary_id = ? AND status = 'draft'  AND created_at >= ?::timestamp AND created_at <= ?::timestamp", fiduciaryId, start, end));
 
         } finally {
-            // Standard cleanup if not handled by individual getCount calls (though they clean up their own stmt/rs)
             if (pool != null && conn != null) pool.cleanup(null, null, conn);
         }
 
@@ -163,32 +163,34 @@ public class AdminDash implements Action {
     }
 
     /**
-     * Helper to execute a count query with date range and proper cleanup.
+     * Helper to execute a count query with a fiduciary filter and date range.
+     * SQL must have params in order: fiduciary_id (?1), start (?2), end (?3).
      */
-    private int getCount(Connection conn, PoolDB pool, String sql, String start, String end) throws SQLException {
+    private int getCount(Connection conn, PoolDB pool, String sql, UUID fiduciaryId, String start, String end) throws SQLException {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, start + " 00:00:00");
-            pstmt.setString(2, end + " 23:59:59");
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setString(2, start + " 00:00:00");
+            pstmt.setString(3, end + " 23:59:59");
             rs = pstmt.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;
         } finally {
-            // Clean up resources but keep connection open for the batch of queries
             if (pool != null) pool.cleanup(rs, pstmt, null);
         }
     }
 
     /**
-     * Retrieves list of pending grievances for the dashboard table.
+     * Retrieves list of pending grievances for the dashboard table, scoped to a fiduciary.
      */
     private JSONArray listPendingGrievances(JSONObject input) throws SQLException {
         JSONArray arr = new JSONArray();
         int limit = (input.get("limit") instanceof Long) ? ((Long) input.get("limit")).intValue() : 10;
+        UUID fiduciaryId = UUID.fromString((String) input.get("fiduciary_id"));
 
         String sql = "SELECT id, type, submission_timestamp, due_date, status FROM grievances " +
-                "WHERE status NOT IN ('RESOLVED', 'CLOSED', 'COMPLETED') " +
+                "WHERE fiduciary_id = ? AND status NOT IN ('RESOLVED', 'CLOSED', 'COMPLETED') " +
                 "ORDER BY due_date ASC LIMIT ?";
 
         PoolDB pool = new PoolDB();
@@ -199,7 +201,8 @@ public class AdminDash implements Action {
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, limit);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setInt(2, limit);
             rs = pstmt.executeQuery();
 
             ZonedDateTime now = ZonedDateTime.now();
