@@ -1,5 +1,12 @@
 # Release Notes
 
+### v0.4.7
+**Bug Fixes**
+- Fixed the Compliance Enforcement Service (CES) skipping enforcement for consent records with no linked app - `getAppIdsByPurpose` now excludes rows where `app_id` is null so purpose-level enforcement runs are no longer silently dropped, and restored the default `BRAND_NAME` in `docker-compose.yml` to "TSI DPDP CMS".
+- The Background Enforcement Jobs popup on the Compliance Enforcement screen now shows only the most recent 10 jobs instead of up to 20.
+
+---
+
 ### v0.4.6
 **Bug Fixes**
 - Fixed the DPO Dashboard not being scoped to the logged-in DPO's fiduciary - the metric tiles (active policies, consents, data principals, purge requests, grievances, ROPA counts) and the pending grievances queue now filter by the current fiduciary instead of showing figures across all fiduciaries.

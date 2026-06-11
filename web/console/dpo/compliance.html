@@ -499,7 +499,7 @@
             });
 
             const data = await response.json();
-            const cesJobs = data;
+            const cesJobs = data.slice(0, 10);
 
             tbody.innerHTML = '';
             if (cesJobs.length === 0) {
