@@ -63,7 +63,7 @@ services:
       # instead of the default "TSI DPDP CMS". Max 12 characters - the app refuses
       # to start if BRAND_NAME exceeds this (matches the default brand's length,
       # so any compliant value is guaranteed to fit existing layouts).
-      BRAND_NAME: "${BRAND_NAME:-MYBIZ CMS}"
+      BRAND_NAME: "${BRAND_NAME:-TSI DPDP CMS}"
 
     volumes:
       - "tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw"

@@ -227,7 +227,7 @@ public class CESService {
     private List<JSONObject> getAppIdsByPurpose(String userId, String fiduciaryId, String purposeId) throws SQLException {
         //System.out.println("userId:"+userId+" fiduciaryId:"+fiduciaryId+" purposeId:"+purposeId);
         List<JSONObject> appIds = new ArrayList<JSONObject>();
-        String sql = "SELECT DISTINCT app_id FROM consent_validations WHERE user_id = ? AND fiduciary_id = ? AND purpose_id = ?";
+        String sql = "SELECT DISTINCT app_id FROM consent_validations WHERE user_id = ? AND fiduciary_id = ? AND purpose_id = ? AND app_id IS NOT NULL";
 
         PreparedStatement stmt = null;
         ResultSet rs = null;
