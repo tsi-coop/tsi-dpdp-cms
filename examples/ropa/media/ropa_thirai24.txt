@@ -1,0 +1,920 @@
+================================================================================
+   RECORD OF PROCESSING ACTIVITIES (ROPA)
+   Prepared under the Digital Personal Data Protection Act, 2023 (India)
+   and applicable international data protection frameworks
+================================================================================
+
+ORGANISATION DETAILS
+--------------------------------------------------------------------------------
+Legal Entity Name   : ThiraiVaarta Media Pvt. Ltd.
+Brand Name          : Thirai24  (திரை24)
+                      tagline: "உங்கள் செய்தி. உங்கள் மொழி." ("Your News. Your Language.")
+CIN                 : U74999TN2018PTC122837 (fictitious)
+Registered Office   : No. 14, 3rd Floor, Khader Nawaz Khan Road,
+                      Nungambakkam, Chennai – 600 006, Tamil Nadu, India
+Data Protection Officer (DPO):
+   Name             : Ms. Kavitha Sundaresan
+   Email            : dpo@thirai24.in
+   Phone            : +91-44-4500-1100
+Grievance Officer   : Mr. Balakrishnan Rajan
+   Email            : grievance@thirai24.in
+   Phone            : +91-44-4500-1101
+Document Version    : 2.1
+Last Updated        : 2026-06-18
+Next Review Due     : 2026-12-18
+Classification      : Internal – Confidential
+
+================================================================================
+PRODUCT & SERVICE DESCRIPTION
+================================================================================
+Thirai24 is a video-centric digital news platform operating as:
+  (a) Thirai24 Mobile App  – Android & iOS
+  (b) Thirai24 Web Portal  – thirai24.in
+
+Languages served : Tamil, Hindi, Telugu, English
+Content types    : Breaking news videos, short-form reels, long-form
+                   investigative features, live streams, ground-report
+                   podcasts, text articles, photo galleries
+Business model   : Free (ad-supported) + Thirai24 Plus (paid subscription)
+Approximate base : 14 million registered users; 52 million monthly visitors
+
+================================================================================
+RECORD INDEX
+================================================================================
+ RPA-001  User Registration & Account Management
+ RPA-002  Content Personalisation & Recommendation Engine
+ RPA-003  Video Streaming & Consumption Analytics
+ RPA-004  Push Notifications
+ RPA-005  Comments, Polls & Community Engagement
+ RPA-006  Behavioural Advertising & Ad-Tech
+ RPA-007  Email & SMS Newsletters / Alerts
+ RPA-008  App & Website Performance Analytics
+ RPA-009  Customer Support & Grievance Redressal
+ RPA-010  Premium Subscription & Payment Processing
+ RPA-011  Social / SSO Login (OAuth)
+ RPA-012  Survey, Feedback & Research
+ RPA-013  Fraud Detection & Platform Safety
+ RPA-014  Legal Holds, Regulatory Compliance & Law Enforcement
+ RPA-015  Employment & HR Data (Internal Staff)
+ RPA-016  Vendor, Partner & Journalist Credentials
+ RPA-017  Journalist Tip-off / Secure Source Channel
+
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-001 | USER REGISTRATION & ACCOUNT MANAGEMENT
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Create and maintain user accounts; enable personalised
+                     access to platform features; verify identity; manage
+                     account preferences and language settings.
+
+Data Principal     : Registered end-users (general public, age ≥ 18 years)
+
+Personal Data Collected:
+  - Full name
+  - Email address
+  - Mobile phone number
+  - Password (stored as bcrypt hash; plaintext never retained)
+  - Profile photo (optional)
+  - Preferred language(s): Tamil / Hindi / Telugu / English
+  - State / district (optional, for regional content routing)
+  - Date of birth (age verification)
+  - Gender (optional)
+  - Device identifiers (Device ID, Advertising ID, OS, App version)
+
+Sensitive Personal Data: None
+
+Legal Basis (DPDP Act 2023):
+  - Section 4 read with Section 6 – Consent provided during signup via
+    freely given, specific, informed, and unambiguous opt-in
+
+Legal Basis (supplementary, GDPR Art 6 for EU-resident users):
+  - Art. 6(1)(b) – Performance of contract
+
+Data Processors / Third Parties:
+  - AWS (Amazon Web Services) – cloud hosting, Mumbai region (primary)
+  - Twilio India Pvt. Ltd. – OTP / SMS verification
+  - Firebase (Google LLC) – mobile authentication tokens
+
+Cross-border Transfers:
+  - Singapore (AWS ap-southeast-1, failover only) – Standard Contractual
+    Clauses in place
+
+Retention:
+  - Active accounts: Duration of account + 3 years post-deletion request
+  - Deleted accounts: PII purged within 30 days of verified deletion request;
+    anonymised aggregate statistics retained indefinitely
+  - Legal hold override: extended as required per applicable law
+
+Security Measures:
+  - Passwords hashed with bcrypt (cost factor 12)
+  - Data in transit: TLS 1.3
+  - Data at rest: AES-256 encryption on RDS instances (AWS Mumbai)
+  - Multi-factor authentication available for all users
+  - Role-based access control for internal staff
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-002 | CONTENT PERSONALISATION & RECOMMENDATION ENGINE
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Curate the news feed and video playlist based on user
+                     interests, viewing history, language preferences, and
+                     geographic signals; serve region-specific Tamil Nadu,
+                     Andhra Pradesh, Telangana, and North India editions.
+
+Data Principal     : Registered users; anonymous visitors (limited profiling)
+
+Personal Data Processed:
+  - User ID (pseudonymous)
+  - Content interaction events (video plays, article opens, shares, saves,
+    reactions, skip events, watch time per clip)
+  - Search queries entered on platform
+  - Language preference
+  - Geographic region (state/district level derived from IP; pin code if
+    user provides)
+  - Device type (mobile / desktop / tablet)
+  - Time-of-day usage patterns
+
+Sensitive Personal Data:
+  - Inferred political interest signals derived from content categories viewed
+    – treated as sensitive; NOT shared with third parties; used only for
+    on-platform personalisation with appropriate access controls
+
+Legal Basis (DPDP Act 2023):
+  - Section 6 – Consent (users agree to personalisation during onboarding;
+    toggleable in Privacy Settings under "My Preferences")
+  - Legitimate use where consent not withdrawn
+
+Data Processors:
+  - AWS SageMaker – ML model training and inference (Mumbai region)
+  - Apache Kafka (self-hosted on AWS EC2) – event streaming pipeline
+
+Cross-border Transfers: None (all ML workloads in AWS Mumbai ap-south-1)
+
+Retention:
+  - Raw interaction logs: 13 months (rolling)
+  - Aggregated behavioural profiles: 36 months or until account deletion
+  - ML model weights: retained until superseded by newer model version
+
+Security Measures:
+  - Pseudonymisation: internal user IDs replace PII in all ML pipelines
+  - No re-identification without dual-authorisation workflow
+  - Access restricted to Data Science and Platform Engineering teams
+
+Automated Decision Making:
+  - Fully automated recommendation ranking; no decisions with legal or
+    similarly significant effect; no human review step required by policy
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-003 | VIDEO STREAMING & CONSUMPTION ANALYTICS
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Deliver video content reliably across all four languages;
+                     measure Quality of Experience (QoE); detect
+                     buffering/dropout issues; report content performance to
+                     editorial teams.
+
+Data Principal     : All platform visitors (registered and anonymous)
+
+Personal Data Processed:
+  - IP address (truncated to /24 subnet for analytics; full IP retained
+    7 days for abuse detection)
+  - User agent string
+  - Video ID, resolution selected, buffering events, completion rate
+  - CDN edge node used, latency measurements
+  - User ID (if logged in)
+
+Sensitive Personal Data: None
+
+Legal Basis (DPDP Act 2023):
+  - Section 7 – Legitimate use for platform operation and QoE measurement
+
+Legal Basis (GDPR Art 6 – EU visitors):
+  - Art. 6(1)(f) – Legitimate interests (platform operation, performance)
+
+Data Processors:
+  - Akamai Technologies – CDN delivery (Chennai, Mumbai, Hyderabad PoPs)
+  - Mux Inc. – Video analytics SDK
+  - AWS CloudFront – supplementary CDN (fallback)
+
+Cross-border Transfers:
+  - Mux Inc. – USA; Standard Contractual Clauses applied
+  - Akamai – USA/Global; Data Processing Agreement signed
+
+Retention:
+  - Raw streaming logs: 90 days
+  - Aggregated QoE metrics: 24 months
+  - Full IP logs: 7 days
+
+Security Measures:
+  - HLS/DASH streams delivered over HTTPS
+  - Video DRM (Widevine / FairPlay) for Thirai24 Plus premium content
+  - CDN access tokens with short TTL (30 minutes)
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-004 | PUSH NOTIFICATIONS
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Deliver breaking news alerts, personalised story
+                     recommendations, live stream start alerts, and
+                     subscription-related notifications in the user's
+                     preferred language.
+
+Data Principal     : Registered users who have granted notification permission
+
+Personal Data Processed:
+  - Device push token (FCM / APNs)
+  - User ID
+  - Notification topic subscriptions (Tamil news, Hindi news, Telugu news,
+    English news, Chennai local, Sports, Politics, Business, Cinema, etc.)
+  - Delivery and open-rate telemetry (per notification)
+
+Sensitive Personal Data: None
+
+Legal Basis (DPDP Act 2023):
+  - Section 6 – Explicit consent via OS-level permission prompt
+
+Data Processors:
+  - Google Firebase Cloud Messaging (FCM) – Android
+  - Apple Push Notification service (APNs) – iOS
+
+Cross-border Transfers:
+  - USA (Google, Apple) – Standard Contractual Clauses
+
+Retention:
+  - Push tokens: until user unsubscribes or token expires (typically 90 days
+    of app inactivity)
+  - Notification delivery logs: 6 months
+
+Security Measures:
+  - Push tokens stored encrypted at rest
+  - Token rotation on each app launch
+  - Users can withdraw consent at any time via app Settings → Notifications
+    or via device OS settings
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-005 | COMMENTS, POLLS & COMMUNITY ENGAGEMENT
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Enable users to post comments (in Tamil, Hindi, Telugu,
+                     or English), participate in polls, react to stories, and
+                     engage with the Thirai24 community; moderate content for
+                     compliance with Community Guidelines.
+
+Data Principal     : Registered users (minimum age 18)
+
+Personal Data Processed:
+  - User ID, display name, profile photo
+  - Comment text (user-generated content – may contain self-disclosed PII)
+  - Reactions and poll responses
+  - IP address at time of post (for moderation / abuse investigation)
+  - Reports / flags submitted by other users
+
+Sensitive Personal Data:
+  - User-submitted comments may incidentally contain sensitive data
+    (political or religious opinions) – this data is user-generated and
+    published voluntarily by the data principal
+
+Legal Basis (DPDP Act 2023):
+  - Section 6 – Consent (users agree to Community Guidelines on signup)
+
+Data Processors:
+  - Perspective API (Google LLC) – automated toxicity scoring for
+    pre-moderation; supports Tamil, Hindi, Telugu, and English
+  - AWS Rekognition – image moderation for profile photos
+
+Cross-border Transfers:
+  - USA (Google Perspective API) – Standard Contractual Clauses
+
+Retention:
+  - Active comments: indefinitely while account is active (public content)
+  - After account deletion: comments anonymised ("Deleted User") within 30 days
+  - Moderation logs: 3 years
+
+Security Measures:
+  - Rate limiting to prevent spam
+  - CAPTCHA on comment submission for unverified accounts
+  - Human moderation queue for escalated reports; Tamil-speaking moderators
+    available during peak hours (6 AM – 11 PM IST)
+
+Automated Decision Making:
+  - Automated toxicity flagging (Perspective API); final removal decisions
+    made by human moderators
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-006 | BEHAVIOURAL ADVERTISING & AD-TECH
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Display targeted advertisements to users to generate
+                     advertising revenue; measure ad viewability and
+                     conversion; comply with brand-safety requirements of
+                     advertisers operating in Tamil Nadu and South India.
+
+Data Principal     : Registered users who have consented; anonymous visitors
+                     (contextual ads only, no cross-site tracking without
+                     consent)
+
+Personal Data Processed:
+  - Advertising ID (GAID / IDFA) – only with user consent
+  - User segment labels (e.g., "tamil-news-viewer", "chennai-user", "cinema-
+                          interest") – pseudonymous; no PII shared with
+                          advertisers
+  - Ad impression, click, and skip events
+  - Content category at time of ad display (contextual signal)
+  - Rough geolocation (state / district level)
+
+Sensitive Personal Data:
+  - Political interest segments – NOT shared with advertising partners;
+    used only for frequency-capping of political ads
+
+Legal Basis (DPDP Act 2023):
+  - Section 6 – Freely given, specific, informed consent via Consent
+    Management Platform (CMP) displayed on first launch / first web visit
+
+Legal Basis (GDPR – EU users):
+  - Art. 6(1)(a) – Consent via IAB TCF 2.2 compliant CMP
+
+Data Processors / Ad-Tech Partners:
+  - Google Ad Manager (GAM) – primary ad server
+  - InMobi Pte. Ltd. – programmatic mobile demand (HQ: Bengaluru)
+  - Taboola Inc. – native content recommendations (contextual only)
+  - Nielsen Digital Ad Ratings – audience measurement
+
+Cross-border Transfers:
+  - USA (Google, Taboola, Nielsen) – Standard Contractual Clauses
+  - Singapore (InMobi) – Standard Contractual Clauses
+
+Retention:
+  - Ad interaction logs: 13 months
+  - User segments: refreshed every 30 days; purged on consent withdrawal
+
+Security Measures:
+  - No raw PII shared with advertisers; only pseudonymous segment IDs
+  - Advertiser-facing reporting shows aggregate numbers only
+  - CMP logs consent signals with timestamps; auditable per DPDP Act Rules
+
+Automated Decision Making:
+  - Automated ad selection and bidding (RTB); no decisions with legal effect
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-007 | EMAIL & SMS NEWSLETTERS / ALERTS
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Send subscribed users morning news digests, breaking
+                     news alerts, weekly curated editions (separate editions
+                     for Tamil Nadu, Andhra/Telangana, National), and account-
+                     related transactional communications in the user's
+                     preferred language.
+
+Data Principal     : Subscribed users; non-registered newsletter subscribers
+
+Personal Data Processed:
+  - Email address
+  - Mobile number (SMS subscribers)
+  - Name (for personalised salutation)
+  - Language preference
+  - Newsletter topic subscriptions
+  - Email open / click analytics (hashed email for tracking pixel)
+
+Sensitive Personal Data: None
+
+Legal Basis (DPDP Act 2023):
+  - Section 6 – Consent via explicit opt-in checkbox (pre-ticked boxes not
+    used); separate consent per communication type
+  - Transactional emails: Section 7(a) – performance of contract
+    (e.g., subscription receipts, password reset)
+
+Data Processors:
+  - Mailchimp (Intuit Inc.) – email delivery and list management
+  - Exotel Techcom Pvt. Ltd. – SMS delivery, India (Bengaluru)
+
+Cross-border Transfers:
+  - USA (Mailchimp/Intuit) – Standard Contractual Clauses
+
+Retention:
+  - Active subscribers: duration of subscription
+  - Unsubscribed: suppression list retained indefinitely (to honour opt-out)
+  - Email engagement logs: 24 months
+
+Security Measures:
+  - Double opt-in for email newsletter
+  - One-click unsubscribe link in every marketing email
+  - Hashed email before passing to analytics tags
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-008 | APP & WEBSITE PERFORMANCE ANALYTICS
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Monitor app crashes, page load times, API error rates,
+                     and user journeys to improve platform stability and
+                     experience; A/B test new features across language
+                     editions.
+
+Data Principal     : All platform visitors (registered and anonymous)
+
+Personal Data Processed:
+  - Session ID (pseudonymous)
+  - IP address (truncated)
+  - Device type, OS version, app version
+  - Page / screen visited, time on page, scroll depth
+  - Crash logs (stack traces; may incidentally contain device info)
+  - A/B test variant assigned
+
+Sensitive Personal Data: None
+
+Legal Basis (DPDP Act 2023):
+  - Section 7 – Legitimate use for platform operation and security
+
+Legal Basis (GDPR – EU users):
+  - Art. 6(1)(f) – Legitimate interests; covered under essential analytics
+    cookie category where applicable
+
+Data Processors:
+  - Firebase Crashlytics (Google LLC) – crash reporting
+  - Mixpanel Inc. – product analytics and funnel analysis
+  - Cloudflare Inc. – WAF, DDoS protection, performance metrics
+
+Cross-border Transfers:
+  - USA (Firebase, Mixpanel, Cloudflare) – Standard Contractual Clauses
+
+Retention:
+  - Crash logs: 90 days
+  - Session analytics: raw events 6 months; aggregated 24 months
+  - A/B test results: 36 months (aggregate)
+
+Security Measures:
+  - PII stripping pipeline before data reaches Mixpanel
+  - Crash logs reviewed by Engineering only; auto-deleted from Crashlytics
+    after 90 days
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-009 | CUSTOMER SUPPORT & GRIEVANCE REDRESSAL
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Handle user queries, complaints, account issues,
+                     subscription billing disputes, and DPDP Act grievances
+                     within the statutory 48-hour acknowledgement and
+                     30-day resolution timelines; support available in
+                     Tamil, Hindi, Telugu, and English.
+
+Data Principal     : Any individual contacting support
+
+Personal Data Processed:
+  - Name, email, phone number (as provided by user)
+  - Account ID / subscription ID
+  - Support ticket content (may contain sensitive self-disclosed data)
+  - Transaction references
+  - Communication history
+
+Sensitive Personal Data: Variable – depends on user-submitted content
+
+Legal Basis (DPDP Act 2023):
+  - Section 7(a) – Performance of contract / statutory obligation
+  - Section 13 – Grievance redressal obligation of Data Fiduciary
+
+Data Processors:
+  - Freshdesk (Freshworks Inc., HQ: Chennai) – support ticket system
+  - Zoom Video Communications – video support calls where required
+
+Cross-border Transfers:
+  - Freshworks data processed in Chennai/India; minimal transfer risk
+  - Zoom (USA) – Standard Contractual Clauses
+
+Retention:
+  - Support tickets: 3 years from closure
+  - Escalated grievance records (DPDP-related): 5 years
+
+Security Measures:
+  - Agent access on need-to-know basis
+  - Support conversations encrypted in transit and at rest
+  - No support agent can view full payment card numbers
+
+Automated Decision Making: None (all decisions by human agents)
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-010 | PREMIUM SUBSCRIPTION & PAYMENT PROCESSING
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Process payments for Thirai24 Plus subscriptions; manage
+                     subscription lifecycle (activation, renewal,
+                     cancellation); issue GST-compliant invoices; handle
+                     refunds.
+
+Data Principal     : Thirai24 Plus subscribers
+
+Personal Data Processed:
+  - Full name, email, phone number
+  - Billing address
+  - Payment method token (card last 4 digits, expiry; full card data never
+    stored – handled exclusively by PCI-DSS compliant processor)
+  - Transaction ID, amount, date, currency (INR)
+  - GST identification number (B2B / business subscribers)
+  - Subscription plan, start/end dates, renewal status
+
+Sensitive Personal Data: Financial data (treated as sensitive under DPDP Act)
+
+Legal Basis (DPDP Act 2023):
+  - Section 7(a) – Processing necessary for performance of contract
+
+Data Processors:
+  - Razorpay Software Pvt. Ltd. – payment gateway (PCI-DSS Level 1)
+  - Apple App Store / Google Play Store – in-app purchases (IAP)
+  - Zoho Books (Zoho Corporation, HQ: Chennai) – accounting and invoicing
+
+Cross-border Transfers:
+  - Razorpay and Zoho Books: data stays within India
+  - Apple/Google IAP: USA; governed by respective platform DPAs
+
+Retention:
+  - Transaction records: 8 years (Income Tax Act / GST Act compliance)
+  - Card tokens: until subscription cancellation + 30 days
+  - GST invoices: 8 years
+
+Security Measures:
+  - PCI-DSS compliance via Razorpay tokenisation
+  - TLS 1.3 for all payment API calls
+  - No card details stored in Thirai24 systems
+  - Fraud rules configured in Razorpay Risk Engine
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-011 | SOCIAL / SSO LOGIN (OAuth)
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Allow users to register and log in using existing Google
+                     or Apple accounts, reducing friction at onboarding.
+
+Data Principal     : Users choosing social login
+
+Personal Data Processed:
+  - OAuth access token / refresh token (from provider)
+  - Profile data received from provider: name, email, profile photo
+    (scopes: email, profile only – no access to contacts or posts)
+  - Provider-issued unique user ID
+
+Sensitive Personal Data: None
+
+Legal Basis (DPDP Act 2023):
+  - Section 6 – Consent (user actively initiates social login flow)
+
+Data Processors:
+  - Google LLC – Google Sign-In
+  - Apple Inc. – Sign in with Apple
+
+Cross-border Transfers:
+  - OAuth tokens exchanged with USA-based servers; standard provider DPAs
+
+Retention:
+  - OAuth tokens: refreshed per session; revoked on account deletion
+  - Linked account association: duration of Thirai24 account
+
+Security Measures:
+  - OAuth 2.0 PKCE flow for mobile apps
+  - Tokens stored in device Secure Enclave / Android Keystore; never
+    stored in plaintext or local storage
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-012 | SURVEY, FEEDBACK & RESEARCH
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Conduct user satisfaction surveys (NPS, CSAT), usability
+                     research, editorial feedback panels across language
+                     communities, and market research to inform product and
+                     content strategy.
+
+Data Principal     : Voluntarily participating users and invited panel members
+
+Personal Data Processed:
+  - Name, email (for invitation and deduplication)
+  - Survey responses (may contain opinions and preferences)
+  - Demographic data if voluntarily provided (age range, state, occupation)
+
+Sensitive Personal Data:
+  - Political / religious opinions if survey topic requires; collected only
+    with explicit consent and with clear disclosure
+
+Legal Basis (DPDP Act 2023):
+  - Section 6 – Explicit informed consent for each individual survey
+
+Data Processors:
+  - Typeform S.L. – survey platform
+  - Google Forms – lightweight internal surveys
+
+Cross-border Transfers:
+  - Spain / EU (Typeform) – GDPR compliant; SCCs for onward transfers
+
+Retention:
+  - Individual identified responses: 24 months
+  - Aggregated, anonymised research findings: indefinitely
+
+Security Measures:
+  - Responses anonymised before sharing with editorial and product teams
+  - PII stripped from all published research reports
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-013 | FRAUD DETECTION & PLATFORM SAFETY
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Detect and prevent account takeover, fake account
+                     creation, subscription fraud, click fraud, coordinated
+                     inauthentic behaviour in comment sections, and CSAM /
+                     illegal content uploads.
+
+Data Principal     : All platform users (processing is passive and defensive)
+
+Personal Data Processed:
+  - IP address (full, for abuse detection – retained 7 days)
+  - Device fingerprint
+  - Login attempt patterns (timestamps, geolocation)
+  - Velocity signals (account creation rate per IP, comment posting rate)
+  - Content hashes of uploaded media (PhotoDNA for CSAM matching)
+
+Sensitive Personal Data: None intentionally collected; IP geolocation may
+  reveal approximate location
+
+Legal Basis (DPDP Act 2023):
+  - Section 7(e) – Processing necessary for compliance with law (IT Act 2000,
+    POCSO Act obligations regarding CSAM)
+  - Section 7(g) – Legitimate interest for fraud prevention and platform
+    safety
+
+Data Processors:
+  - AWS WAF & Shield – DDoS and bot mitigation
+  - Cloudflare Bot Management
+  - Microsoft PhotoDNA – CSAM hash matching (no content transmitted)
+
+Cross-border Transfers:
+  - USA (Cloudflare, Microsoft) – Standard Contractual Clauses
+
+Retention:
+  - Fraud signals / blocked IP logs: 12 months
+  - CSAM detection reports: submitted to CyberTipline (NCMEC) per IT Act;
+    internal record 5 years
+
+Security Measures:
+  - Fraud data accessible only to Trust & Safety team (Chennai office)
+  - PhotoDNA operates on hashes only; original content not transmitted
+    to Microsoft
+
+Automated Decision Making:
+  - Automated account suspension for high-confidence fraud signals;
+    human review by Trust & Safety team within 24 hours for all
+    contested suspensions
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-014 | LEGAL HOLDS, REGULATORY COMPLIANCE & LAW ENFORCEMENT
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Respond to lawful orders from courts and law enforcement
+                     under the IT Act 2000, CrPC, and IT (Intermediary
+                     Guidelines and Digital Media Ethics Code) Rules 2021;
+                     comply with CERT-In incident reporting requirements;
+                     maintain Nodal Officer and Resident Grievance Officer
+                     appointments per Rule 4 of the IT Rules 2021.
+
+Data Principal     : Specific individuals named in lawful orders
+
+Personal Data Processed:
+  - Any data required by the lawful order (varies per case)
+  - Typically: account data, IP logs, content metadata, payment records
+
+Sensitive Personal Data: Variable
+
+Legal Basis (DPDP Act 2023):
+  - Section 7(f) – Processing necessary for performance of functions of the
+    State or legal obligations
+  - Section 17 – Exemptions for national security and public order
+
+Data Processors: None (processed internally by Legal & Compliance team only)
+
+Cross-border Transfers: Only if required by MLAT process; handled case-by-
+  case with Legal review and DPO sign-off
+
+Retention:
+  - Legal hold data: duration of the hold + 1 year post-resolution
+  - Compliance records: 7 years
+
+Security Measures:
+  - Data produced under legal process signed by authorised signatory
+  - Chain of custody documented for all disclosures
+  - Internal legal review mandatory before any disclosure
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-015 | EMPLOYMENT & HR DATA (INTERNAL STAFF)
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Manage the employment lifecycle for ThiraiVaarta Media
+                     employees and contractors based primarily at Chennai
+                     HQ, with satellite reporters across Tamil Nadu, Andhra
+                     Pradesh, Telangana, and North India bureaus.
+
+Data Principal     : Job applicants, employees, contractors, former employees
+
+Personal Data Processed:
+  - Full name, date of birth, address, phone, personal email
+  - Resume / CV, educational and professional qualifications
+  - PAN, Aadhaar number (for payroll / TDS compliance)
+  - Bank account details for salary disbursement
+  - Performance reviews, disciplinary records
+  - Press credentials and journalist registration numbers
+  - Access logs to company systems and editorial CMS
+  - Emergency contact details
+  - ESOP / equity grant records
+
+Sensitive Personal Data:
+  - Aadhaar number, PAN (statutory financial identifiers)
+  - Health information (for Medi-claim / leave purposes)
+  - Background verification results
+
+Legal Basis (DPDP Act 2023):
+  - Section 7(a) – Performance of employment contract
+  - Section 7(e) – Statutory obligations (PF Act, ESI Act, Income Tax Act,
+    Tamil Nadu Shops and Establishments Act 1947)
+
+Data Processors:
+  - Darwinbox Technologies – HRMS (Hyderabad-based, India)
+  - Razorpay Payroll – salary processing
+  - AuthBridge Research Services – background verification
+
+Cross-border Transfers: None (all HR processors operate within India)
+
+Retention:
+  - Employee records: duration of employment + 7 years
+  - Payroll / tax records: 8 years (Income Tax Act)
+  - Unsuccessful applicant CVs: 6 months, then deleted (unless explicit
+    consent to retain for future roles obtained)
+
+Security Measures:
+  - HR data accessible only to HR Business Partners and Finance
+  - Aadhaar numbers masked in UI; full number accessible only to payroll
+    admin with additional MFA
+  - Physical HR files: locked cabinet, restricted Chennai HQ access
+
+Automated Decision Making:
+  - AI-assisted CV screening at initial stage; final hiring decisions
+    are always made by human interviewers
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-016 | VENDOR, PARTNER & JOURNALIST CREDENTIALS
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Onboard and manage technology vendors, content
+                     distribution partners (cable operators, DTH platforms,
+                     FAST channels), advertising agencies, and freelance
+                     stringers / journalists across Tamil Nadu, Andhra Pradesh,
+                     Telangana; issue press credentials and editorial CMS
+                     access.
+
+Data Principal     : Individual contacts at vendor/partner organisations;
+                     freelance journalists and stringers
+
+Personal Data Processed:
+  - Name, job title, work email, work phone
+  - GST/PAN of vendor entity
+  - Bank account details for payment (vendor invoices)
+  - Journalist ID / Press credential information / Police verification
+  - CMS login credentials (username, hashed password)
+  - Signed NDAs and contract documents
+
+Sensitive Personal Data: Financial identifiers (PAN, bank details)
+
+Legal Basis (DPDP Act 2023):
+  - Section 7(a) – Performance of B2B / freelance contract
+
+Data Processors:
+  - Zoho CRM (Zoho Corporation, Chennai) – vendor contact management
+  - DocuSign – electronic contract execution
+
+Cross-border Transfers:
+  - USA (DocuSign) – Standard Contractual Clauses
+
+Retention:
+  - Active vendor records: duration of engagement + 3 years
+  - Contract documents: 7 years post-contract end
+
+Security Measures:
+  - CMS access provisioned on least-privilege principle; Tamil / regional
+    language article access separated by bureau
+  - CMS credentials reviewed quarterly and revoked immediately on engagement
+    end or credential compromise
+
+Automated Decision Making: None
+
+────────────────────────────────────────────────────────────────────────────────
+RPA-017 | JOURNALIST TIP-OFF / SECURE SOURCE CHANNEL
+────────────────────────────────────────────────────────────────────────────────
+Purpose            : Provide a confidential, encrypted channel for
+                     whistleblowers and sources to submit information to
+                     Thirai24's investigative journalists, with strong source
+                     protection commitments in line with journalistic ethics.
+
+Data Principal     : Individuals submitting tips (identities strongly protected)
+
+Personal Data Processed:
+  - Content of tip / document (may contain PII of third parties)
+  - No IP addresses logged (SecureDrop over Tor architecture)
+  - Ephemeral codename assigned to source by SecureDrop system
+  - No email or phone number collected at any point
+
+Sensitive Personal Data:
+  - Potentially highly sensitive depending on tip content; treated with
+    maximum protection classification
+
+Legal Basis (DPDP Act 2023):
+  - Section 6 – Consent (source initiates contact voluntarily)
+  - Journalistic purpose exemption under DPDP Act Rules and Programme for
+    the Protection of Journalistic Sources
+
+Data Processors: None (SecureDrop is self-hosted; no third-party processors)
+
+Cross-border Transfers: None
+
+Retention:
+  - Tips reviewed by assigned investigative journalist; deleted from server
+    within 90 days of review completion unless active investigation requires
+    retention; maximum retention: 1 year in any circumstance
+
+Security Measures:
+  - SecureDrop instance air-gapped from production network (Chennai server
+    room, restricted physical access)
+  - End-to-end encryption; Tor network hides source IP
+  - Only two designated investigative journalists have server access
+  - Annual third-party security audit of SecureDrop instance
+
+Automated Decision Making: None
+
+================================================================================
+DATA PRINCIPAL RIGHTS REGISTER
+================================================================================
+Under the DPDP Act 2023, Data Principals have the following rights.
+Thirai24 provides mechanisms to exercise each right:
+
+Right                          | Mechanism                    | SLA
+-------------------------------|------------------------------|-------------------
+Right to access information    | Privacy Centre (app & web)   | 3 business days
+Right to correction            | Account settings / Support   | 7 business days
+Right to erasure               | "Delete My Account" button   | 30 calendar days
+Right to grievance redressal   | grievance@thirai24.in        | 48h ack / 30d resolve
+Right to nominate              | Available for all users      | As requested
+Right to withdraw consent      | Consent Management in-app    | Immediate effect
+
+================================================================================
+CROSS-BORDER TRANSFER SAFEGUARDS SUMMARY
+================================================================================
+Destination  | Processor(s)                       | Safeguard
+-------------|------------------------------------|---------------------------------
+USA          | Google (FCM, Firebase, GAM,        | Standard Contractual Clauses
+             | Crashlytics, Perspective API),     | (SCCs) + supplementary measures
+             | Apple (APNs, IAP),                 |
+             | Mailchimp (Intuit), Mux,            |
+             | Mixpanel, Cloudflare, Taboola,      |
+             | Nielsen, Zoom, DocuSign,            |
+             | Microsoft (PhotoDNA)               |
+-------------|------------------------------------|---------------------------------
+Singapore    | AWS ap-southeast-1 (failover),     | SCCs; AWS DPA v2 (2024)
+             | InMobi Pte. Ltd.                   |
+-------------|------------------------------------|---------------------------------
+EU / Spain   | Typeform S.L.                      | GDPR compliant; SCCs for
+             |                                    | onward transfers
+-------------|------------------------------------|---------------------------------
+India only   | Razorpay, Zoho (Books, CRM),       | No cross-border transfer;
+             | Exotel, Freshworks, Darwinbox,     | data remains in India
+             | AuthBridge, AWS Mumbai,             |
+             | Akamai India PoPs                  |
+
+================================================================================
+BREACH NOTIFICATION PROCEDURE
+================================================================================
+Detection        → Internal Report to DPO (within 1 hour)
+                 → Initial Assessment & Containment (within 6 hours)
+                 → CERT-In notification if required (within 6 hours per
+                   CERT-In Directions 2022)
+                 → Data Protection Board notification (within timeline
+                   prescribed by DPDP Act Rules once notified)
+                 → Affected Data Principal notification (without undue delay
+                   if likely to result in harm)
+                 → Post-incident review report (within 30 days)
+
+================================================================================
+DOCUMENT CONTROL
+================================================================================
+Version  | Date         | Author                    | Changes
+---------|--------------|---------------------------|-------------------------
+1.0      | 2024-01-15   | Kavitha Sundaresan        | Initial ROPA drafted
+1.5      | 2024-10-01   | Kavitha Sundaresan        | Added RPA-017 SecureDrop
+2.0      | 2025-04-10   | Kavitha Sundaresan        | Updated for DPDP Rules;
+         |              |                           | InMobi added; Zoho CRM
+2.1      | 2026-06-18   | Compliance Team           | Annual review; updated
+         |              |                           | processor list; Razorpay
+         |              |                           | Payroll added; Chennai
+         |              |                           | bureau detail added
+
+Approved by: Sridhar Muthukrishnan, Managing Director,
+             ThiraiVaarta Media Pvt. Ltd.
+Approval Date: 2026-06-18
+
+================================================================================
+END OF RECORD OF PROCESSING ACTIVITIES — THIRAI24 (திரை24)
+================================================================================

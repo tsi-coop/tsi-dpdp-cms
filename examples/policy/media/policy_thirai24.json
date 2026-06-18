@@ -1,0 +1,1602 @@
+{
+  "en": {
+    "title": "Thirai24 Data & Privacy Policy",
+    "introduction": "At ThiraiVaarta Media Pvt. Ltd. (brand: Thirai24), headquartered in Chennai, Tamil Nadu, we are committed to protecting your personal data with transparency and responsibility. This policy explains how we collect, use, and safeguard your information when you use the Thirai24 app and website (thirai24.in) to access news videos, live streams, and articles in Tamil, Hindi, Telugu, and English. We comply with the Digital Personal Data Protection Act (DPDP), 2023 and applicable Indian law.",
+    "general_purpose_description": "We process your data to deliver personalised multilingual video news, operate community features, serve relevant advertising, process subscriptions, and ensure platform safety.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_management",
+        "name": "Account Registration & Management",
+        "description": "To create and maintain your Thirai24 account, verify your identity via OTP, manage your language preferences (Tamil/Hindi/Telugu/English), and enable access to all platform features.",
+        "legal_basis": "Consent (DPDP Act, Section 6)",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "mobile_number",
+          "hashed_password",
+          "profile_photo",
+          "date_of_birth",
+          "preferred_language"
+        ],
+        "recipients_or_third_parties": [
+          "Twilio India",
+          "Firebase (Google)"
+        ],
+        "retention_policy": "Duration of active account plus 3 years after verified account deletion. PII purged within 30 days of deletion request.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_personalisation",
+        "name": "Content Personalisation & Recommendation",
+        "description": "To curate your news feed and video playlist based on your viewing history, language preference, and geographic region. Includes serving regional editions (Tamil Nadu, Andhra Pradesh/Telangana, National).",
+        "legal_basis": "Consent (DPDP Act, Section 6) — toggleable in Settings → Privacy → Personalised Feed",
+        "data_categories_involved": [
+          "video_watch_history",
+          "article_read_history",
+          "search_queries",
+          "content_reactions",
+          "watch_duration",
+          "preferred_language",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "AWS SageMaker"
+        ],
+        "retention_policy": "Raw interaction logs retained for 13 months on a rolling basis. Aggregated behavioural profiles retained for 36 months or until account deletion.",
+        "retention_duration_value": 13,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_video_streaming",
+        "name": "Video Streaming & Platform Performance",
+        "description": "To deliver video content reliably across Tamil, Hindi, Telugu, and English editions; monitor stream quality (buffering, latency, completion rates); and fix technical issues.",
+        "legal_basis": "Legitimate Use (DPDP Act, Section 7) — essential for platform operation",
+        "data_categories_involved": [
+          "ip_address",
+          "device_id",
+          "user_agent",
+          "watch_duration"
+        ],
+        "recipients_or_third_parties": [
+          "Akamai Technologies",
+          "Mux Inc.",
+          "AWS CloudFront"
+        ],
+        "retention_policy": "Raw streaming logs retained for 90 days. Full IP address retained for 7 days for abuse detection. Aggregated QoE metrics retained for 24 months.",
+        "retention_duration_value": 90,
+        "retention_duration_unit": "DAYS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_push_notifications",
+        "name": "Push Notifications",
+        "description": "To send you breaking news alerts, live stream start alerts, and personalised story recommendations in your chosen language via your device.",
+        "legal_basis": "Consent (DPDP Act, Section 6) — granted via OS permission prompt; withdrawable at any time via Settings → Notifications",
+        "data_categories_involved": [
+          "push_token",
+          "preferred_language",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "Firebase Cloud Messaging (Google)",
+          "Apple Push Notification service"
+        ],
+        "retention_policy": "Push tokens retained until user unsubscribes or token expires after 90 days of app inactivity. Notification delivery logs retained for 6 months.",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_community_engagement",
+        "name": "Community Features — Comments & Polls",
+        "description": "To enable you to post comments in Tamil, Hindi, Telugu, or English; vote in polls; react to stories; and interact with the Thirai24 reader community. Content is moderated for compliance with Community Guidelines.",
+        "legal_basis": "Consent (DPDP Act, Section 6)",
+        "data_categories_involved": [
+          "full_name",
+          "profile_photo",
+          "comment_text",
+          "poll_response",
+          "ip_address"
+        ],
+        "recipients_or_third_parties": [
+          "Google Perspective API"
+        ],
+        "retention_policy": "Comments retained while account is active. After account deletion, display name replaced with 'Deleted User' within 30 days. Moderation logs retained for 3 years.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_advertising",
+        "name": "Personalised Advertising",
+        "description": "To display relevant advertisements based on your content interests and approximate location, keeping Thirai24 free. Only pseudonymous segment IDs are shared with ad partners — no raw PII. Sensitive inferred data (political signals) is never used for ad targeting.",
+        "legal_basis": "Consent (DPDP Act, Section 6) — via Consent Management Platform on first launch; withdrawable in Settings → Privacy → Personalised Ads",
+        "data_categories_involved": [
+          "advertising_id",
+          "ad_interaction",
+          "inferred_interests",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "Google Ad Manager",
+          "InMobi",
+          "Taboola",
+          "Nielsen Digital Ad Ratings"
+        ],
+        "retention_policy": "Ad interaction logs retained for 13 months. User segments refreshed every 30 days and purged upon consent withdrawal.",
+        "retention_duration_value": 13,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_newsletters",
+        "name": "Email & SMS Newsletters and Alerts",
+        "description": "To send subscribed users morning news digests, breaking news alerts, and weekly curated editions in their preferred language. Transactional messages (receipts, password resets) are sent regardless of marketing consent.",
+        "legal_basis": "Consent (DPDP Act, Section 6) for marketing; Contractual Necessity (Section 7(a)) for transactional messages",
+        "data_categories_involved": [
+          "email_address",
+          "mobile_number",
+          "full_name",
+          "preferred_language"
+        ],
+        "recipients_or_third_parties": [
+          "Mailchimp (Intuit Inc.)",
+          "Exotel Techcom Pvt. Ltd."
+        ],
+        "retention_policy": "Active subscriber data retained for duration of subscription. Unsubscribed addresses retained on suppression list indefinitely to honour opt-out. Email engagement logs retained for 24 months.",
+        "retention_duration_value": 24,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_payments",
+        "name": "Premium Subscription & Payment Processing",
+        "description": "To process payments for Thirai24 Plus subscriptions, manage billing cycles (activation, renewal, cancellation), issue GST-compliant invoices, and handle refunds. Full card data is never stored on our servers.",
+        "legal_basis": "Contractual Necessity (DPDP Act, Section 7(a))",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "mobile_number",
+          "payment_token",
+          "transaction_id",
+          "billing_address",
+          "subscription_status"
+        ],
+        "recipients_or_third_parties": [
+          "Razorpay Software Pvt. Ltd.",
+          "Apple App Store",
+          "Google Play Store",
+          "Zoho Books"
+        ],
+        "retention_policy": "Transaction records and GST invoices retained for 8 years as required by the Income Tax Act and GST Act. Payment tokens deleted within 30 days of subscription cancellation.",
+        "retention_duration_value": 8,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_fraud_safety",
+        "name": "Fraud Detection & Platform Safety",
+        "description": "To detect and prevent account takeover, fake registrations, subscription fraud, coordinated inauthentic behaviour in comments, and illegal content (including CSAM) in compliance with the IT Act 2000 and POCSO Act obligations.",
+        "legal_basis": "Statutory Obligation & Legitimate Use (DPDP Act, Sections 7(e) and 7(g))",
+        "data_categories_involved": [
+          "ip_address",
+          "device_id",
+          "user_agent"
+        ],
+        "recipients_or_third_parties": [
+          "AWS WAF & Shield",
+          "Cloudflare Bot Management",
+          "Microsoft PhotoDNA"
+        ],
+        "retention_policy": "Fraud signals and blocked IP logs retained for 12 months. CSAM detection reports submitted to CyberTipline (NCMEC) per IT Act; internal record retained for 5 years.",
+        "retention_duration_value": 12,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_analytics",
+        "name": "App & Platform Analytics",
+        "description": "To monitor crashes, page load times, and user journeys to improve platform stability; to A/B test new features across language editions. PII is stripped before data reaches analytics processors.",
+        "legal_basis": "Legitimate Use (DPDP Act, Section 7) — essential analytics for platform operation",
+        "data_categories_involved": [
+          "device_id",
+          "ip_address",
+          "user_agent",
+          "video_watch_history"
+        ],
+        "recipients_or_third_parties": [
+          "Firebase Crashlytics (Google)",
+          "Mixpanel Inc.",
+          "Cloudflare"
+        ],
+        "retention_policy": "Crash logs retained for 90 days. Raw session events retained for 6 months. Aggregated analytics retained for 24 months.",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      {
+        "id": "full_name",
+        "name": "Full Name",
+        "description": "Your legal name provided during registration, used for account identification and personalised greetings."
+      },
+      {
+        "id": "email_address",
+        "name": "Email Address",
+        "description": "Primary contact for account communications, newsletter delivery, and subscription receipts."
+      },
+      {
+        "id": "mobile_number",
+        "name": "Mobile Number",
+        "description": "Used for OTP verification during login and for SMS news alerts where opted in."
+      },
+      {
+        "id": "hashed_password",
+        "name": "Password (hashed)",
+        "description": "Your password is stored only as a bcrypt hash (cost factor 12). Plaintext is never retained."
+      },
+      {
+        "id": "profile_photo",
+        "name": "Profile Photo",
+        "description": "Optional image displayed alongside your comments and profile. Moderated via AWS Rekognition."
+      },
+      {
+        "id": "date_of_birth",
+        "name": "Date of Birth",
+        "description": "Used to verify that you meet the minimum age requirement of 18 years."
+      },
+      {
+        "id": "preferred_language",
+        "name": "Language Preference",
+        "description": "Your choice of Tamil, Hindi, Telugu, or English, used to route you to the correct news edition and send communications in your language."
+      },
+      {
+        "id": "device_id",
+        "name": "Device Identifier",
+        "description": "A unique identifier for your device (Device ID / Advertising ID), used for session management, analytics, and fraud detection."
+      },
+      {
+        "id": "advertising_id",
+        "name": "Advertising ID (GAID/IDFA)",
+        "description": "Your device's resettable advertising identifier, used only with your consent to serve personalised ads."
+      },
+      {
+        "id": "ip_address",
+        "name": "IP Address",
+        "description": "Your network address, used for approximate location (state level), fraud detection, and CDN routing. Truncated for analytics."
+      },
+      {
+        "id": "user_agent",
+        "name": "Browser / App User Agent",
+        "description": "Technical string identifying your browser or app version, used for compatibility and crash diagnostics."
+      },
+      {
+        "id": "location_state",
+        "name": "Approximate Location (State)",
+        "description": "Your state or district derived from IP address, used to show relevant regional news editions (Tamil Nadu, Andhra Pradesh, etc.)."
+      },
+      {
+        "id": "video_watch_history",
+        "name": "Video Watch History",
+        "description": "Record of videos you have played, including watch duration and completion rate, used to personalise your feed."
+      },
+      {
+        "id": "article_read_history",
+        "name": "Article Read History",
+        "description": "Articles you have opened and scroll depth, used to understand your content interests."
+      },
+      {
+        "id": "search_queries",
+        "name": "Search Queries",
+        "description": "Terms you type into the Thirai24 search bar, used to return relevant results and improve recommendations."
+      },
+      {
+        "id": "content_reactions",
+        "name": "Reactions & Saves",
+        "description": "Likes, shares, saves, and skip events on stories, used to fine-tune your content feed."
+      },
+      {
+        "id": "watch_duration",
+        "name": "Watch Duration",
+        "description": "Time spent watching each video, used for Quality of Experience (QoE) monitoring and recommendation ranking."
+      },
+      {
+        "id": "push_token",
+        "name": "Push Notification Token",
+        "description": "A device-specific token (FCM/APNs) used exclusively to deliver push notifications you have opted into."
+      },
+      {
+        "id": "comment_text",
+        "name": "Comment Content",
+        "description": "Text you publish in the comment section. This is user-generated public content. May contain self-disclosed personal data."
+      },
+      {
+        "id": "poll_response",
+        "name": "Poll & Quiz Responses",
+        "description": "Your votes and answers to editorial polls, used to display community results."
+      },
+      {
+        "id": "ad_interaction",
+        "name": "Ad Interaction Data",
+        "description": "Whether you viewed, clicked, or skipped an advertisement, used to measure ad effectiveness. Only shared in aggregated or pseudonymous form."
+      },
+      {
+        "id": "inferred_interests",
+        "name": "Inferred Interest Segments",
+        "description": "Topic labels (e.g., 'cinema-interest', 'business-news') derived from your behaviour. Political interest signals are treated as sensitive and never shared with advertisers."
+      },
+      {
+        "id": "subscription_status",
+        "name": "Subscription Status",
+        "description": "Whether you are on a free or Thirai24 Plus plan, and your plan start/end dates."
+      },
+      {
+        "id": "payment_token",
+        "name": "Payment Token",
+        "description": "A tokenised reference to your payment method (card last 4 digits and expiry) provided by Razorpay. Full card data is never stored by Thirai24."
+      },
+      {
+        "id": "transaction_id",
+        "name": "Transaction Record",
+        "description": "Unique ID, amount, date, and currency of each subscription payment, retained for financial compliance."
+      },
+      {
+        "id": "billing_address",
+        "name": "Billing Address",
+        "description": "Address provided for GST invoice generation (B2B subscribers) or payment verification."
+      }
+    ],
+    "data_subject_categories": [
+      "registered_user",
+      "anonymous_visitor",
+      "premium_subscriber",
+      "newsletter_subscriber"
+    ],
+    "security_measures": "AES-256 encryption at rest (AWS RDS, Mumbai); TLS 1.3 in transit; bcrypt password hashing (cost factor 12); Widevine/FairPlay DRM for premium video; PCI-DSS Level 1 payment processing via Razorpay; role-based access control with MFA for all staff; Cloudflare WAF and AWS Shield for DDoS protection; annual third-party penetration testing; CERT-In breach notification within 6 hours.",
+    "processors": [
+      {
+        "name": "Amazon Web Services (AWS)",
+        "country": "IN",
+        "role": "Cloud Hosting, Storage, ML (Mumbai primary)",
+        "contact": "aws-india-dpa@amazon.com"
+      },
+      {
+        "name": "Razorpay Software Pvt. Ltd.",
+        "country": "IN",
+        "role": "Payment Gateway (PCI-DSS Level 1)",
+        "contact": "privacy@razorpay.com"
+      },
+      {
+        "name": "Twilio India Pvt. Ltd.",
+        "country": "IN",
+        "role": "OTP & SMS Delivery",
+        "contact": "privacy@twilio.com"
+      },
+      {
+        "name": "Exotel Techcom Pvt. Ltd.",
+        "country": "IN",
+        "role": "SMS Newsletter Delivery",
+        "contact": "legal@exotel.com"
+      },
+      {
+        "name": "Freshworks Inc. (Freshdesk)",
+        "country": "IN",
+        "role": "Customer Support Ticketing",
+        "contact": "privacy@freshworks.com"
+      },
+      {
+        "name": "Zoho Corporation Pvt. Ltd.",
+        "country": "IN",
+        "role": "Accounting, Invoicing & CRM",
+        "contact": "privacy@zoho.com"
+      },
+      {
+        "name": "Google LLC (Firebase, FCM, GAM)",
+        "country": "US",
+        "role": "Auth, Push Notifications, Crash Reporting, Ad Server",
+        "contact": "https://policies.google.com/privacy"
+      },
+      {
+        "name": "Apple Inc. (APNs, App Store)",
+        "country": "US",
+        "role": "iOS Push Notifications, In-App Purchases",
+        "contact": "https://www.apple.com/legal/privacy/"
+      },
+      {
+        "name": "Intuit Inc. (Mailchimp)",
+        "country": "US",
+        "role": "Email Newsletter Delivery",
+        "contact": "privacy@mailchimp.com"
+      },
+      {
+        "name": "Mux Inc.",
+        "country": "US",
+        "role": "Video Analytics & QoE Monitoring",
+        "contact": "privacy@mux.com"
+      },
+      {
+        "name": "Mixpanel Inc.",
+        "country": "US",
+        "role": "Product & Funnel Analytics",
+        "contact": "privacy@mixpanel.com"
+      },
+      {
+        "name": "Cloudflare Inc.",
+        "country": "US",
+        "role": "CDN, WAF, DDoS Protection, Bot Management",
+        "contact": "privacyquestions@cloudflare.com"
+      },
+      {
+        "name": "Akamai Technologies",
+        "country": "US",
+        "role": "CDN Delivery (Chennai, Mumbai, Hyderabad PoPs)",
+        "contact": "privacy@akamai.com"
+      },
+      {
+        "name": "InMobi Pte. Ltd.",
+        "country": "SG",
+        "role": "Programmatic Mobile Advertising",
+        "contact": "dpo@inmobi.com"
+      },
+      {
+        "name": "Microsoft (PhotoDNA)",
+        "country": "US",
+        "role": "CSAM Hash Detection (hashes only, no content stored)",
+        "contact": "https://aka.ms/privacy"
+      }
+    ],
+    "cross_border_transfers": [
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "Google LLC"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "Apple Inc."
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "Intuit Inc. (Mailchimp)"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "Mux Inc."
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "Mixpanel Inc."
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "Cloudflare Inc."
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "Akamai Technologies"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "Microsoft (PhotoDNA)"
+      },
+      {
+        "destination_country": "SG",
+        "safeguard": "Standard Contractual Clauses (SCCs)",
+        "processor": "InMobi Pte. Ltd."
+      },
+      {
+        "destination_country": "SG",
+        "safeguard": "AWS Data Processing Addendum v2 (2024)",
+        "processor": "AWS ap-southeast-1 (failover)"
+      }
+    ],
+    "data_principal_rights_summary": "Under the DPDP Act 2023 you have the right to: (1) Access — know what data we hold and why; (2) Correction & Erasure — fix inaccurate data or delete your account via Settings → Privacy → Manage My Data; (3) Grievance Redressal — raise complaints at grievance@thirai24.in (48-hour acknowledgement, 30-day resolution); (4) Nominate — appoint someone to exercise your rights on your behalf; (5) Withdraw Consent — instantly via Settings → Privacy → Manage Consents. If unsatisfied, you may approach the Data Protection Board of India.",
+    "grievance_redressal_info": "Grievance Officer: Mr. Balakrishnan Rajan | Email: grievance@thirai24.in | Phone: +91-44-4500-1101 | DPO: Ms. Kavitha Sundaresan | Email: dpo@thirai24.in | Address: No. 14, 3rd Floor, Khader Nawaz Khan Road, Nungambakkam, Chennai – 600 006, Tamil Nadu, India.",
+    "buttons": {
+      "accept_all": "Accept All & Continue",
+      "reject_all_non_essential": "Decline Optional Processing",
+      "manage_preferences": "Manage My Privacy",
+      "save_preferences": "Save My Choices"
+    },
+    "links": {
+      "full_privacy_policy_text": "Full Privacy Policy",
+      "full_privacy_policy_url": "https://thirai24.in/privacy",
+      "terms_of_service_text": "Terms of Use",
+      "terms_of_service_url": "https://thirai24.in/terms"
+    },
+    "important_note": "Thirai24 does not sell your personal data. Sensitive inferred data (such as political interest signals) is never shared with advertisers. Payment card details are processed exclusively by Razorpay (PCI-DSS Level 1) and are never stored on Thirai24 servers. You may withdraw any optional consent at any time without affecting your ability to use the free tier."
+  },
+  "ta": {
+    "title": "திரை24 — தரவு மற்றும் தனியுரிமைக் கொள்கை",
+    "introduction": "சென்னையில் தலைமையிடம் கொண்ட ThiraiVaarta Media Pvt. Ltd. (திரை24), உங்கள் தனிப்பட்ட தரவை வெளிப்படையாகவும் பொறுப்புடனும் பாதுகாக்கும் உறுதியுடன் செயல்படுகிறது. திரை24 செயலி மற்றும் thirai24.in இணையதளம் மூலம் தமிழ், ஹிந்தி, தெலுங்கு மற்றும் ஆங்கிலத்தில் செய்திகளை நீங்கள் பயன்படுத்தும்போது உங்கள் தகவல்களை நாங்கள் எவ்வாறு சேகரித்து, பயன்படுத்தி, பாதுகாக்கிறோம் என்பதை இந்தக் கொள்கை விளக்குகிறது. டிஜிட்டல் தனிப்பட்ட தரவுப் பாதுகாப்புச் சட்டம் (DPDP) 2023 மற்றும் பொருந்தக்கூடிய இந்திய சட்டங்களுக்கு இணங்க நாங்கள் செயல்படுகிறோம்.",
+    "general_purpose_description": "தனிப்பயனாக்கப்பட்ட பல மொழி வீடியோ செய்திகளை வழங்க, சமுதாய அம்சங்களை இயக்க, பொருத்தமான விளம்பரங்களை வழங்க, சந்தாக்களை செயல்படுத்த மற்றும் தளப் பாதுகாப்பை உறுதிசெய்ய உங்கள் தரவை நாங்கள் செயலாக்குகிறோம்.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_management",
+        "name": "கணக்கு பதிவு மற்றும் நிர்வாகம்",
+        "description": "உங்கள் திரை24 கணக்கை உருவாக்க, OTP மூலம் அடையாளத்தை சரிபார்க்க, மொழி விருப்பங்களை நிர்வகிக்க மற்றும் அனைத்து தள அம்சங்களுக்கும் அணுகலை அனுமதிக்க.",
+        "legal_basis": "ஒப்புதல் (DPDP சட்டம், பிரிவு 6)",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "mobile_number",
+          "hashed_password",
+          "profile_photo",
+          "date_of_birth",
+          "preferred_language"
+        ],
+        "recipients_or_third_parties": [
+          "Twilio India",
+          "Firebase (Google)"
+        ],
+        "retention_policy": "செயலில் உள்ள கணக்கின் காலம் மற்றும் கணக்கு நீக்கப்பட்ட பிறகு 3 ஆண்டுகள். தனிப்பட்ட தகவல் 30 நாட்களுக்குள் நீக்கப்படும்.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_personalisation",
+        "name": "உள்ளடக்க தனிப்பயனாக்கம் மற்றும் பரிந்துரை",
+        "description": "உங்கள் பார்வை வரலாறு, மொழி விருப்பம் மற்றும் புவியியல் பகுதியின் அடிப்படையில் செய்தி ஊட்டம் மற்றும் வீடியோ பட்டியலை தனிப்பயனாக்க (தமிழ்நாடு, ஆந்திரா/தெலங்கானா, தேசிய பதிப்புகள் உட்பட).",
+        "legal_basis": "ஒப்புதல் (DPDP சட்டம், பிரிவு 6) — அமைப்புகள் → தனியுரிமை → தனிப்பயன் ஊட்டம் இல் மாற்றலாம்",
+        "data_categories_involved": [
+          "video_watch_history",
+          "article_read_history",
+          "search_queries",
+          "content_reactions",
+          "watch_duration",
+          "preferred_language",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "AWS SageMaker"
+        ],
+        "retention_policy": "மூல தொடர்பு பதிவுகள் 13 மாதங்கள் வரை பராமரிக்கப்படும். ஒட்டுமொத்த நடத்தை சுயவிவரங்கள் 36 மாதங்கள் அல்லது கணக்கு நீக்கம் வரை.",
+        "retention_duration_value": 13,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_video_streaming",
+        "name": "வீடியோ ஸ்ட்ரீமிங் மற்றும் தள செயல்திறன்",
+        "description": "தமிழ், ஹிந்தி, தெலுங்கு மற்றும் ஆங்கிலத்தில் வீடியோ உள்ளடக்கை நம்பகமாக வழங்க; ஸ்ட்ரீம் தரம் கண்காணிக்க; தொழில்நுட்ப சிக்கல்களை சரிசெய்ய.",
+        "legal_basis": "சட்டப்பூர்வ பயன்பாடு (DPDP சட்டம், பிரிவு 7) — தள இயங்குதலுக்கு அவசியமானது",
+        "data_categories_involved": [
+          "ip_address",
+          "device_id",
+          "user_agent",
+          "watch_duration"
+        ],
+        "recipients_or_third_parties": [
+          "Akamai Technologies",
+          "Mux Inc.",
+          "AWS CloudFront"
+        ],
+        "retention_policy": "மூல ஸ்ட்ரீமிங் பதிவுகள் 90 நாட்கள். முழு IP முகவரி 7 நாட்கள். ஒட்டுமொத்த QoE அளவீடுகள் 24 மாதங்கள்.",
+        "retention_duration_value": 90,
+        "retention_duration_unit": "DAYS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_push_notifications",
+        "name": "புஷ் அறிவிப்புகள்",
+        "description": "உங்கள் தேர்ந்தெடுத்த மொழியில் முக்கியமான செய்தி எச்சரிக்கைகள் மற்றும் நேரலை ஆரம்ப அறிவிப்புகளை உங்கள் சாதனத்திற்கு அனுப்ப.",
+        "legal_basis": "ஒப்புதல் (DPDP சட்டம், பிரிவு 6) — OS அனுமதி மூலம்; அமைப்புகள் → அறிவிப்புகள் இல் எப்போதும் திரும்பப் பெறலாம்",
+        "data_categories_involved": [
+          "push_token",
+          "preferred_language",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "Firebase Cloud Messaging (Google)",
+          "Apple Push Notification service"
+        ],
+        "retention_policy": "புஷ் டோக்கன்கள் பயனர் பதிவை நீக்கும் வரை அல்லது 90 நாட்கள் செயலற்ற நிலையில் காலாவதியாகும் வரை. அறிவிப்பு பதிவுகள் 6 மாதங்கள்.",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_community_engagement",
+        "name": "சமுதாய அம்சங்கள் — கருத்துகள் மற்றும் கருத்துக்கணிப்புகள்",
+        "description": "தமிழ், ஹிந்தி, தெலுங்கு அல்லது ஆங்கிலத்தில் கருத்துகளை இடுகையிட, கருத்துக்கணிப்புகளில் வாக்களிக்க மற்றும் திரை24 வாசகர் சமுதாயத்துடன் தொடர்புகொள்ள.",
+        "legal_basis": "ஒப்புதல் (DPDP சட்டம், பிரிவு 6)",
+        "data_categories_involved": [
+          "full_name",
+          "profile_photo",
+          "comment_text",
+          "poll_response",
+          "ip_address"
+        ],
+        "recipients_or_third_parties": [
+          "Google Perspective API"
+        ],
+        "retention_policy": "கருத்துகள் கணக்கு செயலில் இருக்கும் வரை பொதுவில் கிடைக்கும். கணக்கு நீக்கப்பட்ட பிறகு 30 நாட்களுக்குள் பெயர் 'Deleted User' ஆக மாற்றப்படும். மிதவை பதிவுகள் 3 ஆண்டுகள்.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_advertising",
+        "name": "தனிப்பயனாக்கப்பட்ட விளம்பரம்",
+        "description": "திரை24 இலவசமாக இருக்க உங்கள் உள்ளடக்க ஆர்வங்கள் மற்றும் தோராயமான இடத்தின் அடிப்படையில் பொருத்தமான விளம்பரங்களை காட்ட. விளம்பர நிறுவனங்களுடன் மட்டுமே போலி பெயர் பகுதி ஐடிகள் பகிரப்படும் — நேரடி தனிப்பட்ட தகவல் இல்லை.",
+        "legal_basis": "ஒப்புதல் (DPDP சட்டம், பிரிவு 6) — முதல் தொடக்கத்தில் ஒப்புதல் நிர்வாக தளம் மூலம்",
+        "data_categories_involved": [
+          "advertising_id",
+          "ad_interaction",
+          "inferred_interests",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "Google Ad Manager",
+          "InMobi",
+          "Taboola",
+          "Nielsen Digital Ad Ratings"
+        ],
+        "retention_policy": "விளம்பர தொடர்பு பதிவுகள் 13 மாதங்கள். பயனர் பிரிவுகள் 30 நாட்களுக்கு ஒரு முறை புதுப்பிக்கப்படும்; ஒப்புதல் திரும்பப் பெற்றவுடன் நீக்கப்படும்.",
+        "retention_duration_value": 13,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_newsletters",
+        "name": "மின்னஞ்சல் மற்றும் SMS செய்தி அனுப்புதல்",
+        "description": "பதிவு செய்த பயனர்களுக்கு காலை செய்தி சுருக்கங்கள், முக்கிய செய்தி எச்சரிக்கைகள் மற்றும் வாராந்திர தொகுக்கப்பட்ட பதிப்புகளை அவர்களின் விருப்பமான மொழியில் அனுப்ப. பரிவர்த்தனை செய்திகள் (ரசீதுகள், கடவுச்சொல் மீட்டமைவு) சந்தைப்படுத்தல் ஒப்புதலைப் பொருட்படுத்தாமல் அனுப்பப்படும்.",
+        "legal_basis": "ஒப்புதல் (DPDP சட்டம், பிரிவு 6) சந்தைப்படுத்தலுக்கு; ஒப்பந்தத் தேவை (பிரிவு 7(a)) பரிவர்த்தனை செய்திகளுக்கு",
+        "data_categories_involved": [
+          "email_address",
+          "mobile_number",
+          "full_name",
+          "preferred_language"
+        ],
+        "recipients_or_third_parties": [
+          "Mailchimp (Intuit Inc.)",
+          "Exotel Techcom Pvt. Ltd."
+        ],
+        "retention_policy": "செயலில் உள்ள சந்தாதாரர் தரவு சந்தாவின் காலம் வரை. பதிவை நீக்கிய முகவரிகள் opt-out ஐ மதிக்க காலவரையின்றி suppression பட்டியலில் வைக்கப்படும். மின்னஞ்சல் engagement பதிவுகள் 24 மாதங்கள்.",
+        "retention_duration_value": 24,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_payments",
+        "name": "பிரீமியம் சந்தா மற்றும் கட்டண செயல்முறை",
+        "description": "திரை24 Plus சந்தாக்களுக்கான கட்டணங்களை செயல்படுத்த, பில்லிங் சுழற்சிகளை நிர்வகிக்க மற்றும் GST இணக்கமான விலைப்பட்டியல்களை வழங்க. முழு அட்டை தரவு எங்கள் சேவையகங்களில் சேமிக்கப்படுவதில்லை.",
+        "legal_basis": "ஒப்பந்தத் தேவை (DPDP சட்டம், பிரிவு 7(a))",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "mobile_number",
+          "payment_token",
+          "transaction_id",
+          "billing_address",
+          "subscription_status"
+        ],
+        "recipients_or_third_parties": [
+          "Razorpay Software Pvt. Ltd.",
+          "Apple App Store",
+          "Google Play Store",
+          "Zoho Books"
+        ],
+        "retention_policy": "வரவு செலவு பதிவுகள் மற்றும் GST விலைப்பட்டியல்கள் வருமான வரிச் சட்டம் மற்றும் GST சட்டத்தின்படி 8 ஆண்டுகள். சந்தா ரத்து செய்த 30 நாட்களுக்குள் கட்டண டோக்கன் நீக்கப்படும்.",
+        "retention_duration_value": 8,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_fraud_safety",
+        "name": "மோசடி கண்டறிதல் மற்றும் தள பாதுகாப்பு",
+        "description": "IT சட்டம் 2000 மற்றும் POCSO சட்ட கடமைகளுக்கு இணங்க கணக்கு மோசடி, போலி பதிவுகள் மற்றும் சட்டவிரோத உள்ளடக்கத்தை கண்டறிந்து தடுக்க.",
+        "legal_basis": "சட்டப்பூர்வ கடமை மற்றும் சட்டப்பூர்வ பயன்பாடு (DPDP சட்டம், பிரிவுகள் 7(e) மற்றும் 7(g))",
+        "data_categories_involved": [
+          "ip_address",
+          "device_id",
+          "user_agent"
+        ],
+        "recipients_or_third_parties": [
+          "AWS WAF & Shield",
+          "Cloudflare Bot Management",
+          "Microsoft PhotoDNA"
+        ],
+        "retention_policy": "மோசடி சமிக்ஞைகள் மற்றும் தடுக்கப்பட்ட IP பதிவுகள் 12 மாதங்கள். CSAM கண்டறிதல் அறிக்கைகள் 5 ஆண்டுகள்.",
+        "retention_duration_value": 12,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_analytics",
+        "name": "செயலி மற்றும் தள பகுப்பாய்வு",
+        "description": "தள ஸ்திரத்தன்மையை மேம்படுத்த செயலி செயலிழப்புகள், ஏற்றம் நேரம் மற்றும் பயனர் பயணங்களை கண்காணிக்க. பகுப்பாய்வு செயலாக்கிகளுக்கு சென்றடைவதற்கு முன்பு தனிப்பட்ட தகவல் நீக்கப்படும்.",
+        "legal_basis": "சட்டப்பூர்வ பயன்பாடு (DPDP சட்டம், பிரிவு 7) — தள இயங்குதலுக்கு அவசியமான பகுப்பாய்வு",
+        "data_categories_involved": [
+          "device_id",
+          "ip_address",
+          "user_agent",
+          "video_watch_history"
+        ],
+        "recipients_or_third_parties": [
+          "Firebase Crashlytics (Google)",
+          "Mixpanel Inc.",
+          "Cloudflare"
+        ],
+        "retention_policy": "செயலிழப்பு பதிவுகள் 90 நாட்கள். மூல அமர்வு நிகழ்வுகள் 6 மாதங்கள். ஒட்டுமொத்த பகுப்பாய்வு 24 மாதங்கள்.",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      {
+        "id": "full_name",
+        "name": "முழு பெயர்",
+        "description": "பதிவின்போது வழங்கப்பட்ட உங்கள் சட்டப்பூர்வ பெயர், கணக்கு அடையாளம் மற்றும் தனிப்பயன் வாழ்த்துகளுக்கு பயன்படுத்தப்படுகிறது."
+      },
+      {
+        "id": "email_address",
+        "name": "மின்னஞ்சல் முகவரி",
+        "description": "கணக்கு தகவல்தொடர்பு, செய்தி அனுப்புதல் மற்றும் சந்தா ரசீதுகளுக்கான முதன்மை தொடர்பு."
+      },
+      {
+        "id": "mobile_number",
+        "name": "கைபேசி எண்",
+        "description": "உள்நுழைவின்போது OTP சரிபார்ப்புக்கும், SMS செய்தி எச்சரிக்கைகளுக்கும் பயன்படுத்தப்படுகிறது."
+      },
+      {
+        "id": "preferred_language",
+        "name": "மொழி விருப்பம்",
+        "description": "தமிழ், ஹிந்தி, தெலுங்கு அல்லது ஆங்கிலம் — சரியான செய்தி பதிப்பிற்கு திருப்பிவிட பயன்படுத்தப்படுகிறது."
+      },
+      {
+        "id": "video_watch_history",
+        "name": "வீடியோ பார்வை வரலாறு",
+        "description": "நீங்கள் பார்த்த வீடியோக்கள் மற்றும் பார்வை காலம், உங்கள் ஊட்டத்தை தனிப்பயனாக்க பயன்படுகிறது."
+      },
+      {
+        "id": "inferred_interests",
+        "name": "பகுத்தறியப்பட்ட ஆர்வங்கள்",
+        "description": "உங்கள் நடத்தையிலிருந்து பெறப்பட்ட தலைப்பு லேபல்கள். அரசியல் ஆர்வ சமிக்ஞைகள் உணர்திறன் வாய்ந்தவை மற்றும் விளம்பரதாரர்களுடன் ஒருபோதும் பகிரப்படுவதில்லை."
+      },
+      {
+        "id": "payment_token",
+        "name": "கட்டண டோக்கன்",
+        "description": "Razorpay வழங்கிய டோக்கனைஸ் செய்யப்பட்ட கட்டண முறை குறிப்பு. முழு அட்டை தரவு திரை24 ஆல் சேமிக்கப்படுவதில்லை."
+      },
+      {
+        "id": "comment_text",
+        "name": "கருத்து உள்ளடக்கம்",
+        "description": "கருத்துப் பிரிவில் நீங்கள் வெளியிடும் உரை — பயனர் உருவாக்கிய பொது உள்ளடக்கம்."
+      }
+    ],
+    "data_subject_categories": [
+      "பதிவு செய்யப்பட்ட பயனர்",
+      "அனாமதேய பார்வையாளர்",
+      "பிரீமியம் சந்தாதாரர்",
+      "செய்தி கடிதம் சந்தாதாரர்"
+    ],
+    "security_measures": "ஓய்வில் AES-256 குறியாக்கம் (AWS RDS, மும்பை); பரிமாற்றத்தில் TLS 1.3; bcrypt கடவுச்சொல் ஹாஷிங்; Widevine/FairPlay DRM பிரீமியம் வீடியோவிற்கு; Razorpay மூலம் PCI-DSS Level 1 கட்டண செயலாக்கம்; அனைத்து ஊழியர்களுக்கும் MFA கொண்ட பூமிக அடிப்படையிலான அணுகல் கட்டுப்பாடு; ஆண்டுதோறும் மூன்றாம் தரப்பு ஊடுருவல் சோதனை.",
+    "processors": [
+      {
+        "name": "Amazon Web Services (AWS)",
+        "country": "IN",
+        "role": "கிளவுட் ஹோஸ்டிங், சேமிப்பு, ML",
+        "contact": "aws-india-dpa@amazon.com"
+      },
+      {
+        "name": "Razorpay Software Pvt. Ltd.",
+        "country": "IN",
+        "role": "கட்டண நுழைவாயில் (PCI-DSS Level 1)",
+        "contact": "privacy@razorpay.com"
+      },
+      {
+        "name": "Google LLC (Firebase, FCM, GAM)",
+        "country": "US",
+        "role": "அங்கீகாரம், புஷ் அறிவிப்புகள், விளம்பர சேவையகம்",
+        "contact": "https://policies.google.com/privacy"
+      },
+      {
+        "name": "Apple Inc.",
+        "country": "US",
+        "role": "iOS புஷ் அறிவிப்புகள், செயலி-உள் கொள்முதல்",
+        "contact": "https://www.apple.com/legal/privacy/"
+      },
+      {
+        "name": "InMobi Pte. Ltd.",
+        "country": "SG",
+        "role": "நிரல்-ரீதியான மொபைல் விளம்பரம்",
+        "contact": "dpo@inmobi.com"
+      }
+    ],
+    "cross_border_transfers": [
+      {
+        "destination_country": "US",
+        "safeguard": "நிலையான ஒப்பந்த விதிகள் (SCCs)",
+        "processor": "Google LLC"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "நிலையான ஒப்பந்த விதிகள் (SCCs)",
+        "processor": "Apple Inc."
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "நிலையான ஒப்பந்த விதிகள் (SCCs)",
+        "processor": "Intuit Inc. (Mailchimp)"
+      },
+      {
+        "destination_country": "SG",
+        "safeguard": "நிலையான ஒப்பந்த விதிகள் (SCCs)",
+        "processor": "InMobi Pte. Ltd."
+      }
+    ],
+    "data_principal_rights_summary": "DPDP சட்டம் 2023-ன் கீழ் உங்களுக்கு உள்ள உரிமைகள்: (1) அணுகல் — நாங்கள் வைத்திருக்கும் தரவை அறிய; (2) திருத்தம் மற்றும் நீக்கம் — அமைப்புகள் → தனியுரிமை → எனது தரவை நிர்வகி மூலம்; (3) புகார் தீர்வு — grievance@thirai24.in (48 மணி நேர ஒப்புதல், 30 நாட்கள் தீர்வு); (4) நியமனம் — உங்களுக்காக உரிமைகளை செயல்படுத்த ஒருவரை நியமிக்கலாம்; (5) ஒப்புதல் திரும்பப் பெறுதல் — அமைப்புகள் → தனியுரிமை → ஒப்புதல்களை நிர்வகி மூலம் உடனடியாக.",
+    "grievance_redressal_info": "புகார் அலுவலர்: திரு. பாலகிருஷ்ணன் ராஜன் | மின்னஞ்சல்: grievance@thirai24.in | தொலைபேசி: +91-44-4500-1101 | DPO: திருமதி. கவிதா சுந்தரேசன் | மின்னஞ்சல்: dpo@thirai24.in | முகவரி: எண். 14, 3வது தளம், கதார் நவாஸ் கான் சாலை, நுங்கம்பாக்கம், சென்னை – 600 006, தமிழ்நாடு, இந்தியா.",
+    "buttons": {
+      "accept_all": "அனைத்தையும் ஏற்று தொடரவும்",
+      "reject_all_non_essential": "விருப்ப செயல்முறைகளை நிராகரிக்கவும்",
+      "manage_preferences": "எனது தனியுரிமையை நிர்வகிக்கவும்",
+      "save_preferences": "எனது தேர்வுகளை சேமிக்கவும்"
+    },
+    "links": {
+      "full_privacy_policy_text": "முழுமையான தனியுரிமைக் கொள்கை",
+      "full_privacy_policy_url": "https://thirai24.in/privacy",
+      "terms_of_service_text": "பயன்பாட்டு விதிகள்",
+      "terms_of_service_url": "https://thirai24.in/terms"
+    },
+    "important_note": "திரை24 உங்கள் தனிப்பட்ட தரவை விற்பனை செய்வதில்லை. அரசியல் ஆர்வ சமிக்ஞைகள் போன்ற உணர்திறன் வாய்ந்த தகவல்கள் விளம்பரதாரர்களுடன் பகிரப்படுவதில்லை. கட்டண அட்டை விவரங்கள் திரை24 சேவையகங்களில் ஒருபோதும் சேமிக்கப்படுவதில்லை. இலவச அடுக்கை பயன்படுத்தும் திறனை பாதிக்காமல் விருப்ப ஒப்புதல்களை எப்போது வேண்டுமானாலும் திரும்பப் பெறலாம்."
+  },
+  "hi": {
+    "title": "थिरै24 (திரை24) — डेटा और गोपनीयता नीति",
+    "introduction": "चेन्नई, तमिलनाडु में मुख्यालय वाली ThiraiVaarta Media Pvt. Ltd. (ब्रांड: थिरै24) आपके व्यक्तिगत डेटा को पारदर्शिता और जिम्मेदारी के साथ सुरक्षित करने के लिए प्रतिबद्ध है। यह नीति बताती है कि जब आप थिरै24 ऐप और वेबसाइट (thirai24.in) पर तमिल, हिंदी, तेलुगु और अंग्रेजी में समाचार देखते हैं, तो हम आपकी जानकारी कैसे एकत्र, उपयोग और सुरक्षित करते हैं। हम डिजिटल पर्सनल डेटा प्रोटेक्शन एक्ट (DPDP) 2023 और लागू भारतीय कानूनों का पालन करते हैं।",
+    "general_purpose_description": "हम व्यक्तिगत बहुभाषी वीडियो समाचार प्रदान करने, समुदाय सुविधाएँ संचालित करने, प्रासंगिक विज्ञापन दिखाने, सदस्यता संसाधित करने और प्लेटफ़ॉर्म सुरक्षा सुनिश्चित करने के लिए आपके डेटा को संसाधित करते हैं।",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_management",
+        "name": "खाता पंजीकरण और प्रबंधन",
+        "description": "आपका थिरै24 खाता बनाने, OTP के माध्यम से पहचान सत्यापित करने, भाषा प्राथमिकताएँ प्रबंधित करने और सभी प्लेटफ़ॉर्म सुविधाओं तक पहुँच सक्षम करने के लिए।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6)",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "mobile_number",
+          "hashed_password",
+          "profile_photo",
+          "date_of_birth",
+          "preferred_language"
+        ],
+        "recipients_or_third_parties": [
+          "Twilio India",
+          "Firebase (Google)"
+        ],
+        "retention_policy": "सक्रिय खाते की अवधि और खाता हटाने के बाद 3 वर्ष। PII 30 दिनों के भीतर हटा दी जाती है।",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_personalisation",
+        "name": "सामग्री वैयक्तिकरण और अनुशंसा",
+        "description": "आपके देखने के इतिहास, भाषा प्राथमिकता और भौगोलिक क्षेत्र के आधार पर समाचार फ़ीड और वीडियो प्लेलिस्ट को वैयक्तिकृत करना।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6) — सेटिंग्स → गोपनीयता → वैयक्तिकृत फ़ीड में बदला जा सकता है",
+        "data_categories_involved": [
+          "video_watch_history",
+          "article_read_history",
+          "search_queries",
+          "content_reactions",
+          "watch_duration",
+          "preferred_language",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "AWS SageMaker"
+        ],
+        "retention_policy": "कच्चे इंटरेक्शन लॉग 13 महीने। एकत्रित व्यवहार प्रोफ़ाइल 36 महीने या खाता हटाने तक।",
+        "retention_duration_value": 13,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_video_streaming",
+        "name": "वीडियो स्ट्रीमिंग और प्लेटफ़ॉर्म प्रदर्शन",
+        "description": "सभी भाषा संस्करणों में वीडियो सामग्री विश्वसनीय रूप से वितरित करना; स्ट्रीम गुणवत्ता की निगरानी करना और तकनीकी समस्याओं को ठीक करना।",
+        "legal_basis": "वैध उपयोग (DPDP अधिनियम, धारा 7) — प्लेटफ़ॉर्म संचालन के लिए आवश्यक",
+        "data_categories_involved": [
+          "ip_address",
+          "device_id",
+          "user_agent",
+          "watch_duration"
+        ],
+        "recipients_or_third_parties": [
+          "Akamai Technologies",
+          "Mux Inc.",
+          "AWS CloudFront"
+        ],
+        "retention_policy": "कच्चे स्ट्रीमिंग लॉग 90 दिन। पूर्ण IP पता 7 दिन। एकत्रित QoE मेट्रिक्स 24 महीने।",
+        "retention_duration_value": 90,
+        "retention_duration_unit": "DAYS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_push_notifications",
+        "name": "पुश नोटिफिकेशन",
+        "description": "आपके चुने हुए भाषा में ब्रेकिंग न्यूज अलर्ट, लाइव स्ट्रीम शुरू होने के अलर्ट और व्यक्तिगत कहानी अनुशंसाएँ आपके डिवाइस पर भेजने के लिए।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6) — OS अनुमति प्रॉम्प्ट के माध्यम से; सेटिंग्स → नोटिफिकेशन में किसी भी समय वापस ली जा सकती है",
+        "data_categories_involved": [
+          "push_token",
+          "preferred_language",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "Firebase Cloud Messaging (Google)",
+          "Apple Push Notification service"
+        ],
+        "retention_policy": "पुश टोकन तब तक बनाए रखे जाते हैं जब तक उपयोगकर्ता अनसब्सक्राइब नहीं करता या 90 दिनों की ऐप निष्क्रियता के बाद टोकन समाप्त हो जाता है। अधिसूचना वितरण लॉग 6 महीने।",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_community_engagement",
+        "name": "सामुदायिक सुविधाएँ — टिप्पणियाँ और सर्वेक्षण",
+        "description": "आपको तमिल, हिंदी, तेलुगु या अंग्रेजी में टिप्पणियाँ पोस्ट करने, सर्वेक्षणों में मतदान करने और थिरै24 पाठक समुदाय के साथ बातचीत करने में सक्षम बनाने के लिए। सामुदायिक दिशानिर्देशों के अनुपालन के लिए सामग्री का संयमन किया जाता है।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6)",
+        "data_categories_involved": [
+          "full_name",
+          "profile_photo",
+          "comment_text",
+          "poll_response",
+          "ip_address"
+        ],
+        "recipients_or_third_parties": [
+          "Google Perspective API"
+        ],
+        "retention_policy": "टिप्पणियाँ खाता सक्रिय रहने तक बनाए रखी जाती हैं। खाता हटाने के बाद 30 दिनों के भीतर प्रदर्शन नाम 'Deleted User' से बदल दिया जाता है। मॉडरेशन लॉग 3 वर्ष।",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_advertising",
+        "name": "वैयक्तिकृत विज्ञापन",
+        "description": "थिरै24 को मुफ़्त रखने के लिए आपकी सामग्री रुचियों के आधार पर प्रासंगिक विज्ञापन दिखाना। विज्ञापन भागीदारों के साथ केवल छद्म नाम वाले सेगमेंट ID साझा किए जाते हैं — कोई कच्चा PII नहीं।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6) — पहली लॉन्च पर CMP के माध्यम से",
+        "data_categories_involved": [
+          "advertising_id",
+          "ad_interaction",
+          "inferred_interests",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "Google Ad Manager",
+          "InMobi",
+          "Taboola",
+          "Nielsen Digital Ad Ratings"
+        ],
+        "retention_policy": "विज्ञापन इंटरेक्शन लॉग 13 महीने। उपयोगकर्ता सेगमेंट हर 30 दिनों में रिफ्रेश किए जाते हैं।",
+        "retention_duration_value": 13,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_newsletters",
+        "name": "ईमेल और SMS न्यूजलेटर और अलर्ट",
+        "description": "सब्सक्राइब किए गए उपयोगकर्ताओं को उनकी पसंदीदा भाषा में सुबह की समाचार डाइजेस्ट, ब्रेकिंग न्यूज अलर्ट और साप्ताहिक क्यूरेटेड संस्करण भेजने के लिए। लेन-देन संबंधी संदेश (रसीदें, पासवर्ड रीसेट) विपणन सहमति की परवाह किए बिना भेजे जाते हैं।",
+        "legal_basis": "विपणन के लिए सहमति (DPDP अधिनियम, धारा 6); लेन-देन संदेशों के लिए अनुबंध आवश्यकता (धारा 7(a))",
+        "data_categories_involved": [
+          "email_address",
+          "mobile_number",
+          "full_name",
+          "preferred_language"
+        ],
+        "recipients_or_third_parties": [
+          "Mailchimp (Intuit Inc.)",
+          "Exotel Techcom Pvt. Ltd."
+        ],
+        "retention_policy": "सक्रिय सब्सक्राइबर डेटा सदस्यता की अवधि के लिए बनाए रखा जाता है। ऑप्ट-आउट का सम्मान करने के लिए अनसब्सक्राइब किए गए पते suppression सूची में अनिश्चित काल के लिए बनाए रखे जाते हैं। ईमेल engagement लॉग 24 महीने।",
+        "retention_duration_value": 24,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_payments",
+        "name": "प्रीमियम सदस्यता और भुगतान प्रसंस्करण",
+        "description": "थिरै24 Plus सदस्यता के लिए भुगतान संसाधित करना, बिलिंग चक्र प्रबंधित करना और GST-अनुपालक चालान जारी करना। पूरा कार्ड डेटा कभी भी हमारे सर्वर पर संग्रहीत नहीं किया जाता।",
+        "legal_basis": "अनुबंध आवश्यकता (DPDP अधिनियम, धारा 7(a))",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "mobile_number",
+          "payment_token",
+          "transaction_id",
+          "billing_address",
+          "subscription_status"
+        ],
+        "recipients_or_third_parties": [
+          "Razorpay Software Pvt. Ltd.",
+          "Apple App Store",
+          "Google Play Store",
+          "Zoho Books"
+        ],
+        "retention_policy": "लेनदेन रिकॉर्ड और GST चालान 8 वर्ष। सदस्यता रद्द होने के 30 दिनों के भीतर भुगतान टोकन हटाया जाता है।",
+        "retention_duration_value": 8,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_fraud_safety",
+        "name": "धोखाधड़ी पहचान और प्लेटफ़ॉर्म सुरक्षा",
+        "description": "IT अधिनियम 2000 और POCSO अधिनियम दायित्वों के अनुपालन में खाता धोखाधड़ी, नकली पंजीकरण और अवैध सामग्री का पता लगाना और रोकना।",
+        "legal_basis": "वैधानिक दायित्व और वैध उपयोग (DPDP अधिनियम, धाराएँ 7(e) और 7(g))",
+        "data_categories_involved": [
+          "ip_address",
+          "device_id",
+          "user_agent"
+        ],
+        "recipients_or_third_parties": [
+          "AWS WAF & Shield",
+          "Cloudflare Bot Management",
+          "Microsoft PhotoDNA"
+        ],
+        "retention_policy": "धोखाधड़ी संकेत और अवरुद्ध IP लॉग 12 महीने। CSAM रिपोर्ट 5 वर्ष।",
+        "retention_duration_value": 12,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_analytics",
+        "name": "ऐप और प्लेटफ़ॉर्म विश्लेषण",
+        "description": "प्लेटफ़ॉर्म स्थिरता में सुधार के लिए क्रैश और उपयोगकर्ता यात्राओं की निगरानी करना। विश्लेषण प्रोसेसर तक पहुँचने से पहले PII हटा दी जाती है।",
+        "legal_basis": "वैध उपयोग (DPDP अधिनियम, धारा 7)",
+        "data_categories_involved": [
+          "device_id",
+          "ip_address",
+          "user_agent"
+        ],
+        "recipients_or_third_parties": [
+          "Firebase Crashlytics (Google)",
+          "Mixpanel Inc.",
+          "Cloudflare"
+        ],
+        "retention_policy": "क्रैश लॉग 90 दिन। कच्चे सत्र ईवेंट 6 महीने। एकत्रित विश्लेषण 24 महीने।",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      {
+        "id": "full_name",
+        "name": "पूरा नाम",
+        "description": "पंजीकरण के दौरान प्रदान किया गया आपका कानूनी नाम, खाता पहचान के लिए उपयोग किया जाता है।"
+      },
+      {
+        "id": "email_address",
+        "name": "ईमेल पता",
+        "description": "खाता संचार और न्यूजलेटर वितरण के लिए प्राथमिक संपर्क।"
+      },
+      {
+        "id": "mobile_number",
+        "name": "मोबाइल नंबर",
+        "description": "लॉगिन के दौरान OTP सत्यापन और SMS समाचार अलर्ट के लिए उपयोग किया जाता है।"
+      },
+      {
+        "id": "preferred_language",
+        "name": "भाषा प्राथमिकता",
+        "description": "तमिल, हिंदी, तेलुगु या अंग्रेजी — आपको सही समाचार संस्करण पर ले जाने के लिए।"
+      },
+      {
+        "id": "video_watch_history",
+        "name": "वीडियो देखने का इतिहास",
+        "description": "आपके द्वारा देखे गए वीडियो और देखने की अवधि, आपके फ़ीड को वैयक्तिकृत करने के लिए।"
+      },
+      {
+        "id": "payment_token",
+        "name": "भुगतान टोकन",
+        "description": "Razorpay द्वारा प्रदान किया गया टोकनाइज़्ड संदर्भ। पूरा कार्ड डेटा थिरै24 द्वारा कभी संग्रहीत नहीं किया जाता।"
+      },
+      {
+        "id": "inferred_interests",
+        "name": "अनुमानित रुचि सेगमेंट",
+        "description": "आपके व्यवहार से प्राप्त विषय लेबल। राजनीतिक रुचि संकेत संवेदनशील हैं और विज्ञापनदाताओं के साथ कभी साझा नहीं किए जाते।"
+      }
+    ],
+    "data_subject_categories": [
+      "पंजीकृत उपयोगकर्ता",
+      "अनाम आगंतुक",
+      "प्रीमियम सदस्य",
+      "न्यूजलेटर सदस्य"
+    ],
+    "security_measures": "विश्राम पर AES-256 एन्क्रिप्शन; पारगमन में TLS 1.3; bcrypt पासवर्ड हैशिंग; Widevine/FairPlay DRM; Razorpay के माध्यम से PCI-DSS Level 1 भुगतान; MFA के साथ भूमिका-आधारित अभिगम; वार्षिक तृतीय-पक्ष पेनेट्रेशन परीक्षण।",
+    "processors": [
+      {
+        "name": "Amazon Web Services (AWS)",
+        "country": "IN",
+        "role": "क्लाउड होस्टिंग, स्टोरेज, ML",
+        "contact": "aws-india-dpa@amazon.com"
+      },
+      {
+        "name": "Razorpay Software Pvt. Ltd.",
+        "country": "IN",
+        "role": "भुगतान गेटवे (PCI-DSS Level 1)",
+        "contact": "privacy@razorpay.com"
+      },
+      {
+        "name": "Google LLC (Firebase, FCM, GAM)",
+        "country": "US",
+        "role": "प्रमाणीकरण, पुश नोटिफिकेशन, विज्ञापन सर्वर",
+        "contact": "https://policies.google.com/privacy"
+      },
+      {
+        "name": "Apple Inc.",
+        "country": "US",
+        "role": "iOS पुश नोटिफिकेशन, इन-ऐप खरीदारी",
+        "contact": "https://www.apple.com/legal/privacy/"
+      },
+      {
+        "name": "InMobi Pte. Ltd.",
+        "country": "SG",
+        "role": "प्रोग्रामेटिक मोबाइल विज्ञापन",
+        "contact": "dpo@inmobi.com"
+      }
+    ],
+    "cross_border_transfers": [
+      {
+        "destination_country": "US",
+        "safeguard": "मानक संविदात्मक खंड (SCCs)",
+        "processor": "Google LLC"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "मानक संविदात्मक खंड (SCCs)",
+        "processor": "Apple Inc."
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "मानक संविदात्मक खंड (SCCs)",
+        "processor": "Intuit Inc. (Mailchimp)"
+      },
+      {
+        "destination_country": "SG",
+        "safeguard": "मानक संविदात्मक खंड (SCCs)",
+        "processor": "InMobi Pte. Ltd."
+      }
+    ],
+    "data_principal_rights_summary": "DPDP अधिनियम 2023 के तहत आपके अधिकार: (1) पहुँच — हम जो डेटा रखते हैं उसे जानें; (2) सुधार और मिटाना — सेटिंग्स → गोपनीयता → मेरा डेटा प्रबंधित करें के माध्यम से; (3) शिकायत निवारण — grievance@thirai24.in पर (48 घंटे स्वीकृति, 30 दिन समाधान); (4) नामांकन; (5) सहमति वापस लें — सेटिंग्स → गोपनीयता → सहमतियाँ प्रबंधित करें के माध्यम से तुरंत।",
+    "grievance_redressal_info": "शिकायत अधिकारी: श्री बालकृष्णन राजन | ईमेल: grievance@thirai24.in | फोन: +91-44-4500-1101 | DPO: सुश्री कविता सुंदरेसन | ईमेल: dpo@thirai24.in | पता: नं. 14, तीसरी मंजिल, खादर नवाज़ खान रोड, नुंगम्बाकम, चेन्नई – 600 006, तमिलनाडु, भारत।",
+    "buttons": {
+      "accept_all": "सभी स्वीकार करें और जारी रखें",
+      "reject_all_non_essential": "वैकल्पिक प्रसंस्करण अस्वीकार करें",
+      "manage_preferences": "मेरी गोपनीयता प्रबंधित करें",
+      "save_preferences": "मेरी पसंद सहेजें"
+    },
+    "links": {
+      "full_privacy_policy_text": "पूर्ण गोपनीयता नीति",
+      "full_privacy_policy_url": "https://thirai24.in/privacy",
+      "terms_of_service_text": "उपयोग की शर्तें",
+      "terms_of_service_url": "https://thirai24.in/terms"
+    },
+    "important_note": "थिरै24 आपका व्यक्तिगत डेटा नहीं बेचता। राजनीतिक रुचि संकेत जैसे संवेदनशील अनुमानित डेटा विज्ञापनदाताओं के साथ कभी साझा नहीं किए जाते। भुगतान कार्ड विवरण केवल Razorpay (PCI-DSS Level 1) द्वारा संसाधित किए जाते हैं और कभी भी थिरै24 सर्वर पर संग्रहीत नहीं किए जाते।"
+  },
+  "te": {
+    "title": "థిరై24 (திரை24) — డేటా మరియు గోపనీయత విధానం",
+    "introduction": "చెన్నై, తమిళనాడులో ప్రధాన కార్యాలయం కలిగిన ThiraiVaarta Media Pvt. Ltd. (థిరై24), మీ వ్యక్తిగత డేటాను పారదర్శకంగా మరియు బాధ్యతగా రక్షించడానికి కట్టుబడి ఉంది. మీరు థిరై24 యాప్ మరియు thirai24.in వెబ్‌సైట్ ద్వారా తమిళ, హిందీ, తెలుగు మరియు ఆంగ్లంలో వార్తలను యాక్సెస్ చేసేటప్పుడు మేము మీ సమాచారాన్ని ఎలా సేకరిస్తామో, ఉపయోగిస్తామో మరియు సురక్షితంగా ఉంచుతామో ఈ విధానం వివరిస్తుంది. మేము DPDP చట్టం 2023 మరియు వర్తించే భారతీయ చట్టాలకు అనుగుణంగా పని చేస్తాము.",
+    "general_purpose_description": "వ్యక్తిగతీకరించిన బహుభాషా వీడియో వార్తలను అందించడానికి, కమ్యూనిటీ ఫీచర్లను నిర్వహించడానికి, సంబంధిత ప్రకటనలు అందించడానికి, చందాలను ప్రాసెస్ చేయడానికి మరియు ప్లాట్‌ఫారమ్ భద్రతను నిర్ధారించడానికి మేము మీ డేటాను ప్రాసెస్ చేస్తాము.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_account_management",
+        "name": "ఖాతా నమోదు మరియు నిర్వహణ",
+        "description": "మీ థిరై24 ఖాతాను సృష్టించడానికి, OTP ద్వారా గుర్తింపు ధృవీకరించడానికి, భాషా ప్రాధాన్యతలను నిర్వహించడానికి మరియు అన్ని ప్లాట్‌ఫారమ్ ఫీచర్లకు యాక్సెస్ అనుమతించడానికి.",
+        "legal_basis": "సమ్మతి (DPDP చట్టం, సెక్షన్ 6)",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "mobile_number",
+          "hashed_password",
+          "profile_photo",
+          "date_of_birth",
+          "preferred_language"
+        ],
+        "recipients_or_third_parties": [
+          "Twilio India",
+          "Firebase (Google)"
+        ],
+        "retention_policy": "చురుకైన ఖాతా వ్యవధి మరియు ఖాతా తొలగింపు తర్వాత 3 సంవత్సరాలు. PII 30 రోజులలోపు తొలగించబడుతుంది.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_personalisation",
+        "name": "కంటెంట్ వ్యక్తిగతీకరణ మరియు సిఫారసు",
+        "description": "మీ వీక్షణ చరిత్ర, భాషా ప్రాధాన్యత మరియు భౌగోళిక ప్రాంతం ఆధారంగా వార్తల ఫీడ్ మరియు వీడియో ప్లేలిస్ట్‌ను వ్యక్తిగతీకరించడానికి.",
+        "legal_basis": "సమ్మతి (DPDP చట్టం, సెక్షన్ 6) — సెట్టింగ్‌లు → గోపనీయత → వ్యక్తిగతీకరించిన ఫీడ్‌లో మార్చవచ్చు",
+        "data_categories_involved": [
+          "video_watch_history",
+          "article_read_history",
+          "search_queries",
+          "content_reactions",
+          "watch_duration",
+          "preferred_language",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "AWS SageMaker"
+        ],
+        "retention_policy": "ముడి పరస్పర చర్య లాగ్‌లు 13 నెలలు. సమగ్ర ప్రవర్తనా ప్రొఫైల్‌లు 36 నెలలు లేదా ఖాతా తొలగింపు వరకు.",
+        "retention_duration_value": 13,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_video_streaming",
+        "name": "వీడియో స్ట్రీమింగ్ మరియు ప్లాట్‌ఫారమ్ పనితీరు",
+        "description": "అన్ని భాషా సంస్కరణలలో వీడియో కంటెంట్‌ను నమ్మకంగా అందించడానికి; స్ట్రీమ్ నాణ్యతను పర్యవేక్షించడానికి; సాంకేతిక సమస్యలను పరిష్కరించడానికి.",
+        "legal_basis": "చట్టసమ్మత వినియోగం (DPDP చట్టం, సెక్షన్ 7) — ప్లాట్‌ఫారమ్ నిర్వహణకు అవసరం",
+        "data_categories_involved": [
+          "ip_address",
+          "device_id",
+          "user_agent",
+          "watch_duration"
+        ],
+        "recipients_or_third_parties": [
+          "Akamai Technologies",
+          "Mux Inc.",
+          "AWS CloudFront"
+        ],
+        "retention_policy": "ముడి స్ట్రీమింగ్ లాగ్‌లు 90 రోజులు. పూర్తి IP చిరునామా 7 రోజులు. సమగ్ర QoE కొలమానాలు 24 నెలలు.",
+        "retention_duration_value": 90,
+        "retention_duration_unit": "DAYS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_push_notifications",
+        "name": "పుష్ నోటిఫికేషన్లు",
+        "description": "మీ ఎంచుకున్న భాషలో బ్రేకింగ్ న్యూస్ అలర్ట్‌లు, లైవ్ స్ట్రీమ్ ప్రారంభ అలర్ట్‌లు మరియు వ్యక్తిగతీకరించిన కథనాల సిఫారసులను మీ పరికరానికి పంపడానికి.",
+        "legal_basis": "సమ్మతి (DPDP చట్టం, సెక్షన్ 6) — OS అనుమతి ప్రాంప్ట్ ద్వారా; సెట్టింగ్‌లు → నోటిఫికేషన్లు ద్వారా ఎప్పుడైనా ఉపసంహరించుకోవచ్చు",
+        "data_categories_involved": [
+          "push_token",
+          "preferred_language",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "Firebase Cloud Messaging (Google)",
+          "Apple Push Notification service"
+        ],
+        "retention_policy": "పుష్ టోకెన్‌లు వినియోగదారు అన్‌సబ్‌స్క్రైబ్ చేసే వరకు లేదా 90 రోజుల యాప్ నిష్క్రియత తర్వాత టోకెన్ గడువు ముగిసే వరకు నిల్వ చేయబడతాయి. నోటిఫికేషన్ డెలివరీ లాగ్‌లు 6 నెలలు.",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_community_engagement",
+        "name": "కమ్యూనిటీ ఫీచర్లు — వ్యాఖ్యలు మరియు పోల్‌లు",
+        "description": "తమిళ, హిందీ, తెలుగు లేదా ఆంగ్లంలో వ్యాఖ్యలు పోస్ట్ చేయడానికి, పోల్‌లలో ఓటు వేయడానికి మరియు థిరై24 పాఠక కమ్యూనిటీతో పరస్పర చర్య చేయడానికి మీకు అనుమతించడానికి. కమ్యూనిటీ మార్గదర్శకాలకు అనుగుణంగా కంటెంట్ మాడరేట్ చేయబడుతుంది.",
+        "legal_basis": "సమ్మతి (DPDP చట్టం, సెక్షన్ 6)",
+        "data_categories_involved": [
+          "full_name",
+          "profile_photo",
+          "comment_text",
+          "poll_response",
+          "ip_address"
+        ],
+        "recipients_or_third_parties": [
+          "Google Perspective API"
+        ],
+        "retention_policy": "వ్యాఖ్యలు ఖాతా చురుకుగా ఉన్నంత వరకు నిల్వ చేయబడతాయి. ఖాతా తొలగింపు తర్వాత 30 రోజులలోపు ప్రదర్శన పేరు 'Deleted User'గా మార్చబడుతుంది. మాడరేషన్ లాగ్‌లు 3 సంవత్సరాలు.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_advertising",
+        "name": "వ్యక్తిగతీకరించిన ప్రకటనలు",
+        "description": "థిరై24ని ఉచితంగా ఉంచడానికి మీ కంటెంట్ ఆసక్తులు మరియు అంచనా స్థానం ఆధారంగా సంబంధిత ప్రకటనలు చూపించడానికి. ప్రకటనదారులతో కేవలం సూడోనిమస్ సెగ్మెంట్ IDలు మాత్రమే పంచుకోబడతాయి.",
+        "legal_basis": "సమ్మతి (DPDP చట్టం, సెక్షన్ 6) — మొదటి లాంచ్‌లో CMP ద్వారా",
+        "data_categories_involved": [
+          "advertising_id",
+          "ad_interaction",
+          "inferred_interests",
+          "location_state"
+        ],
+        "recipients_or_third_parties": [
+          "Google Ad Manager",
+          "InMobi",
+          "Taboola",
+          "Nielsen Digital Ad Ratings"
+        ],
+        "retention_policy": "ప్రకటన పరస్పర చర్య లాగ్‌లు 13 నెలలు. వినియోగదారు సెగ్మెంట్‌లు ప్రతి 30 రోజులకు రిఫ్రెష్ చేయబడతాయి.",
+        "retention_duration_value": 13,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_newsletters",
+        "name": "ఇమెయిల్ మరియు SMS వార్తాలేఖలు మరియు అలర్ట్‌లు",
+        "description": "సబ్‌స్క్రైబ్ చేసిన వినియోగదారులకు వారి ఇష్టపడే భాషలో ఉదయపు వార్తల సారాంశాలు, బ్రేకింగ్ న్యూస్ అలర్ట్‌లు మరియు వారపు క్యూరేటెడ్ సంచికలు పంపడానికి. లావాదేవీ సందేశాలు (రసీదులు, పాస్‌వర్డ్ రీసెట్) మార్కెటింగ్ సమ్మతితో సంబంధం లేకుండా పంపబడతాయి.",
+        "legal_basis": "మార్కెటింగ్ కోసం సమ్మతి (DPDP చట్టం, సెక్షన్ 6); లావాదేవీ సందేశాల కోసం ఒప్పంద అవసరం (సెక్షన్ 7(a))",
+        "data_categories_involved": [
+          "email_address",
+          "mobile_number",
+          "full_name",
+          "preferred_language"
+        ],
+        "recipients_or_third_parties": [
+          "Mailchimp (Intuit Inc.)",
+          "Exotel Techcom Pvt. Ltd."
+        ],
+        "retention_policy": "చురుకైన చందాదారు డేటా చందా వ్యవధి వరకు నిల్వ చేయబడుతుంది. opt-out ని గౌరవించడానికి అన్‌సబ్‌స్క్రైబ్ చేసిన చిరునామాలు suppression జాబితాలో అనిశ్చితంగా ఉంచబడతాయి. ఇమెయిల్ engagement లాగ్‌లు 24 నెలలు.",
+        "retention_duration_value": 24,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_payments",
+        "name": "ప్రీమియం చందా మరియు చెల్లింపు ప్రాసెసింగ్",
+        "description": "థిరై24 Plus చందాలకు చెల్లింపులు ప్రాసెస్ చేయడానికి, బిల్లింగ్ చక్రాలను నిర్వహించడానికి మరియు GST-అనుగుణమైన ఇన్వాయిస్‌లు జారీ చేయడానికి.",
+        "legal_basis": "ఒప్పంద అవసరం (DPDP చట్టం, సెక్షన్ 7(a))",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "mobile_number",
+          "payment_token",
+          "transaction_id",
+          "billing_address",
+          "subscription_status"
+        ],
+        "recipients_or_third_parties": [
+          "Razorpay Software Pvt. Ltd.",
+          "Apple App Store",
+          "Google Play Store",
+          "Zoho Books"
+        ],
+        "retention_policy": "లావాదేవీ రికార్డులు మరియు GST ఇన్వాయిస్‌లు 8 సంవత్సరాలు. చందా రద్దు తర్వాత 30 రోజులలోపు చెల్లింపు టోకెన్ తొలగించబడుతుంది.",
+        "retention_duration_value": 8,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_fraud_safety",
+        "name": "మోసం గుర్తింపు మరియు ప్లాట్‌ఫారమ్ భద్రత",
+        "description": "IT చట్టం 2000 మరియు POCSO చట్ట బాధ్యతలకు అనుగుణంగా ఖాతా మోసం, నకిలీ నమోదులు మరియు చట్టవిరుద్ధ కంటెంట్‌ను గుర్తించి నిరోధించడానికి.",
+        "legal_basis": "చట్టబద్ధ బాధ్యత మరియు చట్టసమ్మత వినియోగం (DPDP చట్టం, సెక్షన్‌లు 7(e) మరియు 7(g))",
+        "data_categories_involved": [
+          "ip_address",
+          "device_id",
+          "user_agent"
+        ],
+        "recipients_or_third_parties": [
+          "AWS WAF & Shield",
+          "Cloudflare Bot Management",
+          "Microsoft PhotoDNA"
+        ],
+        "retention_policy": "మోసం సిగ్నల్‌లు మరియు బ్లాక్ చేయబడిన IP లాగ్‌లు 12 నెలలు. CSAM నివేదికలు 5 సంవత్సరాలు.",
+        "retention_duration_value": 12,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_analytics",
+        "name": "యాప్ మరియు ప్లాట్‌ఫారమ్ విశ్లేషణ",
+        "description": "ప్లాట్‌ఫారమ్ స్థిరత్వాన్ని మెరుగుపరచడానికి క్రాష్‌లు మరియు వినియోగదారు ప్రయాణాలను పర్యవేక్షించడానికి. విశ్లేషణ ప్రాసెసర్‌లకు చేరే ముందు PII తొలగించబడుతుంది.",
+        "legal_basis": "చట్టసమ్మత వినియోగం (DPDP చట్టం, సెక్షన్ 7)",
+        "data_categories_involved": [
+          "device_id",
+          "ip_address",
+          "user_agent"
+        ],
+        "recipients_or_third_parties": [
+          "Firebase Crashlytics (Google)",
+          "Mixpanel Inc.",
+          "Cloudflare"
+        ],
+        "retention_policy": "క్రాష్ లాగ్‌లు 90 రోజులు. ముడి సెషన్ ఈవెంట్‌లు 6 నెలలు. సమగ్ర విశ్లేషణ 24 నెలలు.",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      {
+        "id": "full_name",
+        "name": "పూర్తి పేరు",
+        "description": "నమోదు సమయంలో అందించిన మీ చట్టపరమైన పేరు, ఖాతా గుర్తింపు కోసం ఉపయోగించబడుతుంది."
+      },
+      {
+        "id": "email_address",
+        "name": "ఇమెయిల్ చిరునామా",
+        "description": "ఖాతా కమ్యూనికేషన్ మరియు వార్తాలేఖ డెలివరీ కోసం ప్రాథమిక సంప్రదింపు."
+      },
+      {
+        "id": "mobile_number",
+        "name": "మొబైల్ నంబర్",
+        "description": "లాగిన్ సమయంలో OTP ధృవీకరణ మరియు SMS వార్తా హెచ్చరికల కోసం ఉపయోగించబడుతుంది."
+      },
+      {
+        "id": "preferred_language",
+        "name": "భాషా ప్రాధాన్యత",
+        "description": "తమిళ, హిందీ, తెలుగు లేదా ఆంగ్లం — మిమ్మల్ని సరైన వార్తల సంచికకు మళ్ళించడానికి."
+      },
+      {
+        "id": "video_watch_history",
+        "name": "వీడియో వీక్షణ చరిత్ర",
+        "description": "మీరు చూసిన వీడియోలు మరియు వీక్షణ వ్యవధి, మీ ఫీడ్‌ను వ్యక్తిగతీకరించడానికి."
+      },
+      {
+        "id": "payment_token",
+        "name": "చెల్లింపు టోకెన్",
+        "description": "Razorpay అందించిన టోకనైజ్డ్ చెల్లింపు పద్ధతి సూచన. పూర్తి కార్డ్ డేటా థిరై24 ద్వారా నిల్వ చేయబడదు."
+      },
+      {
+        "id": "inferred_interests",
+        "name": "అనుమానిత ఆసక్తి సెగ్మెంట్లు",
+        "description": "మీ ప్రవర్తన నుండి తీసుకోబడిన అంశ లేబుల్‌లు. రాజకీయ ఆసక్తి సంకేతాలు సున్నితమైనవి మరియు ప్రకటనదారులతో పంచుకోబడవు."
+      }
+    ],
+    "data_subject_categories": [
+      "నమోదిత వినియోగదారు",
+      "అనామక సందర్శకుడు",
+      "ప్రీమియం చందాదారు",
+      "వార్తాలేఖ చందాదారు"
+    ],
+    "security_measures": "విశ్రాంతిలో AES-256 ఎన్‌క్రిప్షన్ (AWS RDS, ముంబై); ట్రాన్సిట్‌లో TLS 1.3; bcrypt పాస్‌వర్డ్ హాషింగ్; Widevine/FairPlay DRM; Razorpay ద్వారా PCI-DSS Level 1 చెల్లింపు; అన్ని సిబ్బందికి MFA తో పాత్ర-ఆధారిత యాక్సెస్; వార్షిక థర్డ్-పార్టీ పెనెట్రేషన్ పరీక్షలు.",
+    "processors": [
+      {
+        "name": "Amazon Web Services (AWS)",
+        "country": "IN",
+        "role": "క్లౌడ్ హోస్టింగ్, స్టోరేజ్, ML",
+        "contact": "aws-india-dpa@amazon.com"
+      },
+      {
+        "name": "Razorpay Software Pvt. Ltd.",
+        "country": "IN",
+        "role": "చెల్లింపు గేట్‌వే (PCI-DSS Level 1)",
+        "contact": "privacy@razorpay.com"
+      },
+      {
+        "name": "Google LLC (Firebase, FCM, GAM)",
+        "country": "US",
+        "role": "ప్రమాణీకరణ, పుష్ నోటిఫికేషన్లు, యాడ్ సర్వర్",
+        "contact": "https://policies.google.com/privacy"
+      },
+      {
+        "name": "Apple Inc.",
+        "country": "US",
+        "role": "iOS పుష్ నోటిఫికేషన్లు, యాప్-లో కొనుగోళ్లు",
+        "contact": "https://www.apple.com/legal/privacy/"
+      },
+      {
+        "name": "InMobi Pte. Ltd.",
+        "country": "SG",
+        "role": "ప్రోగ్రమాటిక్ మొబైల్ ప్రకటనలు",
+        "contact": "dpo@inmobi.com"
+      }
+    ],
+    "cross_border_transfers": [
+      {
+        "destination_country": "US",
+        "safeguard": "స్టాండర్డ్ కాంట్రాక్చువల్ క్లాజులు (SCCs)",
+        "processor": "Google LLC"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "స్టాండర్డ్ కాంట్రాక్చువల్ క్లాజులు (SCCs)",
+        "processor": "Apple Inc."
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "స్టాండర్డ్ కాంట్రాక్చువల్ క్లాజులు (SCCs)",
+        "processor": "Intuit Inc. (Mailchimp)"
+      },
+      {
+        "destination_country": "SG",
+        "safeguard": "స్టాండర్డ్ కాంట్రాక్చువల్ క్లాజులు (SCCs)",
+        "processor": "InMobi Pte. Ltd."
+      }
+    ],
+    "data_principal_rights_summary": "DPDP చట్టం 2023 కింద మీ హక్కులు: (1) యాక్సెస్ — మేము ఉంచే డేటా గురించి తెలుసుకోండి; (2) దిద్దుబాటు మరియు తొలగింపు — సెట్టింగ్‌లు → గోపనీయత → నా డేటాను నిర్వహించు ద్వారా; (3) ఫిర్యాదు పరిష్కారం — grievance@thirai24.in కి; (4) నామినేషన్; (5) సమ్మతి ఉపసంహరించుకోండి — సెట్టింగ్‌లు → గోపనీయత → సమ్మతులను నిర్వహించు ద్వారా.",
+    "grievance_redressal_info": "ఫిర్యాదు అధికారి: శ్రీ బాలకృష్ణన్ రాజన్ | ఇమెయిల్: grievance@thirai24.in | ఫోన్: +91-44-4500-1101 | DPO: శ్రీమతి కవితా సుందరేసన్ | ఇమెయిల్: dpo@thirai24.in | చిరునామా: నం. 14, 3వ అంతస్తు, ఖాదర్ నవాజ్ ఖాన్ రోడ్, నుంగంబాక్కం, చెన్నై – 600 006, తమిళనాడు, భారతదేశం.",
+    "buttons": {
+      "accept_all": "అన్నీ అంగీకరించి కొనసాగించు",
+      "reject_all_non_essential": "ఐచ్ఛిక ప్రాసెసింగ్ తిరస్కరించు",
+      "manage_preferences": "నా గోపనీయత నిర్వహించు",
+      "save_preferences": "నా ఎంపికలు సేవ్ చేయి"
+    },
+    "links": {
+      "full_privacy_policy_text": "పూర్తి గోపనీయత విధానం",
+      "full_privacy_policy_url": "https://thirai24.in/privacy",
+      "terms_of_service_text": "వినియోగ నిబంధనలు",
+      "terms_of_service_url": "https://thirai24.in/terms"
+    },
+    "important_note": "థిరై24 మీ వ్యక్తిగత డేటాను అమ్మదు. రాజకీయ ఆసక్తి సంకేతాలు వంటి సున్నితమైన అనుమానిత డేటా ప్రకటనదారులతో పంచుకోబడదు. చెల్లింపు కార్డ్ వివరాలు Razorpay (PCI-DSS Level 1) ద్వారా మాత్రమే ప్రాసెస్ చేయబడతాయి మరియు థిరై24 సర్వర్‌లలో ఎప్పుడూ నిల్వ చేయబడవు."
+  }
+}
