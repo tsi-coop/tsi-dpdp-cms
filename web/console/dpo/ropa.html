@@ -128,6 +128,10 @@
 
     <!-- Registry Card -->
     <div class="card">
+        <div id="policy-filter-banner" class="hidden mb-4 px-4 py-2 bg-teal-50 border border-teal-200 rounded-md text-sm text-teal-800 flex justify-between items-center">
+            <span>Showing ROPA entries for policy <span id="policy-filter-label" class="font-mono font-bold"></span></span>
+            <a href="ropa.html" class="text-teal-600 hover:underline font-semibold text-xs">Clear filter ✕</a>
+        </div>
         <div class="flex flex-col md:flex-row gap-3 mb-4">
             <select id="status-filter" onchange="loadEntries()" class="field-input max-w-[160px]">
                 <option value="">All Statuses</option>
@@ -288,6 +292,8 @@
     }
 
     // ---- Load entries ----
+    const POLICY_FILTER = new URLSearchParams(window.location.search).get('policy');
+
     async function loadEntries() {
         const tbody = document.getElementById('ropa-table-body');
         tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-400 italic">Syncing with registry...</td></tr>';
@@ -302,9 +308,12 @@
             });
             if (res.status === 401) { handleLogout(); return; }
             const data = await res.json();
-            const entries = Array.isArray(data) ? data : (data.data || []);
+            let entries = Array.isArray(data) ? data : (data.data || []);
+            if (POLICY_FILTER) {
+                entries = entries.filter(e => parseArr(e.linked_policy_ids).includes(POLICY_FILTER));
+            }
             if (!entries.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">No ROPA entries found. When a policy admin publishes a policy, entries will appear here for your review.</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">${POLICY_FILTER ? `No ROPA entries found for policy ${POLICY_FILTER}.` : 'No ROPA entries found. When a policy admin publishes a policy, entries will appear here for your review.'}</td></tr>`;
                 return;
             }
             tbody.innerHTML = '';
@@ -683,6 +692,10 @@
         const user = localStorage.getItem('username');
         if (user) document.getElementById('username').textContent = user;
         if (!FIDUCIARY_ID) { alert('No fiduciary session found. Please log in.'); handleLogout(); return; }
+        if (POLICY_FILTER) {
+            document.getElementById('policy-filter-label').textContent = POLICY_FILTER;
+            document.getElementById('policy-filter-banner').classList.remove('hidden');
+        }
         loadEntries();
     });
 

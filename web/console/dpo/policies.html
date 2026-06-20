@@ -380,17 +380,6 @@
             </div>
         </form>
 
-        <!-- READ-ONLY VIEW (uses same scrollable container) -->
-        <div id="policy-view-details" class="modal-body hidden">
-            <h3 class="font-semibold text-gray-800 mb-2">Policy Content Breakdown:</h3>
-            <pre id="policy-json-output" class="text-xs font-mono whitespace-pre-wrap bg-slate-50 border border-slate-200 p-6 rounded-lg overflow-x-auto"></pre>
-            <div class="modal-footer px-0 mt-6 -mx-8 -mb-6">
-                <button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 px-8 py-2 rounded-md text-sm font-bold hover:bg-gray-300 transition-all border border-gray-300 shadow-sm">
-                    Close Viewer
-                </button>
-            </div>
-        </div>
-
         <!-- ROPA REVIEW PANEL (shown inline after policy publish) -->
         <div id="ropa-review-panel" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
             <div class="modal-body">
@@ -500,7 +489,7 @@
 
     let timeout; // Debounce
     let tableBody, searchInput, statusFilter, policyModalOverlay, policyForm, errorMessageP;
-    let policyIdHidden, policyIdInput, policyJurisdictionSelect, policyViewDetails, policyJsonOutput;
+    let policyIdHidden, policyIdInput, policyJurisdictionSelect;
     let parsedPolicyJson = null;
 
     async function loadPolicies() {
@@ -565,7 +554,7 @@
         const isArchived = policy.status === 'ARCHIVED';
 
         const actionsHtml = `
-            <button class="text-indigo-600 hover:text-indigo-900 font-bold text-xs mr-3" onclick="viewPolicy('${policy.id}', '${policy.fiduciary_id}')">View</button>
+            <button class="text-indigo-600 hover:text-indigo-900 font-bold text-xs mr-3" onclick="viewRopa('${policy.id}')">View ROPA</button>
             ${isDraft ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-3" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}')">Edit</button>` : ''}
             ${isUnderReview ? `<button class="text-blue-600 hover:text-blue-800 font-bold text-xs mr-3" onclick="reviewRopa('${policy.id}')">Review ROPA</button>` : ''}
             ${!isArchived ? `<button class="text-red-600 hover:text-red-800 font-bold text-xs" onclick="deletePolicy('${policy.id}', '${policy.fiduciary_id}')">Delete</button>` : ''}
@@ -584,21 +573,15 @@
         return row;
     }
 
-    async function viewPolicy(id, fid) {
-        showModal('Policy Viewer', false);
+    async function viewRopa(policyId) {
+        currentReviewPolicyId = policyId;
+        document.getElementById('modal-title').textContent = `ROPA Entries — ${policyId}`;
+        document.getElementById('modal-step-hint').classList.add('hidden');
         policyForm.classList.add('hidden');
-        policyViewDetails.classList.remove('hidden');
-        policyJsonOutput.textContent = 'Parsing artifact...';
-        try {
-            const res = await fetch(API_URL_POLICY, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify({ "_func": "get_policy", "policy_id": id, "fiduciary_id": fid })
-            });
-            const p = await res.json();
-            const content = typeof p.policy_content === 'string' ? JSON.parse(p.policy_content) : p.policy_content;
-            policyJsonOutput.textContent = JSON.stringify(content, null, 2);
-        } catch (e) { policyJsonOutput.textContent = "Error parsing JSON."; }
+        policyModalOverlay.style.display = 'flex';
+        const panel = document.getElementById('ropa-review-panel');
+        panel.style.display = 'flex';
+        await loadRopaReviewEntries(policyId);
     }
 
     async function editPolicy(id, fid) {
@@ -653,7 +636,6 @@
         document.getElementById('error-list').innerHTML = '';
         policyIdHidden.value = '';
         policyIdInput.disabled = false;
-        policyViewDetails.classList.add('hidden');
         document.getElementById('ropa-review-panel').style.display = 'none';
         document.getElementById('save-policy-btn').textContent = 'Next →';
         const stepHint = document.getElementById('modal-step-hint');
@@ -686,7 +668,6 @@
         policyIdHidden = document.getElementById('policy-id-hidden');
         policyIdInput = document.getElementById('policy-id-input');
         policyJurisdictionSelect = document.getElementById('policy-jurisdiction-select');
-        policyViewDetails = document.getElementById('policy-view-details');
 
         document.getElementById('policy-file-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -705,7 +686,6 @@
             };
             reader.readAsText(file);
         });
-        policyJsonOutput = document.getElementById('policy-json-output');
 
         document.getElementById('add-policy-btn').onclick = () => showModal('Create New Policy Version');
         document.getElementById('close-modal-btn').onclick = closeModal;
@@ -858,7 +838,6 @@
     async function reviewRopa(policyId) {
         document.getElementById('modal-title').textContent = `ROPA Review — ${policyId}`;
         policyForm.classList.add('hidden');
-        policyViewDetails.classList.add('hidden');
         policyModalOverlay.style.display = 'flex';
         await showRopaReviewPanel(policyId);
     }
@@ -870,7 +849,6 @@
         stepHint.textContent = 'Step 2 of 2 — Review & publish ROPA entries';
         stepHint.classList.remove('hidden');
         policyForm.classList.add('hidden');
-        policyViewDetails.classList.add('hidden');
         const panel = document.getElementById('ropa-review-panel');
         panel.style.display = 'flex';
         await loadRopaReviewEntries(policyId);

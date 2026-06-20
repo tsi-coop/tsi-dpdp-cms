@@ -335,6 +335,8 @@
             <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
                 <button class="btn-primary" onclick="savePreferences()">Save My Preferences</button>
             </div>
+
+            <div id="save-success-bottom" class="success-banner" style="margin-top:16px;margin-bottom:0;">Your consent preferences have been saved.</div>
         `;
     }
 
@@ -376,17 +378,27 @@
             data_point_consents: dataPointConsents
         });
 
-        const banner = document.getElementById('save-success');
+        const banners = [document.getElementById('save-success'), document.getElementById('save-success-bottom')].filter(Boolean);
         if (result && (result.success || result.consent_record_id || result.id)) {
-            banner.style.display = 'block';
-            setTimeout(() => { banner.style.display = 'none'; }, 4000);
+            banners.forEach(banner => { banner.style.display = 'block'; });
+            setTimeout(() => { banners.forEach(banner => { banner.style.display = 'none'; }); }, 4000);
         } else {
-            banner.style.display = 'block';
-            banner.style.background = '#fef2f2';
-            banner.style.color = '#b91c1c';
-            banner.style.borderColor = '#fecaca';
-            banner.textContent = 'Failed to save preferences. Please try again.';
-            setTimeout(() => { banner.style.display = 'none'; banner.style.background = ''; banner.style.color = ''; banner.style.borderColor = ''; banner.textContent = 'Your consent preferences have been saved.'; }, 5000);
+            banners.forEach(banner => {
+                banner.style.display = 'block';
+                banner.style.background = '#fef2f2';
+                banner.style.color = '#b91c1c';
+                banner.style.borderColor = '#fecaca';
+                banner.textContent = 'Failed to save preferences. Please try again.';
+            });
+            setTimeout(() => {
+                banners.forEach(banner => {
+                    banner.style.display = 'none';
+                    banner.style.background = '';
+                    banner.style.color = '';
+                    banner.style.borderColor = '';
+                    banner.textContent = 'Your consent preferences have been saved.';
+                });
+            }, 5000);
         }
     }
 
