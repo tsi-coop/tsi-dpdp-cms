@@ -125,6 +125,32 @@ public class Notification implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
+                case "set_webhook_config": {
+                    String category = (String) input.get("category");
+                    String webhookUrl = (String) input.get("webhook_url");
+                    String secret = (String) input.get("secret");
+                    if (fiduciaryId == null || category == null
+                            || !(category.equals("NOTIFICATION") || category.equals("PURGE"))
+                            || webhookUrl == null || webhookUrl.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                                "'fiduciary_id', 'webhook_url', and 'category' (NOTIFICATION or PURGE) are required for 'set_webhook_config'.", req.getRequestURI());
+                        return;
+                    }
+                    boolean enabled = !Boolean.FALSE.equals(input.get("enabled"));
+                    setWebhookConfigInDb(fiduciaryId, category, webhookUrl, secret, enabled, loginUserId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Webhook configuration saved."); }});
+                    break;
+                }
+
+                case "list_webhook_configs":
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_webhook_configs'.", req.getRequestURI());
+                        return;
+                    }
+                    outputArray = listWebhookConfigsFromDb(fiduciaryId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    break;
+
                 case "mark_notification_read":
                     UUID notifId = null;
                     String id = (String) input.get("id");
@@ -289,6 +315,82 @@ public class Notification implements Action {
             }
         } catch (ParseException e) {
             throw new SQLException("Failed to parse JSONB content from DB for notification messages: " + e.getMessage(), e);
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return result;
+    }
+
+    /**
+     * Upserts the webhook config for (fiduciaryId, category). If secret is blank/omitted
+     * on an update, the existing encrypted secret is left untouched -- re-saving the URL
+     * or enabled flag doesn't force re-entering it. A secret is required the first time
+     * a category is configured (there's nothing to "leave untouched" yet).
+     */
+    private void setWebhookConfigInDb(UUID fiduciaryId, String category, String webhookUrl, String secret, boolean enabled, UUID loginUserId) throws SQLException {
+        boolean hasSecret = secret != null && !secret.trim().isEmpty();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            if (hasSecret) {
+                String sql = "INSERT INTO webhook_configs (fiduciary_id, category, webhook_url, secret_enc, enabled, last_updated_by_user_id) " +
+                        "VALUES (?, ?, ?, " + DbEncryption.ENCRYPT + ", ?, ?) " +
+                        "ON CONFLICT (fiduciary_id, category) DO UPDATE SET webhook_url = EXCLUDED.webhook_url, " +
+                        "secret_enc = EXCLUDED.secret_enc, enabled = EXCLUDED.enabled, last_updated_at = NOW(), last_updated_by_user_id = EXCLUDED.last_updated_by_user_id";
+                pstmt = conn.prepareStatement(sql);
+                pstmt.setObject(1, fiduciaryId);
+                pstmt.setString(2, category);
+                pstmt.setString(3, webhookUrl);
+                int idx = DbEncryption.bindEncrypt(pstmt, 4, secret);
+                pstmt.setBoolean(idx++, enabled);
+                pstmt.setObject(idx, loginUserId);
+                pstmt.executeUpdate();
+            } else {
+                String sql = "UPDATE webhook_configs SET webhook_url = ?, enabled = ?, last_updated_at = NOW(), last_updated_by_user_id = ? " +
+                        "WHERE fiduciary_id = ? AND category = ?";
+                pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, webhookUrl);
+                pstmt.setBoolean(2, enabled);
+                pstmt.setObject(3, loginUserId);
+                pstmt.setObject(4, fiduciaryId);
+                pstmt.setString(5, category);
+                int affected = pstmt.executeUpdate();
+                if (affected == 0) {
+                    throw new SQLException("No existing webhook configured for this category -- 'secret' is required when configuring it for the first time.");
+                }
+            }
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
+    }
+
+    /**
+     * Returns every configured webhook (NOTIFICATION/PURGE) for a fiduciary, for the
+     * Settings screen to prefill -- never the decrypted secret itself, just whether one
+     * is configured.
+     */
+    private JSONArray listWebhookConfigsFromDb(UUID fiduciaryId) throws SQLException {
+        JSONArray result = new JSONArray();
+        String sql = "SELECT category, webhook_url, enabled FROM webhook_configs WHERE fiduciary_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                JSONObject row = new JSONObject();
+                row.put("category", rs.getString("category"));
+                row.put("webhook_url", rs.getString("webhook_url"));
+                row.put("enabled", rs.getBoolean("enabled"));
+                row.put("secret_configured", true); // a row only exists once a secret has been set
+                result.add(row);
+            }
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }

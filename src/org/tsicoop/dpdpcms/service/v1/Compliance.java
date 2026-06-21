@@ -315,6 +315,13 @@ public class Compliance implements Action {
             } catch (SQLException e) {
                 e.printStackTrace(); // Notification failure must not fail the purge status update
             }
+
+            JSONObject webhookPayload = new JSONObject();
+            webhookPayload.put("id", purgeRequestId.toString());
+            webhookPayload.put("status", confirmationStatus);
+            webhookPayload.put("details", details);
+            webhookPayload.put("user_id", userId);
+            WebhookDispatcher.dispatch(fiduciaryId.toString(), "PURGE", "purge_request_status_updated", webhookPayload);
         }
     }
 

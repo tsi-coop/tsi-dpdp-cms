@@ -4,6 +4,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.PoolDB;
+import org.tsicoop.dpdpcms.framework.WebhookDispatcher;
 import org.tsicoop.dpdpcms.service.v1.App;
 import org.tsicoop.dpdpcms.service.v1.Audit;
 import org.tsicoop.dpdpcms.util.Constants;
@@ -462,6 +463,17 @@ public class CESService {
         } finally {
             pool.cleanup(rs,stmt,conn);
         }
+
+        if (Boolean.TRUE.equals(response.get("success"))) {
+            JSONObject payload = new JSONObject();
+            payload.put("id", response.get("id"));
+            payload.put("user_id", userId);
+            payload.put("purpose_id", purposeId);
+            payload.put("app_id", appId);
+            payload.put("trigger_event", triggerEvent);
+            payload.put("status", status);
+            WebhookDispatcher.dispatch(fiduciaryId, "PURGE", "purge_request_created", payload);
+        }
         return response;
     }
 
@@ -538,12 +550,14 @@ public class CESService {
                                          String notificationType) throws SQLException {
         JSONObject response = new JSONObject();
         String sql = "INSERT INTO notifications (recipient_type, recipient_id, fiduciary_id, notification_type) " +
-                "VALUES (?, ?, ?, ?) RETURNING id";
+                "VALUES (?, ?, ?, ?) RETURNING id, created_at";
 
         PreparedStatement stmt = null;
         ResultSet rs = null;
         PoolDB pool = null;
         Connection conn = null;
+        String newId = null;
+        String createdAt = null;
 
         try {
             pool = new PoolDB();
@@ -557,12 +571,55 @@ public class CESService {
             rs = stmt.executeQuery();
             if (rs.next()) {
                 response.put("success", true);
-                response.put("id", rs.getObject("id").toString());
+                newId = rs.getObject("id").toString();
+                createdAt = rs.getTimestamp("created_at").toInstant().toString();
+                response.put("id", newId);
             }
         } finally {
             pool.cleanup(rs,stmt,conn);
         }
+
+        if (newId != null) {
+            JSONObject payload = new JSONObject();
+            payload.put("id", newId);
+            payload.put("recipient_type", recipientType);
+            payload.put("recipient_id", recipientId);
+            payload.put("notification_type", notificationType);
+            payload.put("created_at", createdAt);
+            payload.put("messages", resolveNotificationMessages(fiduciaryId, notificationType));
+            WebhookDispatcher.dispatch(fiduciaryId, "NOTIFICATION", "notification_created", payload);
+        }
         return response;
+    }
+
+    /**
+     * Looks up the DPO-configured message bundle for (fiduciaryId, notificationType),
+     * same table/shape Notification.java's list_notifications JOIN already uses --
+     * so the NOTIFICATION webhook payload is self-sufficient (no follow-up poll
+     * needed just to get the configured message). Returns null if none configured.
+     */
+    private JSONObject resolveNotificationMessages(String fiduciaryId, String notificationType) {
+        String sql = "SELECT messages FROM notification_message_templates WHERE fiduciary_id = ? AND notification_type = ?";
+        PoolDB pool = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, UUID.fromString(fiduciaryId));
+            pstmt.setString(2, notificationType);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (JSONObject) new JSONParser().parse(rs.getString("messages"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (pool != null) pool.cleanup(rs, pstmt, conn);
+        }
+        return null;
     }
 
     /**
