@@ -346,7 +346,11 @@ public class Compliance implements Action {
             params.add(statusFilter);
         }
         if (appId != null) {
-            sqlBuilder.append(" AND pr.app_id = ?");
+            // Include orphaned purge requests (no linked processor -- see
+            // CESService.recordOrphanComplianceEvent) alongside this App's own, so an
+            // App-scoped poller (e.g. PurgeHandler) can still see and acknowledge them
+            // instead of them being invisible to every App's API key.
+            sqlBuilder.append(" AND (pr.app_id = ? OR pr.app_id IS NULL)");
             params.add(appId);
         }
         if (triggerFilter != null && !triggerFilter.isEmpty()) {
