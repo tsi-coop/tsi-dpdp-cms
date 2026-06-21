@@ -1,6 +1,7 @@
 package org.tsicoop.dpdpcms.service.v1; // Package changed as requested
 
 import org.tsicoop.dpdpcms.ces.CESUtil;
+import org.tsicoop.dpdpcms.ces.CESService;
 import org.tsicoop.dpdpcms.util.Constants;
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available
 import jakarta.servlet.http.HttpServletRequest;
@@ -647,6 +648,13 @@ public class Consent implements Action {
                 result.put("message", "Consent successfully withdrawn and recorded.");
             result.put("record_id", finalNewRecordId.toString());
             result.put("action", action);
+
+            try {
+                String notifType = erasure ? Constants.NOTIF_ERASURE_REQUESTED : Constants.NOTIF_WITHDRAWAL_ACK;
+                new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), notifType);
+            } catch (SQLException e) {
+                e.printStackTrace(); // Notification failure must not fail the withdrawal/erasure operation
+            }
         } catch (Exception e) {
             if (conn != null) conn.rollback();
             System.err.println("SQL Error during withdrawal: " + e.getMessage());
@@ -809,6 +817,11 @@ public class Consent implements Action {
         if(recorded){
             // Audit Log: Log the consent record event
             new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_GIVEN", dataPointConsents.toJSONString());
+            try {
+                new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), Constants.NOTIF_CONSENT_GIVEN);
+            } catch (SQLException e) {
+                e.printStackTrace(); // Notification failure must not fail the consent operation
+            }
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
     }

@@ -96,11 +96,10 @@ public class Notification implements Action {
                         recipientId = appId.toString();
                     }
 
-                    String instanceStatus = (String) input.get("status");
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
 
-                    outputArray = listNotificationsFromDb(recipientType, recipientId, fiduciaryId, instanceStatus, page, limit);
+                    outputArray = listNotificationsFromDb(recipientType, recipientId, fiduciaryId, page, limit);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -160,7 +159,7 @@ public class Notification implements Action {
     /**
      * Retrieves a list of notification instances from the database with optional filtering and pagination.
      */
-    private JSONArray listNotificationsFromDb(String recipientType, String recipientId, UUID fiduciaryId, String statusFilter, int page, int limit) throws SQLException {
+    private JSONArray listNotificationsFromDb(String recipientType, String recipientId, UUID fiduciaryId, int page, int limit) throws SQLException {
         JSONArray instancesArray = new JSONArray();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -182,11 +181,6 @@ public class Notification implements Action {
             sqlBuilder.append(" AND fiduciary_id = ?");
             params.add(fiduciaryId);
         }
-        if (statusFilter != null && !statusFilter.isEmpty()) {
-            sqlBuilder.append(" AND status = ?");
-            params.add(statusFilter);
-        }
-
         sqlBuilder.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);

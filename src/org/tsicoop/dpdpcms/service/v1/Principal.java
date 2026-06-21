@@ -112,7 +112,7 @@ public class Principal implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        String sql = "SELECT id, name FROM fiduciaries WHERE status = 'ACTIVE' ORDER BY name ASC";
+        String sql = "SELECT id, name, primary_domain FROM fiduciaries WHERE status = 'ACTIVE' ORDER BY name ASC";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -121,6 +121,7 @@ public class Principal implements Action {
                 JSONObject fid = new JSONObject();
                 fid.put("fiduciary_id", rs.getString("id"));
                 fid.put("name", rs.getString("name"));
+                fid.put("primary_domain", rs.getString("primary_domain"));
                 result.add(fid);
             }
         } finally {

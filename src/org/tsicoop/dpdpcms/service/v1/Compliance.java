@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.ces.CESService;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -300,6 +301,20 @@ public class Compliance implements Action {
             JSONObject auditContext = new JSONObject();
             auditContext.put("details",details);
             new Audit().logEventAsync(userId, fiduciaryId, serviceType, loginUserId, confirmationStatus, details);
+
+            // Give the Data Principal full lifecycle visibility: notify them once the purge
+            // they triggered (erasure/retention expiry) actually completes, or if it's put on
+            // legal hold instead. Fire-and-forget — a notification failure must not fail the
+            // status update itself.
+            try {
+                if (Constants.EVENT_PURGE_COMPLETED.equals(confirmationStatus)) {
+                    new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), Constants.NOTIF_PURGE_CONFIRM);
+                } else if (Constants.EVENT_LEGAL_HOLD_APPLIED.equals(confirmationStatus)) {
+                    new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), Constants.NOTIF_LEGAL_ONHOLD);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace(); // Notification failure must not fail the purge status update
+            }
         }
     }
 

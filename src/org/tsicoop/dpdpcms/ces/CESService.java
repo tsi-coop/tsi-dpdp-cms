@@ -193,6 +193,9 @@ public class CESService {
                 recordOrphanComplianceEvent(principalId, fiduciaryId, purposeId, Constants.PURGE_TRIGGER_ERASURE,
                         "Erasure request received but no linked data processor found for this purpose — manual review/erasure confirmation required.");
             }
+            // Notify the Data Principal that purge has been initiated for this purpose,
+            // once per purpose, regardless of whether a linked App was found.
+            insertNotification("PRINCIPAL", principalId, fiduciaryId, Constants.NOTIF_PURGE_INIT);
             Iterator<JSONObject> appidIt = appids.iterator();
             while(appidIt.hasNext()){
                 JSONObject appidJSON = (JSONObject) appidIt.next();
@@ -366,6 +369,9 @@ public class CESService {
                         recordOrphanComplianceEvent(principalId, fiduciaryId, purposeId, Constants.PURGE_TRIGGER_EXPIRY,
                                 "Consent/retention period expired but no linked data processor found for this purpose — manual review/erasure confirmation required.");
                     }
+                    // Notify the Data Principal that purge has been initiated for this purpose,
+                    // once per purpose, regardless of whether a linked App was found.
+                    insertNotification("PRINCIPAL", principalId, fiduciaryId, Constants.NOTIF_PURGE_INIT);
                     Iterator<JSONObject> appidIt = appids.iterator();
                     while(appidIt.hasNext()){
                         JSONObject appidJSON = (JSONObject) appidIt.next();
