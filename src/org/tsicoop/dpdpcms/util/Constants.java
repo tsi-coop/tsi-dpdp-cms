@@ -46,6 +46,7 @@ public class Constants {
     public static final String NOTIF_WITHDRAWAL_ACK = "WITHDRAWAL_ACKNOWLEDGMENT";
     public static final String NOTIF_CONSENT_GIVEN = "CONSENT_GIVEN_NOTIFICATION";
     public static final String NOTIF_ERASURE_REQUESTED = "ERASURE_REQUESTED_NOTIFICATION";
+    public static final String NOTIF_BREACH = "BREACH_NOTIFICATION";
 
     // --- Age Categories (Section 9) ---
     public static final String AGE_ADULT = "ADULT";

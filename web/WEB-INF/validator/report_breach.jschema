@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "detected_at": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string"
+    },
+    "affected_purpose_id": {
+      "type": "string"
+    },
+    "affected_data_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "affected_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "actionable_steps": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "_func",
+    "fiduciary_id",
+    "title",
+    "description",
+    "detected_at",
+    "actionable_steps"
+  ]
+}

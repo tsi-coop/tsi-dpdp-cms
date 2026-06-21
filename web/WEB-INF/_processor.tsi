@@ -15,6 +15,7 @@
 /api/v1/job=org.tsicoop.dpdpcms.service.v1.Job
 /api/v1/ropa=org.tsicoop.dpdpcms.service.v1.Ropa
 /api/v1/principal=org.tsicoop.dpdpcms.service.v1.Principal
+/api/v1/breach=org.tsicoop.dpdpcms.service.v1.Breach
 
 
 
