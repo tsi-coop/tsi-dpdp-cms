@@ -18,6 +18,9 @@
     "status": {
       "type": "string"
     },
+    "unread_only": {
+      "type": "boolean"
+    },
     "page": {
       "type": "number"
     },

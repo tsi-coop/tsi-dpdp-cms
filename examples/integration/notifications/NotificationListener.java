@@ -35,6 +35,11 @@ import java.util.Set;
  * picks preferred_language from that bundle (default "en", falling back to whatever
  * language is available if the preferred one isn't configured).
  *
+ * Each notification is marked read via mark_notification_read right after it's
+ * dispatched, and polling requests unread_only -- so persistence lives server-side
+ * (the read_at column), not just in this process's in-memory seenIds set. Restarting
+ * the listener will not re-show notifications already handled in a prior run.
+ *
  * The API key/secret identify exactly one App, which in turn identifies exactly one
  * fiduciary server-side — there is no need to pass a fiduciary id, recipient type, or
  * recipient id; the server resolves the fiduciary from the key and, with no recipient
@@ -144,6 +149,7 @@ public class NotificationListener {
                 body.put("_func", "list_notifications");
                 body.put("page", 1L);
                 body.put("limit", 50L);
+                body.put("unread_only", true);
 
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(url))
@@ -172,6 +178,7 @@ public class NotificationListener {
                                 id));
 
                         dispatchNotify(n, preferredLanguage);
+                        markNotificationRead(httpClient, baseUrl, apiKey, apiSecret, id);
                     }
                 }
             } catch (Exception e) {
@@ -213,5 +220,34 @@ public class NotificationListener {
         if (messages == null || messages.isEmpty()) return null;
         if (messages.get(preferredLanguage) != null) return (String) messages.get(preferredLanguage);
         return (String) messages.values().iterator().next();
+    }
+
+    /**
+     * Marks a notification read right after dispatch, so the unread_only filter on the
+     * next poll (including after a restart) excludes it -- the durable record of "already
+     * handled" lives server-side, not in this process's in-memory seenIds set.
+     * Fire-and-forget: a failure here must not crash the poll loop.
+     */
+    private static void markNotificationRead(HttpClient httpClient, String baseUrl, String apiKey, String apiSecret, String id) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("_func", "mark_notification_read");
+            body.put("id", id);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/v1/client/notification"))
+                    .header("Content-Type", "application/json")
+                    .header("X-API-Key", apiKey)
+                    .header("X-API-Secret", apiSecret)
+                    .POST(HttpRequest.BodyPublishers.ofString(body.toJSONString()))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                System.out.println("[" + Instant.now() + "] Could not mark notification " + id + " read: HTTP " + response.statusCode());
+            }
+        } catch (Exception e) {
+            System.out.println("[" + Instant.now() + "] Could not mark notification " + id + " read: " + e.getMessage());
+        }
     }
 }
