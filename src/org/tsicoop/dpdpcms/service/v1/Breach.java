@@ -33,15 +33,17 @@ import java.util.UUID;
 /**
  * Breach Notification service (DPDP Act Section 8(6)).
  * Lets a DPO report a personal data breach, notifies every affected Data
- * Principal via the existing notifications table (NOTIF_BREACH marker),
+ * Principal via the existing notifications table -- either the generic
+ * BREACH_NOTIFICATION type or a DPO-defined category (e.g.
+ * BREACH_NOTIFICATION_PHISHING) configured via the Settings console screen --
  * tracks the incident's status, and produces a downloadable PDF report
  * suitable for management/Data Protection Board review.
  *
- * NOTE ON DATABASE SCHEMA (db/06_breach.sql):
+ * NOTE ON DATABASE SCHEMA (db/06_breach.sql, db/07_notification_message_templates.sql):
  * - Table 'breach_incidents': id (UUID PK), fiduciary_id (UUID), title, description,
  *   detected_at, reported_at, affected_purpose_id, affected_data_categories (JSONB),
  *   actionable_steps, severity, status, resolution_notes, affected_principal_count,
- *   created_by_user_id, created_at, last_updated_at.
+ *   notification_type, created_by_user_id, created_at, last_updated_at.
  * - Table 'breach_affected_principals': breach_id (UUID), user_id, notified_at.
  */
 public class Breach implements Action {
@@ -88,6 +90,7 @@ public class Breach implements Action {
                     String affectedPurposeId = (String) input.get("affected_purpose_id");
                     JSONArray affectedDataCategories = (JSONArray) input.get("affected_data_categories");
                     JSONArray explicitUserIds = (JSONArray) input.get("affected_user_ids");
+                    String breachCategory = (String) input.get("breach_category");
 
                     if (fiduciaryId == null || title == null || title.isEmpty() || description == null || description.isEmpty()
                             || detectedAtStr == null || detectedAtStr.isEmpty() || actionableSteps == null || actionableSteps.isEmpty()) {
@@ -104,8 +107,15 @@ public class Breach implements Action {
                         return;
                     }
 
+                    // DPO-defined breach category (e.g. "phishing") -> BREACH_NOTIFICATION_PHISHING, so a
+                    // DPO-configured message for that exact type surfaces via the existing list_notifications
+                    // JOIN. Falls back to the generic BREACH_NOTIFICATION type when no category is given.
+                    String notificationType = (breachCategory != null && !breachCategory.trim().isEmpty())
+                            ? Constants.NOTIF_BREACH + "_" + breachCategory.trim().toUpperCase().replaceAll("[^A-Z0-9_]", "_")
+                            : Constants.NOTIF_BREACH;
+
                     JSONObject output = reportBreach(fiduciaryId, title, description, detectedAt, severity, actionableSteps,
-                            affectedPurposeId, affectedDataCategories, explicitUserIds, loginUserId);
+                            affectedPurposeId, affectedDataCategories, explicitUserIds, notificationType, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
                 }
@@ -194,12 +204,15 @@ public class Breach implements Action {
 
     /**
      * Resolves the affected principal set, inserts the incident + affected-principal
-     * rows, and fires a NOTIF_BREACH notification to each affected principal via the
-     * existing notification mechanism (CESService.insertNotification, unmodified).
+     * rows, and notifies each affected principal via the existing notification
+     * mechanism (CESService.insertNotification, unmodified) using notificationType --
+     * either the generic BREACH_NOTIFICATION or a DPO-defined category such as
+     * BREACH_NOTIFICATION_PHISHING. Any DPO-configured message for that exact type
+     * surfaces automatically via Notification.java's existing list_notifications JOIN.
      */
     private JSONObject reportBreach(UUID fiduciaryId, String title, String description, Timestamp detectedAt,
                                      String severity, String actionableSteps, String affectedPurposeId,
-                                     JSONArray affectedDataCategories, JSONArray explicitUserIds, UUID loginUserId) throws SQLException {
+                                     JSONArray affectedDataCategories, JSONArray explicitUserIds, String notificationType, UUID loginUserId) throws SQLException {
         Set<String> affectedUserIds = new LinkedHashSet<>();
         if (explicitUserIds != null) {
             for (Object o : explicitUserIds) {
@@ -217,8 +230,8 @@ public class Breach implements Action {
         UUID breachId = null;
 
         String sqlInsert = "INSERT INTO breach_incidents (fiduciary_id, title, description, detected_at, affected_purpose_id, " +
-                "affected_data_categories, actionable_steps, severity, affected_principal_count, created_by_user_id) " +
-                "VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?) RETURNING id";
+                "affected_data_categories, actionable_steps, severity, affected_principal_count, created_by_user_id, notification_type) " +
+                "VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -233,6 +246,7 @@ public class Breach implements Action {
             pstmt.setString(8, severity);
             pstmt.setInt(9, affectedUserIds.size());
             pstmt.setObject(10, loginUserId);
+            pstmt.setString(11, notificationType);
 
             rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -265,7 +279,7 @@ public class Breach implements Action {
         // Fire-and-forget per principal -- one failed notification must not fail the report.
         for (String userId : affectedUserIds) {
             try {
-                new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), Constants.NOTIF_BREACH);
+                new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), notificationType);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -312,7 +326,7 @@ public class Breach implements Action {
     private JSONArray listBreachesFromDb(UUID fiduciaryId, String statusFilter, int page, int limit) throws SQLException {
         JSONArray result = new JSONArray();
         StringBuilder sqlBuilder = new StringBuilder(
-                "SELECT id, title, severity, status, affected_principal_count, detected_at, reported_at FROM breach_incidents WHERE fiduciary_id = ?");
+                "SELECT id, title, severity, status, affected_principal_count, detected_at, reported_at, notification_type FROM breach_incidents WHERE fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
@@ -344,6 +358,7 @@ public class Breach implements Action {
                 row.put("affected_principal_count", rs.getInt("affected_principal_count"));
                 row.put("detected_at", rs.getTimestamp("detected_at").toInstant().toString());
                 row.put("reported_at", rs.getTimestamp("reported_at").toInstant().toString());
+                row.put("notification_type", rs.getString("notification_type"));
                 result.add(row);
             }
         } finally {
@@ -355,7 +370,7 @@ public class Breach implements Action {
     private JSONObject getBreachFromDb(UUID id) throws SQLException {
         JSONObject breach = null;
         String sql = "SELECT id, fiduciary_id, title, description, detected_at, reported_at, affected_purpose_id, " +
-                "affected_data_categories, actionable_steps, severity, status, resolution_notes, affected_principal_count " +
+                "affected_data_categories, actionable_steps, severity, status, resolution_notes, affected_principal_count, notification_type " +
                 "FROM breach_incidents WHERE id = ?";
 
         PoolDB pool = new PoolDB();
@@ -394,6 +409,7 @@ public class Breach implements Action {
         breach.put("status", rs.getString("status"));
         breach.put("resolution_notes", rs.getString("resolution_notes"));
         breach.put("affected_principal_count", rs.getInt("affected_principal_count"));
+        breach.put("notification_type", rs.getString("notification_type"));
         return breach;
     }
 

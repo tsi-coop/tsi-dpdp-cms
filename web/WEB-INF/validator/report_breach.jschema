@@ -38,6 +38,9 @@
     },
     "actionable_steps": {
       "type": "string"
+    },
+    "breach_category": {
+      "type": "string"
     }
   },
   "required": [

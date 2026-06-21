@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Settings</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67;
+            --tsi-accent: #008D8A;
+            --background: #f4fbf9;
+            --card-bg: #FFFFFF;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open { transform: translateX(0); }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar { transform: translateX(0); }
+            .mobile-header { display: none; }
+            body { padding-left: 250px; }
+        }
+
+        .settings-section {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-section > summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #1e293b;
+        }
+
+        .settings-section > summary::-webkit-details-marker { display: none; }
+
+        .settings-section > summary .chevron {
+            transition: transform 0.2s ease;
+        }
+
+        .settings-section[open] > summary .chevron {
+            transform: rotate(90deg);
+        }
+
+        .settings-section-body {
+            padding: 0 20px 20px 20px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+    <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <span class="text-xl font-bold primary-text">Settings</span>
+    <div class="text-sm text-gray-500">DPO User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="policies.html" class="nav-link">Policies</a>
+            <a href="principals.html" class="nav-link">Principals</a>
+            <a href="compliance.html" class="nav-link">Compliance</a>
+            <a href="grievances.html" class="nav-link">Grievances</a>
+            <a href="audit.html" class="nav-link">Audit</a>
+            <a href="legal.html" class="nav-link">Legal</a>
+            <a href="ropa.html" class="nav-link">ROPA</a>
+            <a href="breach.html" class="nav-link">Breach</a>
+            <a href="reports.html" class="nav-link">Reports</a>
+            <a href="settings.html" class="nav-link active">Settings</a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username" class="font-bold text-slate-700">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        </div>
+    </div>
+</div>
+
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Settings</h1>
+    </div>
+
+    <details class="settings-section">
+        <summary>
+            <span>Breach Notification Types</span>
+            <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </summary>
+        <div class="settings-section-body">
+            <p class="text-sm text-slate-600 mb-3">
+                Define standard, category-specific messages (e.g. for a phishing incident vs. a theft incident) that you
+                can pick from when reporting a breach. If you don't define any, breaches use a single generic message.
+            </p>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="new-breach-type-code" placeholder="e.g. phishing" class="flex-1 p-2 border border-gray-300 rounded-md text-sm">
+                <button class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90" onclick="addBreachType()">Add Breach Type</button>
+            </div>
+            <div id="breach-types-container" class="space-y-4"></div>
+        </div>
+    </details>
+
+    <details class="settings-section">
+        <summary>
+            <span>Notification Messages</span>
+            <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </summary>
+        <div class="settings-section-body">
+            <p class="text-sm text-slate-600 mb-4">
+                Set the exact message a Data Principal sees for each event, in every language your active policy supports.
+                Leave a language blank to fall back to the default label for that event. Changes apply immediately —
+                including to notifications already sent.
+            </p>
+            <div id="settings-container" class="space-y-4">
+                <div class="card text-center text-gray-500">Loading notification types and supported languages...</div>
+            </div>
+        </div>
+    </details>
+</main>
+
+<script>
+    const API_URL_NOTIFICATION = '/api/v1/admin/notification';
+    const API_URL_POLICY = '/api/v1/admin/policy';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
+    const USER_NAME = localStorage.getItem('username');
+    document.getElementById('username').textContent = USER_NAME || 'DPO User';
+
+    // Same notification types/labels used by examples/integration/notifications/NotificationListener.java.
+    // Breach categories are managed separately below, since the DPO can define new ones at any time.
+    const NOTIFICATION_TYPES = [
+        { type: 'CONSENT_GIVEN_NOTIFICATION', label: 'Consent Given' },
+        { type: 'WITHDRAWAL_ACKNOWLEDGMENT', label: 'Consent Withdrawn' },
+        { type: 'ERASURE_REQUESTED_NOTIFICATION', label: 'Erasure Requested' },
+        { type: 'PURGE_INIT_NOTIFICATION', label: 'Purge Initiated' },
+        { type: 'PURGE_CONFIRM_NOTIFICATION', label: 'Purge Confirmed' },
+        { type: 'PURGE_ONHOLD_NOTIFICATION', label: 'Purge On Legal Hold' },
+        { type: 'EXPIRY_NOTIFICATION', label: 'Retention/Consent Expiry Reminder' }
+    ];
+
+    const LANGUAGE_NAMES = { en: 'English', hi: 'Hindi', ta: 'Tamil', te: 'Telugu', bn: 'Bengali', mr: 'Marathi', gu: 'Gujarati', kn: 'Kannada' };
+    const BREACH_TYPE_PREFIX = 'BREACH_NOTIFICATION_';
+
+    let SUPPORTED_LANGUAGES = ['en'];
+
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-backdrop').classList.toggle('hidden');
+    }
+
+    async function loadSupportedLanguages() {
+        try {
+            const response = await fetch(API_URL_POLICY, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "get_active_policy", "fiduciary_id": FIDUCIARY_ID, "jurisdiction": "IN" })
+            });
+            const policy = await response.json();
+            if (policy && policy.policy_content) {
+                return Object.keys(policy.policy_content);
+            }
+        } catch (e) {
+            console.error("Could not load active policy languages", e);
+        }
+        return ['en'];
+    }
+
+    async function loadExistingMessages() {
+        const messagesByType = {};
+        try {
+            const response = await fetch(API_URL_NOTIFICATION, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "get_notification_messages", "fiduciary_id": FIDUCIARY_ID })
+            });
+            const rows = await response.json();
+            (rows || []).forEach(row => { messagesByType[row.notification_type] = row.messages; });
+        } catch (e) {
+            console.error("Could not load existing notification messages", e);
+        }
+        return messagesByType;
+    }
+
+    // Derives a display label for a DPO-defined breach category from its code,
+    // e.g. "BREACH_NOTIFICATION_PHISHING" -> "Phishing". No separate label storage.
+    function breachTypeLabel(type) {
+        const code = type.substring(BREACH_TYPE_PREFIX.length).toLowerCase();
+        return code.charAt(0).toUpperCase() + code.slice(1);
+    }
+
+    function createTypeCard(type, label, languages, existing) {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const langInputs = languages.map(lang => `
+            <div class="mb-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">${LANGUAGE_NAMES[lang] || lang}</label>
+                <input type="text" data-lang="${lang}" value="${(existing[lang] || '').replace(/"/g, '&quot;')}"
+                       class="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="Message shown to the Data Principal in ${LANGUAGE_NAMES[lang] || lang}">
+            </div>
+        `).join('');
+
+        card.innerHTML = `
+            <h2 class="text-md font-bold text-slate-700 mb-3 tracking-tight">${label}</h2>
+            <div class="messages-form" data-type="${type}">${langInputs}</div>
+            <div class="flex justify-end mt-2">
+                <button class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90" onclick="saveMessage('${type}')">Save</button>
+            </div>
+        `;
+        return card;
+    }
+
+    function renderSettingsForm(languages, existingMessages) {
+        const container = document.getElementById('settings-container');
+        container.innerHTML = '';
+        NOTIFICATION_TYPES.forEach(({ type, label }) => {
+            container.appendChild(createTypeCard(type, label, languages, existingMessages[type] || {}));
+        });
+    }
+
+    function renderBreachTypes(languages, existingMessages) {
+        const container = document.getElementById('breach-types-container');
+        container.innerHTML = '';
+        Object.keys(existingMessages)
+            .filter(type => type.startsWith(BREACH_TYPE_PREFIX))
+            .sort()
+            .forEach(type => {
+                container.appendChild(createTypeCard(type, breachTypeLabel(type), languages, existingMessages[type] || {}));
+            });
+    }
+
+    function addBreachType() {
+        const input = document.getElementById('new-breach-type-code');
+        const code = input.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+        if (!code) return alert("Enter a short code for the breach type, e.g. 'phishing'.");
+        const type = BREACH_TYPE_PREFIX + code;
+        if (document.querySelector(`.messages-form[data-type="${type}"]`)) {
+            return alert("That breach type already exists below.");
+        }
+        document.getElementById('breach-types-container').appendChild(
+            createTypeCard(type, breachTypeLabel(type), SUPPORTED_LANGUAGES, {})
+        );
+        input.value = '';
+    }
+
+    async function saveMessage(type) {
+        const formDiv = document.querySelector(`.messages-form[data-type="${type}"]`);
+        const messages = {};
+        formDiv.querySelectorAll('input[data-lang]').forEach(input => {
+            if (input.value.trim()) messages[input.dataset.lang] = input.value.trim();
+        });
+
+        try {
+            const response = await fetch(API_URL_NOTIFICATION, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "set_notification_message", "fiduciary_id": FIDUCIARY_ID, "notification_type": type, "messages": messages })
+            });
+            if (response.ok) {
+                alert("Message saved for " + type.replace(/_/g, ' ') + ".");
+            } else {
+                alert("Failed to save message.");
+            }
+        } catch (e) {
+            alert("Network error while saving message.");
+        }
+    }
+
+    async function init() {
+        const [languages, existingMessages] = await Promise.all([loadSupportedLanguages(), loadExistingMessages()]);
+        SUPPORTED_LANGUAGES = languages;
+        renderSettingsForm(languages, existingMessages);
+        renderBreachTypes(languages, existingMessages);
+    }
+
+    document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
+    document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
+
+    init();
+
+    window.saveMessage = saveMessage;
+    window.addBreachType = addBreachType;
+    window.handleLogout = () => { localStorage.clear(); window.location.href = "../index.html"; };
+</script>
+</body>
+</html>

@@ -103,6 +103,27 @@ public class Notification implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
+                case "set_notification_message": {
+                    String msgNotificationType = (String) input.get("notification_type");
+                    JSONObject messages = (JSONObject) input.get("messages");
+                    if (fiduciaryId == null || msgNotificationType == null || msgNotificationType.isEmpty() || messages == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id', 'notification_type', and 'messages' are required for 'set_notification_message'.", req.getRequestURI());
+                        return;
+                    }
+                    setNotificationMessageInDb(fiduciaryId, msgNotificationType, messages, loginUserId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Notification message saved."); }});
+                    break;
+                }
+
+                case "get_notification_messages":
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'get_notification_messages'.", req.getRequestURI());
+                        return;
+                    }
+                    outputArray = getNotificationMessagesFromDb(fiduciaryId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    break;
+
                 case "mark_notification_read":
                     UUID notifId = null;
                     String id = (String) input.get("id");
@@ -166,22 +187,23 @@ public class Notification implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT id, recipient_type, recipient_id, fiduciary_id, notification_type, created_at, read_at FROM notifications WHERE 1=1");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT n.id, n.recipient_type, n.recipient_id, n.fiduciary_id, n.notification_type, n.created_at, n.read_at, t.messages " +
+                "FROM notifications n LEFT JOIN notification_message_templates t ON t.fiduciary_id = n.fiduciary_id AND t.notification_type = n.notification_type WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
         if (recipientType != null && !recipientType.isEmpty()) {
-            sqlBuilder.append(" AND recipient_type = ?");
+            sqlBuilder.append(" AND n.recipient_type = ?");
             params.add(recipientType);
         }
         if (recipientId != null && !recipientId.isEmpty()) {
-            sqlBuilder.append(" AND recipient_id = ?");
+            sqlBuilder.append(" AND n.recipient_id = ?");
             params.add(recipientId);
         }
         if (fiduciaryId != null) {
-            sqlBuilder.append(" AND fiduciary_id = ?");
+            sqlBuilder.append(" AND n.fiduciary_id = ?");
             params.add(fiduciaryId);
         }
-        sqlBuilder.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
+        sqlBuilder.append(" ORDER BY n.created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
 
@@ -202,6 +224,8 @@ public class Notification implements Action {
                 instance.put("notification_type", rs.getString("notification_type"));
                 instance.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
                 instance.put("read_at", rs.getTimestamp("read_at") != null ? rs.getTimestamp("read_at").toInstant().toString() : null);
+                String messagesJson = rs.getString("messages");
+                instance.put("messages", messagesJson != null ? new JSONParser().parse(messagesJson) : null);
                 instancesArray.add(instance);
             }
         } catch (Exception e) {
@@ -210,6 +234,61 @@ public class Notification implements Action {
             pool.cleanup(rs, pstmt, conn);
         }
         return instancesArray;
+    }
+
+    /**
+     * Upserts the DPO-configured, multi-language message bundle for one
+     * (fiduciary, notification_type) pair.
+     */
+    private void setNotificationMessageInDb(UUID fiduciaryId, String notificationType, JSONObject messages, UUID loginUserId) throws SQLException {
+        String sql = "INSERT INTO notification_message_templates (fiduciary_id, notification_type, messages, last_updated_by_user_id) " +
+                "VALUES (?, ?, ?::jsonb, ?) " +
+                "ON CONFLICT (fiduciary_id, notification_type) DO UPDATE SET messages = EXCLUDED.messages, " +
+                "last_updated_at = NOW(), last_updated_by_user_id = EXCLUDED.last_updated_by_user_id";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setString(2, notificationType);
+            pstmt.setString(3, messages.toJSONString());
+            pstmt.setObject(4, loginUserId);
+            pstmt.executeUpdate();
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
+    }
+
+    /**
+     * Returns every configured notification message bundle for a fiduciary,
+     * so the Settings screen can prefill its form in one call.
+     */
+    private JSONArray getNotificationMessagesFromDb(UUID fiduciaryId) throws SQLException {
+        JSONArray result = new JSONArray();
+        String sql = "SELECT notification_type, messages FROM notification_message_templates WHERE fiduciary_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                JSONObject row = new JSONObject();
+                row.put("notification_type", rs.getString("notification_type"));
+                row.put("messages", new JSONParser().parse(rs.getString("messages")));
+                result.add(row);
+            }
+        } catch (ParseException e) {
+            throw new SQLException("Failed to parse JSONB content from DB for notification messages: " + e.getMessage(), e);
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return result;
     }
 
     /**

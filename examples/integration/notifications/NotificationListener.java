@@ -27,7 +27,13 @@ import java.util.Set;
  * Build/run (standalone, outside the project's Maven module):
  *   javac -cp json-simple-1.1.1.jar examples/integration/notifications/NotificationListener.java
  *   java  -cp .:json-simple-1.1.1.jar examples.integration.notifications.NotificationListener \
- *         http://localhost:8080 &lt;API_KEY&gt; &lt;API_SECRET&gt; [poll_seconds]
+ *         http://localhost:8080 &lt;API_KEY&gt; &lt;API_SECRET&gt; [poll_seconds] [preferred_language]
+ *
+ * If the DPO has configured a message for a notification's type (via the Settings
+ * console screen / set_notification_message), list_notifications returns it as a
+ * "messages" object keyed by language code (e.g. {"en": "...", "hi": "..."}) -- this
+ * picks preferred_language from that bundle (default "en", falling back to whatever
+ * language is available if the preferred one isn't configured).
  *
  * The API key/secret identify exactly one App, which in turn identifies exactly one
  * fiduciary server-side — there is no need to pass a fiduciary id, recipient type, or
@@ -113,7 +119,7 @@ public class NotificationListener {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 3) {
-            System.out.println("Usage: NotificationListener <baseUrl> <apiKey> <apiSecret> [pollSeconds]");
+            System.out.println("Usage: NotificationListener <baseUrl> <apiKey> <apiSecret> [pollSeconds] [preferredLanguage]");
             System.exit(1);
         }
 
@@ -121,6 +127,7 @@ public class NotificationListener {
         String apiKey = args[1];
         String apiSecret = args[2];
         int pollSeconds = args.length > 3 ? Integer.parseInt(args[3]) : 30;
+        String preferredLanguage = args.length > 4 ? args[4] : "en";
 
         String url = baseUrl + "/api/v1/client/notification";
         HttpClient httpClient = HttpClient.newHttpClient();
@@ -164,7 +171,7 @@ public class NotificationListener {
                                 fiduciaryLabel(n),
                                 id));
 
-                        dispatchNotify(n);
+                        dispatchNotify(n, preferredLanguage);
                     }
                 }
             } catch (Exception e) {
@@ -180,11 +187,31 @@ public class NotificationListener {
      * implementer's choice of channel(s)). recipient_id is the recipient's internal UUID,
      * not a contact address — a real integration must first resolve it via the fiduciary's
      * own user directory.
+     *
+     * If the DPO has configured a message for this notification's exact type (via the
+     * Settings console screen — this covers every type uniformly, including any
+     * DPO-defined breach category such as BREACH_NOTIFICATION_PHISHING), print it in
+     * preferredLanguage; otherwise just show the bare type label.
      */
-    private static void dispatchNotify(JSONObject n) {
-        System.out.println(String.format("  [NOTIFY] To: %s: %s  Type: %s  Fiduciary: %s",
+    private static void dispatchNotify(JSONObject n, String preferredLanguage) {
+        String notificationType = (String) n.get("notification_type");
+        String localizedMessage = resolveMessage((JSONObject) n.get("messages"), preferredLanguage);
+
+        System.out.println(String.format("  [NOTIFY] To: %s: %s  Type: %s  Fiduciary: %s%s",
                 recipientLabel(n), n.get("recipient_id"),
-                label((String) n.get("notification_type")),
-                fiduciaryLabel(n)));
+                label(notificationType),
+                fiduciaryLabel(n),
+                localizedMessage == null ? "" : "\n           Message: " + localizedMessage));
+    }
+
+    /**
+     * Picks the DPO-configured message in preferredLanguage, falling back to whatever
+     * language is available. Returns null if no message is configured for this
+     * notification type at all (label(notificationType) is used as-is in that case).
+     */
+    private static String resolveMessage(JSONObject messages, String preferredLanguage) {
+        if (messages == null || messages.isEmpty()) return null;
+        if (messages.get(preferredLanguage) != null) return (String) messages.get(preferredLanguage);
+        return (String) messages.values().iterator().next();
     }
 }

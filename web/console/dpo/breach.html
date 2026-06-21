@@ -130,6 +130,7 @@
             <a href="ropa.html" class="nav-link">ROPA</a>
             <a href="breach.html" class="nav-link active">Breach</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <a href="settings.html" class="nav-link">Settings</a>
         </nav>
     </div>
     <div class="p-3 border-t border-gray-200">
@@ -213,6 +214,12 @@
                 </div>
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700">Breach Category (controls the standard message sent to principals — define these in Settings)</label>
+                <select id="breach-category" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <option value="">Generic Breach Notification</option>
+                </select>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700">Affected Purpose (auto-resolves affected principals from active consents)</label>
                 <select id="breach-purpose" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                     <option value="">-- None / not purpose-specific --</option>
@@ -245,6 +252,7 @@
                 <p><strong>Title:</strong> <span id="detail-title"></span></p>
                 <p><strong>Severity:</strong> <span id="detail-severity"></span></p>
                 <p><strong>Affected Count:</strong> <span id="detail-affected-count"></span></p>
+                <p><strong>Notification Type:</strong> <span id="detail-notification-type"></span></p>
             </div>
             <div class="space-y-1">
                 <p><strong>Current Status:</strong> <span id="detail-status" class="font-bold"></span></p>
@@ -285,6 +293,8 @@
 <script>
     const API_URL_BREACH = '/api/v1/admin/breach';
     const API_URL_POLICY = '/api/v1/admin/policy';
+    const API_URL_NOTIFICATION = '/api/v1/admin/notification';
+    const BREACH_TYPE_PREFIX = 'BREACH_NOTIFICATION_';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
     const USER_NAME = localStorage.getItem('username');
@@ -401,6 +411,31 @@
         }
     }
 
+    // Populates the Breach Category dropdown from whatever breach types the DPO has
+    // already defined in Settings (set_notification_message under BREACH_NOTIFICATION_*).
+    async function loadBreachCategoryOptions() {
+        const select = document.getElementById('breach-category');
+        try {
+            const response = await fetch(API_URL_NOTIFICATION, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "get_notification_messages", "fiduciary_id": FIDUCIARY_ID })
+            });
+            const rows = await response.json();
+            (rows || [])
+                .filter(row => row.notification_type && row.notification_type.startsWith(BREACH_TYPE_PREFIX))
+                .forEach(row => {
+                    const code = row.notification_type.substring(BREACH_TYPE_PREFIX.length);
+                    const opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = code.charAt(0).toUpperCase() + code.slice(1).toLowerCase();
+                    select.appendChild(opt);
+                });
+        } catch (e) {
+            console.error("Could not load breach categories", e);
+        }
+    }
+
     async function viewBreach(id) {
         try {
             const response = await fetch(API_URL_BREACH, {
@@ -413,6 +448,7 @@
             document.getElementById('detail-title').textContent = b.title;
             document.getElementById('detail-severity').innerHTML = createSeverityBadge(b.severity);
             document.getElementById('detail-affected-count').textContent = b.affected_principal_count;
+            document.getElementById('detail-notification-type').textContent = b.notification_type || 'BREACH_NOTIFICATION (generic)';
             document.getElementById('detail-status').innerHTML = createStatusBadge(b.status);
             document.getElementById('detail-detected').textContent = new Date(b.detected_at).toLocaleString();
             document.getElementById('detail-reported').textContent = new Date(b.reported_at).toLocaleString();
@@ -480,6 +516,7 @@
                 "description": document.getElementById('breach-description').value,
                 "detected_at": new Date(document.getElementById('breach-detected-at').value).toISOString(),
                 "severity": document.getElementById('breach-severity').value,
+                "breach_category": document.getElementById('breach-category').value || undefined,
                 "affected_purpose_id": document.getElementById('breach-purpose').value || undefined,
                 "affected_user_ids": affectedUserIds.length ? affectedUserIds : undefined,
                 "actionable_steps": document.getElementById('breach-actionable-steps').value
@@ -542,6 +579,7 @@
 
     loadBreaches();
     loadPurposeOptions();
+    loadBreachCategoryOptions();
 
     window.openReportModal = openReportModal;
     window.closeModal = closeModal;
