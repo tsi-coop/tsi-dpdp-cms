@@ -397,10 +397,25 @@
 
         WEBHOOK_CATEGORIES.forEach(({ category, label, description }) => {
             const existing = configsByCategory[category] || {};
+            const isConfigured = !!existing.webhook_url;
+            const isEnabled = isConfigured && existing.enabled !== false;
+
+            let statusBadge;
+            if (!isConfigured) {
+                statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Not Configured</span>';
+            } else if (isEnabled) {
+                statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700">● Active</span>';
+            } else {
+                statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-gray-200 text-gray-600">● Deactivated</span>';
+            }
+
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <h2 class="text-md font-bold text-slate-700 mb-1 tracking-tight">${label}</h2>
+                <div class="flex justify-between items-start mb-1">
+                    <h2 class="text-md font-bold text-slate-700 tracking-tight">${label}</h2>
+                    ${statusBadge}
+                </div>
                 <p class="text-xs text-slate-500 mb-3">${description}</p>
                 <div class="webhook-form" data-category="${category}">
                     <div class="mb-2">
@@ -415,27 +430,40 @@
                         <input type="password" data-field="secret" value="" autocomplete="new-password"
                                class="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="${existing.secret_configured ? 'Leave blank to keep current secret' : 'Required to enable this webhook'}">
                     </div>
-                    <label class="flex items-center gap-2 mb-3 text-sm text-slate-600">
-                        <input type="checkbox" data-field="enabled" ${existing.enabled !== false ? 'checked' : ''}>
-                        Enabled
-                    </label>
                 </div>
-                <div class="flex justify-end">
-                    <button class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90" onclick="saveWebhookConfig('${category}')">Save</button>
+                <div class="flex justify-end gap-2">
+                    ${isConfigured ? `<button class="px-4 py-2 rounded-md text-sm font-medium border ${isEnabled ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-700 hover:bg-green-50'}" onclick="toggleWebhookEnabled('${category}', ${isEnabled})">${isEnabled ? 'Deactivate' : 'Activate'}</button>` : ''}
+                    <button class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90" onclick="saveWebhookConfig('${category}', ${isEnabled})">Save</button>
                 </div>
             `;
             container.appendChild(card);
         });
     }
 
-    async function saveWebhookConfig(category) {
+    async function saveWebhookConfig(category, currentlyEnabled) {
         const formDiv = document.querySelector(`.webhook-form[data-category="${category}"]`);
         const webhookUrl = formDiv.querySelector('input[data-field="webhook_url"]').value.trim();
         const secret = formDiv.querySelector('input[data-field="secret"]').value;
-        const enabled = formDiv.querySelector('input[data-field="enabled"]').checked;
 
         if (!webhookUrl) return alert("Enter a webhook URL first.");
 
+        // Save only edits URL/secret -- it preserves whatever active/deactivated state
+        // is already in effect. Use the Activate/Deactivate button to change that.
+        await submitWebhookConfig(category, webhookUrl, secret, currentlyEnabled, category + " webhook saved.");
+    }
+
+    async function toggleWebhookEnabled(category, currentlyEnabled) {
+        const formDiv = document.querySelector(`.webhook-form[data-category="${category}"]`);
+        const webhookUrl = formDiv.querySelector('input[data-field="webhook_url"]').value.trim();
+        const nextEnabled = !currentlyEnabled;
+
+        if (!confirm(`${nextEnabled ? 'Activate' : 'Deactivate'} the ${category} webhook?`)) return;
+
+        await submitWebhookConfig(category, webhookUrl, '', nextEnabled,
+            `${category} webhook ${nextEnabled ? 'activated' : 'deactivated'}.`);
+    }
+
+    async function submitWebhookConfig(category, webhookUrl, secret, enabled, successMessage) {
         try {
             const response = await fetch(API_URL_NOTIFICATION, {
                 method: 'POST',
@@ -450,7 +478,7 @@
                 })
             });
             if (response.ok) {
-                alert(category + " webhook saved.");
+                alert(successMessage);
                 const configsByCategory = await loadWebhookConfigs();
                 renderWebhookConfigs(configsByCategory);
             } else {
@@ -480,6 +508,7 @@
     window.saveMessage = saveMessage;
     window.addBreachType = addBreachType;
     window.saveWebhookConfig = saveWebhookConfig;
+    window.toggleWebhookEnabled = toggleWebhookEnabled;
     window.handleLogout = () => { localStorage.clear(); window.location.href = "../index.html"; };
 </script>
 </body>
