@@ -36,6 +36,9 @@
         "type": "string"
       }
     },
+    "affected_user_ids_csv": {
+      "type": "string"
+    },
     "actionable_steps": {
       "type": "string"
     },

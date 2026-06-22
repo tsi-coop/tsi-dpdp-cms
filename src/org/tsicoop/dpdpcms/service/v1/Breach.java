@@ -91,6 +91,7 @@ public class Breach implements Action {
                     String affectedPurposeId = (String) input.get("affected_purpose_id");
                     JSONArray affectedDataCategories = (JSONArray) input.get("affected_data_categories");
                     JSONArray explicitUserIds = (JSONArray) input.get("affected_user_ids");
+                    String affectedUserIdsCsv = (String) input.get("affected_user_ids_csv");
                     String breachCategory = (String) input.get("breach_category");
 
                     if (fiduciaryId == null || title == null || title.isEmpty() || description == null || description.isEmpty()
@@ -116,7 +117,7 @@ public class Breach implements Action {
                             : Constants.NOTIF_BREACH;
 
                     JSONObject output = reportBreach(fiduciaryId, title, description, detectedAt, severity, actionableSteps,
-                            affectedPurposeId, affectedDataCategories, explicitUserIds, notificationType, loginUserId);
+                            affectedPurposeId, affectedDataCategories, explicitUserIds, affectedUserIdsCsv, notificationType, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
                 }
@@ -214,7 +215,8 @@ public class Breach implements Action {
      */
     private JSONObject reportBreach(UUID fiduciaryId, String title, String description, Timestamp detectedAt,
                                      String severity, String actionableSteps, String affectedPurposeId,
-                                     JSONArray affectedDataCategories, JSONArray explicitUserIds, String notificationType, UUID loginUserId) throws SQLException {
+                                     JSONArray affectedDataCategories, JSONArray explicitUserIds, String affectedUserIdsCsv,
+                                     String notificationType, UUID loginUserId) throws SQLException {
         Set<String> affectedUserIds = new LinkedHashSet<>();
         if (explicitUserIds != null) {
             for (Object o : explicitUserIds) {
@@ -287,11 +289,43 @@ public class Breach implements Action {
             }
         }
 
+        // A CSV upload can contain far more principals than the textarea path -- defer
+        // parsing + notification fan-out to JobManager's background poller instead of
+        // doing it on this request thread, the same way CES/EXPORT jobs are handled.
+        boolean csvJobQueued = false;
+        if (affectedUserIdsCsv != null && !affectedUserIdsCsv.trim().isEmpty()) {
+            enqueueBreachNotifyJob(fiduciaryId, breachId, affectedUserIdsCsv);
+            csvJobQueued = true;
+        }
+
         JSONObject output = new JSONObject();
         output.put("success", true);
         output.put("id", breachId.toString());
         output.put("affected_principal_count", affectedUserIds.size());
+        output.put("csv_job_queued", csvJobQueued);
         return output;
+    }
+
+    /**
+     * Queues a BREACH_NOTIFY background job so JobManager can parse the uploaded CSV
+     * and notify each affected principal without blocking the report_breach request.
+     */
+    private void enqueueBreachNotifyJob(UUID fiduciaryId, UUID breachId, String csvPayload) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(
+                    "INSERT INTO jobs (id, fiduciary_id, job_type, subtype, status, input_payload, created_at) " +
+                            "VALUES (uuid_generate_v4(), ?, 'BREACH_NOTIFY', ?, 'PENDING', ?, NOW())");
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setString(2, breachId.toString());
+            pstmt.setString(3, csvPayload);
+            pstmt.executeUpdate();
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
     }
 
     /**

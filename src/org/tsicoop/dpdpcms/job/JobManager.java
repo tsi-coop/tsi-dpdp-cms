@@ -153,6 +153,7 @@ public class JobManager implements ServletContextListener {
         String subtype = null;
         Date startDate = null;
         Date endDate = null;
+        String inputPayload = null;
         boolean pending = false;
 
         try {
@@ -171,6 +172,7 @@ public class JobManager implements ServletContextListener {
                 subtype = rs.getString("subtype");
                 startDate = rs.getDate("start_date");
                 endDate = rs.getDate("end_date");
+                inputPayload = rs.getString("input_payload");
                 pending = true;
             }
         } catch (Exception e) {
@@ -187,12 +189,80 @@ public class JobManager implements ServletContextListener {
                     executeCESJob(fiduciaryId, subtype);
                 } else if ("EXPORT".equalsIgnoreCase(type)) {
                     executeExportJob(fiduciaryId, jobId, subtype, startDate, endDate);
+                } else if ("BREACH_NOTIFY".equalsIgnoreCase(type)) {
+                    executeBreachNotifyJob(fiduciaryId, UUID.fromString(subtype), inputPayload);
                 }
                 updateJobStatus(jobId, "COMPLETED", EXPORT_DIR + jobId + ".csv");
             } catch (Exception jobEx) {
                 updateJobStatus(jobId, "FAILED", jobEx.getMessage());
             }
         }
+    }
+
+    /**
+     * Parses an uploaded single-column CSV of affected principal IDs and notifies each
+     * one, recording them against the breach and reconciling the affected-principal
+     * count. Runs off the request thread so a large CSV can't time out report_breach.
+     */
+    private void executeBreachNotifyJob(UUID fiduciaryId, UUID breachId, String csvPayload) throws SQLException {
+        if (csvPayload == null || csvPayload.trim().isEmpty()) return;
+
+        List<String> userIds = new ArrayList<>();
+        for (String line : csvPayload.split("\\r?\\n")) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty()) userIds.add(trimmed);
+        }
+        if (userIds.isEmpty()) return;
+
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String notificationType = null;
+
+        try {
+            conn = pool.getConnection();
+
+            pstmt = conn.prepareStatement("SELECT notification_type FROM breach_incidents WHERE id = ?");
+            pstmt.setObject(1, breachId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) notificationType = rs.getString("notification_type");
+            rs.close();
+            pstmt.close();
+            if (notificationType == null) notificationType = "BREACH_NOTIFICATION";
+
+            pstmt = conn.prepareStatement(
+                    "INSERT INTO breach_affected_principals (breach_id, user_id) VALUES (?, ?) " +
+                            "ON CONFLICT (breach_id, user_id) DO NOTHING");
+            for (String userId : userIds) {
+                pstmt.setObject(1, breachId);
+                pstmt.setString(2, userId);
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+            pstmt.close();
+
+            pstmt = conn.prepareStatement(
+                    "UPDATE breach_incidents SET affected_principal_count = " +
+                            "(SELECT COUNT(*) FROM breach_affected_principals WHERE breach_id = ?), last_updated_at = NOW() WHERE id = ?");
+            pstmt.setObject(1, breachId);
+            pstmt.setObject(2, breachId);
+            pstmt.executeUpdate();
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+
+        CESService cesService = new CESService();
+        for (String userId : userIds) {
+            try {
+                cesService.insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), notificationType);
+            } catch (SQLException e) {
+                e.printStackTrace(); // One failed notification must not fail the rest of the batch
+            }
+        }
+
+        new Audit().logEventAsync("SYSTEM", fiduciaryId, org.tsicoop.dpdpcms.util.Constants.SERVICE_TYPE_SYSTEM, null,
+                "BREACH_CSV_NOTIFIED", "breach_id=" + breachId + " principals=" + userIds.size());
     }
 
     private void executeCESJob(UUID fiduciaryId, String target) {
