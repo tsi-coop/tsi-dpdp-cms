@@ -198,6 +198,16 @@ public class Consent implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
+                case "list_principals": // Recent Data Principals, shown by default on the Principals screen
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_principals'.", req.getRequestURI());
+                        return;
+                    }
+                    int principalsLimit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 20;
+                    outputArray = listPrincipalsFromDb(fiduciaryId, principalsLimit);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    break;
+
                 case "link_user": // Used to link anonymous ID to authenticated ID
                     String anonymousUserId = (String) input.get("anonymous_user_id");
                     String authenticatedUserId = (String) input.get("authenticated_user_id");
@@ -1001,6 +1011,44 @@ public class Consent implements Action {
             pool.cleanup(rs, pstmt, conn);
         }
         return historyArray;
+    }
+
+    /**
+     * Retrieves the most recently onboarded Data Principals for a fiduciary, shown by
+     * default on the Principals screen before a DPO searches for a specific one.
+     * @throws SQLException if a database access error occurs.
+     */
+    private JSONArray listPrincipalsFromDb(UUID fiduciaryId, int limit) throws SQLException {
+        JSONArray principalsArray = new JSONArray();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+
+        String sql = "SELECT user_id, last_consent_mechanism, age_category, verification_status, created_at, last_ces_run " +
+                "FROM data_principal WHERE fiduciary_id = ? ORDER BY created_at DESC LIMIT ?";
+
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setInt(2, limit);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                JSONObject principal = new JSONObject();
+                principal.put("user_id", rs.getString("user_id"));
+                principal.put("last_consent_mechanism", rs.getString("last_consent_mechanism"));
+                principal.put("age_category", rs.getString("age_category"));
+                principal.put("verification_status", rs.getString("verification_status"));
+                principal.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
+                principal.put("last_ces_run", rs.getTimestamp("last_ces_run") != null ? rs.getTimestamp("last_ces_run").toInstant().toString() : null);
+                principalsArray.add(principal);
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return principalsArray;
     }
 
     /**

@@ -220,6 +220,28 @@
         <p id="search-message" class="mt-3 text-sm font-medium text-red-600 hidden">No principal found with that identifier.</p>
     </div>
 
+    <!-- Recent Principals (default view, before a search) -->
+    <div class="card mb-6" id="recent-principals-card">
+        <h2 class="text-lg font-bold text-slate-700 mb-4 tracking-tight">Recent Principals</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                <tr class="table-header">
+                    <th class="px-4 py-3 text-sm">Principal ID</th>
+                    <th class="px-4 py-3 text-sm">Last Consent Mechanism</th>
+                    <th class="px-4 py-3 text-sm">Age Category</th>
+                    <th class="px-4 py-3 text-sm">Verification</th>
+                    <th class="px-4 py-3 text-sm">Onboarded</th>
+                    <th class="px-4 py-3 text-sm">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="recent-principals-body" class="bg-white divide-y divide-gray-200">
+                <tr><td colspan="6" class="p-4 text-center text-gray-500">Loading recent principals...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Quick Status & Actions -->
     <div id="principal-status-card" class="card mb-6 hidden flex flex-col md:flex-row justify-between items-center gap-4 border-l-4 border-teal-600">
         <div>
@@ -306,6 +328,7 @@
     let consentHistoryCard, principalDisplayId, consentTableBody, consentDetailModalOverlay, closeDetailModalBtn;
     let modalRecordId, modalRecordStatus, granularConsentDetails, provenanceDetails;
     let principalStatusCard, overallStatusBadge, mainInitiateErasureBtn;
+    let recentPrincipalsCard, recentPrincipalsBody;
 
     // --- Helper Functions ---
 
@@ -359,7 +382,48 @@
 
     // --- Core Logic ---
 
+    function createRecentPrincipalRow(principal) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-4 py-3 text-sm font-mono text-gray-700">${esc(principal.user_id)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(principal.last_consent_mechanism || 'N/A')}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(principal.age_category || 'N/A')}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(principal.verification_status || 'N/A')}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(new Date(principal.created_at).toLocaleDateString())}</td>
+            <td class="px-4 py-3 text-sm">
+                <button class="view-recent-principal-btn text-indigo-600 hover:text-indigo-900 font-bold text-sm">View</button>
+            </td>
+        `;
+        const btn = row.querySelector('.view-recent-principal-btn');
+        btn.addEventListener('click', () => {
+            principalIdInput.value = principal.user_id;
+            loadConsentHistory(principal.user_id);
+        });
+        return row;
+    }
+
+    async function loadRecentPrincipals() {
+        try {
+            const response = await fetch(API_URL_CONSENT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_principals", "fiduciary_id": localStorage.getItem("fiduciary_id"), "limit": 20 })
+            });
+            const principals = await response.json();
+
+            recentPrincipalsBody.innerHTML = '';
+            if (Array.isArray(principals) && principals.length > 0) {
+                principals.forEach(p => recentPrincipalsBody.appendChild(createRecentPrincipalRow(p)));
+            } else {
+                recentPrincipalsBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No principals onboarded yet.</td></tr>`;
+            }
+        } catch (error) {
+            recentPrincipalsBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">Error loading recent principals.</td></tr>`;
+        }
+    }
+
     async function loadConsentHistory(principalIdentifier) {
+        recentPrincipalsCard.classList.add('hidden');
         consentHistoryCard.classList.add('hidden');
         principalStatusCard.classList.add('hidden');
         consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Searching...</td></tr>`;
@@ -407,6 +471,7 @@
                 consentHistoryCard.classList.remove('hidden');
             } else {
                 consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No records found.</td></tr>`;
+                recentPrincipalsCard.classList.remove('hidden');
             }
         } catch (error) {
             consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-600">Error loading data.</td></tr>`;
@@ -513,6 +578,8 @@
         principalStatusCard = document.getElementById('principal-status-card');
         overallStatusBadge = document.getElementById('overall-status-badge');
         mainInitiateErasureBtn = document.getElementById('main-initiate-erasure-btn');
+        recentPrincipalsCard = document.getElementById('recent-principals-card');
+        recentPrincipalsBody = document.getElementById('recent-principals-body');
 
         menuToggle.addEventListener('click', toggleMenu);
         backdrop.addEventListener('click', toggleMenu);
@@ -523,6 +590,8 @@
             const identifier = principalIdInput.value.trim();
             if (identifier) loadConsentHistory(identifier);
         });
+
+        loadRecentPrincipals();
     });
 
     window.viewConsentRecord = viewConsentRecord;
