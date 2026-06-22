@@ -171,6 +171,7 @@
             <a href="ropa.html" class="nav-link">ROPA</a>
             <a href="breach.html" class="nav-link">Breach</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
     </div>
@@ -193,7 +194,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
                 View Jobs
             </button>
-            <button onclick="openNewCesJobModal()" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150 flex items-center gap-2">
+            <button id="run-compliance-check-btn" onclick="openNewCesJobModal()" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
                 Run Compliance Check
             </button>
@@ -218,22 +219,23 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="w-full table-fixed divide-y divide-gray-200 text-xs">
                 <thead>
                 <tr class="table-header">
-                    <th class="px-4 py-3 text-sm">Request ID</th>
-                    <th class="px-4 py-3 text-sm">User ID</th>
-                    <th class="px-4 py-3 text-sm">Purpose ID</th>
-                    <th class="px-4 py-3 text-sm">Trigger Event</th>
-                    <th class="px-4 py-3 text-sm">Target App</th>
-                    <th class="px-4 py-3 text-sm">Initiated At</th>
-                    <th class="px-4 py-3 text-sm">Status</th>
-                    <th class="px-4 py-3 text-sm">Actions</th>
+                    <th class="px-2 py-2 w-[8%]">Request ID</th>
+                    <th class="px-2 py-2 w-[11%]">User ID</th>
+                    <th class="px-2 py-2 w-[12%]">Purpose ID</th>
+                    <th class="px-2 py-2 w-[11%]">Trigger Event</th>
+                    <th class="px-2 py-2 w-[11%]">Target App</th>
+                    <th class="px-2 py-2 w-[9%]">Initiated At</th>
+                    <th class="px-2 py-2 w-[12%]">Status</th>
+                    <th class="px-2 py-2 w-[11%]">Assigned To</th>
+                    <th class="px-2 py-2 w-[10%]">Actions</th>
                 </tr>
                 </thead>
                 <tbody id="purge-table-body" class="bg-white divide-y divide-gray-200">
                 <tr>
-                    <td colspan="6" class="p-4 text-center text-gray-500">
+                    <td colspan="9" class="p-4 text-center text-gray-500">
                         Loading Purge request data...
                     </td>
                 </tr>
@@ -264,6 +266,19 @@
 
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Context & Details:</h3>
         <p id="detail-context" class="p-2 bg-gray-50 rounded-md text-gray-700 italic mt-2 mb-4"></p>
+
+        <div id="assignment-section" class="mt-4">
+            <h3 class="font-semibold text-lg border-b pb-1">Delegate to Operator</h3>
+            <div class="flex items-end gap-3 mt-3">
+                <div class="flex-1">
+                    <label for="assign-operator-select" class="block text-sm font-medium text-gray-700">Assigned Operator</label>
+                    <select id="assign-operator-select" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="">Unassigned</option>
+                    </select>
+                </div>
+                <button type="button" id="assign-operator-btn" class="bg-slate-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-800">Assign</button>
+            </div>
+        </div>
 
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Update Status & Documentation:</h3>
         <form id="purge-update-form" class="mt-3 space-y-3">
@@ -357,10 +372,35 @@
     // --- Configuration ---
     const API_URL_PURGE = '/api/v1/admin/compliance';
     const API_URL_JOBS = '/api/v1/admin/job';
+    const API_URL_OPERATOR = '/api/v1/admin/operator';
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
+    const IS_OPERATOR = localStorage.getItem('role') === 'OPERATOR';
+    if (IS_OPERATOR) {
+        document.querySelectorAll('a[href="policies.html"], a[href="settings.html"], a[href="team.html"]').forEach(el => el.remove());
+        document.getElementById('run-compliance-check-btn').remove();
+        document.getElementById('assignment-section').remove();
+    }
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';
+
+    // Map of operator_id -> display name, used for the "Assigned To" column/dropdown.
+    // Operators can't delegate, so they never need this lookup.
+    let OperatorMap = {};
+    async function fetchOperators() {
+        if (IS_OPERATOR) return;
+        try {
+            const response = await fetch(API_URL_OPERATOR, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_users" })
+            });
+            const users = await response.json();
+            if (Array.isArray(users)) {
+                users.filter(u => u.role === 'OPERATOR').forEach(u => { OperatorMap[u.user_id] = u.username; });
+            }
+        } catch (e) { console.error("Failed to load operators", e); }
+    }
 
     let tableBody, countSpan, searchInput, statusFilter, purgeModalOverlay, updateForm;
 
@@ -395,14 +435,15 @@
     function createRequestRow(req) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="px-4 py-3 text-sm font-mono text-gray-600">...${req.id.slice(-8)}</td>
-            <td class="px-4 py-3 text-sm text-gray-800">${req.user_id}</td>
-            <td class="px-4 py-3 text-sm text-gray-800">${req.purpose_id}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${req.trigger_event}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${req.app_name}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${new Date(req.initiated_at).toLocaleDateString()}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(req.status)}</td>
-            <td class="px-4 py-3 text-sm">
+            <td class="px-2 py-2 font-mono text-gray-600 truncate" title="${req.id}">...${req.id.slice(-8)}</td>
+            <td class="px-2 py-2 text-gray-800 truncate" title="${req.user_id}">${req.user_id}</td>
+            <td class="px-2 py-2 text-gray-800 truncate" title="${req.purpose_id}">${req.purpose_id}</td>
+            <td class="px-2 py-2 text-gray-600 truncate" title="${req.trigger_event}">${req.trigger_event}</td>
+            <td class="px-2 py-2 text-gray-600 truncate" title="${req.app_name}">${req.app_name}</td>
+            <td class="px-2 py-2 text-gray-600 truncate">${new Date(req.initiated_at).toLocaleDateString()}</td>
+            <td class="px-2 py-2 truncate">${createStatusBadge(req.status)}</td>
+            <td class="px-2 py-2 text-gray-600 truncate">${OperatorMap[req.assigned_operator_id] || 'Unassigned'}</td>
+            <td class="px-2 py-2">
                 <button class="text-indigo-600 hover:text-indigo-900 font-medium" onclick="viewPurgeRequest('${req.id}')">Manage</button>
             </td>
         `;
@@ -410,7 +451,7 @@
     }
 
     async function loadPurgeRequests() {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading requests...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-500">Loading requests...</td></tr>`;
 
         try {
             const payload = {
@@ -436,14 +477,14 @@
 
             tableBody.innerHTML = '';
             if (requests.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No matching requests found.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-500">No matching requests found.</td></tr>`;
             } else {
                 requests.forEach(r => tableBody.appendChild(createRequestRow(r)));
             }
             countSpan.textContent = `Total: ${requests.length} Requests`;
 
         } catch (error) {
-            tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">Failed to load compliance data.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-red-600">Failed to load compliance data.</td></tr>`;
         }
     }
 
@@ -466,6 +507,15 @@
             // Prefill form
             document.getElementById('new-status').value = req.status === 'PENDING' ? 'IN_PROGRESS' : req.status;
             document.getElementById('details-notes').value = req.details || '';
+
+            // Assignment Setup (DPO/ADMIN only -- Operators can't delegate)
+            if (!IS_OPERATOR) {
+                const assignSelect = document.getElementById('assign-operator-select');
+                assignSelect.innerHTML = '<option value="">Unassigned</option>' +
+                    Object.entries(OperatorMap).map(([opId, name]) => `<option value="${opId}">${name}</option>`).join('');
+                assignSelect.value = req.assigned_operator_id || '';
+                document.getElementById('assign-operator-btn').setAttribute('data-id', id);
+            }
 
             updateForm.setAttribute('data-id', id);
             purgeModalOverlay.style.display = 'flex';
@@ -583,6 +633,40 @@
     statusFilter.addEventListener('change', loadPurgeRequests);
     searchInput.addEventListener('input', () => { loadPurgeRequests(); });
 
+    if (!IS_OPERATOR) {
+        document.getElementById('assign-operator-btn').addEventListener('click', async function() {
+            const btn = this;
+            const id = btn.getAttribute('data-id');
+            const operatorId = document.getElementById('assign-operator-select').value;
+            if (!operatorId) {
+                alert("Select an Operator to assign.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Assigning...';
+            try {
+                const response = await fetch(API_URL_PURGE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify({ "_func": "assign_purge_request", "id": id, "operator_id": operatorId, "fiduciary_id": localStorage.getItem('fiduciary_id') })
+                });
+                if (response.ok) {
+                    alert("Purge request assigned.");
+                    loadPurgeRequests();
+                } else {
+                    const errorMsg = (await response.json()).message || `Status: ${response.status}`;
+                    alert(`Failed to assign: ${errorMsg}`);
+                }
+            } catch (err) {
+                alert("Network error while assigning.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Assign';
+            }
+        });
+    }
+
     updateForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = updateForm.getAttribute('data-id');
@@ -618,7 +702,7 @@
         }
     });
 
-    loadPurgeRequests();
+    fetchOperators().then(loadPurgeRequests);
 
     window.viewPurgeRequest = viewPurgeRequest;
     window.closeModal = closeModal;

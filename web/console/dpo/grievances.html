@@ -187,6 +187,7 @@
             <a href="reports.html" class="nav-link">
                 Reports
             </a>
+            <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
     </div>
@@ -234,6 +235,7 @@
                     <th class="px-4 py-3 text-sm">Submitted</th>
                     <th class="px-4 py-3 text-sm">Status</th>
                     <th class="px-4 py-3 text-sm">Deadline</th>
+                    <th class="px-4 py-3 text-sm">Assigned To</th>
                     <th class="px-4 py-3 text-sm">Actions</th>
                 </tr>
                 </thead>
@@ -274,6 +276,19 @@
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Description:</h3>
         <p id="detail-description" class="p-2 bg-gray-50 rounded-md text-gray-700"></p>
 
+        <div id="assignment-section" class="mt-4">
+            <h3 class="font-semibold text-lg border-b pb-1">Delegate to Operator</h3>
+            <div class="flex items-end gap-3 mt-3">
+                <div class="flex-1">
+                    <label for="assign-operator-select" class="block text-sm font-medium text-gray-700">Assigned Operator</label>
+                    <select id="assign-operator-select" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="">Unassigned</option>
+                    </select>
+                </div>
+                <button type="button" id="assign-operator-btn" class="bg-slate-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-800">Assign</button>
+            </div>
+        </div>
+
         <!--
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Resolution & Communication Log:</h3>
         <div id="communication-log" class="policy-detail-card h-40 overflow-y-auto text-xs space-y-2">
@@ -306,9 +321,32 @@
     // --- Configuration ---
     const API_URL_GRIEVANCE = '/api/v1/grievance'; // Endpoint for Grievance CRUD
     const API_URL_FIDUCIARIES_LIST = '/api/v1/admin/fiduciary';
+    const API_URL_OPERATOR = '/api/v1/admin/operator';
     const AUTH_TOKEN = localStorage.getItem('authToken');
+    const IS_OPERATOR = localStorage.getItem('role') === 'OPERATOR';
+    if (IS_OPERATOR) {
+        document.querySelectorAll('a[href="policies.html"], a[href="settings.html"], a[href="team.html"]').forEach(el => el.remove());
+    }
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';
+
+    // Map of operator_id -> display name, used for the "Assigned To" column/dropdown.
+    // Operators can't delegate, so they never need this lookup.
+    let OperatorMap = {};
+    async function fetchOperators() {
+        if (IS_OPERATOR) return;
+        try {
+            const response = await fetch(API_URL_OPERATOR, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_users" })
+            });
+            const users = await response.json();
+            if (Array.isArray(users)) {
+                users.filter(u => u.role === 'OPERATOR').forEach(u => { OperatorMap[u.user_id] = u.username; });
+            }
+        } catch (e) { console.error("Failed to load operators", e); }
+    }
 
     // --- Global DOM Element Variables ---
     let sidebar, menuToggle, backdrop, grievanceModalOverlay, tableBody, countSpan, errorMessageP, searchInput, statusFilter;
@@ -372,6 +410,7 @@
             <td class="px-4 py-3 text-sm text-gray-600">${new Date(grievance.submission_timestamp).toLocaleDateString()}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(status)}</td>
             <td class="px-4 py-3 text-sm font-semibold">${calculateDeadlineDisplay(grievance.due_date,status)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${OperatorMap[grievance.assigned_dpo_user_id] || 'Unassigned'}</td>
             <td class="px-4 py-3 text-sm">
                 <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" onclick="viewGrievance('${grievance.grievance_id}')">View/Manage</button>
             </td>
@@ -521,6 +560,15 @@
         resolutionForm.setAttribute('data-grievance-id', grievance.grievance_id);
         resolutionForm.setAttribute('fiduciary-id', grievance.fiduciary_id);
         newStatusSelect.value = grievance.status; // Set current status
+
+        // Assignment Setup (DPO/ADMIN only -- Operators can't delegate)
+        if (!IS_OPERATOR) {
+            const assignSelect = document.getElementById('assign-operator-select');
+            assignSelect.innerHTML = '<option value="">Unassigned</option>' +
+                Object.entries(OperatorMap).map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
+            assignSelect.value = grievance.assigned_dpo_user_id || '';
+            document.getElementById('assign-operator-btn').setAttribute('data-grievance-id', grievance.grievance_id);
+        }
     }
 
      function handleLogout() {
@@ -559,8 +607,12 @@
     detailDescription = document.getElementById('detail-description');
 
 
-    // --- Fetch Fiduciaries and Load Grievances ---
-    loadGrievances();
+    if (IS_OPERATOR) {
+        document.getElementById('assignment-section').remove();
+    }
+
+    // --- Fetch Operators, Fiduciaries and Load Grievances ---
+    fetchOperators().then(loadGrievances);
 
     // --- Event Listener Attachments ---
     menuToggle.addEventListener('click', toggleMenu);
@@ -579,6 +631,41 @@
 
     // Modal Close
     document.getElementById('close-modal-btn-inner').addEventListener('click', closeModal);
+
+    // Handle Operator Assignment (DPO/ADMIN only)
+    if (!IS_OPERATOR) {
+        document.getElementById('assign-operator-btn').addEventListener('click', async function() {
+            const btn = this;
+            const grievanceId = btn.getAttribute('data-grievance-id');
+            const operatorId = document.getElementById('assign-operator-select').value;
+            if (!operatorId) {
+                alert("Select an Operator to assign.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Assigning...';
+            try {
+                const response = await fetch(API_URL_GRIEVANCE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify({ "_func": "assign_grievance", "grievance_id": grievanceId, "operator_id": operatorId })
+                });
+                if (response.ok) {
+                    alert("Grievance assigned.");
+                    loadGrievances(searchInput.value.trim());
+                } else {
+                    const errorMsg = (await response.json()).message || `Status: ${response.status}`;
+                    alert(`Failed to assign: ${errorMsg}`);
+                }
+            } catch (error) {
+                alert("Network error while assigning.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Assign';
+            }
+        });
+    }
 
     // Handle Status Update Submission
     resolutionForm.addEventListener('submit', async function(event) {

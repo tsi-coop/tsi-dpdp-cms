@@ -46,6 +46,7 @@ public class Grievance implements Action {
 
             // Determine Service Context for Audit
             UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+            String callerRole = InputProcessor.getVerifiedRole(req);
             UUID appId = new ApiKey().getAppId(apiKey, apiSecret);
 
             String serviceType = "SYSTEM";
@@ -102,11 +103,11 @@ public class Grievance implements Action {
                     break;
 
                 case "get_grievance":
-                    handleGetGrievance(grievanceId, res, req);
+                    handleGetGrievance(grievanceId, loginUserId, callerRole, res, req);
                     break;
 
                 case "list_grievances":
-                    handleListGrievances(fiduciaryId, input, res, req);
+                    handleListGrievances(fiduciaryId, loginUserId, callerRole, input, res, req);
                     break;
 
                 case "list_user_grievances":
@@ -114,7 +115,11 @@ public class Grievance implements Action {
                     break;
 
                 case "update_grievance_status":
-                    handleUpdateGrievanceStatus(input, grievanceId, serviceType, actorServiceId, res, req);
+                    handleUpdateGrievanceStatus(input, grievanceId, loginUserId, callerRole, serviceType, actorServiceId, res, req);
+                    break;
+
+                case "assign_grievance":
+                    handleAssignGrievance(input, grievanceId, callerRole, serviceType, actorServiceId, res, req);
                     break;
 
                 default:
@@ -183,7 +188,7 @@ public class Grievance implements Action {
         }
     }
 
-    private void handleUpdateGrievanceStatus(JSONObject input, UUID grievanceId, String serviceType, UUID serviceId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+    private void handleUpdateGrievanceStatus(JSONObject input, UUID grievanceId, UUID loginUserId, String callerRole, String serviceType, UUID serviceId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         String newStatus = (String) input.get("status");
         String resolutionDetails = (String) input.get("resolution_details");
 
@@ -203,15 +208,23 @@ public class Grievance implements Action {
 
         try {
             conn = pool.getConnection();
-            // Fetch metadata for audit context
-            try (PreparedStatement p = conn.prepareStatement("SELECT user_id, fiduciary_id FROM grievances WHERE id = ?")) {
+            // Fetch metadata for audit context, and the current assignee for Operator scoping
+            UUID assignedDpoUserId = null;
+            try (PreparedStatement p = conn.prepareStatement("SELECT user_id, fiduciary_id, assigned_dpo_user_id FROM grievances WHERE id = ?")) {
                 p.setObject(1, grievanceId);
                 try (ResultSet r = p.executeQuery()) {
                     if (r.next()) {
                         principalId = r.getString("user_id");
                         fiduciaryId = (UUID) r.getObject("fiduciary_id");
+                        assignedDpoUserId = (UUID) r.getObject("assigned_dpo_user_id");
                     }
                 }
+            }
+
+            // Operators may only close grievances explicitly assigned to them.
+            if ("OPERATOR".equalsIgnoreCase(callerRole) && (assignedDpoUserId == null || !assignedDpoUserId.equals(loginUserId))) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This grievance is not assigned to you.", req.getRequestURI());
+                return;
             }
 
             StringBuilder sql = new StringBuilder("UPDATE grievances SET status = ?, last_updated_at = NOW()");
@@ -244,7 +257,7 @@ public class Grievance implements Action {
         }
     }
 
-    private void handleGetGrievance(UUID id, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+    private void handleGetGrievance(UUID id, UUID loginUserId, String callerRole, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -255,6 +268,12 @@ public class Grievance implements Action {
             pstmt.setObject(1, id);
             rs = pstmt.executeQuery();
             if (rs.next()) {
+                UUID assignedDpoUserId = (UUID) rs.getObject("assigned_dpo_user_id");
+                // Operators may only view grievances explicitly assigned to them.
+                if ("OPERATOR".equalsIgnoreCase(callerRole) && (assignedDpoUserId == null || !assignedDpoUserId.equals(loginUserId))) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This grievance is not assigned to you.", req.getRequestURI());
+                    return;
+                }
                 JSONObject g = new JSONObject();
                 g.put("grievance_id", rs.getString("id"));
                 g.put("user_id", rs.getString("user_id"));
@@ -263,6 +282,7 @@ public class Grievance implements Action {
                 g.put("description", rs.getString("description"));
                 g.put("submission_timestamp", rs.getTimestamp("submission_timestamp").toString());
                 g.put("due_date", rs.getTimestamp("due_date").toString());
+                g.put("assigned_dpo_user_id", assignedDpoUserId != null ? assignedDpoUserId.toString() : null);
                 try {
                     g.put("communication_log", new JSONParser().parse(rs.getString("communication_log")));
                     g.put("attachments", new JSONParser().parse(rs.getString("attachments")));
@@ -276,18 +296,26 @@ public class Grievance implements Action {
         }
     }
 
-    private void handleListGrievances(UUID fiduciaryId, JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+    private void handleListGrievances(UUID fiduciaryId, UUID loginUserId, String callerRole, JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         JSONArray arr = new JSONArray();
 
+        // Operators only see their own assigned queue; DPO/ADMIN see the full fiduciary list.
+        boolean scopeToCaller = "OPERATOR".equalsIgnoreCase(callerRole);
+
         try {
-            String sql = "SELECT id, user_id, type, subject, submission_timestamp, status, due_date FROM grievances WHERE fiduciary_id = ? ORDER BY submission_timestamp DESC";
+            String sql = "SELECT id, user_id, type, subject, submission_timestamp, status, due_date, assigned_dpo_user_id FROM grievances WHERE fiduciary_id = ?"
+                    + (scopeToCaller ? " AND assigned_dpo_user_id = ?" : "")
+                    + " ORDER BY submission_timestamp DESC";
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setObject(1, fiduciaryId);
+            if (scopeToCaller) {
+                pstmt.setObject(2, loginUserId);
+            }
             rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -299,11 +327,67 @@ public class Grievance implements Action {
                 g.put("status", rs.getString("status"));
                 g.put("submission_timestamp", rs.getTimestamp("submission_timestamp").toString());
                 g.put("due_date", rs.getTimestamp("due_date").toString());
+                Object assignedId = rs.getObject("assigned_dpo_user_id");
+                g.put("assigned_dpo_user_id", assignedId != null ? assignedId.toString() : null);
                 arr.add(g);
             }
             OutputProcessor.send(res, 200, arr);
         } finally {
             pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    private void handleAssignGrievance(JSONObject input, UUID grievanceId, String callerRole, String serviceType, UUID serviceId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        if (InputProcessor.rejectIfOperator(req, res)) return; // Only DPO/ADMIN may delegate
+
+        String operatorIdStr = (String) input.get("operator_id");
+        if (grievanceId == null || operatorIdStr == null || operatorIdStr.isEmpty()) {
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "'grievance_id' and 'operator_id' are required.", req.getRequestURI());
+            return;
+        }
+        UUID operatorId;
+        try {
+            operatorId = UUID.fromString(operatorIdStr);
+        } catch (IllegalArgumentException e) {
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "Invalid 'operator_id' format.", req.getRequestURI());
+            return;
+        }
+
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        boolean success = false;
+        String principalId = "N/A";
+        UUID fiduciaryId = ADMIN_FID_UUID;
+
+        try {
+            conn = pool.getConnection();
+            try (PreparedStatement p = conn.prepareStatement("SELECT user_id, fiduciary_id FROM grievances WHERE id = ?")) {
+                p.setObject(1, grievanceId);
+                try (ResultSet r = p.executeQuery()) {
+                    if (r.next()) {
+                        principalId = r.getString("user_id");
+                        fiduciaryId = (UUID) r.getObject("fiduciary_id");
+                    }
+                }
+            }
+
+            pstmt = conn.prepareStatement("UPDATE grievances SET assigned_dpo_user_id = ?, last_updated_at = NOW() WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            pstmt.setObject(2, grievanceId);
+
+            if (pstmt.executeUpdate() > 0) {
+                OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
+                success = true;
+            } else {
+                OutputProcessor.errorResponse(res, 404, "Not Found", "Grievance not found.", req.getRequestURI());
+            }
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
+
+        if (success) {
+            new Audit().logEventAsync(principalId, fiduciaryId, serviceType, serviceId, "GRIEVANCE_ASSIGNED", "Assigned to operator: " + operatorId);
         }
     }
 

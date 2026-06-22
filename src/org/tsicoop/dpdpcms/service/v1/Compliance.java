@@ -74,6 +74,7 @@ public class Compliance implements Action {
             String apiSecret = req.getHeader("X-API-Secret");
             // For Admin APIs
             loginUserId = InputProcessor.getAuthenticatedUserId(req);
+            String callerRole = InputProcessor.getVerifiedRole(req);
             // For apps
             appId = new ApiKey().getAppId(apiKey,apiSecret);
 
@@ -83,7 +84,9 @@ public class Compliance implements Action {
             }
 
             UUID fiduciaryId = null;
-            String fiduciaryIdStr = input.get("fiduciary_id") != null?(String) input.get("fiduciary_id"):new Fiduciary().getFiduciaryId(UUID.fromString(apiKey),apiSecret);
+            String fiduciaryIdStr = input.get("fiduciary_id") != null
+                    ? (String) input.get("fiduciary_id")
+                    : (apiKey != null ? new Fiduciary().getFiduciaryId(UUID.fromString(apiKey), apiSecret) : null);
             if (fiduciaryIdStr != null && !fiduciaryIdStr.isEmpty()) {
                 try {
                     fiduciaryId = UUID.fromString(fiduciaryIdStr);
@@ -131,7 +134,10 @@ public class Compliance implements Action {
                     }
                     String status = (String) input.get("status"); // COMPLETED, FAILED, IN_PROGRESS
                     String details = (String) input.get("details");
-                    updatePurgeStatus(purgeRequestId, status, details, loginUserId, appId);
+                    if (!updatePurgeStatus(purgeRequestId, status, details, loginUserId, appId, callerRole)) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This purge request is not assigned to you.", req.getRequestURI());
+                        return;
+                    }
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Purge status confirmed."); }});
                     break;
 
@@ -147,7 +153,9 @@ public class Compliance implements Action {
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 20;
 
-                    outputArray = listPurgeRequestsFromDb(fiduciaryId, appId, purgeStatusFilter, purgeTriggerFilter, purgeSearch, page, limit);
+                    // Operators only see their own assigned queue; DPO/ADMIN see the full fiduciary list.
+                    UUID scopeOperatorId = "OPERATOR".equalsIgnoreCase(callerRole) ? loginUserId : null;
+                    outputArray = listPurgeRequestsFromDb(fiduciaryId, appId, purgeStatusFilter, purgeTriggerFilter, purgeSearch, page, limit, scopeOperatorId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -158,7 +166,34 @@ public class Compliance implements Action {
                         return;
                     }
                     output = getPurgeRequestsFromDb(id);
+                    if (output != null && "OPERATOR".equalsIgnoreCase(callerRole)) {
+                        Object assignedOperatorId = output.get("assigned_operator_id");
+                        if (assignedOperatorId == null || !assignedOperatorId.equals(loginUserId.toString())) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This purge request is not assigned to you.", req.getRequestURI());
+                            return;
+                        }
+                    }
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
+                    break;
+
+                case "assign_purge_request":
+                    if (InputProcessor.rejectIfOperator(req, res)) return; // Only DPO/ADMIN may delegate
+                    UUID assignPurgeId = null;
+                    String assignPurgeIdStr = (String) input.get("id");
+                    String assignOperatorIdStr = (String) input.get("operator_id");
+                    if (assignPurgeIdStr != null && !assignPurgeIdStr.isEmpty()) {
+                        try { assignPurgeId = UUID.fromString(assignPurgeIdStr); } catch (IllegalArgumentException e) { /* handled below */ }
+                    }
+                    UUID assignOperatorId = null;
+                    if (assignOperatorIdStr != null && !assignOperatorIdStr.isEmpty()) {
+                        try { assignOperatorId = UUID.fromString(assignOperatorIdStr); } catch (IllegalArgumentException e) { /* handled below */ }
+                    }
+                    if (assignPurgeId == null || assignOperatorId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'id' and 'operator_id' are required for 'assign_purge_request'.", req.getRequestURI());
+                        return;
+                    }
+                    assignPurgeRequest(assignPurgeId, assignOperatorId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); }});
                     break;
 
                 default:
@@ -254,7 +289,7 @@ public class Compliance implements Action {
      * Confirms the status of a purge request (called by DF/DP).
      * @throws SQLException if a database access error occurs.
      */
-    private void updatePurgeStatus(UUID purgeRequestId, String confirmationStatus, String details, UUID loginUserId, UUID appId) throws SQLException {
+    private boolean updatePurgeStatus(UUID purgeRequestId, String confirmationStatus, String details, UUID loginUserId, UUID appId, String callerRole) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -265,10 +300,25 @@ public class Compliance implements Action {
         String serviceType = null;
 
         String sql = "UPDATE purge_requests SET status = ?, details = ?, last_updated_at = NOW() WHERE id = ?";
-        String sql2 = "select user_id,fiduciary_id from  purge_requests WHERE id = ?";
+        String sql2 = "select user_id, fiduciary_id, assigned_operator_id from purge_requests WHERE id = ?";
 
         try {
             conn = pool.getConnection();
+
+            // Operators may only close purge requests explicitly assigned to them.
+            if ("OPERATOR".equalsIgnoreCase(callerRole)) {
+                UUID assignedOperatorId = null;
+                try (PreparedStatement p = conn.prepareStatement("SELECT assigned_operator_id FROM purge_requests WHERE id = ?")) {
+                    p.setObject(1, purgeRequestId);
+                    try (ResultSet r = p.executeQuery()) {
+                        if (r.next()) assignedOperatorId = (UUID) r.getObject("assigned_operator_id");
+                    }
+                }
+                if (assignedOperatorId == null || !assignedOperatorId.equals(loginUserId)) {
+                    return false;
+                }
+            }
+
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, confirmationStatus);
             pstmt.setString(2, details);
@@ -323,6 +373,28 @@ public class Compliance implements Action {
             webhookPayload.put("user_id", userId);
             WebhookDispatcher.dispatch(fiduciaryId.toString(), "PURGE", "purge_request_status_updated", webhookPayload);
         }
+        return updated;
+    }
+
+    /**
+     * Assigns a purge request to a specific Operator for delegated closure.
+     * @throws SQLException if a database access error occurs.
+     */
+    private void assignPurgeRequest(UUID purgeRequestId, UUID operatorId) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("UPDATE purge_requests SET assigned_operator_id = ?, last_updated_at = NOW() WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            pstmt.setObject(2, purgeRequestId);
+            if (pstmt.executeUpdate() == 0) {
+                throw new SQLException("Assigning purge request failed, purge request not found.");
+            }
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
     }
 
     /**
@@ -330,16 +402,22 @@ public class Compliance implements Action {
      * @return JSONArray of purge request JSONObjects.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONArray listPurgeRequestsFromDb(UUID fiduciaryId, UUID appId, String statusFilter, String triggerFilter, String search, int page, int limit) throws SQLException {
+    private JSONArray listPurgeRequestsFromDb(UUID fiduciaryId, UUID appId, String statusFilter, String triggerFilter, String search, int page, int limit, UUID scopeOperatorId) throws SQLException {
         JSONArray requestsArray = new JSONArray();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT pr.id, pr.user_id, pr.purpose_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.fiduciary_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT pr.id, pr.user_id, pr.purpose_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
+
+        // Operators only see their own assigned queue; DPO/ADMIN see the full fiduciary list.
+        if (scopeOperatorId != null) {
+            sqlBuilder.append(" AND pr.assigned_operator_id = ?");
+            params.add(scopeOperatorId);
+        }
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
             sqlBuilder.append(" AND pr.status = ?");
@@ -387,6 +465,8 @@ public class Compliance implements Action {
                 request.put("status", rs.getString("status"));
                 request.put("initiated_at", rs.getTimestamp("initiated_at").toInstant().toString());
                 request.put("details", rs.getString("details"));
+                Object assignedOperatorId = rs.getObject("assigned_operator_id");
+                request.put("assigned_operator_id", assignedOperatorId != null ? assignedOperatorId.toString() : null);
                 requestsArray.add(request);
             }
         } finally {
@@ -407,7 +487,7 @@ public class Compliance implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        String sql = "SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.purpose_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.id=?";
+        String sql = "SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.purpose_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.id=?";
 
         try {
             conn = pool.getConnection();
@@ -427,6 +507,8 @@ public class Compliance implements Action {
                 purgeob.put("status", rs.getString("status"));
                 purgeob.put("initiated_at", rs.getTimestamp("initiated_at").toInstant().toString());
                 purgeob.put("details", rs.getString("details"));
+                Object assignedOperatorId = rs.getObject("assigned_operator_id");
+                purgeob.put("assigned_operator_id", assignedOperatorId != null ? assignedOperatorId.toString() : null);
             }
         } finally {
             pool.cleanup(rs, pstmt, conn);

@@ -29,15 +29,15 @@ public class Ropa implements Action {
             }
 
             switch (func.toLowerCase()) {
-                case "create_entry":            handleCreateEntry(input, res, req);           break;
-                case "update_entry":            handleUpdateEntry(input, res, req);           break;
-                case "publish_entry":           handlePublishEntry(input, res, req);          break;
-                case "retire_entry":            handleRetireEntry(input, res, req);           break;
+                case "create_entry":            if (InputProcessor.rejectIfOperator(req, res)) return; handleCreateEntry(input, res, req);           break;
+                case "update_entry":            if (InputProcessor.rejectIfOperator(req, res)) return; handleUpdateEntry(input, res, req);           break;
+                case "publish_entry":           if (InputProcessor.rejectIfOperator(req, res)) return; handlePublishEntry(input, res, req);          break;
+                case "retire_entry":            if (InputProcessor.rejectIfOperator(req, res)) return; handleRetireEntry(input, res, req);           break;
                 case "list_entries":            handleListEntries(input, res, req);           break;
                 case "get_entry":               handleGetEntry(input, res, req);              break;
                 case "validate_completeness":   handleValidateCompleteness(input, res, req);  break;
                 case "export_ropa":             handleExportRopa(input, res, req);            break;
-                case "derive_from_policy":      handleDeriveFromPolicy(input, res, req);      break;
+                case "derive_from_policy":      if (InputProcessor.rejectIfOperator(req, res)) return; handleDeriveFromPolicy(input, res, req);      break;
                 default:
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown '_func': " + func, req.getRequestURI());
             }

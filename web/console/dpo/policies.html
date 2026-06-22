@@ -226,6 +226,7 @@
             <a href="ropa.html" class="nav-link">ROPA</a>
             <a href="breach.html" class="nav-link">Breach</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
     </div>
@@ -485,6 +486,11 @@
     // --- Configuration ---
     const API_URL_POLICY = '/api/v1/policy';
     const AUTH_TOKEN = localStorage.getItem('authToken');
+    const IS_OPERATOR = localStorage.getItem('role') === 'OPERATOR';
+    if (IS_OPERATOR) {
+        document.querySelectorAll('a[href="policies.html"], a[href="settings.html"], a[href="team.html"]').forEach(el => el.remove());
+        document.getElementById('add-policy-btn').style.display = 'none'; // hidden, not removed: init below still wires the (now invisible) button's onclick
+    }
 
     const USER_NAME = localStorage.getItem('username');
     document.getElementById('username').textContent = USER_NAME || 'DPO User';
@@ -557,9 +563,9 @@
 
         const actionsHtml = `
             <button class="text-indigo-600 hover:text-indigo-900 font-bold text-xs mr-3" onclick="viewRopa('${policy.id}')">View ROPA</button>
-            ${isDraft ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-3" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}')">Edit</button>` : ''}
-            ${isUnderReview ? `<button class="text-blue-600 hover:text-blue-800 font-bold text-xs mr-3" onclick="reviewRopa('${policy.id}')">Review ROPA</button>` : ''}
-            ${!isArchived ? `<button class="text-red-600 hover:text-red-800 font-bold text-xs" onclick="deletePolicy('${policy.id}', '${policy.fiduciary_id}')">Delete</button>` : ''}
+            ${(isDraft && !IS_OPERATOR) ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-3" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}')">Edit</button>` : ''}
+            ${(isUnderReview && !IS_OPERATOR) ? `<button class="text-blue-600 hover:text-blue-800 font-bold text-xs mr-3" onclick="reviewRopa('${policy.id}')">Review ROPA</button>` : ''}
+            ${(!isArchived && !IS_OPERATOR) ? `<button class="text-red-600 hover:text-red-800 font-bold text-xs" onclick="deletePolicy('${policy.id}', '${policy.fiduciary_id}')">Delete</button>` : ''}
         `;
 
         row.innerHTML = `

@@ -105,6 +105,7 @@ public class Notification implements Action {
                     break;
 
                 case "set_notification_message": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     String msgNotificationType = (String) input.get("notification_type");
                     JSONObject messages = (JSONObject) input.get("messages");
                     if (fiduciaryId == null || msgNotificationType == null || msgNotificationType.isEmpty() || messages == null) {
@@ -126,6 +127,7 @@ public class Notification implements Action {
                     break;
 
                 case "set_webhook_config": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     String category = (String) input.get("category");
                     String webhookUrl = (String) input.get("webhook_url");
                     String secret = (String) input.get("secret");

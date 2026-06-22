@@ -321,6 +321,21 @@ public class InputProcessor {
         return null;
     }
 
+    /**
+     * Rejects the request with 403 if the authenticated caller's verified role is OPERATOR.
+     * Used to keep governance actions (policy authoring, settings, breach reporting, etc.)
+     * restricted to DPO/ADMIN while still allowing delegated closure work elsewhere.
+     * @return true if the request was rejected (caller must stop processing), false otherwise.
+     */
+    public static boolean rejectIfOperator(HttpServletRequest req, HttpServletResponse res) {
+        if ("OPERATOR".equalsIgnoreCase(getVerifiedRole(req))) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden",
+                    "Operators are not permitted to perform this action.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
     public static JSONObject getAdminAuthToken(HttpServletRequest req, HttpServletResponse res) throws Exception{
         JSONObject tokenDetails = null;
         String authorization = null;

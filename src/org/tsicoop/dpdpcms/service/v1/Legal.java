@@ -36,6 +36,7 @@ public class Legal implements Action {
 
             switch (func.toLowerCase()) {
                 case "generate_certificate":
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     handleGenerateCertificate(input, req, res);
                     break;
                 case "list_certificates":

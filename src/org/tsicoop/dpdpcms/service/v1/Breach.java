@@ -82,6 +82,7 @@ public class Breach implements Action {
 
             switch (func.toLowerCase()) {
                 case "report_breach": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     String title = (String) input.get("title");
                     String description = (String) input.get("description");
                     String detectedAtStr = (String) input.get("detected_at");
@@ -150,6 +151,7 @@ public class Breach implements Action {
                 }
 
                 case "update_breach_status": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     String id = (String) input.get("id");
                     String status = (String) input.get("status");
                     String resolutionNotes = (String) input.get("resolution_notes");

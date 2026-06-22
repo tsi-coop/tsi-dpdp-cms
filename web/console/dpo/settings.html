@@ -147,6 +147,7 @@
             <a href="ropa.html" class="nav-link">ROPA</a>
             <a href="breach.html" class="nav-link">Breach</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link active">Settings</a>
         </nav>
     </div>
@@ -222,6 +223,9 @@
 <script>
     const API_URL_NOTIFICATION = '/api/v1/admin/notification';
     const API_URL_POLICY = '/api/v1/admin/policy';
+    if (localStorage.getItem('role') === 'OPERATOR') {
+        window.location.href = 'dashboard.html';
+    }
     const AUTH_TOKEN = localStorage.getItem('authToken');
     const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
     const USER_NAME = localStorage.getItem('username');

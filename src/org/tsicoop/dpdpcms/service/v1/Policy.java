@@ -125,6 +125,7 @@ public class Policy implements Action {
                     break;
 
                 case "create_policy":
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     JSONObject policyContent = (JSONObject) input.get("policy_content");
 
                     if (policyIdStr == null || policyIdStr.isEmpty() || jurisdiction == null || jurisdiction.isEmpty() || policyContent == null) {
@@ -152,6 +153,7 @@ public class Policy implements Action {
                     break;
 
                 case "update_policy":
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     if (policyIdStr == null || policyIdStr.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' is required for 'update_policy'.", req.getRequestURI());
                         return;
@@ -180,6 +182,7 @@ public class Policy implements Action {
                     break;
 
                 case "publish_policy":
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     if (policyIdStr == null || policyIdStr.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' is required for 'publish_policy'.", req.getRequestURI());
                         return;
@@ -208,6 +211,7 @@ public class Policy implements Action {
                     break;
 
                 case "delete_policy": // Soft delete
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
                     if (policyIdStr == null || policyIdStr.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' is required for 'delete_policy'.", req.getRequestURI());
                         return;

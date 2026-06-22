@@ -51,6 +51,9 @@ public class Job implements Action {
 
             switch (func) {
                 case "create_job":
+                    // Manual CES (compliance scan) runs stay DPO/ADMIN-only; EXPORT jobs (reports)
+                    // remain available to Operators for their view/download access.
+                    if ("CES".equalsIgnoreCase((String) input.get("job_type")) && InputProcessor.rejectIfOperator(req, res)) return;
                     handleCreateJob(fiduciaryId, input, res);
                     break;
                 case "list_jobs":

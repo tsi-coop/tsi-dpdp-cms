@@ -64,10 +64,10 @@ public class Operator implements Action {
                     handleResetViaRecovery(input, loginUserId, res, req);
                     break;
                 case "list_users":
-                    handleListUsers(input, res, req);
+                    handleListUsers(input, loginUserId, res, req);
                     break;
                 case "get_user":
-                    handleGetUser(input, res, req);
+                    handleGetUser(input, loginUserId, res, req);
                     break;
                 case "create_user":
                     handleCreateUser(input, loginUserId, res, req);
@@ -196,6 +196,22 @@ public class Operator implements Action {
         String fidStr = (String) input.get("fiduciary_id");
         UUID fid = (fidStr != null && !fidStr.isEmpty()) ? UUID.fromString(fidStr) : ADMIN_FID_UUID;
 
+        if ("DPO".equalsIgnoreCase(callerRole)) {
+            // DPOs can only delegate to Operators within their own fiduciary -- never mint
+            // another DPO/ADMIN, and never bind the new account to a different fiduciary
+            // than their own (regardless of what the request body claims).
+            if (!"OPERATOR".equalsIgnoreCase(role)) {
+                OutputProcessor.errorResponse(res, 403, "Forbidden", "DPO users may only create OPERATOR accounts.", req.getRequestURI());
+                return;
+            }
+            UUID callerFid = getOperatorFiduciaryId(loginUserId);
+            if (callerFid == null) {
+                OutputProcessor.errorResponse(res, 403, "Forbidden", "Caller is not bound to a fiduciary.", req.getRequestURI());
+                return;
+            }
+            fid = callerFid;
+        }
+
         if (mail == null || !EMAIL_PATTERN.matcher(mail).matches() || pass == null || !PASSWORD_PATTERN.matcher(pass).matches()) {
             OutputProcessor.errorResponse(res, 400, "Bad Request", "Invalid email or weak password.", req.getRequestURI());
             return;
@@ -241,14 +257,35 @@ public class Operator implements Action {
     private void handleUpdateUser(JSONObject input, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID uid = UUID.fromString((String) input.get("user_id"));
         String callerRole = InputProcessor.getVerifiedRole(req);
-        if ("DPO".equalsIgnoreCase(callerRole) && !uid.equals(loginUserId)) {
-            OutputProcessor.errorResponse(res, 403, "Forbidden", "DPO users may only update their own profile.", req.getRequestURI());
-            return;
+        boolean isSelf = uid.equals(loginUserId);
+
+        if (!"ADMIN".equalsIgnoreCase(callerRole) && !isSelf) {
+            // Only a DPO managing an Operator within their own fiduciary may update someone else.
+            if (!"DPO".equalsIgnoreCase(callerRole)) {
+                OutputProcessor.errorResponse(res, 403, "Forbidden", "You may only update your own profile.", req.getRequestURI());
+                return;
+            }
+            UUID callerFid = getOperatorFiduciaryId(loginUserId);
+            UUID targetFid = getOperatorFiduciaryId(uid);
+            String targetRole = getOperatorRole(uid);
+            if (callerFid == null || !callerFid.equals(targetFid) || !"OPERATOR".equalsIgnoreCase(targetRole)) {
+                OutputProcessor.errorResponse(res, 403, "Forbidden", "DPO users may only update Operators within their own fiduciary.", req.getRequestURI());
+                return;
+            }
         }
+
         String user = (String) input.get("username");
         String pass = (String) input.get("password");
-        String fidStr = (String) input.get("fiduciary_id");
-        UUID fid = (fidStr != null && !fidStr.isEmpty()) ? UUID.fromString(fidStr) : ADMIN_FID_UUID;
+        // Non-ADMIN callers cannot move an account between fiduciaries (even their own); only
+        // ADMIN may set fiduciary_id from the request body.
+        UUID fid;
+        if ("ADMIN".equalsIgnoreCase(callerRole)) {
+            String fidStr = (String) input.get("fiduciary_id");
+            fid = (fidStr != null && !fidStr.isEmpty()) ? UUID.fromString(fidStr) : ADMIN_FID_UUID;
+        } else {
+            UUID existingFid = getOperatorFiduciaryId(uid);
+            fid = existingFid != null ? existingFid : ADMIN_FID_UUID;
+        }
 
         if (pass != null && !pass.isEmpty() && !PASSWORD_PATTERN.matcher(pass).matches()) {
             OutputProcessor.errorResponse(res, 400, "Bad Request", "Weak password.", req.getRequestURI());
@@ -303,6 +340,19 @@ public class Operator implements Action {
 
     private void handleDeactivateUser(JSONObject input, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID uid = UUID.fromString((String) input.get("user_id"));
+        String callerRole = InputProcessor.getVerifiedRole(req);
+
+        if (!"ADMIN".equalsIgnoreCase(callerRole)) {
+            // Non-ADMIN (DPO) callers may only deactivate an Operator within their own fiduciary.
+            UUID callerFid = getOperatorFiduciaryId(loginUserId);
+            UUID targetFid = getOperatorFiduciaryId(uid);
+            String targetRole = getOperatorRole(uid);
+            if (callerFid == null || !callerFid.equals(targetFid) || !"OPERATOR".equalsIgnoreCase(targetRole)) {
+                OutputProcessor.errorResponse(res, 403, "Forbidden", "You may only deactivate Operators within your own fiduciary.", req.getRequestURI());
+                return;
+            }
+        }
+
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -396,6 +446,19 @@ public class Operator implements Action {
 
     private void handleGenerateRecoveryKey(JSONObject input, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID uid = UUID.fromString((String) input.get("user_id"));
+        String callerRole = InputProcessor.getVerifiedRole(req);
+
+        if (!"ADMIN".equalsIgnoreCase(callerRole) && !uid.equals(loginUserId)) {
+            // Non-ADMIN callers may only rotate the recovery key of an Operator within their own fiduciary.
+            UUID callerFid = getOperatorFiduciaryId(loginUserId);
+            UUID targetFid = getOperatorFiduciaryId(uid);
+            String targetRole = getOperatorRole(uid);
+            if (callerFid == null || !callerFid.equals(targetFid) || !"OPERATOR".equalsIgnoreCase(targetRole)) {
+                OutputProcessor.errorResponse(res, 403, "Forbidden", "Cannot rotate the recovery key for a user outside your fiduciary.", req.getRequestURI());
+                return;
+            }
+        }
+
         String plainKey = PassphraseGenerator.generate();
 
         PoolDB pool = new PoolDB();
@@ -460,21 +523,28 @@ public class Operator implements Action {
         }
     }
 
-    private void handleListUsers(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+    private void handleListUsers(JSONObject input, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         JSONArray arr = new JSONArray();
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        // Non-ADMIN callers (DPO/OPERATOR) only see operators within their own fiduciary.
+        boolean scopeToCaller = !"ADMIN".equalsIgnoreCase(callerRole);
 
         try {
             String sql = "SELECT u.id, u.name, " + DbEncryption.decryptCol("u.email_enc") + " AS email, u.status, u.role, u.fiduciary_id, f.name as fiduciary_name " +
                     "FROM operators u LEFT JOIN fiduciaries f ON u.fiduciary_id = f.id " +
+                    (scopeToCaller ? "WHERE u.fiduciary_id = (SELECT fiduciary_id FROM operators WHERE id = ?) " : "") +
                     "ORDER BY u.created_at DESC";
 
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            DbEncryption.bindKey(pstmt, 1);
+            int ki = DbEncryption.bindKey(pstmt, 1);
+            if (scopeToCaller) {
+                pstmt.setObject(ki, loginUserId);
+            }
             rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -494,8 +564,9 @@ public class Operator implements Action {
         }
     }
 
-    private void handleGetUser(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+    private void handleGetUser(JSONObject input, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID uid = UUID.fromString((String) input.get("user_id"));
+        String callerRole = InputProcessor.getVerifiedRole(req);
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -509,6 +580,15 @@ public class Operator implements Action {
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
+                UUID targetFid = (UUID) rs.getObject("fiduciary_id");
+                // Non-ADMIN callers (DPO/OPERATOR) may only view operators within their own fiduciary.
+                if (!"ADMIN".equalsIgnoreCase(callerRole)) {
+                    UUID callerFid = getOperatorFiduciaryId(loginUserId);
+                    if (callerFid == null || !callerFid.equals(targetFid)) {
+                        OutputProcessor.errorResponse(res, 403, "Forbidden", "Cannot view a user outside your fiduciary.", req.getRequestURI());
+                        return;
+                    }
+                }
                 JSONObject u = new JSONObject();
                 u.put("user_id", rs.getString("id"));
                 u.put("username", rs.getString("name"));
@@ -517,6 +597,46 @@ public class Operator implements Action {
                 u.put("role_name", rs.getString("role"));
                 OutputProcessor.send(res, 200, u);
             }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    /** Looks up the role string of an operator account. */
+    private String getOperatorRole(UUID operatorId) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT role FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("role");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for global/ADMIN accounts). */
+    private UUID getOperatorFiduciaryId(UUID operatorId) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
