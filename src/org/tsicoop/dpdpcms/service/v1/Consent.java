@@ -816,7 +816,11 @@ public class Consent implements Action {
 
         if(recorded){
             // Audit Log: Log the consent record event
-            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_GIVEN", dataPointConsents.toJSONString());
+            JSONObject auditContext = new JSONObject();
+            auditContext.put("policy_id", policyId);
+            auditContext.put("policy_version", policyVersion);
+            auditContext.put("data_point_consents", dataPointConsents);
+            new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_GIVEN", auditContext.toJSONString());
             try {
                 new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), Constants.NOTIF_CONSENT_GIVEN);
             } catch (SQLException e) {

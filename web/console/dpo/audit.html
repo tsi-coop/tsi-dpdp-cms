@@ -274,7 +274,12 @@
         row.className = 'hover:bg-slate-50 transition-colors cursor-default align-top';
 
         // Format action badge
-        const actionClass = log.audit_action.includes('WITHDRAWN') || log.audit_action.includes('ERASURE')  || log.audit_action.includes('VALIDATION_FAILED')
+        const criticalActions = ['WEBHOOK_DELIVERY_FAILED', 'BREACH_REPORTED', 'PURGE_FAILED'];
+        const actionClass = criticalActions.includes(log.audit_action)
+            ? 'bg-red-50 text-red-700 border-red-100'
+            : log.audit_action === 'LEGAL_HOLD_APPLIED'
+            ? 'bg-blue-50 text-blue-700 border-blue-100'
+            : log.audit_action.includes('WITHDRAWN') || log.audit_action.includes('ERASURE') || log.audit_action.includes('VALIDATION_FAILED')
             ? 'bg-red-50 text-red-700 border-red-100'
             : 'bg-teal-50 text-teal-700 border-teal-100';
 
