@@ -10,11 +10,14 @@
     <style>
         :root { --tsi-primary: #006A67; --tsi-dark: #0f172a; }
         body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; background-color: #f4fbf9; color: #333; }
-        .container { padding: 24px 20px; max-width: 1000px; margin: 0 auto; }
+        /* Named to avoid colliding with Tailwind's own reserved ".container" utility class,
+           which clobbers max-width/margin at the xl breakpoint (1280px) and silently
+           breaks centering -- this is a real, observed bug, not just a precaution. */
+        .page-container { padding: 24px 20px; max-width: 1000px; margin: 0 auto; }
 
         /* Header */
-        .portal-header { background: white; border-bottom: 1px solid #e2e8f0; padding: 0 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .header-inner { max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 60px; }
+        .portal-header { background: white; border-bottom: 1px solid #e2e8f0; padding: 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .header-inner { max-width: 1000px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; height: 60px; }
 
         /* Tabs */
         .tab-bar { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
@@ -101,30 +104,30 @@
 </div>
 
 <!-- Main content -->
-<div class="container">
+<div class="page-container">
     <h1 style="color:var(--tsi-dark);font-size:1.75rem;font-weight:800;margin:20px 0 6px;">My Privacy Dashboard</h1>
     <p style="color:#64748b;font-size:0.875rem;margin:0 0 16px;">Manage your consent preferences and data rights.</p>
 
-    <!-- Privacy Consent Card / QR strip -->
-    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
-            <div style="width:42px;height:42px;background:#f0fdfa;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--tsi-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </div>
-            <div style="min-width:0;">
-                <div id="pca-user-id" style="font-size:0.9rem;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-                <div id="pca-fiduciary" style="font-size:0.75rem;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-                <div style="margin-top:8px;">
-                    <span style="font-size:0.65rem;padding:2px 8px;border-radius:9999px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;">Active Session</span>
-                </div>
-            </div>
+    <!-- Session status strip (single line) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;min-width:0;flex-wrap:wrap;">
+            <span id="pca-user-id" style="font-weight:700;color:#1e293b;"></span>
+            <span style="color:#cbd5e1;">&middot;</span>
+            <span id="pca-fiduciary" style="color:#64748b;"></span>
+            <span style="font-size:0.65rem;padding:2px 8px;border-radius:9999px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;">Active Session</span>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
-            <div id="qrcode-container" style="padding:6px;background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);"></div>
-            <button onclick="downloadPCA()" style="background:none;border:none;font-size:0.65rem;font-weight:800;color:var(--tsi-primary);text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download PCA
+        <div id="pca-toggle-wrap" style="position:relative;display:none;flex-shrink:0;">
+            <button onclick="togglePcaPopover()" style="background:#f0fdfa;border:1px solid #99f6e4;color:var(--tsi-primary);font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;padding:6px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+                PCA QR
             </button>
+            <div id="pca-popover" style="display:none;flex-direction:column;align-items:center;gap:6px;position:absolute;right:0;top:calc(100% + 8px);z-index:50;background:white;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);padding:12px;">
+                <div id="qrcode-container" style="padding:6px;background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);"></div>
+                <button onclick="downloadPCA()" style="background:none;border:none;font-size:0.65rem;font-weight:800;color:var(--tsi-primary);text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;white-space:nowrap;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download PCA
+                </button>
+            </div>
         </div>
     </div>
 
@@ -446,7 +449,7 @@
 
         // Refresh QR now that we have sync_token from the latest consent record
         // Deferred so QR failure never blocks tab rendering
-        if (historyCache.length > 0) setTimeout(updateQR, 0);
+        if (historyCache.length > 0 && SESSION.pcaQrEnabled !== false) setTimeout(updateQR, 0);
 
         if (historyCache.length === 0) {
             area.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#94a3b8;">
@@ -865,6 +868,20 @@
         URL.revokeObjectURL(url);
     }
 
+    function togglePcaPopover() {
+        const pop = document.getElementById('pca-popover');
+        pop.style.display = pop.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    // Close the PCA popover when clicking outside it
+    document.addEventListener('click', (e) => {
+        const wrap = document.getElementById('pca-toggle-wrap');
+        const pop = document.getElementById('pca-popover');
+        if (pop.style.display === 'flex' && !wrap.contains(e.target)) {
+            pop.style.display = 'none';
+        }
+    });
+
     // ── Bootstrap ───────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
         SESSION = requireAuth();
@@ -873,9 +890,14 @@
         document.getElementById('header-fiduciary').textContent = SESSION.fiduciaryName;
         document.getElementById('header-user').textContent = 'Logged in as: ' + SESSION.userId;
 
-        // Populate privacy card
+        // Populate session strip
         document.getElementById('pca-user-id').textContent = SESSION.userId;
         document.getElementById('pca-fiduciary').textContent = SESSION.fiduciaryName;
+
+        const pcaEnabled = SESSION.pcaQrEnabled !== false;
+        if (pcaEnabled) {
+            document.getElementById('pca-toggle-wrap').style.display = 'block';
+        }
 
         // Fetch the latest consent record in the background to get a valid sync_token
         // before the user visits the History tab, so the downloaded PCA is always complete.
@@ -886,7 +908,7 @@
         }).then(result => {
             const records = Array.isArray(result) ? result : (result && result.data ? result.data : []);
             if (records.length > 0 && historyCache.length === 0) historyCache = records;
-            setTimeout(updateQR, 0);
+            if (pcaEnabled) setTimeout(updateQR, 0);
         });
 
         setTab('consent');

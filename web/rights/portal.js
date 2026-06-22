@@ -11,7 +11,8 @@ const SESSION_KEYS = {
     userId:         'pp_user_id',
     fiduciaryId:    'pp_fiduciary_id',
     fiduciaryName:  'pp_fiduciary_name',
-    policies:       'pp_policies'   // JSON array of { policy_id, version, jurisdiction, title }
+    policies:       'pp_policies',  // JSON array of { policy_id, version, jurisdiction, title }
+    pcaQrEnabled:   'pp_pca_qr_enabled'
 };
 
 function getSession() {
@@ -22,7 +23,8 @@ function getSession() {
         userId:        sessionStorage.getItem(SESSION_KEYS.userId),
         fiduciaryId:   sessionStorage.getItem(SESSION_KEYS.fiduciaryId),
         fiduciaryName: sessionStorage.getItem(SESSION_KEYS.fiduciaryName),
-        policies:      getSessionPolicies()
+        policies:      getSessionPolicies(),
+        pcaQrEnabled:  sessionStorage.getItem(SESSION_KEYS.pcaQrEnabled) !== 'false'
     };
 }
 
@@ -32,6 +34,7 @@ function saveSession(data) {
     sessionStorage.setItem(SESSION_KEYS.fiduciaryId,   data.fiduciary_id   || '');
     sessionStorage.setItem(SESSION_KEYS.fiduciaryName, data.fiduciary_name || '');
     sessionStorage.setItem(SESSION_KEYS.policies,      JSON.stringify(data.policies || []));
+    sessionStorage.setItem(SESSION_KEYS.pcaQrEnabled,  String(data.pca_qr_enabled !== false));
 }
 
 function getSessionPolicies() {

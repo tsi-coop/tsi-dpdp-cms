@@ -218,6 +218,22 @@
             </div>
         </div>
     </details>
+
+    <details class="settings-section">
+        <summary>
+            <span>Rights Management App</span>
+            <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </summary>
+        <div class="settings-section-body">
+            <p class="text-sm text-slate-600 mb-4">
+                Controls how Data Principals log into their Privacy Dashboard (<code>/rights</code>), and whether the
+                Portable Consent Artifact (PCA) QR code feature is available there.
+            </p>
+            <div id="rights-app-config-container" class="card">
+                <div class="text-center text-gray-500">Loading Rights Management App configuration...</div>
+            </div>
+        </div>
+    </details>
 </main>
 
 <script>
@@ -490,14 +506,135 @@
         }
     }
 
+    async function loadRightsAppConfig() {
+        try {
+            const response = await fetch(API_URL_NOTIFICATION, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "get_rights_app_config", "fiduciary_id": FIDUCIARY_ID })
+            });
+            if (!response.ok) throw new Error(response.status);
+            return await response.json();
+        } catch (e) {
+            console.error("Could not load Rights Management App configuration", e);
+            return { otp_mode: 'DUMMY_OTP', otp_message_template: '', pca_qr_enabled: true };
+        }
+    }
+
+    function renderRightsAppConfig(config, otpWebhookConfig) {
+        const container = document.getElementById('rights-app-config-container');
+        const mode = config.otp_mode || 'DUMMY_OTP';
+        const existing = otpWebhookConfig || {};
+        container.innerHTML = `
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">OTP Delivery Mode</label>
+                <select id="rights-otp-mode" class="w-full p-2 border border-gray-300 rounded-md text-sm" onchange="onRightsOtpModeChange()">
+                    <option value="DUMMY_OTP" ${mode === 'DUMMY_OTP' ? 'selected' : ''}>Dummy OTP (always 1234 -- demo/evaluation)</option>
+                    <option value="EMAIL_OTP" ${mode === 'EMAIL_OTP' ? 'selected' : ''}>Email OTP</option>
+                    <option value="MOBILE_OTP" ${mode === 'MOBILE_OTP' ? 'selected' : ''}>Mobile OTP</option>
+                </select>
+            </div>
+            <div id="rights-otp-webhook-fields" class="${mode === 'DUMMY_OTP' ? 'hidden' : ''} space-y-3 mb-4 pl-3 border-l-2 border-slate-100">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">OTP Delivery Webhook URL</label>
+                    <input type="text" id="rights-otp-webhook-url" value="${(existing.webhook_url || '').replace(/"/g, '&quot;')}"
+                           class="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="https://your-system.example.com/otp-webhook">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">
+                        Secret ${existing.secret_configured ? '<span class="text-green-600">(configured &#10003; - leave blank to keep it)</span>' : '<span class="text-amber-600">(not configured)</span>'}
+                    </label>
+                    <input type="password" id="rights-otp-webhook-secret" value="" autocomplete="new-password"
+                           class="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="${existing.secret_configured ? 'Leave blank to keep current secret' : 'Required to enable OTP delivery'}">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Message Template</label>
+                    <textarea id="rights-otp-message" rows="2" class="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="Your verification code is {{otp}}">${(config.otp_message_template || '').replace(/</g, '&lt;')}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Use <code>{{otp}}</code> as a placeholder for the generated code. Your webhook receiver is responsible for actually sending the email/SMS.</p>
+                </div>
+            </div>
+            <label class="flex items-center gap-2 mb-4 text-sm text-slate-600">
+                <input type="checkbox" id="rights-pca-qr-enabled" ${config.pca_qr_enabled !== false ? 'checked' : ''}>
+                Enable PCA QR Code in the Privacy Dashboard
+            </label>
+            <div class="flex justify-end">
+                <button class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90" onclick="saveRightsAppConfig()">Save</button>
+            </div>
+        `;
+    }
+
+    function onRightsOtpModeChange() {
+        const mode = document.getElementById('rights-otp-mode').value;
+        document.getElementById('rights-otp-webhook-fields').classList.toggle('hidden', mode === 'DUMMY_OTP');
+    }
+
+    async function saveRightsAppConfig() {
+        const mode = document.getElementById('rights-otp-mode').value;
+        const pcaQrEnabled = document.getElementById('rights-pca-qr-enabled').checked;
+        const messageTemplate = document.getElementById('rights-otp-message').value;
+
+        if (mode !== 'DUMMY_OTP') {
+            const webhookUrl = document.getElementById('rights-otp-webhook-url').value.trim();
+            const secret = document.getElementById('rights-otp-webhook-secret').value;
+            if (!webhookUrl) return alert("Enter an OTP delivery webhook URL first.");
+            try {
+                const webhookResponse = await fetch(API_URL_NOTIFICATION, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify({
+                        "_func": "set_webhook_config",
+                        "fiduciary_id": FIDUCIARY_ID,
+                        "category": "OTP",
+                        "webhook_url": webhookUrl,
+                        "secret": secret || undefined,
+                        "enabled": true
+                    })
+                });
+                if (!webhookResponse.ok) {
+                    const err = await webhookResponse.json().catch(() => ({}));
+                    alert("Failed to save OTP webhook: " + (err.message || webhookResponse.status));
+                    return;
+                }
+            } catch (e) {
+                alert("Network error while saving OTP webhook.");
+                return;
+            }
+        }
+
+        try {
+            const response = await fetch(API_URL_NOTIFICATION, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({
+                    "_func": "set_rights_app_config",
+                    "fiduciary_id": FIDUCIARY_ID,
+                    "otp_mode": mode,
+                    "otp_message_template": messageTemplate || undefined,
+                    "pca_qr_enabled": pcaQrEnabled
+                })
+            });
+            if (response.ok) {
+                alert("Rights Management App settings saved.");
+                const [config, webhookConfigs] = await Promise.all([loadRightsAppConfig(), loadWebhookConfigs()]);
+                renderRightsAppConfig(config, webhookConfigs['OTP']);
+            } else {
+                const err = await response.json().catch(() => ({}));
+                alert("Failed to save settings: " + (err.message || response.status));
+            }
+        } catch (e) {
+            alert("Network error while saving Rights Management App settings.");
+        }
+    }
+
     async function init() {
-        const [languages, existingMessages, webhookConfigs] = await Promise.all([
-            loadSupportedLanguages(), loadExistingMessages(), loadWebhookConfigs()
+        const [languages, existingMessages, webhookConfigs, rightsAppConfig] = await Promise.all([
+            loadSupportedLanguages(), loadExistingMessages(), loadWebhookConfigs(), loadRightsAppConfig()
         ]);
         SUPPORTED_LANGUAGES = languages;
         renderSettingsForm(languages, existingMessages);
         renderBreachTypes(languages, existingMessages);
         renderWebhookConfigs(webhookConfigs);
+        renderRightsAppConfig(rightsAppConfig, webhookConfigs['OTP']);
     }
 
     document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
@@ -509,6 +646,8 @@
     window.addBreachType = addBreachType;
     window.saveWebhookConfig = saveWebhookConfig;
     window.toggleWebhookEnabled = toggleWebhookEnabled;
+    window.onRightsOtpModeChange = onRightsOtpModeChange;
+    window.saveRightsAppConfig = saveRightsAppConfig;
     window.handleLogout = () => { localStorage.clear(); window.location.href = "../index.html"; };
 </script>
 </body>

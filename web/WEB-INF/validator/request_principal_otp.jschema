@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["_func", "fiduciary_id", "user_id"],
+  "properties": {
+    "_func":        { "type": "string" },
+    "fiduciary_id": { "type": "string" },
+    "user_id":      { "type": "string" }
+  }
+}

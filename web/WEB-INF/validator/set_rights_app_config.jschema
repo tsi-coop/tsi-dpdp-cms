@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["_func", "fiduciary_id", "otp_mode"],
+  "properties": {
+    "_func":                 { "type": "string" },
+    "fiduciary_id":          { "type": "string" },
+    "otp_mode":              { "type": "string", "enum": ["DUMMY_OTP", "EMAIL_OTP", "MOBILE_OTP"] },
+    "otp_message_template":  { "type": "string" },
+    "pca_qr_enabled":        { "type": "boolean" }
+  }
+}

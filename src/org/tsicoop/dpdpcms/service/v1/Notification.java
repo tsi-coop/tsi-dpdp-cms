@@ -132,10 +132,10 @@ public class Notification implements Action {
                     String webhookUrl = (String) input.get("webhook_url");
                     String secret = (String) input.get("secret");
                     if (fiduciaryId == null || category == null
-                            || !(category.equals("NOTIFICATION") || category.equals("PURGE"))
+                            || !(category.equals("NOTIFICATION") || category.equals("PURGE") || category.equals("OTP"))
                             || webhookUrl == null || webhookUrl.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
-                                "'fiduciary_id', 'webhook_url', and 'category' (NOTIFICATION or PURGE) are required for 'set_webhook_config'.", req.getRequestURI());
+                                "'fiduciary_id', 'webhook_url', and 'category' (NOTIFICATION, PURGE, or OTP) are required for 'set_webhook_config'.", req.getRequestURI());
                         return;
                     }
                     boolean enabled = !Boolean.FALSE.equals(input.get("enabled"));
@@ -151,6 +151,31 @@ public class Notification implements Action {
                     }
                     outputArray = listWebhookConfigsFromDb(fiduciaryId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    break;
+
+                case "set_rights_app_config": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
+                    String otpMode = (String) input.get("otp_mode");
+                    String otpMessageTemplate = (String) input.get("otp_message_template");
+                    boolean pcaQrEnabled = !Boolean.FALSE.equals(input.get("pca_qr_enabled"));
+                    if (fiduciaryId == null || otpMode == null
+                            || !(otpMode.equals("DUMMY_OTP") || otpMode.equals("EMAIL_OTP") || otpMode.equals("MOBILE_OTP"))) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                                "'fiduciary_id' and 'otp_mode' (DUMMY_OTP, EMAIL_OTP, or MOBILE_OTP) are required for 'set_rights_app_config'.", req.getRequestURI());
+                        return;
+                    }
+                    setRightsAppConfigInDb(fiduciaryId, otpMode, otpMessageTemplate, pcaQrEnabled, loginUserId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Rights Management App settings saved."); }});
+                    break;
+                }
+
+                case "get_rights_app_config":
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'get_rights_app_config'.", req.getRequestURI());
+                        return;
+                    }
+                    output = getRightsAppConfigFromDb(fiduciaryId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
                 case "mark_notification_read":
@@ -392,6 +417,65 @@ public class Notification implements Action {
                 row.put("enabled", rs.getBoolean("enabled"));
                 row.put("secret_configured", true); // a row only exists once a secret has been set
                 result.add(row);
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return result;
+    }
+
+    /**
+     * Upserts the Rights Dashboard's OTP mode / message template / PCA QR toggle for a
+     * fiduciary. The OTP delivery webhook URL/secret itself lives in webhook_configs
+     * under category='OTP' (set via 'set_webhook_config'), not duplicated here.
+     */
+    private void setRightsAppConfigInDb(UUID fiduciaryId, String otpMode, String otpMessageTemplate, boolean pcaQrEnabled, UUID loginUserId) throws SQLException {
+        String sql = "INSERT INTO rights_app_config (fiduciary_id, otp_mode, otp_message_template, pca_qr_enabled, last_updated_by_user_id) " +
+                "VALUES (?, ?, ?, ?, ?) " +
+                "ON CONFLICT (fiduciary_id) DO UPDATE SET otp_mode = EXCLUDED.otp_mode, " +
+                "otp_message_template = EXCLUDED.otp_message_template, pca_qr_enabled = EXCLUDED.pca_qr_enabled, " +
+                "last_updated_at = NOW(), last_updated_by_user_id = EXCLUDED.last_updated_by_user_id";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setString(2, otpMode);
+            pstmt.setString(3, otpMessageTemplate);
+            pstmt.setBoolean(4, pcaQrEnabled);
+            pstmt.setObject(5, loginUserId);
+            pstmt.executeUpdate();
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
+    }
+
+    /**
+     * Returns the Rights Dashboard config for a fiduciary, defaulting to DUMMY_OTP /
+     * PCA enabled when no row has been configured yet.
+     */
+    private JSONObject getRightsAppConfigFromDb(UUID fiduciaryId) throws SQLException {
+        JSONObject result = new JSONObject();
+        result.put("otp_mode", "DUMMY_OTP");
+        result.put("otp_message_template", null);
+        result.put("pca_qr_enabled", true);
+
+        String sql = "SELECT otp_mode, otp_message_template, pca_qr_enabled FROM rights_app_config WHERE fiduciary_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                result.put("otp_mode", rs.getString("otp_mode"));
+                result.put("otp_message_template", rs.getString("otp_message_template"));
+                result.put("pca_qr_enabled", rs.getBoolean("pca_qr_enabled"));
             }
         } finally {
             pool.cleanup(rs, pstmt, conn);
