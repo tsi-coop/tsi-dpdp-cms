@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -32,8 +33,12 @@ import java.util.Set;
  * If the DPO has configured a message for a notification's type (via the Settings
  * console screen / set_notification_message), list_notifications returns it as a
  * "messages" object keyed by language code (e.g. {"en": "...", "hi": "..."}) -- this
- * picks preferred_language from that bundle (default "en", falling back to whatever
- * language is available if the preferred one isn't configured).
+ * bundle can carry more languages than the recipient's fiduciary actually offers (e.g.
+ * seeded built-in defaults exist in 8 languages regardless of which ones a given
+ * fiduciary's active policy supports). This client fetches that fiduciary's active
+ * policy (get_active_policy) once per fiduciary_id seen, and only prints the languages
+ * present in policy_content, with preferred_language listed first when it's one of
+ * them. A real integration would instead pick the one language its recipient wants.
  *
  * Each notification is marked read via mark_notification_read right after it's
  * dispatched, and polling requests unread_only -- so persistence lives server-side
@@ -69,6 +74,12 @@ public class NotificationListener {
     // public fiduciary listing so notification lines can show a human-readable
     // fiduciary instead of a bare UUID.
     private static final Map<String, String> FIDUCIARY_LABELS = new HashMap<>();
+
+    // fiduciary_id -> set of language codes its active ("IN") policy actually supports
+    // (policy_content's keys). Populated lazily, once per fiduciary_id, the first time a
+    // notification for that fiduciary is dispatched -- not at startup, since most deployments
+    // only ever see notifications for the one fiduciary tied to the API key.
+    private static final Map<String, Set<String>> POLICY_LANGUAGES = new HashMap<>();
 
     private static String label(String notificationType) {
         return TYPE_LABELS.getOrDefault(notificationType, notificationType);
@@ -177,7 +188,7 @@ public class NotificationListener {
                                 fiduciaryLabel(n),
                                 id));
 
-                        dispatchNotify(n, preferredLanguage);
+                        dispatchNotify(n, preferredLanguage, httpClient, baseUrl, apiKey, apiSecret);
                         markNotificationRead(httpClient, baseUrl, apiKey, apiSecret, id);
                     }
                 }
@@ -197,29 +208,92 @@ public class NotificationListener {
      *
      * If the DPO has configured a message for this notification's exact type (via the
      * Settings console screen — this covers every type uniformly, including any
-     * DPO-defined breach category such as BREACH_NOTIFICATION_PHISHING), print it in
-     * preferredLanguage; otherwise just show the bare type label.
+     * DPO-defined breach category such as BREACH_NOTIFICATION_PHISHING), print every
+     * language the recipient's fiduciary actually offers (per its active policy), with
+     * preferredLanguage listed first when offered; otherwise just show the bare type
+     * label. A real integration would instead pick the one language the recipient wants.
      */
-    private static void dispatchNotify(JSONObject n, String preferredLanguage) {
+    private static void dispatchNotify(JSONObject n, String preferredLanguage,
+                                        HttpClient httpClient, String baseUrl, String apiKey, String apiSecret) {
         String notificationType = (String) n.get("notification_type");
-        String localizedMessage = resolveMessage((JSONObject) n.get("messages"), preferredLanguage);
+        String fiduciaryId = (String) n.get("fiduciary_id");
+        Set<String> policyLanguages = loadPolicyLanguages(httpClient, baseUrl, apiKey, apiSecret, fiduciaryId);
+        String localizedMessages = formatAllMessages((JSONObject) n.get("messages"), preferredLanguage, policyLanguages);
 
         System.out.println(String.format("  [NOTIFY] To: %s: %s  Type: %s  Fiduciary: %s%s",
                 recipientLabel(n), n.get("recipient_id"),
                 label(notificationType),
                 fiduciaryLabel(n),
-                localizedMessage == null ? "" : "\n           Message: " + localizedMessage));
+                localizedMessages == null ? "" : localizedMessages));
     }
 
     /**
-     * Picks the DPO-configured message in preferredLanguage, falling back to whatever
-     * language is available. Returns null if no message is configured for this
-     * notification type at all (label(notificationType) is used as-is in that case).
+     * Fetches and caches (per fiduciary_id) the set of language codes that fiduciary's
+     * active "IN" policy supports (policy_content's keys) -- the same source settings.html's
+     * loadSupportedLanguages() reads. Best-effort: falls back to {"en"} if the lookup fails
+     * or the fiduciary has no active policy, matching that screen's fallback.
      */
-    private static String resolveMessage(JSONObject messages, String preferredLanguage) {
+    @SuppressWarnings("unchecked")
+    private static Set<String> loadPolicyLanguages(HttpClient httpClient, String baseUrl, String apiKey, String apiSecret, String fiduciaryId) {
+        if (fiduciaryId == null) return Collections.singleton("en");
+        Set<String> cached = POLICY_LANGUAGES.get(fiduciaryId);
+        if (cached != null) return cached;
+
+        Set<String> languages = new HashSet<>();
+        try {
+            JSONObject body = new JSONObject();
+            body.put("_func", "get_active_policy");
+            body.put("fiduciary_id", fiduciaryId);
+            body.put("jurisdiction", "IN");
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/v1/client/policy"))
+                    .header("Content-Type", "application/json")
+                    .header("X-API-Key", apiKey)
+                    .header("X-API-Secret", apiSecret)
+                    .POST(HttpRequest.BodyPublishers.ofString(body.toJSONString()))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JSONObject policy = (JSONObject) new JSONParser().parse(response.body());
+                JSONObject policyContent = (JSONObject) policy.get("policy_content");
+                if (policyContent != null) {
+                    for (Object key : policyContent.keySet()) languages.add((String) key);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("[" + Instant.now() + "] Could not load active policy languages for fiduciary "
+                    + fiduciaryId + ": " + e.getMessage() + " — falling back to \"en\" only.");
+        }
+        if (languages.isEmpty()) languages.add("en");
+
+        POLICY_LANGUAGES.put(fiduciaryId, languages);
+        return languages;
+    }
+
+    /**
+     * Renders one "Message [lang]: ..." line per language that is both configured in the
+     * "messages" bundle and present in policyLanguages, preferredLanguage first when it
+     * qualifies. Returns null if no message survives that filter (label(notificationType)
+     * is used as-is in that case).
+     */
+    @SuppressWarnings("unchecked")
+    private static String formatAllMessages(JSONObject messages, String preferredLanguage, Set<String> policyLanguages) {
         if (messages == null || messages.isEmpty()) return null;
-        if (messages.get(preferredLanguage) != null) return (String) messages.get(preferredLanguage);
-        return (String) messages.values().iterator().next();
+
+        StringBuilder sb = new StringBuilder();
+        boolean preferredQualifies = policyLanguages.contains(preferredLanguage) && messages.get(preferredLanguage) != null;
+        if (preferredQualifies) {
+            sb.append("\n           Message [").append(preferredLanguage).append("]: ").append(messages.get(preferredLanguage));
+        }
+        for (Object key : messages.keySet()) {
+            String lang = (String) key;
+            if (lang.equals(preferredLanguage)) continue; // already printed first, above
+            if (!policyLanguages.contains(lang)) continue; // not offered by this fiduciary's active policy
+            sb.append("\n           Message [").append(lang).append("]: ").append(messages.get(lang));
+        }
+        return sb.length() == 0 ? null : sb.toString();
     }
 
     /**

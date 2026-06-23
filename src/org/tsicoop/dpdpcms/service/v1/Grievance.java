@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.ces.CESService;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -185,6 +186,11 @@ public class Grievance implements Action {
         // Audit Log: Instrument after cleanup. Audit user is the principal (userId).
         if (success) {
             new Audit().logEventAsync(userId, fiduciaryId, serviceType, serviceId, "GRIEVANCE_SUBMITTED", "Subject: " + subject);
+            try {
+                new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), Constants.NOTIF_GRIEVANCE_SUBMITTED);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -254,6 +260,16 @@ public class Grievance implements Action {
         // Added resolution details
         if (success) {
             new Audit().logEventAsync(principalId, fiduciaryId, serviceType, serviceId, "GRIEVANCE_STATUS_UPDATED", "New Status: " + newStatus+" Details: "+resolutionDetails);
+            String notifType = Constants.GRIEVANCE_ESCALATED.equalsIgnoreCase(newStatus)
+                    ? Constants.NOTIF_GRIEVANCE_ESCALATED
+                    : Constants.GRIEVANCE_RESOLVED.equalsIgnoreCase(newStatus) ? Constants.NOTIF_GRIEVANCE_RESOLVED : null;
+            if (notifType != null && principalId != null && !"N/A".equals(principalId)) {
+                try {
+                    new CESService().insertNotification("PRINCIPAL", principalId, fiduciaryId.toString(), notifType);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -388,6 +404,11 @@ public class Grievance implements Action {
 
         if (success) {
             new Audit().logEventAsync(principalId, fiduciaryId, serviceType, serviceId, "GRIEVANCE_ASSIGNED", "Assigned to operator: " + operatorId);
+            try {
+                new CESService().insertNotification("OPERATOR", operatorId.toString(), fiduciaryId.toString(), Constants.NOTIF_GRIEVANCE_ASSIGNED);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 

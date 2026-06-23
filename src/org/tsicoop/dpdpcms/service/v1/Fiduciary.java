@@ -7,6 +7,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.DefaultNotificationMessages;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,6 +16,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.regex.Pattern; // For domain validation, if needed
@@ -575,8 +577,45 @@ public class Fiduciary implements Action {
         }
         if (success) {
             new  Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "CREATE_FIDUCIARY", "ID:"+fiduciaryId+" Name:"+name);
+            try {
+                seedDefaultNotificationMessages(UUID.fromString(fiduciaryId));
+            } catch (SQLException e) {
+                // Non-blocking: missing defaults just mean the DPO sees today's fallback
+                // labels in Settings until they configure messages themselves.
+                e.printStackTrace();
+            }
         }
         return new JSONObject() {{ put("success", true); put("data", output); }};
+    }
+
+    /**
+     * Pre-populates notification_message_templates with built-in, multi-language default
+     * copy for every standard notification type (consent lifecycle, grievance, breach),
+     * so a newly onboarded fiduciary's notifications read well before any DPO configuration.
+     * Uses ON CONFLICT DO NOTHING so it never overwrites a DPO's own edits or races with
+     * the Settings console's upsert path (Notification.setNotificationMessageInDb).
+     */
+    private void seedDefaultNotificationMessages(UUID fiduciaryId) throws SQLException {
+        String sql = "INSERT INTO notification_message_templates (fiduciary_id, notification_type, messages) " +
+                "VALUES (?, ?, ?::jsonb) ON CONFLICT (fiduciary_id, notification_type) DO NOTHING";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            for (Map.Entry<String, Map<String, String>> entry : DefaultNotificationMessages.getAll().entrySet()) {
+                JSONObject messages = new JSONObject();
+                messages.putAll(entry.getValue());
+                pstmt.setObject(1, fiduciaryId);
+                pstmt.setString(2, entry.getKey());
+                pstmt.setString(3, messages.toJSONString());
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
     }
 
     /**

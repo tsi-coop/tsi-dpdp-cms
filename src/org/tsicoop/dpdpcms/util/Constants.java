@@ -47,6 +47,10 @@ public class Constants {
     public static final String NOTIF_CONSENT_GIVEN = "CONSENT_GIVEN_NOTIFICATION";
     public static final String NOTIF_ERASURE_REQUESTED = "ERASURE_REQUESTED_NOTIFICATION";
     public static final String NOTIF_BREACH = "BREACH_NOTIFICATION";
+    public static final String NOTIF_GRIEVANCE_SUBMITTED = "GRIEVANCE_SUBMITTED_NOTIFICATION";
+    public static final String NOTIF_GRIEVANCE_RESOLVED = "GRIEVANCE_RESOLVED_NOTIFICATION";
+    public static final String NOTIF_GRIEVANCE_ESCALATED = "GRIEVANCE_ESCALATED_NOTIFICATION";
+    public static final String NOTIF_GRIEVANCE_ASSIGNED = "GRIEVANCE_ASSIGNED_NOTIFICATION";
 
     // --- Age Categories (Section 9) ---
     public static final String AGE_ADULT = "ADULT";
