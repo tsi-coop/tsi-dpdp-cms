@@ -1,5 +1,36 @@
 # Release Notes
 
+### v0.4.8
+**DPO Console**
+- Policy list now links to "View ROPA" instead of "View Policy" — the old link surfaced raw policy JSON; ROPA already presents the same content in readable form.
+- Audit log entries for consent capture now record the policy ID and version alongside the consent payload, not just the raw data.
+- Principals screen now shows a "Recent Principals" list by default instead of opening to an empty search box.
+- Navigation reordered into a clearer workflow: setup (Policies, ROPA), principal-facing operations (Principals, Compliance, Grievances, Breach), oversight (Audit, Legal, Reports), and administration (Team, Settings).
+
+**Operator Role - Delegated Compliance & Grievance Closure**
+- DPOs can now delegate grievance and purge/compliance closure work to Operators from a new Team screen, scoped to only the items assigned to them.
+- Operators cannot author policies, manage webhooks/notification templates, or change other system settings.
+
+**Breach Notification**
+- New Breach Notification module: report a breach, notify every affected Data Principal, and generate a Data Protection Board-ready PDF report.
+- Affected principals can now also be supplied via a single-column CSV upload, in addition to the existing text box; large lists are processed in the background by the Job Manager instead of on the request thread.
+
+**Rights Portal (Data Principal Dashboard)**
+- The "preferences saved" confirmation now also appears at the bottom of the page next to the Save button, not only at the top.
+- New "Rights Management App" settings: DPOs can choose Dummy/Email/Mobile OTP for portal login (with a configurable delivery webhook and message), and enable or disable the PCA QR code feature.
+
+**Webhooks & Developer Integrations**
+- New webhook support for Notification and Purge events: signed (HMAC-SHA256), per-fiduciary configurable delivery URL, as an alternative to polling.
+- New `NotificationListener.java` example: a polling client demonstrating how to consume the Notification API.
+- New `PurgeHandler.java` example: an interactive client demonstrating how to acknowledge purge requests.
+- New consent lifecycle example script for developers, exercising capture, withdrawal, and erasure end-to-end against a running instance.
+
+**Reliability**
+- Nightly compliance enforcement jobs are now claimed atomically across app instances and automatically catch up if a run was missed (e.g. the app was down at midnight), instead of relying on an in-memory flag that could double-schedule or silently skip a day.
+- Legal Evidence Module: certificate generation is now restricted to DPO/Admin (delegated Operators cannot generate evidence certificates), plus minor wording fixes.
+
+---
+
 ### v0.4.7
 **Bug Fixes**
 - Fixed the Compliance Enforcement Service (CES) skipping enforcement for consent records with no linked app - `getAppIdsByPurpose` now excludes rows where `app_id` is null so purpose-level enforcement runs are no longer silently dropped, and restored the default `BRAND_NAME` in `docker-compose.yml` to "TSI DPDP CMS".
