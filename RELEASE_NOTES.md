@@ -2,7 +2,7 @@
 
 ### v0.4.8
 **DPO Console**
-- Policy list now links to "View ROPA" instead of "View Policy" — the old link surfaced raw policy JSON; ROPA already presents the same content in readable form.
+- Policy list now links to "View ROPA" instead of "View Policy" - the old link surfaced raw policy JSON; ROPA already presents the same content in readable form.
 - Audit log entries for consent capture now record the policy ID and version alongside the consent payload, not just the raw data.
 - Principals screen now shows a "Recent Principals" list by default instead of opening to an empty search box.
 - Navigation reordered into a clearer workflow: setup (Policies, ROPA), principal-facing operations (Principals, Compliance, Grievances, Breach), oversight (Audit, Legal, Reports), and administration (Team, Settings).
