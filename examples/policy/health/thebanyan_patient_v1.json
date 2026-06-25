@@ -1,0 +1,362 @@
+{
+  "en": {
+    "title": "The Banyan - Care, Rehabilitation, & Advocacy Privacy Policy",
+    "introduction": "At The Banyan, we are deeply committed to protecting the privacy, dignity, and personal data of women experiencing mental illness and homelessness. This policy explains how we process personal, socio-economic, and sensitive clinical data to provide compassionate care, support family integration, and conduct ethical research in strict compliance with the Digital Personal Data Protection (DPDP) Act, 2023.",
+    "general_purpose_description": "We process data across emergency street rescues, acute stabilization, extensive household profiling, transactional welfare disbursements, and permanent anonymized research tracking.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_crisis_emergency",
+        "name": "Crisis Intervention & Emergency Care",
+        "description": "To manage emergency street rescues, clinical admissions into Emergency Care and Recovery Centres (ECRCs), and acute psychiatric stabilization for women in severe distress.",
+        "legal_basis": "Legitimate Use / Medical Emergency (DPDP Act, 2023)",
+        "data_categories_involved": [
+          "full_name",
+          "mobile_number",
+          "emergency_contact",
+          "age",
+          "gender",
+          "current_address",
+          "biopsychosocial_history",
+          "psychiatric_evaluation",
+          "treatment_records"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "Retained for 10 years following medical discharge or cessation of emergency tracking.",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_demographics_household",
+        "name": "Demographics & Household Profiling",
+        "description": "To document extensive demographic metrics, living conditions, and family parameters required to execute tailored, long-term rehabilitation and family reintegration strategies.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1))",
+        "data_categories_involved": [
+          "full_name",
+          "age",
+          "gender",
+          "current_address",
+          "household_income",
+          "family_composition"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "Retained for 10 years after institutional care and rehabilitation tracks have formally closed.",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_transactional_welfare",
+        "name": "Transactional Service Delivery & Welfare Allowances",
+        "description": "To track day-to-day services rendered (food, housing, counseling) and process direct financial aid or government-backed disability allowance disbursements.",
+        "legal_basis": "Consent / Performance of Statutory Duty",
+        "data_categories_involved": [
+          "full_name",
+          "service_delivery_log",
+          "disability_allowance_details"
+        ],
+        "recipients_or_third_parties": [
+          "Razorpay"
+        ],
+        "retention_policy": "Retained for 7 years post-disbursal for statutory financial audit tracking.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_longitudinal_research",
+        "name": "Longitudinal Analysis & Non-PII Research Reporting",
+        "description": "To evaluate healthcare outcomes over decades and publish structural advocacy reports completely stripped of personally identifiable information (PII).",
+        "legal_basis": "Consent (with strict Anonymization)",
+        "data_categories_involved": [
+          "longitudinal_tracker_id",
+          "age",
+          "gender",
+          "biopsychosocial_history",
+          "psychiatric_evaluation",
+          "treatment_records",
+          "service_delivery_log"
+        ],
+        "recipients_or_third_parties": [
+          "BALM Analytics"
+        ],
+        "retention_policy": "Retained permanently inside a sandboxed environment following irreversible anonymization pipelines.",
+        "retention_duration_value": 100,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      }
+    ],
+    "data_categories_details": [
+      { "id": "full_name", "name": "Full Name", "description": "Legal or identified name of the beneficiary for personal identification and care coordination." },
+      { "id": "mobile_number", "name": "Mobile Number", "description": "Primary contact point for the beneficiary or designated legal guardian." },
+      { "id": "emergency_contact", "name": "Emergency Contact", "description": "Contact info for legal relatives, community leaders, or local field-rescue units." },
+      { "id": "age", "name": "Age", "description": "Required to adapt therapeutic modalities and verify state pension/allowance qualifiers." },
+      { "id": "gender", "name": "Gender", "description": "Essential to determine safe residential housing allocations across institutional settings." },
+      { "id": "current_address", "name": "Current Address", "description": "Last known settlement, shelter location, or environmental rescue matrix coordinates." },
+      { "id": "household_income", "name": "Household Income", "description": "Socio-economic tracker utilized to confirm social security eligibility and baseline financial needs." },
+      { "id": "family_composition", "name": "Family Composition", "description": "Structural mapping of extended family members to support safe tracing and social integration paths." },
+      { "id": "biopsychosocial_history", "name": "Biopsychosocial History", "description": "Holistic records evaluating interpersonal, biological, and systemic social trauma stressors." },
+      { "id": "psychiatric_evaluation", "name": "Psychiatric Evaluation", "description": "Highly sensitive mental health records containing formal clinical assessments and diagnostic tracking." },
+      { "id": "treatment_records", "name": "Treatment Records", "description": "Active clinical medication charts, psychiatric interventions, and operational therapy mapping." },
+      { "id": "service_delivery_log", "name": "Service Delivery Log", "description": "Transactional interaction data logging nutritional support, medical items, and therapeutic aids received." },
+      { "id": "disability_allowance_details", "name": "Disability Allowance Details", "description": "Financial distribution tracking or institutional routing indices used for sending state pensions." },
+      { "id": "longitudinal_tracker_id", "name": "Longitudinal Tracker ID", "description": "Strictly pseudonymized token generated to maintain tracking for scientific clinical audits across timelines." }
+    ],
+    "data_subject_categories": ["beneficiary"],
+    "security_measures": "Institutional controls — AES-256 encryption for clinical evaluation assets, strict role-based access tokens limiting data to localized care circles, rigorous masking/anonymization pipelines for data sent to research clusters, and mandatory TLS 1.3 encryption across all communication vectors.",
+    "processors": [
+      { "name": "AWS", "country": "IN", "role": "Cloud Hosting (Mumbai Region)", "contact": "aws-india-dpa@amazon.com" },
+      { "name": "Razorpay", "country": "IN", "role": "Disability Allowance Disbursal", "contact": "dpo@razorpay.com" },
+      { "name": "BALM Analytics", "country": "IN", "role": "Research & Data Insights Lab", "contact": "privacy@balm.org.in" }
+    ],
+    "cross_border_transfers": []
+  },
+  "ta": {
+    "title": "தி பனியன் - பராமரிப்பு, மறுவாழ்வு மற்றும் வாதாடல் தனியுரிமைக் கொள்கை",
+    "introduction": "தி பனியன் அமைப்பில், மனநலக் குறைபாடு மற்றும் வீடற்ற நிலையை எதிர்கொள்ளும் பெண்களின் தனியுரிமை, கண்ணியம் மற்றும் தனிப்பட்ட தரவைப் பாதுகாப்பதில் நாங்கள் ஆழமாக அர்ப்பணிப்புடன் உள்ளோம். டிஜிட்டல் தனிப்பட்ட தரவு பாதுகாப்பு (DPDP) சட்டம், 2023-க்கு இணங்க, கருணையுள்ள கவனிப்பை வழங்கவும், குடும்ப ஒருங்கிணைப்பை ஆதரிக்கவும், மற்றும் தார்மீக ஆராய்ச்சியை மேற்கொள்ளவும் தனிப்பட்ட, சமூக-பொருளாதார மற்றும் முக்கியமான மருத்துவத் தரவை நாங்கள் எவ்வாறு செயலாக்குகிறோம் என்பதை இந்தக் கொள்கை விளக்குகிறது.",
+    "general_purpose_description": "அவசரகால தெரு மீட்புகள், தீவிர நிலைப்படுத்துதல், விரிவான குடும்ப விவரக்குறிப்பு, பரிவர்த்தனை நலன்புரி கொடுப்பனவுகள் மற்றும் நிரந்தர அநாமதேய ஆராய்ச்சி கண்காணிப்பு ஆகியவற்றில் நாங்கள் தரவைச் செயலாக்குகிறோம்.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_crisis_emergency",
+        "name": "அவசரகால தலையீடு மற்றும் அவசர சிகிச்சை",
+        "description": "கடுமையான துயரத்தில் உள்ள பெண்களுக்கான அவசர தெரு மீட்புகள், அவசர சிகிச்சை மற்றும் மீட்பு மையங்களில் (ECRCs) மருத்துவ சேர்க்கைகள் மற்றும் தீவிர மனநல நிலைப்படுத்துதல் ஆகியவற்றை நிர்வகிக்க.",
+        "legal_basis": "நியாயமான பயன்பாடு / மருத்துவ அவசரநிலை (DPDP சட்டம், 2023)",
+        "data_categories_involved": [
+          "full_name",
+          "mobile_number",
+          "emergency_contact",
+          "age",
+          "gender",
+          "current_address",
+          "biopsychosocial_history",
+          "psychiatric_evaluation",
+          "treatment_records"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "மருத்துவ விடுவிப்பு அல்லது அவசரகால கண்காணிப்பு நிறுத்தப்பட்டதைத் தொடர்ந்து 10 ஆண்டுகளுக்குத் தக்கவைக்கப்படும்.",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_demographics_household",
+        "name": "புள்ளிவிவரங்கள் மற்றும் வீட்டு விவரக்குறிப்பு",
+        "description": "வடிவமைக்கப்பட்ட, நீண்ட கால மறுவாழ்வு மற்றும் குடும்ப மறுஇணைப்பு உத்திகளை செயல்படுத்துவதற்குத் தேவையான விரிவான புள்ளிவிவர அளவீடுகள், வாழ்க்கை நிலைமைகள் மற்றும் குடும்ப அளவுருக்களை ஆவணப்படுத்த.",
+        "legal_basis": "ஒப்புதல் (DPDP சட்டம், பிரிவு 6(1))",
+        "data_categories_involved": [
+          "full_name",
+          "age",
+          "gender",
+          "current_address",
+          "household_income",
+          "family_composition"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "நிறுவன பராமரிப்பு மற்றும் மறுவாழ்வு தடங்கள் முறையாக மூடப்பட்ட 10 ஆண்டுகளுக்குப் பிறகு தக்கவைக்கப்படும்.",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_transactional_welfare",
+        "name": "பரிவர்த்தனை சேவை வழங்கல் மற்றும் நலன்புரி கொடுப்பனவுகள்",
+        "description": "வழங்கப்பட்ட அன்றாட சேவைகளை (உணவு, வீட்டுவசதி, ஆலோசனை) கண்காணிக்கவும் மற்றும் நேரடி நிதி உதவி அல்லது அரசாங்க ஆதரவுடைய மாற்றுத்திறனாளி உதவித்தொகை விநியோகங்களை செயலாக்கவும்.",
+        "legal_basis": "ஒப்புதல் / சட்டப்பூர்வ கடமையின் செயல்திறன்",
+        "data_categories_involved": [
+          "full_name",
+          "service_delivery_log",
+          "disability_allowance_details"
+        ],
+        "recipients_or_third_parties": [
+          "Razorpay"
+        ],
+        "retention_policy": "சட்டப்பூர்வ நிதி தணிக்கை கண்காணிப்புக்காக விநியோகத்திற்குப் பிந்தைய 7 ஆண்டுகளுக்குத் தக்கவைக்கப்படும்.",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_longitudinal_research",
+        "name": "நீளமான பகுப்பாய்வு மற்றும் பிஐஐ அல்லாத ஆராய்ச்சி அறிக்கை",
+        "description": "பல தசாப்தங்களாக சுகாதார விளைவுகளை மதிப்பிடுவதற்கும், தனிப்பட்ட முறையில் அடையாளம் காணக்கூடிய தகவல்கள் (PII) முற்றிலும் நீக்கப்பட்ட கட்டமைப்பு வாதாடல் அறிக்கைகளை வெளியிடுவதற்கும்.",
+        "legal_basis": "ஒப்புதல் (கடுமையான அநாமதேயமாக்கலுடன்)",
+        "data_categories_involved": [
+          "longitudinal_tracker_id",
+          "age",
+          "gender",
+          "biopsychosocial_history",
+          "psychiatric_evaluation",
+          "treatment_records",
+          "service_delivery_log"
+        ],
+        "recipients_or_third_parties": [
+          "BALM Analytics"
+        ],
+        "retention_policy": "மறுக்கமுடியாத அநாமதேயமாக்கல் செயல்முறைகளைத் தொடர்ந்து பாதுகாக்கப்பட்ட சூழலில் நிரந்தரமாக வைக்கப்படும்.",
+        "retention_duration_value": 100,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      }
+    ],
+    "data_categories_details": [
+      { "id": "full_name", "name": "முழு பெயர்", "description": "தனிப்பட்ட அடையாளம் மற்றும் பராமரிப்பு ஒருங்கிணைப்புக்கான பயனாளியின் சட்டப்பூர்வ அல்லது அடையாளங்காணப்பட்ட பெயர்." },
+      { "id": "mobile_number", "name": "மொபைல் எண்", "description": "பயனாளி அல்லது நியமிக்கப்பட்ட சட்டப்பூர்வ பாதுகாவலருக்கான முதன்மை தொடர்பு புள்ளி." },
+      { "id": "emergency_contact", "name": "அவசரகால தொடர்பு", "description": "சட்டப்பூர்வ உறவினர்கள், சமூகத் தலைவர்கள் அல்லது உள்ளூர் கள மீட்புப் பிரிவுகளுக்கான தொடர்புத் தகவல்." },
+      { "id": "age", "name": "வயது", "description": "சிகிச்சை முறைகளை மாற்றியமைப்பதற்கும் மாநில ஓய்வூதியம்/உதவித்தொகை தகுதிகளைச் சரிபார்ப்பதற்கும் தேவைப்படுகிறது." },
+      { "id": "gender", "name": "பாலினம்", "description": "நிறுவன அமைப்புகளில் பாதுகாப்பான குடியிருப்பு வீட்டு ஒதுக்கீடுகளைத் தீர்மானிக்க அவசியம்." },
+      { "id": "current_address", "name": "தற்போதைய முகவரி", "description": "கடைசியாக அறியப்பட்ட குடியேற்றம், தங்குமிடம் அல்லது சுற்றுச்சூழல் மீட்பு அணிவகுப்பு ஒருங்கிணைப்புகள்." },
+      { "id": "household_income", "name": "குடும்ப வருமானம்", "description": "சமூக பாதுகாப்பு தகுதி மற்றும் அடிப்படை நிதித் தேவைகளை உறுதிப்படுத்தப் பயன்படும் சமூக-பொருளாதார கண்காணிப்பு." },
+      { "id": "family_composition", "name": "குடும்ப அமைப்பு", "description": "பாதுகாப்பான தடமறிதல் மற்றும் சமூக ஒருங்கிணைப்பு பாதைகளை ஆதரிக்க விரிவாக்கப்பட்ட குடும்ப உறுப்பினர்களின் கட்டமைப்பு வரைபடம்." },
+      { "id": "biopsychosocial_history", "name": "உயிரியல் சமூக வரலாறு", "description": "தனிப்பட்ட, உயிரியல் மற்றும் முறையான சமூக அதிர்ச்சி அழுத்தங்களை மதிப்பிடும் விரிவான பதிவுகள்." },
+      { "id": "psychiatric_evaluation", "name": "மனநல மதிப்பீடு", "description": "முறையான மருத்துவ மதிப்பீடுகள் மற்றும் கண்டறிதல் கண்காணிப்பைக் கொண்ட மிகவும் முக்கியமான மனநலப் பதிவுகள்." },
+      { "id": "treatment_records", "name": "சிகிச்சை பதிவுகள்", "description": "செயலில் உள்ள மருத்துவ மருந்து அட்டவணைகள், மனநல தலையீடுகள் மற்றும் செயல்பாட்டு சிகிச்சை வரைபடம்." },
+      { "id": "service_delivery_log", "name": "சேவை வழங்கல் பதிவு", "description": "ஊட்டச்சத்து ஆதரவு, மருத்துவப் பொருட்கள் மற்றும் பெறப்பட்ட சிகிச்சை உதவிகளைப் பதிவுசெய்யும் பரிவர்த்தனை தொடர்புத் தரவு." },
+      { "id": "disability_allowance_details", "name": "மாற்றுத்திறனாளி உதவித்தொகை விவரங்கள்", "description": "மாநில ஓய்வூதியங்களை அனுப்புவதற்குப் பயன்படுத்தப்படும் நிதி விநியோக கண்காணிப்பு அல்லது நிறுவன ரூட்டிங் குறியீடுகள்." },
+      { "id": "longitudinal_tracker_id", "name": "நீளமான கண்காணிப்பு ஐடி", "description": "காலவரிசைகளில் அறிவியல் மருத்துவ தணிக்கைகளுக்கான கண்காணிப்பைப் பராமரிக்க உருவாக்கப்பட்ட முற்றிலும் ছদ্মப்பெயரிடப்பட்ட டோக்கன்." }
+    ],
+    "data_subject_categories": ["beneficiary"],
+    "security_measures": "நிறுவனக் கட்டுப்பாடுகள் — மருத்துவ மதிப்பீட்டுச் சொத்துக்களுக்கான AES-256 குறியாக்கம், உள்ளறைகளில் பராமரிப்பு வட்டங்களுக்குத் தரவைக் கட்டுப்படுத்தும் கடுமையான பங்கு அடிப்படையிலான அணுகல் டோக்கன்கள், ஆராய்ச்சி கிளஸ்டர்களுக்கு அனுப்பப்படும் தரவுகளுக்கான கடுமையான மறைத்தல்/அநாமதேயமாக்கல் குழாய்கள் மற்றும் அனைத்து தகவல் தொடர்பு திசையன்களிலும் கட்டாய TLS 1.3 குறியாக்கம்.",
+    "processors": [
+      { "name": "AWS", "country": "IN", "role": "கிளவுட் ஹோஸ்டிங் (மும்பை பிராந்தியம்)", "contact": "aws-india-dpa@amazon.com" },
+      { "name": "Razorpay", "country": "IN", "role": "மாற்றுத்திறனாளி உதவித்தொகை விநியோகம்", "contact": "dpo@razorpay.com" },
+      { "name": "BALM Analytics", "country": "IN", "role": "ஆராய்ச்சி மற்றும் தரவு நுண்ணறிவு ஆய்வகம்", "contact": "privacy@balm.org.in" }
+    ],
+    "cross_border_transfers": []
+  },
+  "hi": {
+    "title": "द बैनियन - देखभाल, पुनर्वास और वकालत गोपनीयता नीति",
+    "introduction": "द बैनियन में, हम मानसिक बीमारी और बेघर होने का सामना कर रही महिलाओं की गोपनीयता, गरिमा और व्यक्तिगत डेटा की सुरक्षा के लिए पूरी तरह प्रतिबद्ध हैं। यह नीति बताती है कि हम डिजिटल व्यक्तिगत डेटा संरक्षण (DPDP) अधिनियम, 20क्या हुआ, 2023 के सख्त अनुपालन में दयालु देखभाल प्रदान करने, पारिवारिक एकीकरण का समर्थन करने और नैतिक अनुसंधान करने के लिए व्यक्तिगत, सामाजिक-आर्थिक और संवेदनशील नैदानिक डेटा को कैसे संसाधित करते हैं।",
+    "general_purpose_description": "हम आपातकालीन सड़क बचाव, तीव्र स्थिरीकरण, व्यापक घरेलू रूपरेखा, लेनदेन संबंधी कल्याण संवितरण और स्थायी अज्ञात अनुसंधान ट्रैकिंग में डेटा संसाधित करते हैं।",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_crisis_emergency",
+        "name": "संकटकालीन हस्तक्षेप और आपातकालीन देखभाल",
+        "description": "गंभीर संकट में महिलाओं के लिए आपातकालीन सड़क बचाव, आपातकालीन देखभाल और रिकवरी केंद्रों (ECRCs) में नैदानिक प्रवेश और तीव्र मनोरोग स्थिरीकरण का प्रबंधन करना।",
+        "legal_basis": "वैध उपयोग / चिकित्सा आपातकाल (DPDP अधिनियम, 2023)",
+        "data_categories_involved": [
+          "full_name",
+          "mobile_number",
+          "emergency_contact",
+          "age",
+          "gender",
+          "current_address",
+          "biopsychosocial_history",
+          "psychiatric_evaluation",
+          "treatment_records"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "चिकित्सीय छुट्टी या आपातकालीन ट्रैकिंग की समाप्ति के बाद 10 वर्षों के लिए रखा जाएगा।",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_demographics_household",
+        "name": "जनसांख्यिकी और घरेलू रूपरेखा",
+        "description": "दर्जी, दीर्घकालिक पुनर्वास और पारिवारिक पुनर्समेकन रणनीतियों को निष्पादित करने के लिए आवश्यक व्यापक जनसांख्यिकीय मैट्रिक्स, रहने की स्थिति और पारिवारिक मापदंडों का दस्तावेजीकरण करना।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6(1))",
+        "data_categories_involved": [
+          "full_name",
+          "age",
+          "gender",
+          "current_address",
+          "household_income",
+          "family_composition"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "संस्थागत देखभाल और पुनर्वास ट्रैक औपचारिक रूप से बंद होने के 10 साल बाद तक रखा जाएगा।",
+        "retention_duration_value": 10,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_transactional_welfare",
+        "name": "लेन-देन सेवा वितरण और कल्याण भत्ते",
+        "description": "प्रदान की जाने वाली दिन-प्रतिदिन की सेवाओं (भोजन, आवास, परामर्श) को ट्रैक करना और प्रत्यक्ष वित्तीय सहायता या सरकार समर्थित विकलांगता भत्ता संवितरण को संसाधित करना।",
+        "legal_basis": "सहमति / वैधानिक कर्तव्य का प्रदर्शन",
+        "data_categories_involved": [
+          "full_name",
+          "service_delivery_log",
+          "disability_allowance_details"
+        ],
+        "recipients_or_third_parties": [
+          "Razorpay"
+        ],
+        "retention_policy": "वैधानिक वित्तीय ऑडिट ट्रैकिंग के लिए संवितरण के बाद 7 वर्षों तक रखा जाएगा।",
+        "retention_duration_value": 7,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "CESSATION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_longitudinal_research",
+        "name": "अनुदैर्ध्य विश्लेषण और गैर-पीआईआई अनुसंधान रिपोर्टिंग",
+        "description": "दशकों से स्वास्थ्य परिणामों का मूल्यांकन करना और व्यक्तिगत रूप से पहचान योग्य जानकारी (PII) से पूरी तरह मुक्त संरचनात्मक वकालत रिपोर्ट प्रकाशित करना।",
+        "legal_basis": "सहमति (सख्त अनामकरण के साथ)",
+        "data_categories_involved": [
+          "longitudinal_tracker_id",
+          "age",
+          "gender",
+          "biopsychosocial_history",
+          "psychiatric_evaluation",
+          "treatment_records",
+          "service_delivery_log"
+        ],
+        "recipients_or_third_parties": [
+          "BALM Analytics"
+        ],
+        "retention_policy": "अपरिवर्तनीय अनामकरण प्रक्रियाओं के बाद एक सुरक्षित वातावरण के भीतर स्थायी रूप से रखा जाएगा।",
+        "retention_duration_value": 100,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      }
+    ],
+    "data_categories_details": [
+      { "id": "full_name", "name": "पूरा नाम", "description": "व्यक्तिगत पहचान और देखभाल समन्वय के लिए लाभार्थी का कानूनी या पहचाना गया नाम।" },
+      { "id": "mobile_number", "name": "मोबाइल नंबर", "description": "लाभार्थी या नामित कानूनी अभिभावक के लिए प्राथमिक संपर्क बिंदु।" },
+      { "id": "emergency_contact", "name": "आपातकालीन संपर्क", "description": "कानूनी रिश्तेदारों, सामुदायिक नेताओं या स्थानीय क्षेत्र-बचाव इकाइयों के लिए संपर्क जानकारी।" },
+      { "id": "age", "name": "आयु", "description": "चिकित्सीय तौर-तरीकों को अनुकूलित करने और राज्य पेंशन/भत्ता क्वालीफायर को सत्यापित करने के लिए आवश्यक।" },
+      { "id": "gender", "name": "लिंग", "description": "संस्थागत सेटिंग्स में सुरक्षित आवासीय आवास आवंटन निर्धारित करने के लिए आवश्यक।" },
+      { "id": "current_address", "name": "वर्तमान पता", "description": "अंतिम ज्ञात समझौता, आश्रय स्थान, या पर्यावरण बचाव मैट्रिक्स निर्देशांक।" },
+      { "id": "household_income", "name": "घरेलू आय", "description": "सामाजिक सुरक्षा पात्रता और आधारभूत वित्तीय आवश्यकताओं की पुष्टि करने के लिए उपयोग किया जाने वाला सामाजिक-आर्थिक ट्रैकर।" },
+      { "id": "family_composition", "name": "पारिवारिक संरचना", "description": "सुरक्षित अनुरेखण और सामाजिक एकीकरण पथों का समर्थन करने के लिए विस्तारित परिवार के सदस्यों का संरचनात्मक मानचित्रण।" },
+      { "id": "biopsychosocial_history", "name": "जैव-मनोसामाजिक इतिहास", "description": "पारस्परिक, जैविक और प्रणालीगत सामाजिक आघात तनावों का मूल्यांकन करने वाले समग्र रिकॉर्ड।" },
+      { "id": "psychiatric_evaluation", "name": "मनोरोग मूल्यांकन", "description": "औपचारिक नैदानिक मूल्यांकन और नैदानिक ट्रैकिंग वाले अत्यधिक संवेदनशील मानसिक स्वास्थ्य रिकॉर्ड।" },
+      { "id": "treatment_records", "name": "उपचार रिकॉर्ड", "description": "सक्रिय नैदानिक दवा चार्ट, मनोरोग हस्तक्षेप, और परिचालन चिकित्सा मानचित्रण।" },
+      { "id": "service_delivery_log", "name": "सेवा वितरण लॉग", "description": "पोषण संबंधी सहायता, चिकित्सा वस्तुओं और प्राप्त चिकित्सीय सहायता को लॉग करने वाला लेनदेन संबंधी संपर्क डेटा।" },
+      { "id": "disability_allowance_details", "name": "विकलांगता भत्ता विवरण", "description": "राज्य पेंशन भेजने के लिए उपयोग किए जाने वाले वित्तीय वितरण ट्रैकिंग या संस्थागत रूटिंग सूचकांक।" },
+      { "id": "longitudinal_tracker_id", "name": "अनुदैर्ध्य ट्रैकर आईडी", "description": "समयसीमा में वैज्ञानिक नैदानिक ऑडिट के लिए ट्रैकिंग बनाए रखने के लिए उत्पन्न पूरी तरह से छद्म नाम वाला टोकन।" }
+    ],
+    "data_subject_categories": ["beneficiary"],
+    "security_measures": "संस्थागत नियंत्रण — नैदानिक मूल्यांकन संपत्तियों के लिए AES-256 एन्क्रिप्शन, स्थानीयकृत देखभाल सर्किलों तक डेटा को सीमित करने वाले सख्त भूमिका-आधारित एक्सेस टोकन, अनुसंधान समूहों को भेजे गए डेटा के लिए कड़े मास्किंग/अनामकरण पाइपलाइन और सभी संचार वैक्टरों में अनिवार्य TLS 1.3 एन्क्रिप्शन।",
+    "processors": [
+      { "name": "AWS", "country": "IN", "role": "क्लाउड होस्टिंग (मुंबई क्षेत्र)", "contact": "aws-india-dpa@amazon.com" },
+      { "name": "Razorpay", "country": "IN", "role": "विकलांगता भत्ता संवितरण", "contact": "dpo@razorpay.com" },
+      { "name": "BALM Analytics", "country": "IN", "role": "अनुसंधान और डेटा अंतर्दृष्टि लैब", "contact": "privacy@balm.org.in" }
+    ],
+    "cross_border_transfers": []
+  }
+}

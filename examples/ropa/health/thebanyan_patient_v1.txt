@@ -1,0 +1,100 @@
+========================================================================
+ROPA REQUIREMENTS DOCUMENT
+Activity : thebanyan_patient_v1
+Sector   : NGO / Mental Health & Rehabilitation Services
+Standard : Digital Personal Data Protection Act, 2023 (India)
+========================================================================
+
+DESCRIPTION
+------------------------------------------------------------------------
+ROPA requirements for The Banyan's patient care, rehabilitation, and 
+research policy. Covers street rescue, emergency care & recovery (ECRC), 
+comprehensive demographic and household profiling, transactional service 
+delivery logs, longitudinal analysis, and non-PII research advocacy.
+
+COMPLIANCE LIFECYCLE
+------------------------------------------------------------------------
+  1. DPO defined requirements in this template
+  2. Engineer configured policy (thebanyan_patient_v1)
+  3. System auto-derived ROPA draft on publish
+  4. DPO verified draft against this template
+  5. DPO published (dpo_id auto-recorded)
+
+PROCESSING ACTIVITY
+------------------------------------------------------------------------
+  Activity Name : thebanyan_patient_v1
+  Legal Basis   : MIXED
+  Purpose       :
+    - Crisis Intervention & Emergency Care (ECRC)
+    - Demographics & Household Profiling
+    - Transactional Service Delivery & Welfare Allowances
+    - Longitudinal Analysis & Non-PII Research Reporting
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_crisis_emergency         Legitimate Use / Medical Emergency
+  purpose_demographics_household   Consent
+  purpose_transactional_welfare    Consent / Performance of Statutory Duty
+  purpose_longitudinal_research    Consent (with strict Anonymization)
+
+DATA SUBJECT CATEGORIES
+------------------------------------------------------------------------
+  - beneficiary (vulnerable women with mental illness and their households)
+
+DATA CATEGORIES  (14 total)
+------------------------------------------------------------------------
+  full_name                      mobile_number                  emergency_contact
+  age                            gender                         current_address
+  household_income               family_composition             biopsychosocial_history
+  psychiatric_evaluation         treatment_records              service_delivery_log
+  disability_allowance_details   longitudinal_tracker_id
+
+SECURITY MEASURES
+------------------------------------------------------------------------
+DPDPA-aligned controls — AES-256 encrypted health records, role-based 
+access controls (RBAC) via secure care management portals, rigorous 
+anonymization/pseudonymization pipelines for research data, and TLS 1.3 
+in transit.
+
+DATA PROCESSORS  (3 declared)
+------------------------------------------------------------------------
+  Name           Country    Role                           Contact
+  -------------- ---------- ------------------------------ ----------------------------
+  AWS            IN         Cloud Hosting (Mumbai Region)  aws-india-dpa@amazon.com
+  Razorpay       IN         Disability Allowance Disbursal dpo@razorpay.com
+  BALM Analytics IN         Research & Data Insights Lab   privacy@balm.org.in
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_crisis_emergency         AWS
+  purpose_demographics_household   AWS
+  purpose_transactional_welfare    Razorpay
+  purpose_longitudinal_research    BALM Analytics
+
+CROSS-BORDER TRANSFERS
+------------------------------------------------------------------------
+  No cross-border transfers. All data localized within India.
+
+RETENTION BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_crisis_emergency         10 YEARS        CESSATION
+  purpose_demographics_household   10 YEARS        CESSATION
+  purpose_transactional_welfare    7 YEARS         CESSATION
+  purpose_longitudinal_research    PERMANENT       ANONYMIZATION
+
+LINKED CONSENT POLICY
+------------------------------------------------------------------------
+  - thebanyan_patient_v1
+
+========================================================================
+NOTE: This document records the DPO's ROPA requirements before system
+configuration. Once the corresponding consent policy is published, the
+system will auto-derive a ROPA draft. The DPO should verify the draft
+against this document before publishing the ROPA entry.
+========================================================================
