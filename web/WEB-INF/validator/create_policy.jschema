@@ -62,10 +62,13 @@
                   }
                 },
                 "retention_policy": {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1
                 },
                 "retention_duration_value": {
-                  "type": "integer"
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Mandatory retention period; integer >= 1 (scale given by retention_duration_unit)."
                 },
                 "retention_duration_unit": {
                   "type": "string",
@@ -134,22 +137,38 @@
           },
           "data_subject_categories": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "security_measures": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "description": "Mandatory summary of technical and organisational security controls."
           },
           "processors": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "name":    { "type": "string" },
-                "country": { "type": "string" },
-                "role":    { "type": "string" },
-                "contact": { "type": "string" }
+                "name": {
+                  "type": "string"
+                },
+                "country": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "contact": {
+                  "type": "string"
+                }
               },
-              "required": ["name", "country", "role"]
+              "required": [
+                "name",
+                "country",
+                "role"
+              ]
             }
           },
           "cross_border_transfers": {
@@ -157,18 +176,52 @@
             "items": {
               "type": "object",
               "properties": {
-                "destination_country": { "type": "string" },
-                "safeguard":           { "type": "string" },
-                "processor":           { "type": "string" }
+                "destination_country": {
+                  "type": "string"
+                },
+                "safeguard": {
+                  "type": "string"
+                },
+                "processor": {
+                  "type": "string"
+                }
               },
-              "required": ["destination_country", "safeguard"]
+              "required": [
+                "destination_country",
+                "safeguard"
+              ]
             }
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "en",
+              "hi",
+              "ta",
+              "te",
+              "kn",
+              "ml",
+              "mr",
+              "bn",
+              "gu",
+              "pa",
+              "or",
+              "as",
+              "ne",
+              "sd",
+              "ks",
+              "sa",
+              "ur"
+            ],
+            "description": "Mandatory ISO 639-1 language code for the policy content (lowercase, e.g. 'en', 'ta')."
           }
         },
         "required": [
           "title",
           "data_processing_purposes",
-          "data_categories_details"
+          "data_categories_details",
+          "security_measures",
+          "language"
         ]
       }
     }
