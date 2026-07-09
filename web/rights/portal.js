@@ -4,7 +4,7 @@
  * All session state is stored in sessionStorage (auto-clears on tab close).
  */
 
-const PORTAL_BASE_URL = 'http://localhost:8080';
+const PORTAL_BASE_URL = window.location.origin;
 
 const SESSION_KEYS = {
     token:          'pp_token',
