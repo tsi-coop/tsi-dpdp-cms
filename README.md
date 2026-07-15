@@ -8,7 +8,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 [The Big Picture - Video](https://youtu.be/caQFjwrZj9w)
 
-[System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/296d41274d0bf449de295e89c1cf3c92a7f81259/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf)
+[System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/main/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf)
 
 ### Future Forward Proposals
 
