@@ -12,9 +12,10 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 
 ### Future Forward Proposals
 
+[Solving Consent Fatigue via Portable Consent Artifacts (PCA) - A Proposal](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
+
 [Standardized Erasure Interface for DPDP Consent Managers - A Proposal](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
 
-[Solving Consent Fatigue via Portable Consent Artifacts (PCA) - A Proposal](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
 
 ## Release Notes
 
