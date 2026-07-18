@@ -13,7 +13,8 @@ const SESSION_KEYS = {
     fiduciaryName:  'pp_fiduciary_name',
     policies:       'pp_policies',  // JSON array of { policy_id, version, jurisdiction, title, personas }
     pcaQrEnabled:   'pp_pca_qr_enabled',
-    persona:        'pp_persona'    // the persona (e.g. "employee") the principal declared pre-login
+    persona:        'pp_persona',   // the persona (e.g. "employee") the principal declared pre-login
+    syncToken:      'pp_sync_token' // long-lived wallet sync token, issued at login regardless of consent history
 };
 
 function getSession() {
@@ -26,7 +27,8 @@ function getSession() {
         fiduciaryName: sessionStorage.getItem(SESSION_KEYS.fiduciaryName),
         policies:      getSessionPolicies(),
         pcaQrEnabled:  sessionStorage.getItem(SESSION_KEYS.pcaQrEnabled) !== 'false',
-        persona:       sessionStorage.getItem(SESSION_KEYS.persona) || null
+        persona:       sessionStorage.getItem(SESSION_KEYS.persona) || null,
+        syncToken:     sessionStorage.getItem(SESSION_KEYS.syncToken) || null
     };
 }
 
@@ -39,6 +41,7 @@ function saveSession(data) {
     sessionStorage.setItem(SESSION_KEYS.policies,      JSON.stringify(policies));
     sessionStorage.setItem(SESSION_KEYS.pcaQrEnabled,  String(data.pca_qr_enabled !== false));
     sessionStorage.setItem(SESSION_KEYS.persona,       data.persona || '');
+    sessionStorage.setItem(SESSION_KEYS.syncToken,     data.sync_token || '');
 }
 
 /**

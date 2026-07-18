@@ -833,14 +833,22 @@
         const slimConsents = latest
             ? (latest.data_point_consents || []).map(c => ({ id: c.data_point_id, g: c.consent_granted }))
             : [];
+        // The persona-matched policy (already selected in the Manage Consent tab), independent of
+        // whether any consent has been saved yet -- lets the wallet show org/persona and offer
+        // first-time consent even before a consent record exists.
+        const policyEntry = activePolicyEntry || (SESSION && SESSION.policies ? SESSION.policies[0] : null);
         return {
             v: "1.0",
             uid: SESSION ? SESSION.userId : null,
             fid: SESSION ? SESSION.fiduciaryId : null,
             sync_url: PORTAL_BASE_URL + '/api/v1/client/wallet/sync',
-            sync_token: latest ? latest.sync_token : null,
+            // Issued at login, independent of consent history -- so the PCA is valid even before
+            // the principal has saved any preferences (the wallet syncs fresh details afterward).
+            sync_token: SESSION ? SESSION.syncToken : null,
             consents: slimConsents,
-            policy_ref: latest ? `${latest.policy_id}-v${latest.policy_version}` : 'N/A',
+            policy_id: policyEntry ? policyEntry.policy_id : null,
+            policy_version: policyEntry ? (policyEntry.version || '') : '',
+            policy_ref: latest ? `${latest.policy_id}-v${latest.policy_version}` : (policyEntry ? `${policyEntry.policy_id}-v${policyEntry.version || ''}` : 'N/A'),
             generated_at: new Date().toISOString()
         };
     }

@@ -173,6 +173,11 @@
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
     }
 
+    function personaLabel(s) {
+        if (!s) return '';
+        return String(s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
     // --- State & Config ---
     let state = {
         fiduciaries: [],
@@ -226,6 +231,38 @@
         }
     }
 
+    async function secureGrantConsent(fidId) {
+        const f = state.fiduciaries.find(f => f.id === fidId);
+        const checks = document.querySelectorAll('.grant-consent-chk');
+        const dataPointConsents = Array.from(checks).map(chk => ({
+            data_point_id: chk.value,
+            consent_granted: chk.checked,
+            purpose_agreed_to: chk.dataset.name,
+            timestamp_updated: new Date().toISOString()
+        }));
+
+        const result = await syncWithBackend(f.id, f.uid, f.sync_token, f.sync_url, {
+            command: "GRANT_CONSENT",
+            policy_id: f.policy_id,
+            data_point_consents: dataPointConsents
+        });
+
+        if (result && result.success) {
+            const purposeMeta = new Map((f.pendingPurposes || []).map(p => [p.id, p]));
+            f.status = 'IDLE';
+            f.consents = dataPointConsents.map(c => ({
+                id: c.data_point_id,
+                name: c.purpose_agreed_to,
+                status: c.consent_granted ? 'GRANTED' : 'WITHDRAWN',
+                mandatory: (purposeMeta.get(c.data_point_id) || {}).is_mandatory_for_service || false
+            }));
+            f.audit.push({ phase: 'COLLECTION', action: 'Consent Provided via Wallet', time: 'Just now', actor: 'WALLET', status: 'SYNC_OK' });
+            renderDetails();
+        } else {
+            alert('Failed to record consent. Please try again.');
+        }
+    }
+
     async function secureErasure(fidId) {
         const f = state.fiduciaries.find(f => f.id === fidId);
 
@@ -268,24 +305,48 @@
             const card = document.createElement('div');
             card.className = "bg-white p-5 rounded-[28px] border border-slate-200 shadow-sm flex items-center justify-between cursor-pointer hover:border-teal-400 active:scale-95 transition-all group";
             card.onclick = () => { state.activeFidId = f.id; renderDetails(); switchView('details'); };
-            const statusColor = f.status === 'IDLE' ? 'bg-green-100 text-green-700' : (f.status === 'TERMINATED' ? 'bg-slate-100 text-slate-400' : 'bg-amber-100 text-amber-700');
+            const statusLabel = f.status === 'NO_CONSENT' ? 'ACTION NEEDED' : f.status;
+            const statusColor = f.status === 'IDLE' ? 'bg-green-100 text-green-700'
+                : (f.status === 'TERMINATED' ? 'bg-slate-100 text-slate-400'
+                : (f.status === 'NO_CONSENT' ? 'bg-amber-100 text-amber-700' : 'bg-amber-100 text-amber-700'));
+            const personaText = (f.personas && f.personas.length) ? f.personas.map(personaLabel).join(', ') : null;
             card.innerHTML = `
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-teal-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1"/><path d="M19 21V7H5v14"/><path d="M7 21v-4a2 2 0 0 1 4 0v4"/><path d="M13 21v-4a2 2 0 0 1 4 0v4"/></svg></div>
-                    <div><h3 class="font-black text-sm text-slate-800 tracking-tight">${esc(f.name)}</h3><div class="flex items-center gap-2 mt-0.5"><span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${statusColor}">${esc(f.status)}</span><span class="text-[9px] text-slate-400 font-bold">${f.consents.filter(c => c.status === 'GRANTED').length} Active Purposes</span></div></div>
+                    <div>
+                        <h3 class="font-black text-sm text-slate-800 tracking-tight">${esc(f.name)}</h3>
+                        <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${statusColor}">${esc(statusLabel)}</span>
+                            ${personaText ? `<span class="text-[8px] font-black text-teal-600 uppercase">${esc(personaText)}</span><span class="text-slate-200">&middot;</span>` : ''}
+                            <span class="text-[9px] text-slate-400 font-bold">${f.consents.filter(c => c.status === 'GRANTED').length} Active Purposes</span>
+                        </div>
+                    </div>
                 </div>
             `;
             list.appendChild(card);
         });
     }
 
-    function renderDetails() {
+    async function renderDetails() {
         const f = state.fiduciaries.find(fid => fid.id === state.activeFidId);
         if (!f) return;
         const isTerminated = f.status === 'TERMINATED';
+        const noConsent = f.status === 'NO_CONSENT';
 
         document.getElementById('details-sync-url').textContent = f.sync_url;
-        document.getElementById('details-header').innerHTML = `<h2 class="text-2xl font-black text-slate-800 tracking-tight leading-tight">${esc(f.name)}</h2><p class="text-[10px] text-slate-400 font-black uppercase mt-1">Verification Token: <span class="text-teal-600">${esc(f.sync_token ? f.sync_token.substring(0, 12) : 'HANDOVER')}...</span></p>`;
+        const personaBadge = (f.personas && f.personas.length)
+            ? `<span class="inline-block mt-2 text-[8px] font-black uppercase tracking-widest bg-teal-50 text-teal-700 px-2 py-1 rounded-lg">Persona: ${esc(f.personas.map(personaLabel).join(', '))}</span>`
+            : '';
+        document.getElementById('details-header').innerHTML = `
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight leading-tight">${esc(f.name)}</h2>
+            ${f.policyTitle ? `<p class="text-[11px] text-slate-500 font-bold mt-1">${esc(f.policyTitle)}</p>` : ''}
+            ${personaBadge}
+            <p class="text-[10px] text-slate-400 font-black uppercase mt-2">Verification Token: <span class="text-teal-600">${esc(f.sync_token ? f.sync_token.substring(0, 12) : 'HANDOVER')}...</span></p>`;
+
+        if (noConsent) {
+            await renderNoConsentPanel(f);
+            return;
+        }
 
         const consentsList = document.getElementById('details-consents');
         consentsList.innerHTML = `<div class="p-4 bg-slate-50 flex justify-between items-center"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Purpose Allowances</span></div>`;
@@ -323,6 +384,64 @@
         }
     }
 
+    /**
+     * Renders a first-time consent-collection form in place of the (empty) purpose list, for
+     * fiduciaries where GET_CONSENT_DETAILS reported no active consent yet. Fetches the policy's
+     * purposes on first view and caches them on the fiduciary entry.
+     */
+    async function renderNoConsentPanel(f) {
+        const consentsList = document.getElementById('details-consents');
+        const actionsArea = document.getElementById('management-actions');
+
+        if (!f.pendingPurposes) {
+            consentsList.innerHTML = `<div class="p-6 text-center text-[10px] text-slate-400 font-black uppercase tracking-widest">Loading purposes...</div>`;
+            actionsArea.innerHTML = '';
+
+            if (!f.policy_id) {
+                consentsList.innerHTML = `<div class="p-6 text-center text-[10px] text-red-500 font-black uppercase tracking-widest leading-relaxed">This artifact has no policy reference.<br/>Re-download or re-scan a fresh PCA from your dashboard.</div>`;
+                return;
+            }
+
+            const result = await syncWithBackend(f.id, f.uid, f.sync_token, f.sync_url, {
+                command: "GET_POLICY_PURPOSES",
+                policy_id: f.policy_id
+            });
+            if (!result || !result.success) {
+                const reason = (result && result.message) ? result.message : 'Could not load policy purposes.';
+                consentsList.innerHTML = `<div class="p-6 text-center text-[10px] text-red-500 font-black uppercase tracking-widest">${esc(reason)}</div>`;
+                return;
+            }
+            f.pendingPurposes = result.purposes || [];
+            if (!f.policyTitle) f.policyTitle = result.policy_title;
+            if (!f.personas || f.personas.length === 0) f.personas = result.personas || [];
+        }
+
+        consentsList.innerHTML = `<div class="p-4 bg-slate-50 flex justify-between items-center"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Purposes</span></div>`;
+        f.pendingPurposes.forEach(p => {
+            const row = document.createElement('div');
+            row.className = "p-4 flex justify-between items-start gap-3";
+            row.innerHTML = `
+                <div class="max-w-[70%]">
+                    <p class="text-xs font-black text-slate-800">${esc(p.name)}</p>
+                    <p class="text-[10px] text-slate-400 mt-1 italic leading-tight">${esc(p.description || '')}</p>
+                    ${p.is_mandatory_for_service ? '<p class="text-[8px] font-black text-amber-600 uppercase mt-1">Required for service</p>' : ''}
+                </div>
+                <input type="checkbox" class="grant-consent-chk w-5 h-5 accent-teal-700 mt-1 shrink-0" value="${esc(p.id)}" data-name="${esc(p.name)}" ${p.is_mandatory_for_service ? 'checked disabled' : ''}>
+            `;
+            consentsList.appendChild(row);
+        });
+
+        actionsArea.innerHTML = `
+            <div class="p-6 bg-teal-700 rounded-[32px] text-white shadow-xl shadow-teal-100">
+                <h4 class="text-sm font-black mb-1 text-center uppercase tracking-tight">Provide Consent</h4>
+                <p class="text-[10px] text-teal-100 leading-tight mb-5 text-center px-4">No active consent yet with ${esc(f.name)}. Choose your preferences and confirm.</p>
+                <button data-fid="${esc(f.id)}" class="grant-btn w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] bg-white text-teal-700 hover:shadow-2xl transition-all">Grant Consent</button>
+            </div>
+        `;
+        const grantBtn = actionsArea.querySelector('.grant-btn');
+        if (grantBtn) grantBtn.addEventListener('click', () => secureGrantConsent(grantBtn.dataset.fid));
+    }
+
     function renderAudit() {
         const list = document.getElementById('audit-trail-list');
         list.innerHTML = '';
@@ -355,6 +474,7 @@
                 const userId = data.uid || data.user_id;
                 const syncToken = data.token || data.sync_token;
                 const syncUrl = data.sync_url || WALLET_API;
+                const policyId = data.policy_id || null;
 
                 if (!fidId || !syncToken || !userId) throw new Error("Invalid PCA: Missing context tokens or UID.");
 
@@ -368,10 +488,14 @@
                 const realName = nameData.fiduciary_name || fidId;
 
                 // 2. FETCH AUTHORITATIVE CONSENT DETAILS FROM SERVER (FRESH SYNC)
-                const detailRes = await syncWithBackend(fidId, userId, syncToken, syncUrl, { command: "GET_CONSENT_DETAILS" });
+                // policy_id is passed through so the registry can resolve the policy's title and
+                // persona (data_subject_categories) even when there's no active consent yet.
+                const detailRes = await syncWithBackend(fidId, userId, syncToken, syncUrl, { command: "GET_CONSENT_DETAILS", policy_id: policyId });
                 if (!detailRes) throw new Error("Registry unreachable. Ensure backend is active.");
 
-                // Handle no-active-consent gracefully (withdrawn / erased state)
+                // No active consent just means nothing has been granted (or it was withdrawn) --
+                // it is NOT the same as a terminated relationship. The wallet offers a first-time
+                // "Provide Consent" flow for this case instead of a dead-end status.
                 const noActiveConsent = !detailRes.success;
                 const rawConsents = detailRes.data_point_consents || (data.consents ? data.consents : {});
                 const mappedConsents = Array.isArray(rawConsents) ? rawConsents.map(c => ({
@@ -385,11 +509,15 @@
                     id: fidId,
                     uid: userId,
                     name: realName,
-                    status: noActiveConsent ? 'TERMINATED' : 'IDLE',
+                    status: noActiveConsent ? 'NO_CONSENT' : 'IDLE',
                     sync_url: syncUrl,
                     sync_token: syncToken,
+                    policy_id: detailRes.policy_id || policyId,
+                    policyTitle: detailRes.policy_title || null,
+                    personas: detailRes.personas || [],
+                    pendingPurposes: null,
                     consents: mappedConsents,
-                    audit: [{ phase: 'COLLECTION', action: noActiveConsent ? 'PCA Imported — No Active Consent (Withdrawn/Erased)' : 'PCA Imported & Registry Synced', time: 'Just now', actor: 'WALLET', status: noActiveConsent ? 'TERMINATED' : 'VERIFIED' }]
+                    audit: [{ phase: 'COLLECTION', action: noActiveConsent ? 'PCA Imported — No Consent Provided Yet' : 'PCA Imported & Registry Synced', time: 'Just now', actor: 'WALLET', status: noActiveConsent ? 'PENDING_CONSENT' : 'VERIFIED' }]
                 };
 
                 state.fiduciaries.push(newFid);
@@ -406,7 +534,8 @@
             fid: 'fiduciary_hub_abc',
             uid: 'rahul@example.com',
             token: 'SECURE_JWT_TOKEN_' + Math.random().toString(36).substring(7),
-            sync_url: WALLET_API
+            sync_url: WALLET_API,
+            policy_id: 'demo_policy_v1'
         })], { type: 'application/json' });
 
         handleFileSelect({ target: { files: [mockScan] } });

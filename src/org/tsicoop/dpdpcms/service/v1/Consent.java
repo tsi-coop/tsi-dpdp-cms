@@ -707,8 +707,9 @@ public class Consent implements Action {
     /**
      * Checks if a specific policy version exists for a fiduciary.
      * (Ideally, this would be an API call to PolicyService in a microservices 5)
+     * Package-private (not private) so Wallet.java can reuse it for wallet-initiated consent grants.
      */
-    private JSONObject  getPolicy(String policyId, String version, UUID fiduciaryId) throws Exception {
+    JSONObject  getPolicy(String policyId, String version, UUID fiduciaryId) throws Exception {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -734,9 +735,11 @@ public class Consent implements Action {
     /**
      * Records a new consent decision or updates an existing one by deactivating old and inserting new.
      * This ensures consent provenance.
+     * Package-private (not private) so Wallet.java can reuse it for wallet-initiated consent grants,
+     * keeping CES/ROPA registration (upsertDataPrincipal, resolveRopaEntryId) in one place.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONObject recordConsentToDb(String userId, UUID fiduciaryId, String policyId, String policyVersion,
+    JSONObject recordConsentToDb(String userId, UUID fiduciaryId, String policyId, String policyVersion,
                                          Timestamp timestamp, String jurisdiction, String languageSelected,
                                          String consentStatusGeneral, String consentMechanism,
                                          String ipAddress, String userAgent, JSONArray dataPointConsents,

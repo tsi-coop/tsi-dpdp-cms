@@ -136,6 +136,12 @@ public class Principal implements Action {
         // Generate principal portal token
         String token = JWTUtil.generatePrincipalToken(userId, fiduciaryIdStr);
 
+        // Wallet sync token is a stateless function of (userId, fiduciaryId) -- issuing it at
+        // login means a downloaded/scanned PCA is always valid, even before the principal has
+        // saved any consent preferences (the wallet handles the "no active consent yet" case
+        // gracefully once it syncs; it just needs a non-null token to get that far).
+        String syncToken = JWTUtil.generateSyncToken(userId, fiduciaryIdStr);
+
         // Audit the login
         String auditMsg = "Portal login for " + userId + (persona != null && !persona.isEmpty() ? " as " + persona : "");
         new Audit().logEventAsync(userId, fiduciaryId, "PRINCIPAL_PORTAL", null, "PRINCIPAL_LOGIN", auditMsg);
@@ -149,6 +155,7 @@ public class Principal implements Action {
         response.put("policies", policies);
         response.put("pca_qr_enabled", pcaQrEnabled);
         response.put("persona", persona);
+        response.put("sync_token", syncToken);
         OutputProcessor.send(res, HttpServletResponse.SC_OK, response);
     }
 
