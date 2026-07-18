@@ -227,9 +227,12 @@
             return;
         }
 
-        // Default to the first policy; preserve selection if already set
+        // SESSION.policies is already scoped to the declared persona (portal.js filters it at
+        // login) -- this just picks which one is pre-selected among what's left.
         if (!activePolicyEntry || !policies.find(p => p.policy_id === activePolicyEntry.policy_id)) {
-            activePolicyEntry = policies[0];
+            const persona = (SESSION.persona || '').toLowerCase();
+            const personaMatch = persona && policies.find(p => (p.personas || []).some(c => (c || '').toLowerCase() === persona));
+            activePolicyEntry = personaMatch || policies[0];
         }
 
         // Render policy selector pills (only when there are multiple policies)
@@ -239,10 +242,19 @@
                 const isActive = p.policy_id === activePolicyEntry.policy_id;
                 return `<button onclick="selectPolicy('${esc(p.policy_id)}')" style="padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;border:2px solid ${isActive ? 'var(--tsi-primary)' : '#e2e8f0'};background:${isActive ? 'var(--tsi-primary)' : 'white'};color:${isActive ? 'white' : '#475569'};transition:all 0.2s;">${esc(p.title || p.policy_id)}</button>`;
             }).join('');
+            // Only claim we've scoped to the persona when every remaining policy actually
+            // carries that tag -- if none matched, portal.js fell back to the unfiltered
+            // list and this hint would otherwise overstate what happened.
+            const personaLower = (SESSION.persona || '').toLowerCase();
+            const allMatchPersona = personaLower && policies.every(p => (p.personas || []).some(c => (c || '').toLowerCase() === personaLower));
+            const personaHint = allMatchPersona
+                ? `<p style="font-size:0.7rem;color:#94a3b8;margin:6px 0 0;">Showing policies for: <strong style="color:#0891b2;">${esc(getPersonaLabel(SESSION.persona))}</strong> — you can still view any policy above.</p>`
+                : '';
             selectorHtml = `
                 <div style="margin-bottom:20px;">
                     <p style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin:0 0 8px;">Select Policy</p>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">${pills}</div>
+                    ${personaHint}
                 </div>`;
         }
 

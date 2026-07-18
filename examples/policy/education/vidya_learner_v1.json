@@ -1,5 +1,6 @@
 {
   "en": {
+    "language": "en",
     "title": "Vidya EdTech - Data & Privacy Policy",
     "introduction": "At Vidya EdTech, we are dedicated to empowering learners through secure and transparent data processing. This policy details how we handle your personal information to provide high-quality digital learning experiences, in full compliance with the Digital Personal Data Protection Act (DPDP), 2023. Your education and privacy are our top priorities.",
     "general_purpose_description": "We process data for Student Account Management, Learning Progress Tracking, Course Recommendations, Academic Analytics, and Fee & Subscription Payments.",
@@ -122,6 +123,7 @@
     "important_note": "As an educational platform, we follow strict safety-by-design for minor users. Behavioral tracking for advertising is strictly prohibited for students under 18."
   },
   "hi": {
+    "language": "hi",
     "title": "विद्या एडटेक - डेटा और गोपनीयता नीति",
     "introduction": "विद्या एडटेक में, हम सुरक्षित और पारदर्शी डेटा प्रसंस्करण के माध्यम से शिक्षार्थियों को सशक्त बनाने के लिए समर्पित हैं। यह नीति बताती है कि हम डिजिटल सीखने के अनुभव प्रदान करने के लिए आपकी जानकारी का प्रबंधन कैसे करते हैं।",
     "general_purpose_description": "हम छात्र खाता प्रबंधन, सीखने की प्रगति की ट्रैकिंग और व्यक्तिगत अनुशंसाओं के लिए डेटा संसाधित करते हैं।",
@@ -213,6 +215,7 @@
       { "id": "grade_level",      "name": "कक्षा/स्तर",       "description": "सही कंटेंट प्रदान करने के लिए शैक्षिक स्तर।" },
       { "id": "payment_details",  "name": "भुगतान विवरण",     "description": "पाठ्यक्रम सदस्यता बिलिंग के लिए टोकनाइज्ड कार्ड या UPI संदर्भ — कच्चे रूप में संग्रहीत नहीं।" }
     ],
+    "security_measures": "नाबालिगों के लिए COPPA-अनुरूप सुरक्षा उपाय — कोई व्यवहारिक विज्ञापन नहीं, AES-256 एन्क्रिप्टेड लर्निंग रिकॉर्ड, अभिभावक सहमति वर्कफ़्लो, और TLS 1.3।",
     "data_principal_rights_summary": "DPDP अधिनियम 2023 के तहत, आपको अपने डेटा तक पहुंचने, उसे सुधारने और सहमति वापस लेने का अधिकार है।",
     "grievance_redressal_info": "किसी भी चिंता के लिए हमारे DPO से संपर्क करें: ईमेल: privacy@vidyaedtech.in | फोन: +91 22 5544 3322.",
     "buttons": {

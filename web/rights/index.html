@@ -39,6 +39,13 @@
         <div class="loading-placeholder">Loading organisations...</div>
     </div>
 
+    <!-- Persona section: appears once an organisation is resolved -->
+    <div id="persona-wrapper" style="display:none;">
+        <hr class="section-divider">
+        <div class="section-label">You Are Logging In As</div>
+        <div id="persona-section"></div>
+    </div>
+
     <hr class="section-divider">
 
     <form id="login-form" style="display:none;">
@@ -73,9 +80,12 @@
 <script>
     const params = new URLSearchParams(window.location.search);
     const preselectedFid = params.get('fid');
+    const preselectedPersona = params.get('persona');
     let selectedFiduciaryId = null;
     let selectedOtpMode = 'DUMMY_OTP';
     let otpRequested = false;
+    let selectedPersonaId = null;
+    let personaList = [];
 
     function updateOtpModeUi() {
         const sendOtpRow = document.getElementById('send-otp-row');
@@ -158,6 +168,55 @@
         document.getElementById('login-form').style.display = 'block';
     }
 
+    // ── Persona selection (who is logging in: Customer, Employee, Vendor...) ──
+    async function loadPersonas(fiduciaryId) {
+        const wrapper = document.getElementById('persona-wrapper');
+        const section = document.getElementById('persona-section');
+        selectedPersonaId = null;
+        document.getElementById('login-form').style.display = 'none';
+
+        try {
+            personaList = await publicApiCall('/api/v1/public/principal', 'list_fiduciary_personas', { fiduciary_id: fiduciaryId });
+            if (!Array.isArray(personaList)) personaList = personaList.data || [];
+        } catch (e) {
+            personaList = [];
+        }
+
+        if (personaList.length === 0) {
+            // Nothing meaningful to ask -- proceed straight to credentials.
+            wrapper.style.display = 'none';
+            showForm();
+            return;
+        }
+
+        renderPersonaPills(section);
+        wrapper.style.display = 'block';
+
+        if (preselectedPersona && personaList.find(p => p.id === preselectedPersona)) {
+            selectPersona(preselectedPersona);
+        }
+    }
+
+    function renderPersonaPills(section) {
+        section.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;">${
+            personaList.map(p => `<button type="button" class="persona-pill" data-persona-id="${esc(p.id)}"
+                style="padding:8px 18px;border-radius:20px;font-size:0.85rem;font-weight:700;cursor:pointer;
+                border:2px solid ${p.id === selectedPersonaId ? 'var(--tsi-primary)' : '#e2e8f0'};
+                background:${p.id === selectedPersonaId ? 'var(--tsi-primary)' : 'white'};
+                color:${p.id === selectedPersonaId ? 'white' : '#475569'};transition:all 0.2s;">${esc(p.label)}</button>`).join('')
+        }</div>`;
+        section.querySelectorAll('.persona-pill').forEach(btn => {
+            btn.addEventListener('click', () => selectPersona(btn.dataset.personaId));
+        });
+    }
+
+    function selectPersona(personaId) {
+        selectedPersonaId = personaId;
+        renderPersonaPills(document.getElementById('persona-section'));
+        hideError();
+        showForm();
+    }
+
     async function loadFiduciaries() {
         const section = document.getElementById('fiduciary-section');
         try {
@@ -198,10 +257,16 @@
                     const selected = list.find(f => f.fiduciary_id === selectedFiduciaryId);
                     selectedOtpMode = selected ? (selected.otp_mode || 'DUMMY_OTP') : 'DUMMY_OTP';
                     updateOtpModeUi();
+                    if (selectedFiduciaryId) {
+                        loadPersonas(selectedFiduciaryId);
+                    } else {
+                        document.getElementById('persona-wrapper').style.display = 'none';
+                        document.getElementById('login-form').style.display = 'none';
+                    }
                 });
             }
             updateOtpModeUi();
-            showForm();
+            if (selectedFiduciaryId) await loadPersonas(selectedFiduciaryId);
         } catch (e) {
             section.innerHTML = `<div style="color:#b91c1c;font-size:0.875rem;margin-bottom:20px;">Could not load organisations. Please try again.</div>`;
         }
@@ -215,6 +280,10 @@
             showError('Please select an organisation.');
             return;
         }
+        if (personaList.length > 0 && !selectedPersonaId) {
+            showError('Please tell us who you are logging in as.');
+            return;
+        }
 
         const userId = document.getElementById('user-id').value.trim();
         const otp    = document.getElementById('otp').value;
@@ -223,12 +292,11 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span>Verifying...';
 
+        const loginBody = { fiduciary_id: selectedFiduciaryId, user_id: userId, otp: otp };
+        if (selectedPersonaId) loginBody.persona = selectedPersonaId;
+
         try {
-            const res = await publicApiCall('/api/v1/public/principal', 'principal_login', {
-                fiduciary_id: selectedFiduciaryId,
-                user_id: userId,
-                otp: otp
-            });
+            const res = await publicApiCall('/api/v1/public/principal', 'principal_login', loginBody);
 
             if (res && res.success && res.token) {
                 saveSession(res);

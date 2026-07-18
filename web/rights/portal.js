@@ -11,8 +11,9 @@ const SESSION_KEYS = {
     userId:         'pp_user_id',
     fiduciaryId:    'pp_fiduciary_id',
     fiduciaryName:  'pp_fiduciary_name',
-    policies:       'pp_policies',  // JSON array of { policy_id, version, jurisdiction, title }
-    pcaQrEnabled:   'pp_pca_qr_enabled'
+    policies:       'pp_policies',  // JSON array of { policy_id, version, jurisdiction, title, personas }
+    pcaQrEnabled:   'pp_pca_qr_enabled',
+    persona:        'pp_persona'    // the persona (e.g. "employee") the principal declared pre-login
 };
 
 function getSession() {
@@ -24,17 +25,34 @@ function getSession() {
         fiduciaryId:   sessionStorage.getItem(SESSION_KEYS.fiduciaryId),
         fiduciaryName: sessionStorage.getItem(SESSION_KEYS.fiduciaryName),
         policies:      getSessionPolicies(),
-        pcaQrEnabled:  sessionStorage.getItem(SESSION_KEYS.pcaQrEnabled) !== 'false'
+        pcaQrEnabled:  sessionStorage.getItem(SESSION_KEYS.pcaQrEnabled) !== 'false',
+        persona:       sessionStorage.getItem(SESSION_KEYS.persona) || null
     };
 }
 
 function saveSession(data) {
+    const policies = filterPoliciesByPersona(data.policies || [], data.persona);
     sessionStorage.setItem(SESSION_KEYS.token,         data.token          || '');
     sessionStorage.setItem(SESSION_KEYS.userId,        data.user_id        || '');
     sessionStorage.setItem(SESSION_KEYS.fiduciaryId,   data.fiduciary_id   || '');
     sessionStorage.setItem(SESSION_KEYS.fiduciaryName, data.fiduciary_name || '');
-    sessionStorage.setItem(SESSION_KEYS.policies,      JSON.stringify(data.policies || []));
+    sessionStorage.setItem(SESSION_KEYS.policies,      JSON.stringify(policies));
     sessionStorage.setItem(SESSION_KEYS.pcaQrEnabled,  String(data.pca_qr_enabled !== false));
+    sessionStorage.setItem(SESSION_KEYS.persona,       data.persona || '');
+}
+
+/**
+ * Scopes the policies shown in the portal to the ones tagged for the declared persona
+ * (e.g. an Employee shouldn't see a Customer-only policy). Falls back to the full list
+ * when there's no persona, or when none of the policies carry a matching tag -- a DPO's
+ * data_subject_categories tagging may be incomplete, and hiding every policy would be
+ * worse than showing an unfiltered list.
+ */
+function filterPoliciesByPersona(policies, persona) {
+    if (!persona) return policies;
+    const p = persona.toLowerCase();
+    const matched = policies.filter(pol => (pol.personas || []).some(c => (c || '').toLowerCase() === p));
+    return matched.length > 0 ? matched : policies;
 }
 
 function getSessionPolicies() {
@@ -46,6 +64,11 @@ function getPolicyTitle(policyId) {
     const policies = getSessionPolicies();
     const match = policies.find(p => p.policy_id === policyId);
     return match ? match.title : policyId;
+}
+
+function getPersonaLabel(personaId) {
+    if (!personaId) return '';
+    return personaId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function clearSession() {

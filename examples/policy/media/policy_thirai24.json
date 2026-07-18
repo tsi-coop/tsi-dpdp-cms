@@ -1,5 +1,6 @@
 {
   "en": {
+    "language": "en",
     "title": "Thirai24 Data & Privacy Policy",
     "introduction": "At ThiraiVaarta Media Pvt. Ltd. (brand: Thirai24), headquartered in Chennai, Tamil Nadu, we are committed to protecting your personal data with transparency and responsibility. This policy explains how we collect, use, and safeguard your information when you use the Thirai24 app and website (thirai24.in) to access news videos, live streams, and articles in Tamil, Hindi, Telugu, and English. We comply with the Digital Personal Data Protection Act (DPDP), 2023 and applicable Indian law.",
     "general_purpose_description": "We process your data to deliver personalised multilingual video news, operate community features, serve relevant advertising, process subscriptions, and ensure platform safety.",
@@ -538,6 +539,7 @@
     "important_note": "Thirai24 does not sell your personal data. Sensitive inferred data (such as political interest signals) is never shared with advertisers. Payment card details are processed exclusively by Razorpay (PCI-DSS Level 1) and are never stored on Thirai24 servers. You may withdraw any optional consent at any time without affecting your ability to use the free tier."
   },
   "ta": {
+    "language": "ta",
     "title": "திரை24 — தரவு மற்றும் தனியுரிமைக் கொள்கை",
     "introduction": "சென்னையில் தலைமையிடம் கொண்ட ThiraiVaarta Media Pvt. Ltd. (திரை24), உங்கள் தனிப்பட்ட தரவை வெளிப்படையாகவும் பொறுப்புடனும் பாதுகாக்கும் உறுதியுடன் செயல்படுகிறது. திரை24 செயலி மற்றும் thirai24.in இணையதளம் மூலம் தமிழ், ஹிந்தி, தெலுங்கு மற்றும் ஆங்கிலத்தில் செய்திகளை நீங்கள் பயன்படுத்தும்போது உங்கள் தகவல்களை நாங்கள் எவ்வாறு சேகரித்து, பயன்படுத்தி, பாதுகாக்கிறோம் என்பதை இந்தக் கொள்கை விளக்குகிறது. டிஜிட்டல் தனிப்பட்ட தரவுப் பாதுகாப்புச் சட்டம் (DPDP) 2023 மற்றும் பொருந்தக்கூடிய இந்திய சட்டங்களுக்கு இணங்க நாங்கள் செயல்படுகிறோம்.",
     "general_purpose_description": "தனிப்பயனாக்கப்பட்ட பல மொழி வீடியோ செய்திகளை வழங்க, சமுதாய அம்சங்களை இயக்க, பொருத்தமான விளம்பரங்களை வழங்க, சந்தாக்களை செயல்படுத்த மற்றும் தளப் பாதுகாப்பை உறுதிசெய்ய உங்கள் தரவை நாங்கள் செயலாக்குகிறோம்.",
@@ -896,6 +898,7 @@
     "important_note": "திரை24 உங்கள் தனிப்பட்ட தரவை விற்பனை செய்வதில்லை. அரசியல் ஆர்வ சமிக்ஞைகள் போன்ற உணர்திறன் வாய்ந்த தகவல்கள் விளம்பரதாரர்களுடன் பகிரப்படுவதில்லை. கட்டண அட்டை விவரங்கள் திரை24 சேவையகங்களில் ஒருபோதும் சேமிக்கப்படுவதில்லை. இலவச அடுக்கை பயன்படுத்தும் திறனை பாதிக்காமல் விருப்ப ஒப்புதல்களை எப்போது வேண்டுமானாலும் திரும்பப் பெறலாம்."
   },
   "hi": {
+    "language": "hi",
     "title": "थिरै24 (திரை24) — डेटा और गोपनीयता नीति",
     "introduction": "चेन्नई, तमिलनाडु में मुख्यालय वाली ThiraiVaarta Media Pvt. Ltd. (ब्रांड: थिरै24) आपके व्यक्तिगत डेटा को पारदर्शिता और जिम्मेदारी के साथ सुरक्षित करने के लिए प्रतिबद्ध है। यह नीति बताती है कि जब आप थिरै24 ऐप और वेबसाइट (thirai24.in) पर तमिल, हिंदी, तेलुगु और अंग्रेजी में समाचार देखते हैं, तो हम आपकी जानकारी कैसे एकत्र, उपयोग और सुरक्षित करते हैं। हम डिजिटल पर्सनल डेटा प्रोटेक्शन एक्ट (DPDP) 2023 और लागू भारतीय कानूनों का पालन करते हैं।",
     "general_purpose_description": "हम व्यक्तिगत बहुभाषी वीडियो समाचार प्रदान करने, समुदाय सुविधाएँ संचालित करने, प्रासंगिक विज्ञापन दिखाने, सदस्यता संसाधित करने और प्लेटफ़ॉर्म सुरक्षा सुनिश्चित करने के लिए आपके डेटा को संसाधित करते हैं।",
@@ -1248,6 +1251,7 @@
     "important_note": "थिरै24 आपका व्यक्तिगत डेटा नहीं बेचता। राजनीतिक रुचि संकेत जैसे संवेदनशील अनुमानित डेटा विज्ञापनदाताओं के साथ कभी साझा नहीं किए जाते। भुगतान कार्ड विवरण केवल Razorpay (PCI-DSS Level 1) द्वारा संसाधित किए जाते हैं और कभी भी थिरै24 सर्वर पर संग्रहीत नहीं किए जाते।"
   },
   "te": {
+    "language": "te",
     "title": "థిరై24 (திரை24) — డేటా మరియు గోపనీయత విధానం",
     "introduction": "చెన్నై, తమిళనాడులో ప్రధాన కార్యాలయం కలిగిన ThiraiVaarta Media Pvt. Ltd. (థిరై24), మీ వ్యక్తిగత డేటాను పారదర్శకంగా మరియు బాధ్యతగా రక్షించడానికి కట్టుబడి ఉంది. మీరు థిరై24 యాప్ మరియు thirai24.in వెబ్‌సైట్ ద్వారా తమిళ, హిందీ, తెలుగు మరియు ఆంగ్లంలో వార్తలను యాక్సెస్ చేసేటప్పుడు మేము మీ సమాచారాన్ని ఎలా సేకరిస్తామో, ఉపయోగిస్తామో మరియు సురక్షితంగా ఉంచుతామో ఈ విధానం వివరిస్తుంది. మేము DPDP చట్టం 2023 మరియు వర్తించే భారతీయ చట్టాలకు అనుగుణంగా పని చేస్తాము.",
     "general_purpose_description": "వ్యక్తిగతీకరించిన బహుభాషా వీడియో వార్తలను అందించడానికి, కమ్యూనిటీ ఫీచర్లను నిర్వహించడానికి, సంబంధిత ప్రకటనలు అందించడానికి, చందాలను ప్రాసెస్ చేయడానికి మరియు ప్లాట్‌ఫారమ్ భద్రతను నిర్ధారించడానికి మేము మీ డేటాను ప్రాసెస్ చేస్తాము.",

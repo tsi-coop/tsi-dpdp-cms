@@ -1,0 +1,91 @@
+========================================================================
+ROPA REQUIREMENTS DOCUMENT
+Activity : varam_employee_v1
+Sector   : Finance / Employee HR
+Standard : Digital Personal Data Protection Act, 2023 (India)
+========================================================================
+
+DESCRIPTION
+------------------------------------------------------------------------
+ROPA requirements for Varam's employee data policy. Covers
+payroll & taxation, group health insurance, and performance management.
+
+COMPLIANCE LIFECYCLE
+------------------------------------------------------------------------
+  1. DPO defined requirements in this template
+  2. Engineer configured policy (varam_employee_v1)
+  3. System auto-derived ROPA draft on publish
+  4. DPO verified draft against this template
+  5. DPO published (dpo_id auto-recorded)
+
+PROCESSING ACTIVITY
+------------------------------------------------------------------------
+  Activity Name : varam_employee_v1
+  Legal Basis   : CONTRACTUAL NECESSITY / STATUTORY OBLIGATION / LEGITIMATE USE
+  Purpose       :
+    - Payroll, Taxation & Compliance
+    - Health Insurance & Benefits
+    - Performance Review & Skill Development
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_payroll_tax              Contractual Necessity / Statutory Obligation
+  purpose_employee_benefits        Contractual Necessity
+  purpose_performance_training     Legitimate Use / Employment
+
+DATA SUBJECT CATEGORIES
+------------------------------------------------------------------------
+  - employee
+
+DATA CATEGORIES  (11 total)
+------------------------------------------------------------------------
+  full_name                      bank_account_details           pan_number
+  aadhaar_number                 salary_details                 dependent_details
+  health_declaration             contact_information            performance_appraisals
+  training_records               attendance_logs
+
+SECURITY MEASURES
+------------------------------------------------------------------------
+Encrypted payroll database, access restricted to HR and Finance teams,
+audit logs for all sensitive record access, MFA on HRMS.
+
+DATA PROCESSORS  (3 declared)
+------------------------------------------------------------------------
+  Name           Country    Role                           Contact
+  -------------- ---------- ------------------------------ ----------------------------
+  Greytip        IN         Payroll & HRMS Platform        support@greytip.com
+  HDFCLife       IN         Group Health Insurance Provider compliance@hdfclife.com
+  EPFO           IN         Provident Fund Administration  epfo@nic.in
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_payroll_tax              Greytip, EPFO
+  purpose_employee_benefits        HDFCLife
+  purpose_performance_training     Greytip
+
+CROSS-BORDER TRANSFERS
+------------------------------------------------------------------------
+  No cross-border transfers.
+
+RETENTION BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_payroll_tax              10 YEARS        CESSATION
+  purpose_employee_benefits        2 YEARS         CESSATION
+  purpose_performance_training     5 YEARS         CESSATION
+
+LINKED CONSENT POLICY
+------------------------------------------------------------------------
+  - varam_employee_v1
+
+========================================================================
+NOTE: This document records the DPO's ROPA requirements before system
+configuration. Once the corresponding consent policy is published, the
+system will auto-derive a ROPA draft. The DPO should verify the draft
+against this document before publishing the ROPA entry.
+========================================================================

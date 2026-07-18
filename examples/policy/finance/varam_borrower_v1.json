@@ -1,5 +1,6 @@
 {
   "en": {
+    "language": "en",
     "title": "Varam Microcredit - Data & Privacy Policy",
     "introduction": "At Varam Microcredit, we are committed to the secure and transparent processing of your personal and financial data. This policy outlines how we handle your information to provide micro-finance services, in strict compliance with the Digital Personal Data Protection Act (DPDP), 2023. Your financial trust is our priority.",
     "general_purpose_description": "We process data for KYC Verification, Credit Assessment, Loan Disbursement, Recovery Management, and Regulatory Reporting.",
@@ -105,19 +106,20 @@
     },
     "important_note": "Financial data and KYC documents are protected with banking-grade encryption. Core data required for loan processing and statutory reporting cannot be withdrawn while a loan is active."
   },
-  "ta": {
-    "title": "வரம் மைக்ரோக्रेडिट - தரவு மற்றும் தனியுரிமைக் கொள்கை",
-    "introduction": "வரம் மைக்ரோக्रेडिटில், உங்கள் தனிப்பட்ட மற்றும் நிதித் தரவை பாதுகாப்பாகவும் வெளிப்படையாகவும் கையாளுவதில் நாங்கள் உறுதியாக உள்ளோம். 2023 டிஜிட்டல் தனிப்பட்ட தரவுப் பாதுகாப்புச் சட்டத்திற்கு (DPDP) இணங்க, மைக்ரோ-ஃபைனான்ஸ் சேவைகளை வழங்க உங்கள் தகவலை நாங்கள் எப்படிப் பயன்படுத்துகிறோம் என்பதை இந்தக் கொள்கை விளக்குகிறது.",
-    "general_purpose_description": "கே.ஒய்.சி (KYC) சரிபார்ப்பு, கடன் மதிப்பீடு, கடன் வழங்கல் மற்றும் வசூல் மேலாண்மை ஆகியவற்றுக்காக நாங்கள் தரவைச் சேகரிக்கிறோம்.",
+  "hi": {
+    "language": "hi",
+    "title": "वरम माइक्रोक्रेडिट - डेटा एवं गोपनीयता नीति",
+    "introduction": "वरम माइक्रोक्रेडिट में, हम आपके व्यक्तिगत और वित्तीय डेटा के सुरक्षित और पारदर्शी प्रसंस्करण के लिए प्रतिबद्ध हैं। यह नीति बताती है कि हम डिजिटल व्यक्तिगत डेटा संरक्षण अधिनियम (DPDP), 2023 के सख्त अनुपालन में सूक्ष्म-वित्त सेवाएं प्रदान करने के लिए आपकी जानकारी को कैसे संभालते हैं। आपका वित्तीय भरोसा हमारी प्राथमिकता है।",
+    "general_purpose_description": "हम केवाईसी सत्यापन, क्रेडिट मूल्यांकन, ऋण संवितरण और वसूली प्रबंधन के लिए डेटा संसाधित करते हैं।",
     "data_processing_purposes": [
       {
         "id": "purpose_kyc_identity",
-        "name": "கே.ஒய்.சி மற்றும் அடையாளச் சரிபார்ப்பு",
-        "description": "அரசு வழங்கிய அடையாள அட்டைகள் மூலம் உங்கள் அடையாளத்தை உறுதிப்படுத்த. நிதிச் சேவைகளுக்கு இது கட்டாயத் தேவையாகும்.",
-        "legal_basis": "சட்டப்பூர்வ கடமை (PMLA & DPDP சட்டம்)",
-        "data_categories_involved": ["பெயர்", "பான் கார்டு", "ஆதார் எண்", "புகைப்படம்"],
+        "name": "केवाईसी और पहचान सत्यापन",
+        "description": "सरकारी पहचान-पत्रों का उपयोग करके आपकी पहचान सत्यापित करने और धोखाधड़ी रोकने के लिए। वित्तीय सेवाओं के लिए यह एक अनिवार्य नियामक आवश्यकता है।",
+        "legal_basis": "वैधानिक बाध्यता (PMLA एवं DPDP अधिनियम)",
+        "data_categories_involved": ["पूरा नाम", "पैन कार्ड", "आधार नंबर", "फोटो"],
         "recipients_or_third_parties": ["CERSAI"],
-        "retention_policy": "கணக்கு மூடப்பட்ட பிறகு 5 ஆண்டுகளுக்குப் பராமரிக்கப்படும்.",
+        "retention_policy": "आरबीआई मानदंडों के अनुसार खाता बंद होने के बाद 5 वर्षों का वैधानिक प्रतिधारण।",
         "retention_duration_value": 5,
         "retention_duration_unit": "YEARS",
         "retention_start_event": "CESSATION",
@@ -126,17 +128,17 @@
       },
       {
         "id": "purpose_credit_scoring",
-        "name": "கடன் மதிப்பீடு மற்றும் மதிப்பெண்",
-        "description": "நிதி வரலாற்றின் அடிப்படையில் உங்கள் கடன் தகுதியை மதிப்பீடு செய்யவும் மற்றும் கடன் தகுதியை தீர்மானிக்கவும்.",
-        "legal_basis": "ஒப்பந்தத் தேவை (டிபிடிபி சட்டம், பிரிவு 7(b))",
+        "name": "क्रेडिट मूल्यांकन और स्कोरिंग",
+        "description": "वित्तीय इतिहास के आधार पर आपकी साख-योग्यता का मूल्यांकन करने और ऋण पात्रता निर्धारित करने के लिए।",
+        "legal_basis": "अनुबंधात्मक आवश्यकता (डीपीडीपी अधिनियम, धारा 7(b))",
         "data_categories_involved": [
-          "வருமான விவரங்கள்",
-          "வங்கி அறிக்கைகள்",
-          "தற்போதைய கடன் விவரங்கள்",
-          "வேலைவாய்ப்பு நிலை"
+          "आय विवरण",
+          "बैंक स्टेटमेंट",
+          "मौजूदा ऋण जानकारी",
+          "रोजगार स्थिति"
         ],
         "recipients_or_third_parties": ["CIBIL"],
-        "retention_policy": "கடன் மதிப்பீட்டு காலம் மற்றும் உள் தணிக்கைக்காக கூடுதலாக 2 மாதங்கள்.",
+        "retention_policy": "आंतरिक ऑडिट के लिए ऋण मूल्यांकन अवधि के साथ अतिरिक्त 2 महीने।",
         "retention_duration_value": 2,
         "retention_duration_unit": "MONTHS",
         "retention_start_event": "COLLECTION",
@@ -145,17 +147,17 @@
       },
       {
         "id": "purpose_loan_servicing",
-        "name": "கடன் வழங்கல் மற்றும் வசூல்",
-        "description": "பணத்தை உங்கள் வங்கி கணக்கிற்கு மாற்றவும் மற்றும் திருப்பிச் செலுத்தும் சுழற்சியை நிர்வகிக்கவும் (தேவைப்பட்டால் கள ஆய்வுகள் உட்பட).",
-        "legal_basis": "ஒப்பந்தத் தேவை",
+        "name": "ऋण संवितरण और वसूली",
+        "description": "आपके बैंक खाते में धनराशि स्थानांतरित करने और आवश्यकता पड़ने पर फील्ड विजिट सहित पुनर्भुगतान चक्र का प्रबंधन करने के लिए।",
+        "legal_basis": "अनुबंधात्मक आवश्यकता",
         "data_categories_involved": [
-          "வங்கி கணக்கு எண்",
-          "IFSC குறியீடு",
-          "தற்போதைய இருப்பிடம்",
-          "தொடர்பு எண்"
+          "बैंक खाता संख्या",
+          "आईएफएससी कोड",
+          "वर्तमान स्थान",
+          "संपर्क नंबर"
         ],
         "recipients_or_third_parties": [],
-        "retention_policy": "கடன் முழுமையாக திருப்பிச் செலுத்தப்படும் வரை மற்றும் நிதி பதிவு பராமரிப்புக்காக கூடுதலாக 7 ஆண்டுகள்.",
+        "retention_policy": "ऋण पूरी तरह चुकाए जाने तक, साथ ही वित्तीय रिकॉर्ड-रखरखाव हेतु अतिरिक्त 7 वर्ष।",
         "retention_duration_value": 7,
         "retention_duration_unit": "YEARS",
         "retention_start_event": "CESSATION",
@@ -164,15 +166,15 @@
       },
       {
         "id": "purpose_marketing_offers",
-        "name": "விளம்பர சலுகைகள் மற்றும் புதிய தயாரிப்புகள்",
-        "description": "புதிய கடன் தயாரிப்புகள், காப்பீட்டு டாப்-அப்கள் மற்றும் நிதி அறிவு திட்டங்கள் பற்றி உங்களுக்கு தெரிவிக்க.",
-        "legal_basis": "ஒப்புதல் (டிபிடிபி சட்டம், பிரிவு 6(1)(a))",
+        "name": "प्रचार प्रस्ताव और नए उत्पाद",
+        "description": "नए ऋण उत्पादों, बीमा टॉप-अप और वित्तीय साक्षरता कार्यक्रमों के बारे में आपको सूचित करने के लिए।",
+        "legal_basis": "सहमति (डीपीडीपी अधिनियम, धारा 6(1)(a))",
         "data_categories_involved": [
-          "கைபேசி எண்",
-          "மின்னஞ்சல் முகவரி"
+          "मोबाइल नंबर",
+          "ईमेल पता"
         ],
-        "recipients_or_third_parties": [],
-        "retention_policy": "ஒப்புதல் திரும்பப் பெறப்படும் வரை.",
+        "recipients_or_third_parties": ["Twilio"],
+        "retention_policy": "सहमति वापस लिए जाने तक।",
         "retention_duration_value": 2,
         "retention_duration_unit": "YEARS",
         "retention_start_event": "COLLECTION",
@@ -181,21 +183,22 @@
       }
     ],
     "data_categories_details": [
-      { "id": "pan_card", "name": "பான் எண்", "description": "வருமானச் சரிபார்ப்புக்காகப் பயன்படுத்தப்படுகிறது." },
-      { "id": "bank_account_no", "name": "வங்கி விவரங்கள்", "description": "கடனை வழங்க இது அவசியமானது." }
+      { "id": "pan_card", "name": "पैन नंबर", "description": "आय सत्यापन के लिए उपयोग किया जाता है।" },
+      { "id": "bank_account_no", "name": "बैंक खाता विवरण", "description": "ऋण वितरण के लिए यह आवश्यक है।" }
     ],
-    "data_principal_rights_summary": "DPDP சட்டம் 2023-ன் கீழ், உங்கள் தரவை அணுகவும், திருத்தவும் மற்றும் அவசியமற்ற சேவைகளுக்கான ஒப்புதலைத் திரும்பப் பெறவும் உங்களுக்கு உரிமை உண்டு.",
-    "grievance_redressal_info": "புகார்களுக்கு, எங்கள் அதிகாரியைத் தொடர்பு கொள்ளவும்: மின்னஞ்சல்: compliance@varamcredit.in | போன்: +91 44 2233 4455.",
+    "security_measures": "विश्राम अवस्था में AES-256 एन्क्रिप्शन, ट्रांज़िट में TLS 1.3, CERSAI-अनुरूप डेटा वॉल्टिंग, MFA के साथ भूमिका-आधारित पहुंच।",
+    "data_principal_rights_summary": "DPDP अधिनियम 2023 के तहत, आपको अपने ऋण डेटा तक पहुंचने, त्रुटियों को सुधारने और गैर-आवश्यक सेवाओं के लिए सहमति वापस लेने का अधिकार है।",
+    "grievance_redressal_info": "शिकायतों के लिए, हमारे अधिकारी से संपर्क करें: ईमेल: compliance@varamcredit.in | फोन: +91 44 2233 4455.",
     "buttons": {
-      "accept_all": "ஏற்றுக்கொண்டு தொடரவும்",
-      "reject_all_non_essential": "விருப்பமானவற்றை நிராகரிக்கவும்",
-      "manage_preferences": "தனியுரிமை அமைப்புகள்",
-      "save_preferences": "தேர்வுகளைச் சேமிக்கவும்"
+      "accept_all": "स्वीकार करें और जारी रखें",
+      "reject_all_non_essential": "वैकल्पिक अस्वीकार करें",
+      "manage_preferences": "गोपनीयता सेटिंग्स",
+      "save_preferences": "विकल्प सहेजें"
     },
     "links": {
-      "full_privacy_policy_text": "முழுமையான தனியுரிமைக் கொள்கை",
-      "terms_of_service_text": "கடன் ஒப்பந்த விதிகள்"
+      "full_privacy_policy_text": "पूर्ण गोपनीयता नीति",
+      "terms_of_service_text": "ऋण अनुबंध शर्तें"
     },
-    "important_note": "உங்கள் நிதித் தரவு பாதுகாப்பானது. கடன் செயல்பாட்டில் இருக்கும்போது முக்கியத் தரவைத் திரும்பப் பெற முடியாது."
+    "important_note": "आपका वित्तीय डेटा सुरक्षित है। ऋण सक्रिय रहने के दौरान मुख्य डेटा वापस नहीं लिया जा सकता।"
   }
 }

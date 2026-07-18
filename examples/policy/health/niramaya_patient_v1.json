@@ -1,5 +1,6 @@
 {
   "en": {
+    "language": "en",
     "title": "Niramaya Healthcare Clinic - Data & Privacy Policy",
     "introduction": "At Niramaya Healthcare Clinic, we are committed to the secure and transparent processing of your personal and health data. This policy outlines how we handle your information to provide quality medical care, in strict compliance with the Digital Personal Data Protection Act (DPDP), 2023. Your privacy is a vital part of your well-being.",
     "general_purpose_description": "We process data for Patient Registration, Medical Record Maintenance, Billing, Insurance Coordination, and Patient Experience Improvement.",
@@ -102,6 +103,7 @@
     "important_note": "Medical data is classified as sensitive. We maintain high-grade encryption for all Electronic Health Records. Your core registration data is mandatory for treatment."
   },
   "kn": {
+    "language": "kn",
     "title": "ನಿರ್ಮಯ ಹೆಲ್ತ್‌ಕೇರ್ ಕ್ಲಿನಿಕ್ - ಡೇಟಾ ಮತ್ತು ಗೌಪ್ಯತಾ ನೀತಿ",
     "introduction": "ನಿರ್ಮಯ ಹೆಲ್ತ್‌ಕೇರ್ ಕ್ಲಿನಿಕ್‌ನಲ್ಲಿ, ನಿಮ್ಮ ವೈಯಕ್ತಿಕ ಮತ್ತು ಆರೋಗ್ಯದ ಮಾಹಿತಿಯನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಮತ್ತು ಪಾರದರ್ಶಕವಾಗಿ ಬಳಸಲು ನಾವು ಬದ್ಧರಾಗಿದ್ದೇವೆ. ಡಿಜಿಟಲ್ ವೈಯಕ್ತಿಕ ಡೇಟಾ ರಕ್ಷಣೆ ಕಾಯ್ದೆ (DPDP), 2023 ರ ಅಡಿಯಲ್ಲಿ ನಿಮ್ಮ ಮಾಹಿತಿಯನ್ನು ನಾವು ಹೇಗೆ ನಿರ್ವಹಿಸುತ್ತೇವೆ ಎಂಬುದನ್ನು ಈ ನೀತಿಯು ವಿವರಿಸುತ್ತದೆ.",
     "general_purpose_description": "ರೋಗಿಗಳ ನೋಂದಣಿ, ವೈದ್ಯಕೀಯ ದಾಖಲೆಗಳ ನಿರ್ವಹಣೆ, ಬಿಲ್ಲಿಂಗ್ ಮತ್ತು ವಿಮಾ ಸಮನ್ವಯಕ್ಕಾಗಿ ನಾವು ಡೇಟಾವನ್ನು ಬಳಸುತ್ತೇವೆ.",
@@ -167,6 +169,7 @@
       { "id": "full_name", "name": "ಪೂರ್ಣ ಹೆಸರು", "description": "ರೋಗಿಯ ಗುರುತಿಗಾಗಿ ಕಾನೂನುಬದ್ಧ ಹೆಸರು." },
       { "id": "clinical_history", "name": "ವೈದ್ಯಕೀಯ ಇತಿಹಾಸ", "description": "ಹಳೆಯ ಕಾಯಿಲೆಗಳು ಮತ್ತು ಚಿಕಿತ್ಸೆಗಳ ಬಗ್ಗೆ ಸೂಕ್ಷ್ಮ ಮಾಹಿತಿ." }
     ],
+    "security_measures": "HIPAA-ಅನುಸರಣೆ ನಿಯಂತ್ರಣಗಳು — AES-256 ಎನ್‌ಕ್ರಿಪ್ಟ್ ಮಾಡಲಾದ ರೋಗಿಗಳ ದಾಖಲೆಗಳು, ಆಡಿಟ್ ಟ್ರೇಲ್‌ಗಳು, HL7 FHIR ಪ್ರವೇಶ ನಿಯಂತ್ರಣಗಳು, ಮತ್ತು ವರ್ಗಾವಣೆ ಸಮಯದಲ್ಲಿ TLS 1.3.",
     "data_principal_rights_summary": "DPDP ಕಾಯ್ದೆ 2023 ರ ಅಡಿಯಲ್ಲಿ, ನಿಮ್ಮ ವೈದ್ಯಕೀಯ ದಾಖಲೆಗಳನ್ನು ಪಡೆಯುವ, ತಪ್ಪುಗಳನ್ನು ಸರಿಪಡಿಸುವ ಮತ್ತು ಡೇಟಾ ಅಳಿಸಲು ವಿನಂತಿಸುವ ಹಕ್ಕನ್ನು ನೀವು ಹೊಂದಿದ್ದೀರಿ.",
     "grievance_redressal_info": "ದೂರುಗಳಿದ್ದಲ್ಲಿ, ನಮ್ಮ ಡೇಟಾ ಸಂರಕ್ಷಣಾ ಅಧಿಕಾರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ: ಇಮೇಲ್: support@nirmayahealth.in | ಫೋನ್: +91 80 4455 6677.",
     "buttons": {

@@ -22,6 +22,7 @@ public class InterceptingFilter implements Filter {
     private static final Set<String> PUBLIC_ALLOWED_FUNCS = new HashSet<>(Arrays.asList(
             "principal_login",
             "list_active_fiduciaries",
+            "list_fiduciary_personas",
             "request_principal_otp"
     ));
     private static final String API_PREFIX = "/api/v1/"; // Assuming API paths are /api/v1/user, /api/v1/policy etc.

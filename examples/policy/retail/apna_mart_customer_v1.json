@@ -1,5 +1,6 @@
 {
   "en": {
+    "language": "en",
     "title": "Apna Mart Retail - Data & Privacy Policy",
     "introduction": "At Apna Mart, we are committed to processing your personal data transparently to provide a seamless shopping experience. This policy explains how we collect and use your data for retail services and loyalty programs, in full compliance with the Digital Personal Data Protection Act (DPDP), 2023.",
     "general_purpose_description": "We process data for Account Management, Order Fulfillment, Loyalty Rewards, and Personalized Marketing.",
@@ -86,6 +87,7 @@
     "important_note": "Order and transaction data are retained for 7 years to comply with Indian tax laws."
   },
   "hi": {
+    "language": "hi",
     "title": "अपना मार्ट रिटेल - डेटा और गोपनीयता नीति",
     "introduction": "अपना मार्ट में, हम आपको एक बेहतर खरीदारी अनुभव प्रदान करने के लिए आपके व्यक्तिगत डेटा को पारदर्शी रूप से संसाधित करने के लिए प्रतिबद्ध हैं। यह नीति बताती है कि हम डिजिटल व्यक्तिगत डेटा संरक्षण अधिनियम (DPDP), 2023 के पूर्ण अनुपालन में खुदरा सेवाओं और लॉयल्टी कार्यक्रमों के लिए आपके डेटा का उपयोग कैसे करते हैं।",
     "general_purpose_description": "हम खाता प्रबंधन, ऑर्डर पूर्ति, लॉयल्टी रिवॉर्ड्स और व्यक्तिगत मार्केटिंग के लिए डेटा संसाधित करते हैं।",
@@ -139,6 +141,7 @@
     "data_categories_details": [
       { "id": "mobile_number", "name": "मोबाइल नंबर", "description": "खाता लॉगिन और ऑर्डर अपडेट के लिए प्राथमिक पहचानकर्ता।" }
     ],
+    "security_measures": "PCI-DSS लेवल 1 अनुरूप भुगतान टोकनाइज़ेशन, ट्रांज़िट में TLS 1.3, और विश्राम अवस्था में AES-256 एन्क्रिप्टेड ग्राहक पीआईआई।",
     "data_principal_rights_summary": "DPDP अधिनियम 2023 के तहत, आपको अपने डेटा तक पहुंचने, उसे सुधारने और सहमति वापस लेने का अधिकार है।",
     "grievance_redressal_info": "किसी भी चिंता के लिए हमारे DPO से संपर्क करें: ईमेल: care@apnamart.in | फोन: +91 11 2233 4455.",
     "buttons": {

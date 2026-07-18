@@ -6,6 +6,7 @@
     "_func":        { "type": "string" },
     "fiduciary_id": { "type": "string" },
     "user_id":      { "type": "string" },
-    "otp":          { "type": "string" }
+    "otp":          { "type": "string" },
+    "persona":      { "type": "string" }
   }
 }

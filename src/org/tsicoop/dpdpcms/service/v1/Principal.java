@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Exposes public endpoints (no auth required) for:
  *   - principal_login: authenticate with fiduciary_id + user_id + OTP, returns a PRINCIPAL JWT
  *   - list_active_fiduciaries: public listing of active fiduciaries for portal dropdown
+ *   - list_fiduciary_personas: public listing of a fiduciary's declared data_subject_categories,
+ *     so the portal can ask "you are logging in as a..." before credentials are collected
  *   - request_principal_otp: triggers real OTP delivery (EMAIL_OTP/MOBILE_OTP fiduciaries)
  */
 public class Principal implements Action {
@@ -60,6 +62,10 @@ public class Principal implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, fiduciaries);
                     break;
 
+                case "list_fiduciary_personas":
+                    handleListFiduciaryPersonas(input, req, res);
+                    break;
+
                 case "principal_login":
                     handleLogin(input, req, res);
                     break;
@@ -84,6 +90,7 @@ public class Principal implements Action {
         String fiduciaryIdStr = (String) input.get("fiduciary_id");
         String userId = (String) input.get("user_id");
         String otp = (String) input.get("otp");
+        String persona = (String) input.get("persona"); // optional: the persona the principal declared pre-login
 
         if (fiduciaryIdStr == null || fiduciaryIdStr.isEmpty() || userId == null || userId.isEmpty() || otp == null || otp.isEmpty()) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "fiduciary_id, user_id, and otp are required.", req.getRequestURI());
@@ -130,7 +137,8 @@ public class Principal implements Action {
         String token = JWTUtil.generatePrincipalToken(userId, fiduciaryIdStr);
 
         // Audit the login
-        new Audit().logEventAsync(userId, fiduciaryId, "PRINCIPAL_PORTAL", null, "PRINCIPAL_LOGIN", "Portal login for " + userId);
+        String auditMsg = "Portal login for " + userId + (persona != null && !persona.isEmpty() ? " as " + persona : "");
+        new Audit().logEventAsync(userId, fiduciaryId, "PRINCIPAL_PORTAL", null, "PRINCIPAL_LOGIN", auditMsg);
 
         JSONObject response = new JSONObject();
         response.put("success", true);
@@ -140,6 +148,7 @@ public class Principal implements Action {
         response.put("fiduciary_name", fiduciaryName);
         response.put("policies", policies);
         response.put("pca_qr_enabled", pcaQrEnabled);
+        response.put("persona", persona);
         OutputProcessor.send(res, HttpServletResponse.SC_OK, response);
     }
 
@@ -188,6 +197,99 @@ public class Principal implements Action {
         }
 
         OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); }});
+    }
+
+    /**
+     * Public pre-login endpoint: returns the distinct data_subject_categories (personas)
+     * declared across a fiduciary's active policies, so the portal can ask "you are logging
+     * in as a..." before credentials are collected. Purely informational -- it never gates
+     * which policies a principal can see after login (categories may be incomplete/inconsistent).
+     */
+    private void handleListFiduciaryPersonas(JSONObject input, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        String fiduciaryIdStr = (String) input.get("fiduciary_id");
+        if (fiduciaryIdStr == null || fiduciaryIdStr.isEmpty()) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_fiduciary_personas'.", req.getRequestURI());
+            return;
+        }
+        UUID fiduciaryId;
+        try {
+            fiduciaryId = UUID.fromString(fiduciaryIdStr);
+        } catch (IllegalArgumentException e) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid fiduciary_id format.", req.getRequestURI());
+            return;
+        }
+        if (getActiveFiduciaryName(fiduciaryId) == null) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Fiduciary not found or inactive.", req.getRequestURI());
+            return;
+        }
+        OutputProcessor.send(res, HttpServletResponse.SC_OK, listFiduciaryPersonas(fiduciaryId));
+    }
+
+    private JSONArray listFiduciaryPersonas(UUID fiduciaryId) throws SQLException {
+        java.util.LinkedHashSet<String> categories = new java.util.LinkedHashSet<>();
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sql = "SELECT policy_content FROM consent_policies " +
+                "WHERE fiduciary_id = ? AND status = 'ACTIVE' AND effective_date <= NOW()";
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                categories.addAll(extractDataSubjectCategories(rs.getString("policy_content")));
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+
+        JSONArray result = new JSONArray();
+        for (String category : categories) {
+            JSONObject entry = new JSONObject();
+            entry.put("id", category);
+            entry.put("label", toDisplayLabel(category));
+            result.add(entry);
+        }
+        return result;
+    }
+
+    private String toDisplayLabel(String category) {
+        if (category == null || category.isEmpty()) return category;
+        String[] words = category.replace('_', ' ').trim().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (String w : words) {
+            if (w.isEmpty()) continue;
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1).toLowerCase());
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Unions the "data_subject_categories" arrays declared across every language block of a
+     * policy's content (e.g. {"en": {...}, "hi": {...}}), since a category is a property of the
+     * persona, not the language it happens to be tagged under in a given block.
+     */
+    @SuppressWarnings("unchecked")
+    private java.util.Set<String> extractDataSubjectCategories(String policyContentJson) {
+        java.util.LinkedHashSet<String> categories = new java.util.LinkedHashSet<>();
+        try {
+            org.json.simple.JSONObject map = (org.json.simple.JSONObject)
+                    new org.json.simple.parser.JSONParser().parse(policyContentJson);
+            for (Object langBlockObj : map.values()) {
+                if (!(langBlockObj instanceof org.json.simple.JSONObject)) continue;
+                org.json.simple.JSONObject langBlock = (org.json.simple.JSONObject) langBlockObj;
+                Object dsc = langBlock.get("data_subject_categories");
+                if (dsc instanceof JSONArray) {
+                    for (Object c : (JSONArray) dsc) {
+                        if (c != null && !c.toString().trim().isEmpty()) categories.add(c.toString().trim());
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return categories;
     }
 
     private String getOtpMode(UUID fiduciaryId) throws SQLException {
@@ -304,12 +406,16 @@ public class Principal implements Action {
             pstmt.setObject(1, fiduciaryId);
             rs = pstmt.executeQuery();
             while (rs.next()) {
+                String policyContent = rs.getString("policy_content");
                 JSONObject entry = new JSONObject();
                 entry.put("policy_id", rs.getString("id"));
                 entry.put("version", rs.getString("version"));
                 entry.put("jurisdiction", rs.getString("jurisdiction"));
                 entry.put("effective_date", rs.getTimestamp("effective_date").toInstant().toString());
-                entry.put("title", extractPolicyTitle(rs.getString("policy_content")));
+                entry.put("title", extractPolicyTitle(policyContent));
+                JSONArray personas = new JSONArray();
+                personas.addAll(extractDataSubjectCategories(policyContent));
+                entry.put("personas", personas);
                 result.add(entry);
             }
         } finally {
