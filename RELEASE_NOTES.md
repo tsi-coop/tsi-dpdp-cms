@@ -1,5 +1,25 @@
 # Release Notes
 
+### v0.4.9
+**DPDP Wallet**
+- Data Principals can now give first-time consent directly from the wallet, not just view and revoke existing consent - the wallet shows the fiduciary's policy title and applicable personas even before any consent record exists, and offers to collect consent for that policy's purposes.
+- Fixed wallet-initiated revocations showing as "Active" instead of "Withdrawn" in the Rights Portal consent history - revoking consent from the wallet now records the same canonical withdrawal status as revoking it from the portal itself.
+
+**Rights Portal - Multi-Persona Login**
+- Fiduciaries serving more than one type of Data Principal under a single login (e.g. Employee and Patient, or Employee and Borrower) can now ask principals to declare "logging in as a..." before credentials are collected, based on the personas declared in the fiduciary's active policies.
+- Added example policies illustrating this: an Employee policy alongside the existing Patient/Borrower/Customer policies for several sample fiduciaries.
+
+**Policy Schema**
+- Policy content must now declare a `language` code and a non-empty `security_measures` summary, and retention duration must be a positive number - catches incomplete DPDP disclosures at upload time instead of later during ROPA review.
+
+**Bug Fixes**
+- Rights Portal no longer hardcodes `localhost:8080` as its API base URL; it now derives the base URL from the page's own origin, so the portal works correctly wherever it's deployed.
+
+**Examples & Documentation**
+- Added a healthcare NGO example (The Banyan) with a sample patient consent policy and ROPA.
+
+---
+
 ### v0.4.8
 **DPO Console**
 - Policy list now links to "View ROPA" instead of "View Policy" - the old link surfaced raw policy JSON; ROPA already presents the same content in readable form.
