@@ -5,7 +5,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 This system serves two categories of adopters:
 
 - **Data Fiduciaries**, who can deploy the CMS directly (Single Mode) to manage consent for their own Data Principals, without depending on a third party.
-- **Consent Managers and Consent Aggregators**, who can deploy the CMS (Aggregator Mode) to manage consent on behalf of one or more Data Fiduciaries as a managed service.
+- **Consent Managers**, who can deploy the CMS (Aggregator Mode) to manage consent on behalf of one or more Data Fiduciaries as a managed service.
 
 See Section 1.2 (Configure Consent Manager) of the System Design document, linked below, for details on both deployment modes.
 
