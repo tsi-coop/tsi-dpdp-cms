@@ -7,7 +7,7 @@ This system serves two categories of adopters:
 - **Data Fiduciaries**, who can deploy the CMS directly (Single Mode) to manage consent for their own Data Principals, without depending on a third party.
 - **Consent Managers and Consent Aggregators**, who can deploy the CMS (Aggregator Mode) to manage consent on behalf of one or more Data Fiduciaries as a managed service.
 
-See the [System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/main/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf) document (Section 1.2, Configure Consent Manager) for details on both deployment modes.
+See Section 1.2 (Configure Consent Manager) of the System Design document, linked below, for details on both deployment modes.
 
 ## Introduction
 
