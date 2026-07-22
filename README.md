@@ -283,7 +283,7 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
 
 ## Production Deployment
 
-The steps above get you running for evaluation. A production instance holds Data Principal ID, consent records, and the immutable audit/compliance ledger. So it needs additional hardening before go-live.
+The steps above get you running for evaluation. A production instance holds data principal identifier, consent records, and the immutable audit/compliance ledger. So it needs additional hardening before go-live.
 
 See [Section 6: Infrastructure Hardening for Production](docs/implementation-guide.md#6-infrastructure-hardening-for-production) in the Implementation Guide for the five Docker and Binary deployment guardrails (secrets management, running as a non-root user, disk encryption, data-tier isolation, and offsite backups).
 
