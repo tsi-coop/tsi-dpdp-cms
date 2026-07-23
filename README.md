@@ -73,7 +73,7 @@ Follow the Guided Journey:
 
 9. Breach Notification: Section 8(6): Report a breach, notify affected Principals, generate the PDF record, and bulk-notify via CSV upload through the Job Manager. [Watch Video](https://youtu.be/lHOAQSIrxh8)
 
-10. Legal Module: Explore the crystallization of immutable audit trails into cryptographically signed, BSA Section 62-compliant digital evidence artifacts for court and regulatory submission. [Watch Video](https://youtu.be/neS4x46erHA) | [Securing Court-Ready Evidence under BSA Section 62](https://techadvisory.substack.com/p/dpdp-consent-manager-securing-court)
+10. Legal Module: Turn activity logs into verified, BSA Section 63-compliant digital evidence that holds up in court and meets regulatory rules. [Watch Video](https://youtu.be/neS4x46erHA) | [Securing Court-Ready Evidence under BSA Section 62](https://techadvisory.substack.com/p/dpdp-consent-manager-securing-court)
 
 11. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks. [Watch Video](https://youtu.be/P6kY9aBc_gM)
 
