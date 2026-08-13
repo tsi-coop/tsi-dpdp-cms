@@ -70,6 +70,8 @@ public class Legal implements Action {
         }
 
         UUID fiduciaryId = UUID.fromString(fiduciaryIdStr);
+        if (rejectIfNotOwnFiduciary(fiduciaryId, req, res)) return;
+
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -78,7 +80,7 @@ public class Legal implements Action {
 
         try {
             conn = pool.getConnection();
-            
+
             // 1. Fetch Fiduciary Name from Registry
             String nameSql = "SELECT name FROM fiduciaries WHERE id = ?";
             try (PreparedStatement namePstmt = conn.prepareStatement(nameSql)) {
@@ -181,17 +183,18 @@ public class Legal implements Action {
      * Configuration is retrieved strictly from System Properties for high security.
      */
     private String signCertificateData(String data) throws Exception {
-        String env = System.getProperty("TSI_DPDP_CMS_ENV", "development");
+        String env = System.getenv("TSI_DPDP_CMS_ENV");
+        if (env == null) env = "development";
         PrivateKey privateKey = null;
 
         if ("production".equalsIgnoreCase(env)) {
             // --- PRODUCTION MODE: LOAD FROM SYSTEM ENV ---
-            String path = System.getProperty("TSI_KEYSTORE_PATH");
-            String alias = System.getProperty("TSI_KEYSTORE_ALIAS");
-            String ksPass = System.getProperty("TSI_KEYSTORE_PASS");
+            String path = System.getenv("TSI_KEYSTORE_PATH");
+            String alias = System.getenv("TSI_KEYSTORE_ALIAS");
+            String ksPass = System.getenv("TSI_KEYSTORE_PASS");
 
-            if (path == null || alias == null || ksPass == null) {
-                throw new Exception("Security Configuration Missing: Ensure tsi.keystore.path, tsi.keystore.alias, and tsi.keystore.password are set as JVM properties.");
+            if (path == null || alias == null || ksPass == null || ksPass.equals("changeit")) {
+                throw new Exception("Security Configuration Missing or Insecure: Ensure TSI_KEYSTORE_PATH, TSI_KEYSTORE_ALIAS, and TSI_KEYSTORE_PASS are set as environment variables, and TSI_KEYSTORE_PASS is not the default value.");
             }
 
             KeyStore keystore = KeyStore.getInstance("PKCS12");
@@ -229,6 +232,7 @@ public class Legal implements Action {
             OutputProcessor.errorResponse(res, 400, "Bad Request", "fiduciary_id required.", req.getRequestURI());
             return;
         }
+        if (rejectIfNotOwnFiduciary(UUID.fromString(fidStr), req, res)) return;
 
         PoolDB pool = new PoolDB();
         Connection conn = null;
@@ -278,16 +282,58 @@ public class Legal implements Action {
             rs = pstmt.executeQuery();
             
             if (rs.next()) {
+                UUID certFiduciaryId = (UUID) rs.getObject("fiduciary_id");
+                if (rejectIfNotOwnFiduciary(certFiduciaryId, req, res)) return;
+
                 JSONObject cert = new JSONObject();
                 cert.put("id", rs.getObject("id").toString());
                 cert.put("attestation", rs.getString("attestation_text"));
-                cert.put("data", rs.getString("certificate_data")); 
+                cert.put("data", rs.getString("certificate_data"));
                 OutputProcessor.send(res, 200, cert);
             } else {
                 OutputProcessor.errorResponse(res, 404, "Not Found", "Certificate not found.", req.getRequestURI());
             }
         } catch (SQLException e) {
             throw e;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    /**
+     * Blocks a non-ADMIN caller from generating, listing, or reading evidence
+     * certificates for a fiduciary other than their own - otherwise any authenticated
+     * DPO could read or forge another tenant's legally-binding BSA S.62 attestations.
+     * Returns true (and sends a 403) if blocked; caller must return immediately.
+     */
+    private boolean rejectIfNotOwnFiduciary(UUID fiduciaryId, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        if ("ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req))) {
+            return false;
+        }
+        UUID callerFid = getCallerFiduciaryId(InputProcessor.getAuthenticatedUserId(req));
+        if (callerFid == null || !callerFid.equals(fiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access evidence certificates for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        if (operatorId == null) return null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }

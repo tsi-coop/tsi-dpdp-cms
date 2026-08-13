@@ -8,6 +8,7 @@ import org.tsicoop.dpdpcms.util.Constants;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -71,6 +72,13 @@ public class WebhookDispatcher {
             String webhookUrl = (String) config.get("webhook_url");
             String secret = (String) config.get("secret");
 
+            // Re-validate at dispatch time (not just at config-save time in Notification.java) --
+            // defense against DNS rebinding between when the URL was saved and now.
+            if (!isSafeWebhookUrl(webhookUrl)) {
+                logDeliveryFailure(fiduciaryId, category, eventType, "Webhook URL failed safety check (private/internal host).");
+                return;
+            }
+
             JSONObject envelope = new JSONObject();
             envelope.put("event_type", eventType);
             envelope.put("fiduciary_id", fiduciaryId);
@@ -114,6 +122,36 @@ public class WebhookDispatcher {
                     "WEBHOOK_DELIVERY_FAILED", context.toJSONString());
         } catch (Exception ignored) {
             // Audit logging itself must never throw back into webhook dispatch.
+        }
+    }
+
+    /**
+     * Rejects webhook URLs that could be used for SSRF: non-HTTPS schemes, and hosts
+     * that resolve to loopback/link-local/site-local/multicast/any-local addresses
+     * (this covers the 169.254.169.254 cloud metadata endpoint via the link-local
+     * range). Used both at config-save time (Notification.java) and again here at
+     * dispatch time, since DNS can change between the two.
+     */
+    public static boolean isSafeWebhookUrl(String url) {
+        if (url == null || url.isEmpty()) return false;
+        try {
+            URI uri = URI.create(url);
+            if (!"https".equalsIgnoreCase(uri.getScheme())) {
+                return false;
+            }
+            String host = uri.getHost();
+            if (host == null || host.isEmpty()) {
+                return false;
+            }
+            for (InetAddress addr : InetAddress.getAllByName(host)) {
+                if (addr.isLoopbackAddress() || addr.isLinkLocalAddress() || addr.isSiteLocalAddress()
+                        || addr.isMulticastAddress() || addr.isAnyLocalAddress()) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 

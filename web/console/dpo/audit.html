@@ -241,6 +241,11 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
     // --- Configuration ---
     const API_URL_AUDIT = '/api/v1/admin/audit';
     const AUTH_TOKEN = localStorage.getItem('authToken');
@@ -297,7 +302,7 @@
                 <p class="text-[10px] text-gray-400 font-bold uppercase">${new Date(log.timestamp).toLocaleTimeString()}</p>
             </td>
             <td class="px-4 py-3 whitespace-nowrap">
-                <span class="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">${log.user_id}</span>
+                <span class="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">${esc(log.user_id)}</span>
             </td>
             <td class="px-4 py-3 whitespace-nowrap">
                 <span class="text-[11px] font-bold px-2 py-1 rounded border ${actionClass}">${log.audit_action}</span>
@@ -305,7 +310,7 @@
             <td class="px-4 py-3 whitespace-nowrap">${getActorTag(log.service_type, log.service_id)}</td>
             <td class="px-4 py-3 min-w-[300px]">
                 <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 font-mono text-[10px] text-slate-600 overflow-x-auto max-h-[150px] scrollbar-thin">
-                    <pre class="whitespace-pre-wrap break-words">${contextDisplay || "{}"}</pre>
+                    <pre class="whitespace-pre-wrap break-words">${esc(contextDisplay) || "{}"}</pre>
                 </div>
             </td>
         `;

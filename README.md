@@ -65,7 +65,7 @@ Follow the Guided Journey:
 
 5. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
 
-6. Enforcement Logic: View the visual logic for technical data deletion, retention periods, and audit trail integrity. [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
+6. Enforcement Logic: View the logic for technical data deletion, retention periods, and audit trail integrity. [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
 7. Compliance Management: Comprehensive video walkthrough of the administrative console for managing compliance workflows. [Watch Video](https://youtu.be/TE27zu859_s)
 

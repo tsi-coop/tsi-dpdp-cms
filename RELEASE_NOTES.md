@@ -1,5 +1,27 @@
 # Release Notes
 
+### v0.5.0
+**Admin Console - Data Fiduciary Domain Validation**
+- Consent Managers can now optionally prove a Data Fiduciary's control of its domain via a standalone "Verify DNS" action on the Fiduciaries list (shown only while validation is outstanding, separate from Edit) that runs a live DNS TXT lookup and shows the resulting PENDING/VALIDATED/FAILED status in a new Validation column - purely an opt-in credibility signal for the CM-DF relationship, it does not gate fiduciary activation, API key issuance, or consent/erasure traffic.
+- The admin sidebar has also been reordered so API Keys appears above CMS Users.
+
+**Breach Notification**
+- The "Affected Purpose" selector on the Report Breach form now lists purposes grouped under each of a Fiduciary's active policies, instead of only the first one - Consent Managers running more than one active policy (e.g. per app or jurisdiction) can now select any of their purposes. Affected-principal resolution is scoped to the selected policy, so a purpose ID reused across two different policies can no longer sweep in the wrong principals.
+
+
+**Bug Fixes**
+- Fixed the DPO Console left navigation not scrolling on 5 of 12 pages (Dashboard, Legal, Reports, ROPA, Team) when the menu was taller than the viewport.
+
+**Security**
+- Fixed two unauthenticated-access paths: a first-run "bootstrap" route that unintentionally accepted requests for every API service (not just initial setup), and a job-download route that skipped the login check entirely.
+- Fixed a broad set of cross-tenant authorization gaps across the admin and DPO console APIs (Fiduciaries, API Keys, Apps, Policies, Notifications, Legal evidence certificates, Consent, Grievances, Breach reports, ROPA, Compliance/purge requests, and the DPO dashboard) where a logged-in Operator or DPO could read or modify another Fiduciary's data if they knew or supplied that Fiduciary's ID. Cross-tenant job/report downloads (including data exports) are closed the same way.
+- Fixed several stored-XSS gaps in the admin and DPO consoles where a data principal's grievance submission, a login identifier, or fiduciary/app-authored text could inject a script into a staff member's browser session.
+- Fiduciary-configured webhook URLs (for purge/notification/OTP delivery) are now validated to reject internal/private network addresses, closing a server-side request forgery (SSRF) path.
+- Added rate limiting to the account-recovery flow (password reset and recovery-key verification), matching the existing protection on the login form.
+
+
+---
+
 ### v0.4.9
 **DPDP Wallet**
 - Data Principals can now give first-time consent directly from the wallet, not just view and revoke existing consent - the wallet shows the fiduciary's policy title and applicable personas even before any consent record exists, and offers to collect consent for that policy's purposes.

@@ -74,6 +74,14 @@ public class Audit implements Action {
 
             switch (func.toLowerCase()) {
                 case "log_event":
+                    // Not called by any console UI - internal audit writes go through
+                    // logEventAsync() directly. Keep the HTTP path ADMIN-only so an
+                    // authenticated DPO/Operator can't inject arbitrary audit entries
+                    // (which Legal.java's evidence certificates treat as trustworthy).
+                    if (!"ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req))) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may write audit events directly.", req.getRequestURI());
+                        return;
+                    }
                     handleLogRequest(input, res, req);
                     break;
                 case "list_audit_logs":
@@ -100,6 +108,7 @@ public class Audit implements Action {
             OutputProcessor.errorResponse(res, 400, "Bad Request", "fiduciary_id required.", req.getRequestURI());
             return;
         }
+        if (rejectIfNotOwnFiduciary(UUID.fromString(fidFilter), req, res)) return;
 
         int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
         int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 50;
@@ -156,14 +165,6 @@ public class Audit implements Action {
                 initLastKnownHash(conn);
             }
 
-            // Build a hasher once per batch; null if TSI_LOOKUP_SALT is not configured.
-            LookupHasher hasher = null;
-            try {
-                hasher = new LookupHasher();
-            } catch (IllegalStateException ignored) {
-                // Warning logged once per execution if salt missing
-            }
-
             while (!auditCache.isEmpty()) {
                 List<AuditEntry> batch = new ArrayList<>();
                 AuditEntry entry;
@@ -181,13 +182,7 @@ public class Audit implements Action {
                     conn.setAutoCommit(false);
 
                     for (AuditEntry log : batch) {
-                        // Use a local variable for the stored ID to avoid double-hashing if the batch is re-queued on failure
                         String storedUserId = log.userId;
-                        if (hasher != null) {
-                            try {
-                                storedUserId = hasher.hashData(log.userId != null ? log.userId : "");
-                            } catch (Exception ignored) {}
-                        }
 
                         String prevHash = lastKnownHash;
                         String currentHash = calculateHash(log, storedUserId, prevHash);
@@ -306,7 +301,11 @@ public class Audit implements Action {
         }
 
         Optional<JSONObject> logEntry = getAuditLogEntryFromDb(UUID.fromString(logIdStr));
-        if (logEntry.isPresent()) OutputProcessor.send(res, 200, logEntry.get());
+        if (logEntry.isPresent()) {
+            String logFidStr = (String) logEntry.get().get("fiduciary_id");
+            if (logFidStr != null && rejectIfNotOwnFiduciary(UUID.fromString(logFidStr), req, res)) return;
+            OutputProcessor.send(res, 200, logEntry.get());
+        }
         else OutputProcessor.errorResponse(res, 404, "Not Found", "Audit log not found.", req.getRequestURI());
     }
 
@@ -326,6 +325,7 @@ public class Audit implements Action {
                 log.put("id", rs.getObject("id").toString());
                 log.put("timestamp", rs.getTimestamp("timestamp").toInstant().toString());
                 log.put("user_id", rs.getString("user_id"));
+                log.put("fiduciary_id", rs.getString("fiduciary_id"));
                 log.put("service_type", rs.getString("service_type"));
                 log.put("audit_action", rs.getString("audit_action"));
                 log.put("prev_hash", rs.getString("prev_log_hash"));
@@ -343,5 +343,45 @@ public class Audit implements Action {
     @Override
     public boolean validate(String method, HttpServletRequest req, HttpServletResponse res) {
         return "POST".equalsIgnoreCase(method) && InputProcessor.validate(req, res);
+    }
+
+    /**
+     * Blocks a non-ADMIN DPO/Operator from reading audit log entries for a fiduciary
+     * other than their own. No-op for ADMIN or callers not authenticated as an
+     * operator at all. Returns true (and sends a 403) if blocked; caller must
+     * return immediately.
+     */
+    private boolean rejectIfNotOwnFiduciary(UUID targetFiduciaryId, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        if (callerRole == null || "ADMIN".equalsIgnoreCase(callerRole)) {
+            return false;
+        }
+        UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+        if (callerFid == null || !callerFid.equals(targetFiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access audit logs for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
     }
 }

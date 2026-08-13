@@ -31,7 +31,7 @@
 
         .sidebar {
             width: 250px; background-color: #f8fafc; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-            padding-top: 20px; position: fixed; height: 100vh; z-index: 50; border-right: 1px solid #e2e8f0;
+            padding-top: 20px; position: fixed; height: 100vh; overflow-y: auto; z-index: 50; border-right: 1px solid #e2e8f0;
         }
 
         .nav-link {
@@ -264,6 +264,11 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
     // --- Setup & Connectivity ---
     const API_URL = ENV_SERVER_URL + '/api/v1/admin/legal';
     const AUTH_TOKEN = localStorage.getItem('authToken');
@@ -296,7 +301,7 @@
                 tbody.innerHTML = list.map(c => `
                     <tr class="hover:bg-teal-50/30 transition-colors group">
                         <td class="py-4 px-2 font-mono text-[11px] text-slate-500">...${c.id.slice(-12).toUpperCase()}</td>
-                        <td class="py-4 px-2 font-bold text-slate-700 text-xs">${c.principal_id}</td>
+                        <td class="py-4 px-2 font-bold text-slate-700 text-xs">${esc(c.principal_id)}</td>
                         <td class="py-4 px-2 text-slate-600 font-medium text-xs underline decoration-dotted">${c.case_ref || 'GENERAL_TRACE'}</td>
                         <td class="py-4 px-2 text-slate-400 text-[10px] font-bold">${new Date(c.timestamp).toLocaleString()}</td>
                         <td class="py-4 px-2 text-right">

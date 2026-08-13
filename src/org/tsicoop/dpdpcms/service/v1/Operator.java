@@ -387,6 +387,12 @@ public class Operator implements Action {
     }
 
     private void handleResetViaRecovery(JSONObject input, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String clientIp = LoginRateLimiter.getClientIp(req);
+        if (!LoginRateLimiter.isAllowed(clientIp)) {
+            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many recovery attempts. Please try again later.", req.getRequestURI());
+            return;
+        }
+
         String email = (String) input.get("email");
         String passphrase = (String) input.get("passphrase");
         String newPassword = (String) input.get("new_password");
@@ -426,6 +432,7 @@ public class Operator implements Action {
                     conn.commit();
                     OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
                     success = true;
+                    LoginRateLimiter.recordSuccess(clientIp);
                 }
             }
             if (!success) {
@@ -496,6 +503,12 @@ public class Operator implements Action {
     }
 
     private void handleVerifyRecoveryKey(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String clientIp = LoginRateLimiter.getClientIp(req);
+        if (!LoginRateLimiter.isAllowed(clientIp)) {
+            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many recovery attempts. Please try again later.", req.getRequestURI());
+            return;
+        }
+
         String email = (String) input.get("email");
         String passphrase = (String) input.get("passphrase");
 
@@ -513,6 +526,7 @@ public class Operator implements Action {
             if (rs.next()) {
                 String storedHash = rs.getString("recovery_key_hash");
                 if (storedHash != null && passwordHasher.verifyPassword(passphrase, storedHash)) {
+                    LoginRateLimiter.recordSuccess(clientIp);
                     OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
                     return;
                 }

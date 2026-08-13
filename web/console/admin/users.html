@@ -30,8 +30,8 @@
       <a href="dashboard.html" class="nav-link">Dashboard</a>
       <a href="fiduciaries.html" class="nav-link">Fiduciaries</a>
       <a href="apps.html" class="nav-link">Apps</a>
-      <a href="#" class="nav-link active">CMS Users</a>
       <a href="apikeys.html" class="nav-link">API Keys</a>
+      <a href="#" class="nav-link active">CMS Users</a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
@@ -129,6 +129,10 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
     const API_USERS = '/api/v1/admin/operator';
     const API_FIDUCIARIES = '/api/v1/admin/fiduciary';
     const TOKEN = localStorage.getItem('authToken');
@@ -202,9 +206,9 @@
 
                 return `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-4 font-bold text-slate-700">${u.username}</td>
-                    <td class="px-4 py-4 text-xs font-black text-slate-400 uppercase">${u.role}</td>
-                    <td class="px-4 py-4 text-xs text-slate-500">${fiduciaryName}</td>
+                    <td class="px-4 py-4 font-bold text-slate-700">${esc(u.username)}</td>
+                    <td class="px-4 py-4 text-xs font-black text-slate-400 uppercase">${esc(u.role)}</td>
+                    <td class="px-4 py-4 text-xs text-slate-500">${esc(fiduciaryName)}</td>
                     <td class="px-4 py-4"><span class="px-3 py-1 text-[10px] font-black rounded-full ${statusColor} uppercase">${u.status}</span></td>
                     <td class="px-4 py-4 flex items-center gap-3">
                         ${actionsHtml}

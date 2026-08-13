@@ -402,23 +402,46 @@
         }
     }
 
+    // Loads every ACTIVE policy for the fiduciary and nests each one's purposes under
+    // a <optgroup> so a DPO with more than one active policy (e.g. per app/jurisdiction)
+    // can pick the right purpose -- and so affected_policy_id can be scoped correctly
+    // when resolving affected principals (a purpose_id is only unique within its policy).
     async function loadPurposeOptions() {
         const select = document.getElementById('breach-purpose');
         try {
-            const response = await fetch(API_URL_POLICY, {
+            const listResponse = await fetch(API_URL_POLICY, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify({ "_func": "get_active_policy", "fiduciary_id": FIDUCIARY_ID, "jurisdiction": "IN" })
+                body: JSON.stringify({ "_func": "list_active_policies", "fiduciary_id": FIDUCIARY_ID })
             });
-            const policy = await response.json();
-            const langContent = policy && policy.policy_content ? policy.policy_content.en : null;
-            const purposes = langContent ? (langContent.data_processing_purposes || []) : [];
-            purposes.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.name;
-                select.appendChild(opt);
-            });
+            const activePolicies = await listResponse.json();
+            if (!Array.isArray(activePolicies)) return;
+
+            for (const p of activePolicies) {
+                const policyResponse = await fetch(API_URL_POLICY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                    body: JSON.stringify({ "_func": "get_policy", "policy_id": p.policy_id, "version": p.version })
+                });
+                const policy = await policyResponse.json();
+                const policyContent = policy && policy.policy_content
+                    ? (typeof policy.policy_content === 'string' ? JSON.parse(policy.policy_content) : policy.policy_content)
+                    : null;
+                const langContent = policyContent ? policyContent.en : null;
+                const purposes = langContent ? (langContent.data_processing_purposes || []) : [];
+                if (purposes.length === 0) continue;
+
+                const group = document.createElement('optgroup');
+                group.label = p.title || p.policy_id;
+                purposes.forEach(purpose => {
+                    const opt = document.createElement('option');
+                    opt.value = purpose.id;
+                    opt.textContent = purpose.name;
+                    opt.dataset.policyId = p.policy_id;
+                    group.appendChild(opt);
+                });
+                select.appendChild(group);
+            }
         } catch (e) {
             console.error("Could not load active policy purposes", e);
         }
@@ -546,6 +569,9 @@
             const csvFile = document.getElementById('breach-user-ids-csv').files[0];
             const affectedUserIdsCsv = csvFile ? await readFileAsText(csvFile) : undefined;
 
+            const purposeSelect = document.getElementById('breach-purpose');
+            const selectedPurposeOption = purposeSelect.options[purposeSelect.selectedIndex];
+
             const payload = {
                 "_func": "report_breach",
                 "fiduciary_id": FIDUCIARY_ID,
@@ -554,7 +580,8 @@
                 "detected_at": new Date(document.getElementById('breach-detected-at').value).toISOString(),
                 "severity": document.getElementById('breach-severity').value,
                 "breach_category": document.getElementById('breach-category').value || undefined,
-                "affected_purpose_id": document.getElementById('breach-purpose').value || undefined,
+                "affected_purpose_id": purposeSelect.value || undefined,
+                "affected_policy_id": purposeSelect.value ? selectedPurposeOption.dataset.policyId : undefined,
                 "affected_user_ids": affectedUserIds.length ? affectedUserIds : undefined,
                 "affected_user_ids_csv": affectedUserIdsCsv,
                 "actionable_steps": document.getElementById('breach-actionable-steps').value

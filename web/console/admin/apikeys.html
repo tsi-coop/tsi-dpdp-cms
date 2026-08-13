@@ -164,15 +164,15 @@
       <a href="apps.html" class="nav-link">
         Apps
       </a>
+      <a href="apikeys.html" class="nav-link active">
+        API Keys
+      </a>
       <a href="users.html" class="nav-link">
         CMS Users
       </a>
       <!--<a href="lifecycle.html" class="nav-link">
         Lifecycle
       </a>-->
-      <a href="apikeys.html" class="nav-link active">
-        API Keys
-      </a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
@@ -300,6 +300,10 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
     // --- Configuration ---
     const API_URL_KEYS = '/api/v1/admin/apikey';
     const API_URL_FIDUCIARIES_LIST = '/api/v1/admin/fiduciary';
@@ -388,8 +392,8 @@
 
         row.innerHTML = `
             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">...${keyHashSuffix}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(key.fiduciary_id)}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${targetEntity}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${esc(getFiduciaryName(key.fiduciary_id))}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${esc(targetEntity)}</td>
             <td class="px-4 py-3 text-sm text-gray-600">
                 ${key.permissions ? key.permissions.join(', ') : 'None'}
             </td>

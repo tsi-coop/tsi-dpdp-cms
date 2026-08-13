@@ -108,6 +108,7 @@ public class Grievance implements Action {
                     break;
 
                 case "list_grievances":
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, callerRole, res, req)) return;
                     handleListGrievances(fiduciaryId, loginUserId, callerRole, input, res, req);
                     break;
 
@@ -232,6 +233,8 @@ public class Grievance implements Action {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This grievance is not assigned to you.", req.getRequestURI());
                 return;
             }
+            // DPOs may only update grievances belonging to their own fiduciary.
+            if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, callerRole, res, req)) return;
 
             StringBuilder sql = new StringBuilder("UPDATE grievances SET status = ?, last_updated_at = NOW()");
             if (resolutionDetails != null) {
@@ -285,11 +288,14 @@ public class Grievance implements Action {
             rs = pstmt.executeQuery();
             if (rs.next()) {
                 UUID assignedDpoUserId = (UUID) rs.getObject("assigned_dpo_user_id");
+                UUID grievanceFiduciaryId = (UUID) rs.getObject("fiduciary_id");
                 // Operators may only view grievances explicitly assigned to them.
                 if ("OPERATOR".equalsIgnoreCase(callerRole) && (assignedDpoUserId == null || !assignedDpoUserId.equals(loginUserId))) {
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This grievance is not assigned to you.", req.getRequestURI());
                     return;
                 }
+                // DPOs may only view grievances belonging to their own fiduciary.
+                if (rejectIfNotOwnFiduciary(grievanceFiduciaryId, loginUserId, callerRole, res, req)) return;
                 JSONObject g = new JSONObject();
                 g.put("grievance_id", rs.getString("id"));
                 g.put("user_id", rs.getString("user_id"));
@@ -387,6 +393,9 @@ public class Grievance implements Action {
                     }
                 }
             }
+            // DPOs may only assign grievances belonging to their own fiduciary.
+            UUID assignerLoginUserId = InputProcessor.getAuthenticatedUserId(req);
+            if (rejectIfNotOwnFiduciary(fiduciaryId, assignerLoginUserId, callerRole, res, req)) return;
 
             pstmt = conn.prepareStatement("UPDATE grievances SET assigned_dpo_user_id = ?, last_updated_at = NOW() WHERE id = ?");
             pstmt.setObject(1, operatorId);
@@ -445,6 +454,44 @@ public class Grievance implements Action {
     private Timestamp calculateDueDate(String type) {
         int days = "ERASURE_REQUEST".equalsIgnoreCase(type) ? ERASURE_SLA_DAYS : DEFAULT_SLA_DAYS;
         return Timestamp.from(Instant.now().plusSeconds(days * 24L * 60 * 60));
+    }
+
+    /**
+     * Blocks a non-ADMIN DPO/Operator from accessing a grievance belonging to a
+     * fiduciary other than their own. No-op for ADMIN or callers not authenticated
+     * as an operator at all (client/API-key calls have their own separate scoping).
+     * Returns true (and sends a 403) if blocked; caller must return immediately.
+     */
+    private boolean rejectIfNotOwnFiduciary(UUID targetFiduciaryId, UUID loginUserId, String callerRole, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        if (callerRole == null || "ADMIN".equalsIgnoreCase(callerRole)) {
+            return false;
+        }
+        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+        if (callerFid == null || !callerFid.equals(targetFiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access grievances for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
     }
 
     @Override

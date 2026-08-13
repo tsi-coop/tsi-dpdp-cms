@@ -164,15 +164,15 @@
       <a href="#" class="nav-link active">
         Apps
       </a>
+      <a href="apikeys.html" class="nav-link">
+        API Keys
+      </a>
       <a href="users.html" class="nav-link">
         CMS Users
       </a>
       <!--<a href="lifecycle.html" class="nav-link">
         Lifecycle
       </a>-->
-      <a href="apikeys.html" class="nav-link">
-        API Keys
-      </a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
@@ -294,6 +294,10 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
     // --- Configuration ---
     // Assuming API structure based on FiduciaryService and convention
     const API_URL_APPS = '/api/v1/admin/app';
@@ -362,9 +366,9 @@
         `;
 
         row.innerHTML = `
-            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${app.name || 'N/A'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${getFiduciaryName(app.fiduciary_id)}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${app.processing_purpose || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${esc(app.name) || 'N/A'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${esc(getFiduciaryName(app.fiduciary_id))}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(app.processing_purpose) || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${app.dpa_reference || 'N/A'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(app.status)}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">

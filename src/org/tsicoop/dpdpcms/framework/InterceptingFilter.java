@@ -157,7 +157,10 @@ public class InterceptingFilter implements Filter {
 
         if ("GET".equalsIgnoreCase(method) && uri.contains("/admin/job")) {
             InputProcessor.processInput(req, res);
-            InputProcessor.processAdminHeader(req, res);
+            if (!InputProcessor.processAdminHeader(req, res)) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Authentication failed.", uri);
+                return;
+            }
             new Job().post(req, res);
             return;
         }
@@ -300,7 +303,10 @@ public class InterceptingFilter implements Filter {
                     authenticated = InputProcessor.processAdminHeader(req, res);
                 }
             } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(apiCategory)){
-                authenticated = true;
+                // Only the first-run setup service is allowed unauthenticated here —
+                // it self-gates via AdminSetup.isAdminUserExists(). Every other service
+                // must go through normal admin auth, not this bootstrap prefix.
+                authenticated = "setup".equalsIgnoreCase(serviceName);
             } else if (PUBLIC_URI_PATH.equalsIgnoreCase(apiCategory)) {
                 if (!PUBLIC_ALLOWED_FUNCS.contains(func.toLowerCase())) {
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Function '" + func + "' is not allowed on the public API.", uri);

@@ -164,15 +164,15 @@
       <a href="apps.html" class="nav-link">
         Apps
       </a>
+      <a href="apikeys.html" class="nav-link">
+        API Keys
+      </a>
       <a href="users.html" class="nav-link">
         CMS Users
       </a>
       <!--<a href="lifecycle.html" class="nav-link">
         Lifecycle
       </a> -->
-      <a href="apikeys.html" class="nav-link">
-        API Keys
-      </a>
     </nav>
   </div>
   <div class="p-3 border-t border-gray-200">
@@ -213,9 +213,9 @@
         <tr class="table-header">
           <th class="px-4 py-3 text-sm">Fiduciary Name</th>
           <th class="px-4 py-3 text-sm">Primary Domain</th>
-          <th class="px-4 py-3 text-sm">CMS CNAME</th>
+          <th class="px-4 py-3 text-sm">CMS Deployment Hostname</th>
           <th class="px-4 py-3 text-sm">Status</th>
-          <!-- <th class="px-4 py-3 text-sm">Validation</th> -->
+          <th class="px-4 py-3 text-sm">Validation</th>
           <th class="px-4 py-3 text-sm">Actions</th>
         </tr>
         </thead>
@@ -271,7 +271,7 @@
       </div>
 
       <div>
-        <label for="fiduciary-cname" class="block text-sm font-medium text-gray-700">CMS Deployment CNAME (e.g., consent.example.com)</label>
+        <label for="fiduciary-cname" class="block text-sm font-medium text-gray-700">CMS Deployment Hostname (e.g., consent.example.com)</label>
         <input type="text" id="fiduciary-cname" name="cms_cname" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
         <p class="mt-1 text-xs text-red-500 hidden" id="cname-warning">Warning: This CNAME must be correctly configured in the Fiduciary's DNS pointing back to the CMS.</p>
       </div>
@@ -283,14 +283,6 @@
         <p class="mt-1 text-xs text-gray-500">Links a CMS user for managing this Fiduciary.</p>
       </div> -->
 
-      <div id="validation-section" class="border border-yellow-300 bg-yellow-50 p-3 rounded-md hidden">
-        <h4 class="font-semibold text-orange-600 mb-2">DNS Verification Required</h4>
-        <p class="text-sm text-gray-700 mb-2">Please ask the Data Fiduciary's IT team to add the following TXT record to their primary domain:</p>
-        <code id="txt-record-output" class="block bg-gray-100 p-2 break-all text-xs font-mono text-gray-900 border rounded"></code>
-        <button type="button" id="verify-dns-btn" class="mt-3 primary-bg text-white px-3 py-1 rounded-md text-sm hover:bg-opacity-90">Run Verification Check</button>
-        <span id="validation-status" class="ml-4 text-sm font-medium text-gray-600"></span>
-      </div>
-
       <div class="modal-footer">
         <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Cancel</button>
         <button type="submit" id="save-fiduciary-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Fiduciary</button>
@@ -299,7 +291,27 @@
   </div>
 </div>
 
+<!-- Modal for DNS Verification -->
+<div id="dns-verify-modal-overlay" class="modal-overlay">
+  <div class="modal-content">
+    <h2 class="text-lg font-bold text-slate-700 mb-4 tracking-tight">Verify Domain Ownership</h2>
+    <p class="text-sm text-gray-700 mb-2">Please ask the Data Fiduciary's IT team to add the following TXT record to their primary domain:</p>
+    <code id="dns-txt-record-output" class="block bg-gray-100 p-2 break-all text-xs font-mono text-gray-900 border rounded"></code>
+    <div class="mt-3 flex items-center">
+      <button type="button" id="dns-verify-btn" class="primary-bg text-white px-3 py-1 rounded-md text-sm hover:bg-opacity-90">Run Verification Check</button>
+      <span id="dns-verify-status" class="ml-4 text-sm font-medium text-gray-600"></span>
+    </div>
+    <div class="modal-footer">
+      <button type="button" id="dns-verify-close-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
+function esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
 const API_URL = '/api/v1/admin/fiduciary';
 const AUTH_TOKEN = localStorage.getItem('authToken');
 const USER_NAME = localStorage.getItem('username');
@@ -318,6 +330,9 @@ let fiduciaryForm;
 let tableBody;
 let countSpan;
 let errorMessageP;
+let dnsVerifyModalOverlay;
+let dnsVerifyCloseBtn;
+let currentDnsVerifyFiduciaryId = null;
 
 // --- Form Fields for Edit/Add ---
 let fiduciaryIdHidden;
@@ -350,8 +365,31 @@ function showModal(title, isEdit = false) {
     fiduciaryModalOverlay.style.display = 'flex';
 }
 
+function setValidationStatusText(status) {
+    const span = document.getElementById('dns-verify-status');
+    const colorClass = status === 'VALIDATED' ? 'text-green-600' : (status === 'FAILED' ? 'text-red-600' : 'text-gray-600');
+    span.className = `ml-4 text-sm font-medium ${colorClass}`;
+    span.textContent = `Current status: ${status}`;
+}
+
 function closeModal() {
     fiduciaryModalOverlay.style.display = 'none';
+}
+
+async function openVerifyDnsModal(id) {
+    const fiduciary = await fetchFiduciaryDetails(id);
+    if (!fiduciary) return;
+
+    currentDnsVerifyFiduciaryId = fiduciary.fiduciary_id;
+    document.getElementById('dns-txt-record-output').textContent =
+        `Host: ${fiduciary.cms_cname}    Value: dpdp-verify=${fiduciary.dns_txt_record_token}`;
+    setValidationStatusText(fiduciary.domain_validation_status || 'PENDING');
+    dnsVerifyModalOverlay.style.display = 'flex';
+}
+
+function closeVerifyDnsModal() {
+    dnsVerifyModalOverlay.style.display = 'none';
+    currentDnsVerifyFiduciaryId = null;
 }
 
 function createStatusBadge(status) {
@@ -381,20 +419,24 @@ function createFiduciaryRow(fiduciary) {
 
     // Determine if the Deactivate button should be shown
     const showDeactivate = fiduciary.status === 'ACTIVE' || fiduciary.status === 'PENDING';
+    const needsDnsVerification = (fiduciary.domain_validation_status || 'PENDING') !== 'VALIDATED';
 
     const actionsHtml = `
         <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-2" onclick="editFiduciary('${fiduciary.fiduciary_id}')">Edit</button>
+        ${needsDnsVerification ?
+            `<button class="text-teal-600 hover:text-teal-900 font-medium text-sm mr-2" onclick="openVerifyDnsModal('${fiduciary.fiduciary_id}')">Verify DNS</button>`
+            : ''}
         ${showDeactivate ?
             `<button class="text-red-600 hover:text-red-900 font-medium text-sm" onclick="deactivateFiduciary('${fiduciary.fiduciary_id}')">Deactivate</button>`
             : `<span class="text-gray-500 text-xs">Access Suspended</span>`}
     `;
 
     row.innerHTML = `
-        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${fiduciary.name || 'N/A'}</td>
-        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${fiduciary.primary_domain || 'N/A'}</td>
-        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${fiduciary.cms_cname || 'N/A'}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${esc(fiduciary.name) || 'N/A'}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${esc(fiduciary.primary_domain) || 'N/A'}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${esc(fiduciary.cms_cname) || 'N/A'}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.status)}</td>
-       <!-- <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.domain_validation_status || 'PENDING')}</td> -->
+        <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(fiduciary.domain_validation_status || 'PENDING')}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm">
             ${actionsHtml}
         </td>
@@ -565,6 +607,52 @@ async function deactivateFiduciary(id) {
     }
 }
 
+async function runDnsVerification() {
+    if (!currentDnsVerifyFiduciaryId) {
+        return;
+    }
+
+    const verifyBtn = document.getElementById('dns-verify-btn');
+    const originalBtnText = verifyBtn.textContent;
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Checking...';
+    setValidationStatusText('CHECKING');
+
+    try {
+        const payload = {
+            "_func": "validate_fiduciary_domain",
+            "fiduciary_id": currentDnsVerifyFiduciaryId
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AUTH_TOKEN}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const responseData = await response.json();
+
+        if (response.ok && responseData.domain_validation_status) {
+            setValidationStatusText(responseData.domain_validation_status);
+            loadFiduciaries(); // Refresh list badges (and Verify DNS action visibility) in the background
+        } else {
+            const errorMsg = responseData.message || (responseData.error && responseData.error.message) || `Status: ${response.status}`;
+            document.getElementById('dns-verify-status').className = 'ml-4 text-sm font-medium text-red-600';
+            document.getElementById('dns-verify-status').textContent = `Error: ${errorMsg}`;
+        }
+    } catch (error) {
+        console.error("Error during DNS verification:", error);
+        document.getElementById('dns-verify-status').className = 'ml-4 text-sm font-medium text-red-600';
+        document.getElementById('dns-verify-status').textContent = 'Network error: Could not verify domain.';
+    } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = originalBtnText;
+    }
+}
+
 function handleLogout() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('username');
@@ -595,12 +683,16 @@ cmsCnameInput = document.getElementById('fiduciary-cname');
 contactEmailInput = document.getElementById('fiduciary-email');
 contactPhoneInput = document.getElementById('fiduciary-phone');
 
+dnsVerifyModalOverlay = document.getElementById('dns-verify-modal-overlay');
+dnsVerifyCloseBtn = document.getElementById('dns-verify-close-btn');
 
 // --- Event Listener Attachments (Moved inside DOMContentLoaded) ---
 menuToggle.addEventListener('click', toggleMenu);
 backdrop.addEventListener('click', toggleMenu);
 addFiduciaryBtn.addEventListener('click', () => showModal('Add New Data Fiduciary'));
 closeModalBtn.addEventListener('click', closeModal);
+dnsVerifyCloseBtn.addEventListener('click', closeVerifyDnsModal);
+document.getElementById('dns-verify-btn').addEventListener('click', runDnsVerification);
 
 // --- Search Functionality ---
 searchInput.addEventListener('keypress', function(event) {
@@ -675,6 +767,7 @@ fiduciaryForm.addEventListener('submit', async function(event) {
 // Expose functions globally so they can be called by inline onclick attributes
 window.editFiduciary = editFiduciary;
 window.deactivateFiduciary = deactivateFiduciary;
+window.openVerifyDnsModal = openVerifyDnsModal;
 
 </script>
 </body>

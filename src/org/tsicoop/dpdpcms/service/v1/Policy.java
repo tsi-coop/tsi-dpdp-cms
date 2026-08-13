@@ -66,6 +66,7 @@ public class Policy implements Action {
             if(versionStr == null) versionStr = "";
             String jurisdiction = (String) input.get("jurisdiction");
             UUID fiduciaryId = resolveFiduciaryId(req);
+            boolean isAdmin = "ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req));
 
             switch (func.toLowerCase()) {
                 case "list_active_policies":
@@ -168,6 +169,14 @@ public class Policy implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only DRAFT policies can be updated. Current status: " + currentStatus, req.getRequestURI());
                         return;
                     }
+                    if (!isAdmin) {
+                        UUID existingPolicyFid = existingPolicy.get().get("fiduciary_id") != null
+                                ? UUID.fromString((String) existingPolicy.get().get("fiduciary_id")) : null;
+                        if (fiduciaryId == null || !fiduciaryId.equals(existingPolicyFid)) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only update your own fiduciary's policies.", req.getRequestURI());
+                            return;
+                        }
+                    }
 
                     policyContent = (JSONObject) input.get("policy_content");
                     jurisdiction = (String) input.get("jurisdiction");
@@ -206,6 +215,11 @@ public class Policy implements Action {
                     UUID policyFidId = UUID.fromString((String)existingPolicy.get().get("fiduciary_id"));
                     String policyJurisdiction = (String)existingPolicy.get().get("jurisdiction");
 
+                    if (!isAdmin && !policyFidId.equals(fiduciaryId)) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only publish your own fiduciary's policies.", req.getRequestURI());
+                        return;
+                    }
+
                     publishPolicyInDb(policyIdStr, versionStr, policyFidId, policyJurisdiction);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Policy published successfully."); }});
                     break;
@@ -221,7 +235,13 @@ public class Policy implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Policy with ID '" + policyIdStr + "' not found.", req.getRequestURI());
                         return;
                     }
-                    deletePolicyFromDb(fiduciaryId, policyIdStr, versionStr);
+                    UUID deletePolicyFid = existingPolicy.get().get("fiduciary_id") != null
+                            ? UUID.fromString((String) existingPolicy.get().get("fiduciary_id")) : null;
+                    if (!isAdmin && (fiduciaryId == null || !fiduciaryId.equals(deletePolicyFid))) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only delete your own fiduciary's policies.", req.getRequestURI());
+                        return;
+                    }
+                    deletePolicyFromDb(deletePolicyFid, policyIdStr, versionStr);
                     OutputProcessor.send(res, HttpServletResponse.SC_NO_CONTENT, null);
                     break;
                 default:
@@ -836,8 +856,9 @@ public class Policy implements Action {
         try {
             conn = pool.getConnection();
 
-            pstmt = conn.prepareStatement("UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ?");
+            pstmt = conn.prepareStatement("UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ? AND fiduciary_id = ?");
             pstmt.setString(1, policyId);
+            pstmt.setObject(2, fiduciaryId);
             pstmt.executeUpdate();
             pool.cleanup(null, pstmt, null);
 

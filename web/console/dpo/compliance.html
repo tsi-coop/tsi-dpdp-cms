@@ -369,6 +369,10 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
     // --- Configuration ---
     const API_URL_PURGE = '/api/v1/admin/compliance';
     const API_URL_JOBS = '/api/v1/admin/job';
@@ -435,11 +439,11 @@
     function createRequestRow(req) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="px-2 py-2 font-mono text-gray-600 truncate" title="${req.id}">...${req.id.slice(-8)}</td>
-            <td class="px-2 py-2 text-gray-800 truncate" title="${req.user_id}">${req.user_id}</td>
-            <td class="px-2 py-2 text-gray-800 truncate" title="${req.purpose_id}">${req.purpose_id}</td>
-            <td class="px-2 py-2 text-gray-600 truncate" title="${req.trigger_event}">${req.trigger_event}</td>
-            <td class="px-2 py-2 text-gray-600 truncate" title="${req.app_name}">${req.app_name}</td>
+            <td class="px-2 py-2 font-mono text-gray-600 truncate" title="${esc(req.id)}">...${req.id.slice(-8)}</td>
+            <td class="px-2 py-2 text-gray-800 truncate" title="${esc(req.user_id)}">${esc(req.user_id)}</td>
+            <td class="px-2 py-2 text-gray-800 truncate" title="${esc(req.purpose_id)}">${esc(req.purpose_id)}</td>
+            <td class="px-2 py-2 text-gray-600 truncate" title="${esc(req.trigger_event)}">${esc(req.trigger_event)}</td>
+            <td class="px-2 py-2 text-gray-600 truncate" title="${esc(req.app_name)}">${esc(req.app_name)}</td>
             <td class="px-2 py-2 text-gray-600 truncate">${new Date(req.initiated_at).toLocaleDateString()}</td>
             <td class="px-2 py-2 truncate">${createStatusBadge(req.status)}</td>
             <td class="px-2 py-2 text-gray-600 truncate">${OperatorMap[req.assigned_operator_id] || 'Unassigned'}</td>

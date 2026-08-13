@@ -112,6 +112,7 @@ public class Notification implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id', 'notification_type', and 'messages' are required for 'set_notification_message'.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
                     setNotificationMessageInDb(fiduciaryId, msgNotificationType, messages, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Notification message saved."); }});
                     break;
@@ -136,6 +137,12 @@ public class Notification implements Action {
                             || webhookUrl == null || webhookUrl.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
                                 "'fiduciary_id', 'webhook_url', and 'category' (NOTIFICATION, PURGE, or OTP) are required for 'set_webhook_config'.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
+                    if (!WebhookDispatcher.isSafeWebhookUrl(webhookUrl)) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                                "'webhook_url' must be HTTPS and must not resolve to a private/internal/loopback address.", req.getRequestURI());
                         return;
                     }
                     boolean enabled = !Boolean.FALSE.equals(input.get("enabled"));
@@ -164,6 +171,7 @@ public class Notification implements Action {
                                 "'fiduciary_id' and 'otp_mode' (DUMMY_OTP, EMAIL_OTP, or MOBILE_OTP) are required for 'set_rights_app_config'.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
                     setRightsAppConfigInDb(fiduciaryId, otpMode, otpMessageTemplate, pcaQrEnabled, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Rights Management App settings saved."); }});
                     break;
@@ -226,6 +234,45 @@ public class Notification implements Action {
             return false;
         }
         return InputProcessor.validate(req, res); // This validates content-type and basic body parsing
+    }
+
+    /**
+     * Blocks a non-ADMIN caller from writing notification/webhook/OTP config for a
+     * fiduciary other than their own - otherwise any DPO could redirect another
+     * tenant's purge/notification/OTP webhook payloads to an attacker-controlled URL.
+     * Returns true (and sends a 403) if blocked; caller must return immediately.
+     */
+    private boolean rejectIfNotOwnFiduciary(UUID fiduciaryId, UUID loginUserId, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        if ("ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req))) {
+            return false;
+        }
+        UUID callerFid = getCallerFiduciaryId(loginUserId);
+        if (callerFid == null || !callerFid.equals(fiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only configure settings for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        if (operatorId == null) return null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
     }
 
     // --- Helper Methods for Notification Management ---

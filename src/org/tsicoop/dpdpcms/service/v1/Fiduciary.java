@@ -30,16 +30,15 @@ import java.util.regex.Pattern; // For domain validation, if needed
  * This class serves as the backend service for the Fiduciary Management module
  * of the DPDP Consent Management System.
  *
- * NOTE ON DATABASE SCHEMA ASSUMPTIONS:
+ * NOTE ON DATABASE SCHEMA (see db/01_init.sql):
  * - Table is named 'fiduciaries'.
  * - Columns: id (UUID PK), name (VARCHAR), contact_person (VARCHAR), email (VARCHAR),
  * phone (VARCHAR), address (TEXT), primary_domain (VARCHAR), cms_cname (VARCHAR),
  * dns_txt_record_token (VARCHAR), domain_validation_status (VARCHAR),
  * is_significant_data_fiduciary (BOOLEAN), dpo_user_id (UUID), dpb_registration_id (VARCHAR),
- * status (VARCHAR), created_at (TIMESTAMPZ), created_by_user_id (UUID),
- * last_updated_at (TIMESTAMPZ), last_updated_by_user_id (UUID),
- * deleted_at (TIMESTAMPZ), deleted_by_user_id (UUID).
- * - Assumes 'users' table exists for FK references to created_by_user_id etc.
+ * status (VARCHAR), created_at (TIMESTAMPZ), last_updated_at (TIMESTAMPZ).
+ * - No soft-delete columns exist; 'status' (ACTIVE/INACTIVE/REVOKED) is used instead.
+ * - dpo_user_id references 'operators' (role = 'DPO'), not a 'users' table.
  */
 public class Fiduciary implements Action {
 
@@ -87,6 +86,7 @@ public class Fiduciary implements Action {
 
             // Get the ID of the Admin performing the action
             UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+            boolean isAdmin = "ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req));
 
             switch (func.toLowerCase()) {
                 case "list_fiduciaries":
@@ -95,7 +95,18 @@ public class Fiduciary implements Action {
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
 
-                    outputArray = listFiduciariesFromDb(statusFilter, search, page, limit);
+                    // Non-ADMIN callers (DPO/Operator) only ever see their own fiduciary -
+                    // otherwise any authenticated operator could enumerate every tenant.
+                    UUID scopeFiduciaryId = null;
+                    if (!isAdmin) {
+                        scopeFiduciaryId = getCallerFiduciaryId(loginUserId);
+                        if (scopeFiduciaryId == null) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Caller is not bound to a fiduciary.", req.getRequestURI());
+                            return;
+                        }
+                    }
+
+                    outputArray = listFiduciariesFromDb(statusFilter, search, page, limit, scopeFiduciaryId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -103,6 +114,13 @@ public class Fiduciary implements Action {
                     if (fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'get_fiduciary' function.", req.getRequestURI());
                         return;
+                    }
+                    if (!isAdmin) {
+                        UUID callerFid = getCallerFiduciaryId(loginUserId);
+                        if (callerFid == null || !callerFid.equals(fiduciaryId)) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access your own fiduciary.", req.getRequestURI());
+                            return;
+                        }
                     }
                     Optional<JSONObject> fiduciaryOptional = getFiduciaryFromDb(fiduciaryId);
                     if (fiduciaryOptional.isPresent()) {
@@ -114,6 +132,10 @@ public class Fiduciary implements Action {
                     break;
 
                 case "create_fiduciary":
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may create a Data Fiduciary.", req.getRequestURI());
+                        return;
+                    }
                     String name = (String) input.get("name");
                     String contactPerson = (String) input.get("contact_person");
                     String email = (String) input.get("email");
@@ -153,6 +175,10 @@ public class Fiduciary implements Action {
                     break;
 
                 case "update_fiduciary":
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may update a Data Fiduciary.", req.getRequestURI());
+                        return;
+                    }
                     if (fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'update_fiduciary'.", req.getRequestURI());
                         return;
@@ -206,6 +232,10 @@ public class Fiduciary implements Action {
                     break;
 
                 case "delete_fiduciary":
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may delete a Data Fiduciary.", req.getRequestURI());
+                        return;
+                    }
                     if (fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'delete_fiduciary'.", req.getRequestURI());
                         return;
@@ -219,48 +249,37 @@ public class Fiduciary implements Action {
                     break;
 
                 case "validate_fiduciary_domain":
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may run domain validation.", req.getRequestURI());
+                        return;
+                    }
                     if (fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'validate_domain'.", req.getRequestURI());
                         return;
                     }
-                    if(System.getenv("TSI_DPDP_CMS_ENV").contains("local")){
-                        String validationStatus = "VALIDATED";
-                        updateFiduciaryDomainValidationStatus(fiduciaryId, validationStatus);
-                        output = new JSONObject();
-                        output.put("fiduciary_id", fiduciaryId.toString());
-                        output.put("domain_validation_status", validationStatus);
-                        output.put("message","Domain validation successful.");
-                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
-                        break;
-
-                    }else {
-                        Optional<JSONObject> fidToValidate = getFiduciaryFromDb(fiduciaryId);
-                        if (fidToValidate.isEmpty()) {
-                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Data Fiduciary with ID '" + fiduciaryId + "' not found for domain validation.", req.getRequestURI());
-                            return;
-                        }
-                        String cmsCnameToValidate = (String) fidToValidate.get().get("cms_cname");
-                        dnsTxtToken = (String) fidToValidate.get().get("dns_txt_record_token");
-
-                        if (cmsCnameToValidate == null || cmsCnameToValidate.isEmpty() || dnsTxtToken == null || dnsTxtToken.isEmpty()) {
-                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "CMS CNAME or DNS TXT token not set for this Fiduciary. Please update Fiduciary profile first.", req.getRequestURI());
-                            return;
-                        }
-
-                        // --- Call DNS verification utility ---
-                        // This is a placeholder for actual DNS lookup logic
-                        boolean isDnsTxtVerified = DnsVerifier.verifyDnsTxtRecord(cmsCnameToValidate, "dpdp-verify=" + dnsTxtToken);
-                        // --- End DNS verification call ---
-
-                        String validationStatus = isDnsTxtVerified ? "VALIDATED" : "FAILED";
-                        updateFiduciaryDomainValidationStatus(fiduciaryId, validationStatus);
-                        output = new JSONObject();
-                        output.put("fiduciary_id", fiduciaryId.toString());
-                        output.put("domain_validation_status", validationStatus);
-                        output.put("message", isDnsTxtVerified ? "Domain validation successful." : "Domain validation failed. Please check your DNS TXT record.");
-                        OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
-                        break;
+                    Optional<JSONObject> fidToValidate = getFiduciaryFromDb(fiduciaryId);
+                    if (fidToValidate.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Data Fiduciary with ID '" + fiduciaryId + "' not found for domain validation.", req.getRequestURI());
+                        return;
                     }
+                    String cmsCnameToValidate = (String) fidToValidate.get().get("cms_cname");
+                    dnsTxtToken = (String) fidToValidate.get().get("dns_txt_record_token");
+
+                    if (cmsCnameToValidate == null || cmsCnameToValidate.isEmpty() || dnsTxtToken == null || dnsTxtToken.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "CMS CNAME or DNS TXT token not set for this Fiduciary. Please update Fiduciary profile first.", req.getRequestURI());
+                        return;
+                    }
+
+                    boolean isDnsTxtVerified = DnsVerifier.verifyDnsTxtRecord(cmsCnameToValidate, "dpdp-verify=" + dnsTxtToken);
+
+                    String validationStatus = isDnsTxtVerified ? "VALIDATED" : "FAILED";
+                    updateFiduciaryDomainValidationStatus(fiduciaryId, validationStatus);
+                    output = new JSONObject();
+                    output.put("fiduciary_id", fiduciaryId.toString());
+                    output.put("domain_validation_status", validationStatus);
+                    output.put("message", isDnsTxtVerified ? "Domain validation successful." : "Domain validation failed. Please check your DNS TXT record.");
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
+                    break;
                 default:
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown or unsupported '_func' value: " + func, req.getRequestURI());
                     break;
@@ -380,7 +399,7 @@ public class Fiduciary implements Action {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
-        String sql = "SELECT COUNT(*) FROM users WHERE id = ? AND deleted_at IS NULL";
+        String sql = "SELECT COUNT(*) FROM operators WHERE id = ? AND role = 'DPO' AND status = 'ACTIVE'";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
@@ -392,12 +411,33 @@ public class Fiduciary implements Action {
         }
     }
 
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        if (operatorId == null) return null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
     /**
      * Retrieves a list of fiduciaries from the database with optional filtering and pagination.
      * @return JSONArray of fiduciary JSONObjects.
      * @throws SQLException if a database access error occurs.
      */
-    private JSONArray listFiduciariesFromDb(String statusFilter, String search, int page, int limit) throws SQLException {
+    private JSONArray listFiduciariesFromDb(String statusFilter, String search, int page, int limit, UUID scopeFiduciaryId) throws SQLException {
         JSONArray fiduciariesArray = new JSONArray();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -408,6 +448,11 @@ public class Fiduciary implements Action {
                 "SELECT id, name, contact_person, " + DbEncryption.decryptCol("email_enc") + " AS email, primary_domain, cms_cname, domain_validation_status, is_significant_data_fiduciary, status, created_at, last_updated_at FROM fiduciaries WHERE status is not null");
         List<Object> params = new ArrayList<>();
         params.add(DbEncryption.key()); // param 1: decrypt key for email_enc
+
+        if (scopeFiduciaryId != null) {
+            sqlBuilder.append(" AND id = ?");
+            params.add(scopeFiduciaryId);
+        }
 
         if (statusFilter != null && !statusFilter.isEmpty()) {
             sqlBuilder.append(" AND status = ?");
@@ -694,7 +739,7 @@ public class Fiduciary implements Action {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE fiduciaries SET domain_validation_status = ?, last_updated_at = NOW() WHERE id = ? AND deleted_at IS NULL";
+        String sql = "UPDATE fiduciaries SET domain_validation_status = ?, last_updated_at = NOW() WHERE id = ?";
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);

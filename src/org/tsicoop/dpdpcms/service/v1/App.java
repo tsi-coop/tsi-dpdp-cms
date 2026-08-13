@@ -71,6 +71,7 @@ public class App implements Action {
 
             // Get the ID of the Admin performing the action
             UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+            boolean isAdmin = "ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req));
 
             // Extract common parameters
             UUID appId = null;
@@ -103,6 +104,16 @@ public class App implements Action {
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
 
+                    // Non-ADMIN callers (DPO/Operator) only ever see their own fiduciary's apps -
+                    // otherwise any authenticated operator could enumerate every tenant's apps.
+                    if (!isAdmin) {
+                        fiduciaryId = getCallerFiduciaryId(loginUserId);
+                        if (fiduciaryId == null) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Caller is not bound to a fiduciary.", req.getRequestURI());
+                            return;
+                        }
+                    }
+
                     outputArray = listAppsFromDb(fiduciaryId, statusFilter, search, page, limit);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
@@ -111,6 +122,13 @@ public class App implements Action {
                     if (appId == null || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'app_id' and 'fiduciary_id' are required for 'get_app'.", req.getRequestURI());
                         return;
+                    }
+                    if (!isAdmin) {
+                        UUID callerFid = getCallerFiduciaryId(loginUserId);
+                        if (callerFid == null || !callerFid.equals(fiduciaryId)) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access apps for your own fiduciary.", req.getRequestURI());
+                            return;
+                        }
                     }
                     Optional<JSONObject> appOptional = getAppFromDb(appId, fiduciaryId);
                     if (appOptional.isPresent()) {
@@ -122,6 +140,10 @@ public class App implements Action {
                     break;
 
                 case "create_app":
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may create an App.", req.getRequestURI());
+                        return;
+                    }
                     String name = (String) input.get("name");
                     String email = (String) input.get("email");
                     String phone = (String) input.get("phone");
@@ -146,6 +168,10 @@ public class App implements Action {
                     break;
 
                 case "update_app":
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may update an App.", req.getRequestURI());
+                        return;
+                    }
                     if (appId == null || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'app_id' and 'fiduciary_id' are required for 'update_app'.", req.getRequestURI());
                         return;
@@ -177,6 +203,10 @@ public class App implements Action {
                     break;
 
                 case "delete_app": // Soft delete
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may delete an App.", req.getRequestURI());
+                        return;
+                    }
                     if (appId == null || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'app_id' and 'fiduciary_id' are required for 'delete_app'.", req.getRequestURI());
                         return;
@@ -226,6 +256,27 @@ public class App implements Action {
     }
 
     // --- Helper Methods for App Management ---
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        if (operatorId == null) return null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
 
     /**
      * Checks if a fiduciary exists. (Ideally, this would be an API call to FiduciaryService in a microservices 5)

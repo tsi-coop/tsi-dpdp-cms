@@ -24,6 +24,9 @@
     "affected_purpose_id": {
       "type": "string"
     },
+    "affected_policy_id": {
+      "type": "string"
+    },
     "affected_data_categories": {
       "type": "array",
       "items": {

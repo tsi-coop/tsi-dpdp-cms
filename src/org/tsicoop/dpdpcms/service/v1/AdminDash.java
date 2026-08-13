@@ -34,17 +34,29 @@ public class AdminDash implements Action {
                 return;
             }
 
+            boolean isAdmin = "ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req));
+
             switch (func.toLowerCase()) {
                 case "get_admin_metrics":
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may view system-wide metrics.", req.getRequestURI());
+                        return;
+                    }
                     OutputProcessor.send(res, 200, getAdminMetrics());
                     break;
                 case "get_dpo_metrics":
+                    if (rejectIfNotOwnFiduciary(input, isAdmin, req, res)) return;
                     OutputProcessor.send(res, 200, getDpoMetrics(input));
                     break;
                 case "list_pending_grievances":
+                    if (rejectIfNotOwnFiduciary(input, isAdmin, req, res)) return;
                     OutputProcessor.send(res, 200, listPendingGrievances(input));
                     break;
                 case "list_access_logs":
+                    if (!isAdmin) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may view the system-wide access log.", req.getRequestURI());
+                        return;
+                    }
                     OutputProcessor.send(res, 200, listAuditLogsFromDb());
                     break;
                 default:
@@ -52,6 +64,44 @@ public class AdminDash implements Action {
             }
         } catch (Exception e) {
             OutputProcessor.errorResponse(res, 500, "Internal Error", e.getMessage(), req.getRequestURI());
+        }
+    }
+
+    /**
+     * Blocks a non-ADMIN DPO/Operator from viewing dashboard data for a fiduciary
+     * other than the one named in the request body's 'fiduciary_id'.
+     * Returns true (and sends a 403) if blocked; caller must return immediately.
+     */
+    private boolean rejectIfNotOwnFiduciary(JSONObject input, boolean isAdmin, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        if (isAdmin) return false;
+        String fidStr = (String) input.get("fiduciary_id");
+        UUID targetFiduciaryId = (fidStr != null && !fidStr.isEmpty()) ? UUID.fromString(fidStr) : null;
+        UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+        if (callerFid == null || targetFiduciaryId == null || !callerFid.equals(targetFiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only view dashboard data for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
         }
     }
 

@@ -31,8 +31,27 @@ public class ApiKey implements Action {
 
     private static final UUID ADMIN_FID_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
+    // TTL-bounded so a revoked key's resolved App ID doesn't remain usable indefinitely
+    // through this cache (mirrors InputProcessor.apiClientCache's fix for the same issue).
+    private static final long APP_CACHE_TTL_MS = 60_000L;
+
+    private static class CachedAppId {
+        final UUID appId;
+        final long expiresAt;
+        CachedAppId(UUID appId) {
+            this.appId = appId;
+            this.expiresAt = System.currentTimeMillis() + APP_CACHE_TTL_MS;
+        }
+        boolean isExpired() { return System.currentTimeMillis() > expiresAt; }
+    }
+
     // Thread-safe in-memory cache for API key to App ID mapping
-    private static final Map<String, UUID> appCache = new ConcurrentHashMap<>();
+    private static final Map<String, CachedAppId> appCache = new ConcurrentHashMap<>();
+
+    /** Immediately evicts a revoked/deactivated key's cached App ID resolution. */
+    private static void evictAppCache(String apiKeyId) {
+        appCache.entrySet().removeIf(e -> e.getKey().startsWith(apiKeyId + ":"));
+    }
 
     /**
      * Handles all API Key Management operations via a single POST endpoint.
@@ -77,6 +96,15 @@ public class ApiKey implements Action {
 
             // Get the ID of the Admin performing the action
             UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+
+            // API key management is only ever surfaced in the ADMIN console
+            // (web/console/admin/apikeys.html) - gate the whole service accordingly,
+            // otherwise any authenticated DPO/Operator could mint or read keys
+            // (including PURGE-scoped ones) for a fiduciary that isn't theirs.
+            if (!"ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req))) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN users may manage API Keys.", req.getRequestURI());
+                return;
+            }
 
             switch (func.toLowerCase()) {
                 case "generate_api_key":
@@ -127,7 +155,7 @@ public class ApiKey implements Action {
                     String statusFilter = (String) input.get("status");
                     String search = (String) input.get("search");
 
-                    outputArray = listApiKeysFromDb("", statusFilter, search);
+                    outputArray = listApiKeysFromDb(fiduciaryIdStr, statusFilter, search);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
@@ -312,9 +340,13 @@ public class ApiKey implements Action {
         // 1. Generate a unique cache key for this credential pair
         String cacheKey = apiKey + ":" + apiSecret;
 
-        // 2. Return from cache if present
-        if (appCache.containsKey(cacheKey)) {
-            return appCache.get(cacheKey);
+        // 2. Return from cache if present and not expired
+        CachedAppId cached = appCache.get(cacheKey);
+        if (cached != null) {
+            if (!cached.isExpired()) {
+                return cached.appId;
+            }
+            appCache.remove(cacheKey);
         }
 
         Connection conn = null;
@@ -337,7 +369,7 @@ public class ApiKey implements Action {
                     String appIdStr = rs.getString("app_id");
                     if (appIdStr != null) {
                         appId = UUID.fromString(appIdStr);
-                        appCache.put(cacheKey, appId);
+                        appCache.put(cacheKey, new CachedAppId(appId));
                     }
                 }
             }
@@ -380,6 +412,7 @@ public class ApiKey implements Action {
 
         if (success) {
             InputProcessor.evictApiKeyCache(keyId.toString());
+            evictAppCache(keyId.toString());
             new Audit().logEventAsync("ADMIN", ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, loginUserId, "REVOKE_KEY", "Key:"+keyId);
         }
     }
@@ -412,6 +445,7 @@ public class ApiKey implements Action {
                 }
             }
             InputProcessor.evictApiKeyCache(keyId.toString());
+            evictAppCache(keyId.toString());
         } finally {
             pool.cleanup(null, pstmt, conn);
         }

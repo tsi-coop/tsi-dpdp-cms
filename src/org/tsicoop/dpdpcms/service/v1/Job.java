@@ -54,10 +54,10 @@ public class Job implements Action {
                     // Manual CES (compliance scan) runs stay DPO/ADMIN-only; EXPORT jobs (reports)
                     // remain available to Operators for their view/download access.
                     if ("CES".equalsIgnoreCase((String) input.get("job_type")) && InputProcessor.rejectIfOperator(req, res)) return;
-                    handleCreateJob(fiduciaryId, input, res);
+                    handleCreateJob(fiduciaryId, input, req, res);
                     break;
                 case "list_jobs":
-                    handleListJobs(fiduciaryId, input, res);
+                    handleListJobs(fiduciaryId, input, req, res);
                     break;
                 case "download_file":
                     handleDownloadFile(req, res);
@@ -75,7 +75,11 @@ public class Job implements Action {
      * Submits a new background task into the jobs queue.
      * Status is set to 'PENDING' for the JobManager thread to process.
      */
-    private void handleCreateJob(UUID fiduciaryId, JSONObject input, HttpServletResponse res) throws SQLException {
+    private void handleCreateJob(UUID fiduciaryId, JSONObject input, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        UUID[] fidHolder = { fiduciaryId };
+        if (!scopeFiduciaryIdToCaller(fidHolder, req, res)) return; // error already sent
+        fiduciaryId = fidHolder[0];
+
         String jobType = (String) input.get("job_type"); // CES or EXPORT
         String subtype = (String) input.get("subtype");   // CONSENT, PRINCIPAL, etc.
         String startDate = (String) input.get("start_date");
@@ -122,7 +126,11 @@ public class Job implements Action {
     /**
      * Retrieves the status of the last 20 jobs for the DPO Monitor.
      */
-    private void handleListJobs(UUID fiduciaryId, JSONObject input, HttpServletResponse res) throws SQLException {
+    private void handleListJobs(UUID fiduciaryId, JSONObject input, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        UUID[] fidHolder = { fiduciaryId };
+        if (!scopeFiduciaryIdToCaller(fidHolder, req, res)) return; // error already sent
+        fiduciaryId = fidHolder[0];
+
         JSONArray jobs = new JSONArray();
         String jobType = (String) input.get("job_type");
         boolean hasJobType = jobType != null && (jobType.equals("CES") || jobType.equals("EXPORT"));
@@ -166,7 +174,7 @@ public class Job implements Action {
     /**
      * Streams a completed CSV artifact to the client.
      */
-    private void handleDownloadFile(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    private void handleDownloadFile(HttpServletRequest req, HttpServletResponse res) throws IOException, SQLException {
         if (req.getAttribute(InputProcessor.AUTH_TOKEN) == null) {
             res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication required.");
             return;
@@ -178,6 +186,23 @@ public class Job implements Action {
             return;
         }
         jobId = jobId.trim();
+
+        // Verify the job belongs to the caller's own fiduciary before streaming its file -
+        // otherwise any authenticated operator could download any tenant's export by job_id.
+        UUID jobFiduciaryId = getJobFiduciaryId(UUID.fromString(jobId));
+        if (jobFiduciaryId == null) {
+            res.sendError(HttpServletResponse.SC_NOT_FOUND, "The requested export file is not available or has expired.");
+            return;
+        }
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        if (!"ADMIN".equalsIgnoreCase(callerRole)) {
+            UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+            UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+            if (callerFid == null || !callerFid.equals(jobFiduciaryId)) {
+                res.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not permitted to download this file.");
+                return;
+            }
+        }
 
         File file = new File(EXPORT_DIR + jobId + ".csv");
         try {
@@ -211,6 +236,68 @@ public class Job implements Action {
                 out.write(buffer, 0, bytesRead);
             }
             out.flush();
+        }
+    }
+
+    /**
+     * For non-ADMIN callers, forces fiduciaryIdHolder[0] to the caller's own bound
+     * fiduciary, ignoring whatever the client supplied - otherwise any authenticated
+     * DPO/Operator could create or list jobs for a fiduciary that isn't theirs.
+     * ADMIN callers keep the client-supplied value (including null) unchanged.
+     * Returns false (and sends a 403) if a non-ADMIN caller isn't bound to any fiduciary.
+     */
+    private boolean scopeFiduciaryIdToCaller(UUID[] fiduciaryIdHolder, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        if ("ADMIN".equalsIgnoreCase(callerRole)) {
+            return true;
+        }
+        UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+        if (callerFid == null) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Caller is not bound to a fiduciary.", req.getRequestURI());
+            return false;
+        }
+        fiduciaryIdHolder[0] = callerFid;
+        return true;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    /** Looks up which fiduciary a job belongs to (null if the job doesn't exist). */
+    private UUID getJobFiduciaryId(UUID jobId) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM jobs WHERE id = ?");
+            pstmt.setObject(1, jobId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
         }
     }
 

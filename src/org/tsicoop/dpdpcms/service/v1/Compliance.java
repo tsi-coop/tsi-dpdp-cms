@@ -150,6 +150,7 @@ public class Compliance implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_purge_requests'.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, callerRole, req, res)) return;
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 20;
 
@@ -172,6 +173,8 @@ public class Compliance implements Action {
                             OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This purge request is not assigned to you.", req.getRequestURI());
                             return;
                         }
+                    } else if (output != null && output.get("fiduciary_id") != null) {
+                        if (rejectIfNotOwnFiduciary(UUID.fromString((String) output.get("fiduciary_id")), loginUserId, callerRole, req, res)) return;
                     }
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
@@ -192,6 +195,13 @@ public class Compliance implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'id' and 'operator_id' are required for 'assign_purge_request'.", req.getRequestURI());
                         return;
                     }
+                    JSONObject targetPurgeRequest = getPurgeRequestsFromDb(assignPurgeIdStr);
+                    if (targetPurgeRequest == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Purge request not found.", req.getRequestURI());
+                        return;
+                    }
+                    if (targetPurgeRequest.get("fiduciary_id") != null
+                            && rejectIfNotOwnFiduciary(UUID.fromString((String) targetPurgeRequest.get("fiduciary_id")), loginUserId, callerRole, req, res)) return;
                     assignPurgeRequest(assignPurgeId, assignOperatorId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); }});
                     break;
@@ -315,6 +325,21 @@ public class Compliance implements Action {
                     }
                 }
                 if (assignedOperatorId == null || !assignedOperatorId.equals(loginUserId)) {
+                    return false;
+                }
+            }
+
+            // DPOs may only update purge requests belonging to their own fiduciary.
+            if (callerRole != null && !"ADMIN".equalsIgnoreCase(callerRole) && !"OPERATOR".equalsIgnoreCase(callerRole)) {
+                UUID targetFid = null;
+                try (PreparedStatement p = conn.prepareStatement("SELECT fiduciary_id FROM purge_requests WHERE id = ?")) {
+                    p.setObject(1, purgeRequestId);
+                    try (ResultSet r = p.executeQuery()) {
+                        if (r.next()) targetFid = (UUID) r.getObject("fiduciary_id");
+                    }
+                }
+                UUID callerFid = loginUserId != null ? getCallerFiduciaryId(conn, loginUserId) : null;
+                if (callerFid == null || !callerFid.equals(targetFid)) {
                     return false;
                 }
             }
@@ -514,5 +539,48 @@ public class Compliance implements Action {
             pool.cleanup(rs, pstmt, conn);
         }
         return purgeob;
+    }
+
+    /**
+     * Blocks a non-ADMIN DPO/Operator from accessing purge requests for a fiduciary
+     * other than their own. No-op for ADMIN or callers not authenticated as an
+     * operator at all. Returns true (and sends a 403) if blocked; caller must
+     * return immediately.
+     */
+    private boolean rejectIfNotOwnFiduciary(UUID targetFiduciaryId, UUID loginUserId, String callerRole, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        if (callerRole == null || "ADMIN".equalsIgnoreCase(callerRole)) {
+            return false;
+        }
+        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+        if (callerFid == null || !callerFid.equals(targetFiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access purge requests for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        Connection conn = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            return getCallerFiduciaryId(conn, operatorId);
+        } finally {
+            pool.cleanup(null, null, conn);
+        }
+    }
+
+    /** Same as above, but reuses an already-open connection. */
+    private UUID getCallerFiduciaryId(Connection conn, UUID operatorId) throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?")) {
+            pstmt.setObject(1, operatorId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return (UUID) rs.getObject("fiduciary_id");
+                }
+            }
+        }
+        return null;
     }
 }

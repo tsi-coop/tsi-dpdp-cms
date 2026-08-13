@@ -39,9 +39,9 @@ import java.util.UUID;
  * tracks the incident's status, and produces a downloadable PDF report
  * suitable for management/Data Protection Board review.
  *
- * NOTE ON DATABASE SCHEMA (db/06_breach.sql, db/07_notification_message_templates.sql):
+ * NOTE ON DATABASE SCHEMA (db/06_breach.sql, db/07_notification_message_templates.sql, db/13_breach_policy_scope.sql):
  * - Table 'breach_incidents': id (UUID PK), fiduciary_id (UUID), title, description,
- *   detected_at, reported_at, affected_purpose_id, affected_data_categories (JSONB),
+ *   detected_at, reported_at, affected_purpose_id, affected_policy_id, affected_data_categories (JSONB),
  *   actionable_steps, severity, status, resolution_notes, affected_principal_count,
  *   notification_type, created_by_user_id, created_at, last_updated_at.
  * - Table 'breach_affected_principals': breach_id (UUID), user_id, notified_at.
@@ -89,6 +89,7 @@ public class Breach implements Action {
                     String actionableSteps = (String) input.get("actionable_steps");
                     String severity = input.get("severity") != null ? (String) input.get("severity") : "MEDIUM";
                     String affectedPurposeId = (String) input.get("affected_purpose_id");
+                    String affectedPolicyId = (String) input.get("affected_policy_id");
                     JSONArray affectedDataCategories = (JSONArray) input.get("affected_data_categories");
                     JSONArray explicitUserIds = (JSONArray) input.get("affected_user_ids");
                     String affectedUserIdsCsv = (String) input.get("affected_user_ids_csv");
@@ -117,7 +118,7 @@ public class Breach implements Action {
                             : Constants.NOTIF_BREACH;
 
                     JSONObject output = reportBreach(fiduciaryId, title, description, detectedAt, severity, actionableSteps,
-                            affectedPurposeId, affectedDataCategories, explicitUserIds, affectedUserIdsCsv, notificationType, loginUserId);
+                            affectedPurposeId, affectedPolicyId, affectedDataCategories, explicitUserIds, affectedUserIdsCsv, notificationType, loginUserId);
                     OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     break;
                 }
@@ -127,6 +128,7 @@ public class Breach implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_breaches'.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
                     String statusFilter = (String) input.get("status");
                     int page = (input.get("page") instanceof Long) ? ((Long) input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long) input.get("limit")).intValue() : 20;
@@ -147,6 +149,8 @@ public class Breach implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Breach incident not found.", req.getRequestURI());
                         return;
                     }
+                    if (breach.get("fiduciary_id") != null
+                            && rejectIfNotOwnFiduciary(UUID.fromString((String) breach.get("fiduciary_id")), loginUserId, req, res)) return;
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, breach);
                     break;
                 }
@@ -160,6 +164,13 @@ public class Breach implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'id' and 'status' are required for 'update_breach_status'.", req.getRequestURI());
                         return;
                     }
+                    JSONObject targetBreach = getBreachFromDb(UUID.fromString(id));
+                    if (targetBreach == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Breach incident not found.", req.getRequestURI());
+                        return;
+                    }
+                    if (targetBreach.get("fiduciary_id") != null
+                            && rejectIfNotOwnFiduciary(UUID.fromString((String) targetBreach.get("fiduciary_id")), loginUserId, req, res)) return;
                     updateBreachStatus(UUID.fromString(id), status, resolutionNotes, loginUserId, appId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Breach status updated."); }});
                     break;
@@ -214,7 +225,7 @@ public class Breach implements Action {
      * surfaces automatically via Notification.java's existing list_notifications JOIN.
      */
     private JSONObject reportBreach(UUID fiduciaryId, String title, String description, Timestamp detectedAt,
-                                     String severity, String actionableSteps, String affectedPurposeId,
+                                     String severity, String actionableSteps, String affectedPurposeId, String affectedPolicyId,
                                      JSONArray affectedDataCategories, JSONArray explicitUserIds, String affectedUserIdsCsv,
                                      String notificationType, UUID loginUserId) throws SQLException {
         Set<String> affectedUserIds = new LinkedHashSet<>();
@@ -224,7 +235,7 @@ public class Breach implements Action {
             }
         }
         if (affectedPurposeId != null && !affectedPurposeId.isEmpty()) {
-            affectedUserIds.addAll(resolveAffectedPrincipalsByPurpose(fiduciaryId, affectedPurposeId));
+            affectedUserIds.addAll(resolveAffectedPrincipalsByPurpose(fiduciaryId, affectedPolicyId, affectedPurposeId));
         }
 
         Connection conn = null;
@@ -233,9 +244,9 @@ public class Breach implements Action {
         PoolDB pool = new PoolDB();
         UUID breachId = null;
 
-        String sqlInsert = "INSERT INTO breach_incidents (fiduciary_id, title, description, detected_at, affected_purpose_id, " +
+        String sqlInsert = "INSERT INTO breach_incidents (fiduciary_id, title, description, detected_at, affected_purpose_id, affected_policy_id, " +
                 "affected_data_categories, actionable_steps, severity, affected_principal_count, created_by_user_id, notification_type) " +
-                "VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?) RETURNING id";
+                "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -245,12 +256,13 @@ public class Breach implements Action {
             pstmt.setString(3, description);
             pstmt.setTimestamp(4, detectedAt);
             pstmt.setString(5, affectedPurposeId);
-            pstmt.setString(6, affectedDataCategories != null ? affectedDataCategories.toJSONString() : "[]");
-            pstmt.setString(7, actionableSteps);
-            pstmt.setString(8, severity);
-            pstmt.setInt(9, affectedUserIds.size());
-            pstmt.setObject(10, loginUserId);
-            pstmt.setString(11, notificationType);
+            pstmt.setString(6, affectedPolicyId);
+            pstmt.setString(7, affectedDataCategories != null ? affectedDataCategories.toJSONString() : "[]");
+            pstmt.setString(8, actionableSteps);
+            pstmt.setString(9, severity);
+            pstmt.setInt(10, affectedUserIds.size());
+            pstmt.setObject(11, loginUserId);
+            pstmt.setString(12, notificationType);
 
             rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -332,11 +344,19 @@ public class Breach implements Action {
      * Read-only lookup of principals with an active, granted consent for the given
      * purpose under this fiduciary -- mirrors the resolution style already used in
      * CESService.getAppIdsByPurpose, but scoped to consent_records/principals.
+     *
+     * When policyId is supplied (the normal case -- the DPO picks the purpose from a
+     * specific policy in the console), matching is additionally scoped to that policy_id
+     * so a purpose_id reused across two different active policies can't cross-match
+     * consent records that belong to the wrong policy. Left unscoped only for callers
+     * (e.g. older API integrations) that pass affected_purpose_id without a policy_id.
      */
-    private List<String> resolveAffectedPrincipalsByPurpose(UUID fiduciaryId, String purposeId) throws SQLException {
+    private List<String> resolveAffectedPrincipalsByPurpose(UUID fiduciaryId, String policyId, String purposeId) throws SQLException {
         List<String> userIds = new ArrayList<>();
+        boolean scopeToPolicy = policyId != null && !policyId.isEmpty();
         String sql = "SELECT DISTINCT user_id FROM consent_records cr " +
                 "WHERE cr.fiduciary_id = ? AND cr.is_active_consent = TRUE " +
+                (scopeToPolicy ? "AND cr.policy_id = ? " : "") +
                 "AND EXISTS (SELECT 1 FROM jsonb_array_elements(cr.data_point_consents) elem " +
                 "WHERE elem->>'data_point_id' = ? AND (elem->>'consent_granted')::boolean = TRUE)";
 
@@ -347,8 +367,10 @@ public class Breach implements Action {
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, fiduciaryId);
-            pstmt.setString(2, purposeId);
+            int i = 1;
+            pstmt.setObject(i++, fiduciaryId);
+            if (scopeToPolicy) pstmt.setString(i++, policyId);
+            pstmt.setString(i, purposeId);
             rs = pstmt.executeQuery();
             while (rs.next()) {
                 userIds.add(rs.getString("user_id"));
@@ -405,7 +427,7 @@ public class Breach implements Action {
 
     private JSONObject getBreachFromDb(UUID id) throws SQLException {
         JSONObject breach = null;
-        String sql = "SELECT id, fiduciary_id, title, description, detected_at, reported_at, affected_purpose_id, " +
+        String sql = "SELECT id, fiduciary_id, title, description, detected_at, reported_at, affected_purpose_id, affected_policy_id, " +
                 "affected_data_categories, actionable_steps, severity, status, resolution_notes, affected_principal_count, notification_type " +
                 "FROM breach_incidents WHERE id = ?";
 
@@ -440,6 +462,7 @@ public class Breach implements Action {
         breach.put("detected_at", rs.getTimestamp("detected_at").toInstant().toString());
         breach.put("reported_at", rs.getTimestamp("reported_at").toInstant().toString());
         breach.put("affected_purpose_id", rs.getString("affected_purpose_id"));
+        breach.put("affected_policy_id", rs.getString("affected_policy_id"));
         breach.put("actionable_steps", rs.getString("actionable_steps"));
         breach.put("severity", rs.getString("severity"));
         breach.put("status", rs.getString("status"));
@@ -521,6 +544,8 @@ public class Breach implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Breach incident not found.", req.getRequestURI());
             return;
         }
+        if (breach.get("fiduciary_id") != null
+                && rejectIfNotOwnFiduciary(UUID.fromString((String) breach.get("fiduciary_id")), InputProcessor.getAuthenticatedUserId(req), req, res)) return;
         String status = (String) breach.get("status");
         if (!"CONTAINED".equals(status) && !"RESOLVED".equals(status)) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
@@ -555,6 +580,9 @@ public class Breach implements Action {
 
         if (breach.get("affected_purpose_id") != null) {
             document.add(new Paragraph("Affected Purpose", headingFont));
+            if (breach.get("affected_policy_id") != null) {
+                document.add(new Paragraph("Policy: " + breach.get("affected_policy_id"), bodyFont));
+            }
             document.add(new Paragraph(String.valueOf(breach.get("affected_purpose_id")), bodyFont));
             document.add(new Paragraph(" "));
         }
@@ -585,6 +613,45 @@ public class Breach implements Action {
         res.setContentLength(pdfBytes.length);
         res.getOutputStream().write(pdfBytes);
         res.getOutputStream().flush();
+    }
+
+    /**
+     * Blocks a non-ADMIN DPO/Operator from accessing breach data for a fiduciary other
+     * than their own. No-op for ADMIN or callers not authenticated as an operator at
+     * all (client/API-key calls have their own separate scoping).
+     * Returns true (and sends a 403) if blocked; caller must return immediately.
+     */
+    private boolean rejectIfNotOwnFiduciary(UUID targetFiduciaryId, UUID loginUserId, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        if (callerRole == null || "ADMIN".equalsIgnoreCase(callerRole)) {
+            return false;
+        }
+        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+        if (callerFid == null || !callerFid.equals(targetFiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access breach data for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
     }
 
     private String getFiduciaryName(UUID fiduciaryId) throws SQLException {

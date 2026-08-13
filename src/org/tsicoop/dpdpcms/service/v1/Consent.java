@@ -167,6 +167,7 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'user_id' and 'fiduciary_id' are required for 'get_active_consent'.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
                     String activeConsentPolicyId = (String) input.get("policy_id"); // optional — scope to a specific policy
                     Optional<JSONObject> activeConsentOptional = getActiveConsentFromDb(userId, fiduciaryId, activeConsentPolicyId);
                     if (activeConsentOptional.isPresent()) {
@@ -180,6 +181,9 @@ public class Consent implements Action {
                     String recordId = (String) input.get("record_id");
                     Optional<JSONObject> consentOptional = getConsentFromDb(UUID.fromString(recordId));
                     if (consentOptional.isPresent()) {
+                        UUID recordFiduciaryId = consentOptional.get().get("fiduciary_id") != null
+                                ? UUID.fromString((String) consentOptional.get().get("fiduciary_id")) : null;
+                        if (rejectIfOperatorNotOwnFiduciary(recordFiduciaryId, req, res)) return;
                         output = consentOptional.get();
                         OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     } else {
@@ -192,6 +196,7 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'user_id' and 'fiduciary_id' are required for 'list_consent_history'.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
                     int page = (input.get("page") instanceof Long) ? ((Long)input.get("page")).intValue() : 1;
                     int limit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 10;
                     outputArray = listConsentHistoryFromDb(userId, fiduciaryId, page, limit);
@@ -203,6 +208,7 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'list_principals'.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
                     int principalsLimit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 20;
                     outputArray = listPrincipalsFromDb(fiduciaryId, principalsLimit);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
@@ -237,6 +243,7 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id, required_purpose_id).", req.getRequestURI());
                         break;
                     }
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
 
                     // --- Execute Validation ---
                     JSONObject result = validateConsent(userId, fiduciaryIdStr, appId, requiredPurposeId);
@@ -253,6 +260,7 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
 
                     result = withdrawConsent(userId, fiduciaryId, withdrawPolicyId, serviceType, serviceId, false, withdrawPurposeIds);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
@@ -267,6 +275,7 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
                         return;
                     }
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
 
                     result = withdrawConsent(userId, fiduciaryId, erasurePolicyId, serviceType, serviceId, true, null);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
@@ -670,7 +679,7 @@ public class Consent implements Action {
             System.err.println("SQL Error during withdrawal: " + e.getMessage());
             return new JSONObject() {{
                 put("success", false);
-                put("message", e.getMessage());
+                put("message", "Withdrawal/erasure could not be processed due to an internal error.");
             }};
         } finally {
             if (conn != null) conn.setAutoCommit(true);
@@ -703,6 +712,47 @@ public class Consent implements Action {
     }
 
     // --- Helper Methods for Consent Record Management ---
+
+    /**
+     * Blocks a non-ADMIN DPO/Operator from accessing consent data for a fiduciary other
+     * than their own. No-op for calls that aren't operator-JWT-authenticated at all
+     * (client API-key calls and PRINCIPAL JWT calls have their own separate scoping and
+     * are left untouched here) and for ADMIN, who is unrestricted.
+     * Returns true (and sends a 403) if blocked; caller must return immediately.
+     */
+    private boolean rejectIfOperatorNotOwnFiduciary(UUID fiduciaryId, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        if (callerRole == null || "ADMIN".equalsIgnoreCase(callerRole)) {
+            return false;
+        }
+        UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+        if (callerFid == null || !callerFid.equals(fiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access consent data for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
 
     /**
      * Checks if a specific policy version exists for a fiduciary.

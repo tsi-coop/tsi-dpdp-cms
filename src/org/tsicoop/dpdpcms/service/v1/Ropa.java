@@ -55,6 +55,7 @@ public class Ropa implements Action {
     private void handleCreateEntry(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID fiduciaryId = requireUUID(input, "fiduciary_id", res, req);
         if (fiduciaryId == null) return;
+        if (rejectIfNotOwnFiduciary(fiduciaryId, req, res)) return;
 
         String activityName = (String) input.get("activity_name");
         String purpose      = (String) input.get("purpose");
@@ -103,6 +104,8 @@ public class Ropa implements Action {
             return;
         }
 
+        if (rejectIfNotOwnFiduciary(UUID.fromString((String) existing.get("fiduciary_id")), req, res)) return;
+
         String status = (String) existing.get("status");
         if ("active".equals(status) || "retired".equals(status)) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden",
@@ -136,6 +139,8 @@ public class Ropa implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "ROPA entry not found.", req.getRequestURI());
             return;
         }
+
+        if (rejectIfNotOwnFiduciary(UUID.fromString((String) existing.get("fiduciary_id")), req, res)) return;
 
         String status = (String) existing.get("status");
         if ("active".equals(status)) {
@@ -189,6 +194,7 @@ public class Ropa implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "ROPA entry not found.", req.getRequestURI());
             return;
         }
+        if (rejectIfNotOwnFiduciary(UUID.fromString((String) existing.get("fiduciary_id")), req, res)) return;
         if ("retired".equals(existing.get("status"))) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_CONFLICT, "Conflict", "Entry is already retired.", req.getRequestURI());
             return;
@@ -208,6 +214,7 @@ public class Ropa implements Action {
     private void handleListEntries(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         UUID fiduciaryId = requireUUID(input, "fiduciary_id", res, req);
         if (fiduciaryId == null) return;
+        if (rejectIfNotOwnFiduciary(fiduciaryId, req, res)) return;
 
         String statusFilter    = (String) input.get("status");
         String legalBasisFilter = (String) input.get("legal_basis");
@@ -228,6 +235,7 @@ public class Ropa implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "ROPA entry not found.", req.getRequestURI());
             return;
         }
+        if (rejectIfNotOwnFiduciary(UUID.fromString((String) entry.get("fiduciary_id")), req, res)) return;
         entry.put("consent_count", getConsentCountForEntry(entryId, true));
         entry.put("inactive_consent_count", getConsentCountForEntry(entryId, false));
         entry.put("history", getHistoryForEntry(entryId));
@@ -243,6 +251,7 @@ public class Ropa implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "ROPA entry not found.", req.getRequestURI());
             return;
         }
+        if (rejectIfNotOwnFiduciary(UUID.fromString((String) entry.get("fiduciary_id")), req, res)) return;
 
         JSONArray missing = RopaValidator.validate(entry);
         JSONObject out = new JSONObject();
@@ -254,6 +263,7 @@ public class Ropa implements Action {
     private void handleExportRopa(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws Exception {
         UUID fiduciaryId = requireUUID(input, "fiduciary_id", res, req);
         if (fiduciaryId == null) return;
+        if (rejectIfNotOwnFiduciary(fiduciaryId, req, res)) return;
 
         JSONArray entries = listEntriesWithConsentCount(fiduciaryId);
 
@@ -291,6 +301,7 @@ public class Ropa implements Action {
     private void handleDeriveFromPolicy(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws Exception {
         UUID fiduciaryId = requireUUID(input, "fiduciary_id", res, req);
         if (fiduciaryId == null) return;
+        if (rejectIfNotOwnFiduciary(fiduciaryId, req, res)) return;
 
         String policyId = (String) input.get("policy_id");
         if (policyId == null || policyId.isEmpty()) {
@@ -671,6 +682,46 @@ public class Ropa implements Action {
     }
 
     // --- Utility helpers ---
+
+    /**
+     * Blocks a non-ADMIN DPO/Operator from accessing ROPA entries for a fiduciary
+     * other than their own. No-op for ADMIN or callers not authenticated as an
+     * operator at all. Returns true (and sends a 403) if blocked; caller must
+     * return immediately.
+     */
+    private boolean rejectIfNotOwnFiduciary(UUID targetFiduciaryId, HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        String callerRole = InputProcessor.getVerifiedRole(req);
+        if (callerRole == null || "ADMIN".equalsIgnoreCase(callerRole)) {
+            return false;
+        }
+        UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+        if (callerFid == null || !callerFid.equals(targetFiduciaryId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access ROPA entries for your own fiduciary.", req.getRequestURI());
+            return true;
+        }
+        return false;
+    }
+
+    /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
+    private UUID getCallerFiduciaryId(UUID operatorId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT fiduciary_id FROM operators WHERE id = ?");
+            pstmt.setObject(1, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return (UUID) rs.getObject("fiduciary_id");
+            }
+            return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
 
     private UUID requireUUID(JSONObject input, String field, HttpServletResponse res, HttpServletRequest req) {
         String val = (String) input.get(field);

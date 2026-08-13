@@ -179,6 +179,11 @@
 </div>
 
 <script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
     // --- Configuration ---
     const API_BASE = 'http://localhost:8080/api/v1/client/consent';
     const POLICY_API = 'http://localhost:8080/api/v1/client/policy';
@@ -266,8 +271,8 @@
             div.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div class="max-w-[85%]">
-                        <p class="font-bold text-slate-800 text-sm">${p.name}</p>
-                        <p class="text-[10px] text-slate-500 mt-1">${p.description}</p>
+                        <p class="font-bold text-slate-800 text-sm">${esc(p.name)}</p>
+                        <p class="text-[10px] text-slate-500 mt-1">${esc(p.description)}</p>
                     </div>
                     <input type="checkbox" id="check-${p.id}" ${p.is_mandatory_for_service ? 'checked disabled' : 'checked'}
                         class="w-5 h-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500">

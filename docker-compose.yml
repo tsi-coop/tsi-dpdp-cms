@@ -52,7 +52,9 @@ services:
       TSI_DPDP_CMS_ENV: "${TSI_DPDP_CMS_ENV:-local}"
       TSI_EXPORT_PATH: "${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}"
       TSI_KEYSTORE_PATH: "${TSI_KEYSTORE_PATH:-/etc/tsi/keystore.p12}"
-      TSI_KEYSTORE_PASS: "${TSI_KEYSTORE_PASS:-changeit}"
+      # No insecure default: TSI_KEYSTORE_PASS must be set explicitly for TSI_DPDP_CMS_ENV=production
+      # (Legal.java fails fast if unset or left as the literal value "changeit").
+      TSI_KEYSTORE_PASS: "${TSI_KEYSTORE_PASS:-}"
       TSI_KEYSTORE_ALIAS: "${TSI_KEYSTORE_ALIAS:-tsi_fiduciary}"
       # LOCAL EVALUATION DEFAULTS — override all of these in production via environment or secrets manager
       JWT_SECRET: "${JWT_SECRET:-tsi-dpdp-cms-local-dev-secret-do-not-use-in-production}"
