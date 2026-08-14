@@ -287,7 +287,7 @@ public class Breach implements Action {
         }
 
         final UUID finalBreachId = breachId;
-        new Audit().logEventAsync(loginUserId != null ? loginUserId.toString() : "SYSTEM", fiduciaryId,
+        new Audit().logEventAsync(loginUserId != null ? getOperatorEmail(loginUserId) : "SYSTEM", fiduciaryId,
                 Constants.SERVICE_TYPE_DPO_CONSOLE, loginUserId, "BREACH_REPORTED",
                 new JSONObject() {{ put("breach_id", finalBreachId.toString()); put("title", title); put("affected_count", affectedUserIds.size()); }}.toJSONString());
 
@@ -528,7 +528,7 @@ public class Breach implements Action {
         }
 
         String serviceType = appId != null ? Constants.SERVICE_TYPE_APP : Constants.SERVICE_TYPE_DPO_CONSOLE;
-        new Audit().logEventAsync(loginUserId != null ? loginUserId.toString() : "SYSTEM", fiduciaryId,
+        new Audit().logEventAsync(loginUserId != null ? getOperatorEmail(loginUserId) : "SYSTEM", fiduciaryId,
                 serviceType, loginUserId, "BREACH_STATUS_UPDATED",
                 new JSONObject() {{ put("breach_id", id.toString()); put("status", status); put("resolution_notes", resolutionNotes); }}.toJSONString());
     }
@@ -649,6 +649,32 @@ public class Breach implements Action {
                 return (UUID) rs.getObject("fiduciary_id");
             }
             return null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    /**
+     * Resolves an operator's email for audit logging, so the Audit Explorer shows a
+     * human-readable actor instead of the raw operator UUID. Falls back to the UUID
+     * string if the operator record can't be found (e.g. account since deleted).
+     */
+    private String getOperatorEmail(UUID operatorId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PoolDB pool = new PoolDB();
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT " + DbEncryption.decryptCol("email_enc") + " AS email FROM operators WHERE id = ?");
+            int idx = DbEncryption.bindKey(pstmt, 1);
+            pstmt.setObject(idx, operatorId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String email = rs.getString("email");
+                if (email != null && !email.isEmpty()) return email;
+            }
+            return operatorId.toString();
         } finally {
             pool.cleanup(rs, pstmt, conn);
         }
