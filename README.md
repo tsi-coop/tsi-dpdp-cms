@@ -95,7 +95,7 @@ Pick the guide for your role:
 |---|---|---|
 | Compliance officers, DPOs, and the engineers configuring policy with them | [Implementation Guide](docs/implementation-guide.md) | Data discovery, RoPA authoring, JSON policy compilation, DPIA, and the policy publishing/lifecycle workflow. |
 | Developers at Data Fiduciaries/Processors integrating the client API | [System Integration Guide](docs/system-integration-guide.md) | Authentication, permission scopes, and the policy/consent/grievance/purge endpoints for capturing consent and validating processing in real time. |
-| Developers consuming notification and purge events after the fact | [Webhook Integration Guide](docs/webhook-integration-guide.md)<br>[Client Polling Integration Guide](docs/polling-integration-guide.md) | Push delivery (HMAC-SHA256-signed webhooks for Notification/Purge/OTP, v0.4.8+) and its reliable pull-based counterpart - the reconciliation path for anything a missed webhook delivery would drop. |
+| Developers consuming notification and purge events after the fact | [Webhook Integration Guide](docs/webhook-integration-guide.md)<br><br>[Client Polling Integration Guide](docs/polling-integration-guide.md) | Push delivery (HMAC-SHA256-signed webhooks for Notification/Purge/OTP, v0.4.8+) and its reliable pull-based counterpart - the reconciliation path for anything a missed webhook delivery would drop. |
 | DevOps / system administrators going to production | [Production Deployment Guide](docs/production-deployment-guide.md) | Secrets management, running as a non-root user, disk encryption, data-tier isolation, and offsite backups, for both Docker and Binary installs. |
 
 ## Developers
