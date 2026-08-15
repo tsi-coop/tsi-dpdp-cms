@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Reference polling client for the TSI DPDP CMS Notification API (/api/v1/client/notification).
  *
- * Webhooks are also available for this event (see docs/webhook-integration-guide.md),
+ * Webhooks are also available for this event (see docs/guides/webhook-integration-guide.md),
  * but delivery there is best-effort/single-attempt with no retry queue, so polling
  * remains the reliable path. This class demonstrates that pattern: it polls every
  * notification — PRINCIPAL, DPO, and APP recipients alike — for the
