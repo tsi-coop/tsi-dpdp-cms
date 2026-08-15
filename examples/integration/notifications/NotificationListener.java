@@ -18,9 +18,10 @@ import java.util.Set;
 /**
  * Reference polling client for the TSI DPDP CMS Notification API (/api/v1/client/notification).
  *
- * There is no push/webhook/SSE delivery for notifications in this system — consumers
- * must poll list_notifications on an interval. This class demonstrates that pattern:
- * it polls every notification — PRINCIPAL, DPO, and APP recipients alike — for the
+ * Webhooks are also available for this event (see docs/webhook-integration-guide.md),
+ * but delivery there is best-effort/single-attempt with no retry queue, so polling
+ * remains the reliable path. This class demonstrates that pattern: it polls every
+ * notification — PRINCIPAL, DPO, and APP recipients alike — for the
  * fiduciary tied to your App API key, with no other configuration required, and for
  * each newly-seen notification, dispatches a placeholder [NOTIFY] call out to wherever
  * a real integration sends email/SMS/push/etc — the implementer decides the channel(s).

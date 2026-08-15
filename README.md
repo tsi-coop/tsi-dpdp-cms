@@ -87,9 +87,14 @@ Follow the Guided Journey:
 
 16. Partner White Labeling: See how the `BRAND_NAME` environment variable rebrands the console, rights portal, tour, and report footers for partner deployments. [Watch Video](https://youtu.be/DyU4GI_3-DY)
 
-## Implementation Guide
+## Guides
 
-[TSI DPDP CMS Implementation Guide](docs/implementation-guide.md) - end-to-end walkthrough covering data discovery, RoPA authoring, JSON schema compilation, DPIA, and production deployment.
+Pick the guide for your role:
+
+* **Compliance officers, DPOs, and the engineers configuring policy with them:** [Implementation Guide](docs/implementation-guide.md) - data discovery, RoPA authoring, JSON policy compilation, DPIA, and the policy publishing/lifecycle workflow.
+* **Developers at Data Fiduciaries/Processors integrating the client API:** [System Integration Guide](docs/system-integration-guide.md) - authentication, permission scopes, and the policy/consent/grievance/purge endpoints for capturing consent and validating processing in real time.
+* **Developers consuming notification and purge events after the fact:** [Webhook Integration Guide](docs/webhook-integration-guide.md) - supported events, payload shapes, HMAC-SHA256 signature verification, and setup for the Notification/Purge/OTP webhooks introduced in v0.4.8. Pair it with the [Client Polling Integration Guide](docs/polling-integration-guide.md) - the reliable, always-available alternative (and reconciliation path) for consuming notifications and confirming purge requests.
+* **DevOps / system administrators going to production:** [Production Deployment Guide](docs/production-deployment-guide.md) - secrets management, running as a non-root user, disk encryption, data-tier isolation, and offsite backups, for both Docker and Binary installs.
 
 ## Developers
 
@@ -283,9 +288,7 @@ These steps describe how to install and run the TSI DPDP CMS solution directly o
 
 ## Production Deployment
 
-The steps above get you running for evaluation. A production instance holds data principal identifier, consent records, and the immutable audit/compliance ledger. So it needs additional hardening before go-live.
-
-See [Section 6: Infrastructure Hardening for Production](docs/implementation-guide.md#6-infrastructure-hardening-for-production) in the Implementation Guide for the five Docker and Binary deployment guardrails (secrets management, running as a non-root user, disk encryption, data-tier isolation, and offsite backups).
+The steps above get you running for evaluation. A production instance holds data principal identifiers, consent records, and the immutable audit/compliance ledger, so it needs additional hardening before go-live. See the [Production Deployment Guide](docs/production-deployment-guide.md) (linked in Guides, above) for the five Docker and Binary deployment guardrails.
 
 ## White-Labeling
 
