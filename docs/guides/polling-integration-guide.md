@@ -8,9 +8,7 @@
 ## 1. Overview
 
 This is a plain interval-polling pattern: your client calls an API on a fixed
-interval (e.g. every 30s) and asks "what's new since last time?". It is not
-long polling in the strict sense (a hanging request the server holds open
-until data arrives or a timeout elapses) - the CMS has no such endpoint.
+interval (e.g. every 30s) and asks "what's new since last time?".
 
 Two client-facing APIs use this pattern:
 
