@@ -34,13 +34,15 @@ cp .example .env
 chmod 600 .env
 ```
 
-Then open `.env` and set real values for all of `POSTGRES_PASSWD`, `JWT_SECRET`, `DB_ENCRYPTION_KEY`, `TSI_LOOKUP_SALT`, `TSI_KEYSTORE_PASS`, and `ALLOWED_ORIGINS`. For the random ones, generate a strong value with:
+Then open `.env` and set real values for all of `POSTGRES_PASSWD`, `JWT_SECRET`, `DB_ENCRYPTION_KEY`, `TSI_LOOKUP_SALT`, `TSI_KEYSTORE_PASS`, `TSI_BOOTSTRAP_TOKEN`, and `ALLOWED_ORIGINS`. For the random ones, generate a strong value with:
 
 ```bash
 openssl rand -hex 32
 ```
 
 `.example` shows which fields need this. One thing to know up front: `DB_ENCRYPTION_KEY` can never be changed later without losing access to already-encrypted data, so back it up as soon as you set it (guardrail 5 covers how).
+
+`TSI_BOOTSTRAP_TOKEN` has no built-in default, unlike the others - leave it unset and the one-time Super-Admin setup endpoint (`/console/setup/init.html`) refuses every request instead of falling back to a guessable value. After `docker compose up -d`, open that URL, enter the same value you put in `.env` as the Setup Token, and create your admin account. You can unset or rotate `TSI_BOOTSTRAP_TOKEN` afterward - it's only checked while `operators` has no admin row yet.
 
 ### 2. Don't run as root
 

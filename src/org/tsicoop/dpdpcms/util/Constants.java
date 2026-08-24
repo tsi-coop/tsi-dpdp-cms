@@ -67,4 +67,9 @@ public class Constants {
     public static final String GRIEVANCE_IN_PROGRESS = "IN_PROGRESS";
     public static final String GRIEVANCE_RESOLVED = "RESOLVED";
     public static final String GRIEVANCE_ESCALATED = "ESCALATED";
+
+    // Server-side session cookie gating /console/admin/* and /console/dpo/* (see ConsoleAuthFilter).
+    // Carries the same operator JWT issued at login, so the static console pages are no longer
+    // reachable unauthenticated (CWE-602/CWE-306) while the existing Bearer-token API auth is untouched.
+    public static final String CONSOLE_SESSION_COOKIE = "console_session";
 }

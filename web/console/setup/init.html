@@ -65,6 +65,16 @@
                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
         </div>
 
+        <!-- Setup Token -->
+        <div>
+            <label for="setup-token" class="block text-sm font-medium text-gray-700">Setup Token</label>
+            <input type="password" id="setup-token" name="setup_token" required placeholder="TSI_BOOTSTRAP_TOKEN value"
+                   class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <p class="mt-1 text-xs text-gray-500">
+                The value of the TSI_BOOTSTRAP_TOKEN environment variable set on this server. Ask whoever deployed the application.
+            </p>
+        </div>
+
         <!-- Password -->
         <div>
             <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
@@ -108,6 +118,7 @@
 
             const emailInput = document.getElementById('email');
             const nameInput = document.getElementById('name');
+            const setupTokenInput = document.getElementById('setup-token');
             const passwordInput = document.getElementById('password');
             const passwordConfirmInput = document.getElementById('password-confirm');
 
@@ -128,6 +139,7 @@
 
                 const email = emailInput.value.trim();
                 const name = nameInput.value.trim();
+                const setupToken = setupTokenInput.value;
                 const password = passwordInput.value;
                 const passwordConfirm = passwordConfirmInput.value;
 
@@ -151,6 +163,7 @@
                         "_func": "initial_setup",
                         "email": email,
                         "name": name,
+                        "setup_token": setupToken,
                         "password": password
                     };
 

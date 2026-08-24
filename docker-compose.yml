@@ -55,6 +55,11 @@ services:
       # No insecure default: TSI_KEYSTORE_PASS must be set explicitly for TSI_DPDP_CMS_ENV=production
       # (Legal.java fails fast if unset or left as the literal value "changeit").
       TSI_KEYSTORE_PASS: "${TSI_KEYSTORE_PASS:-}"
+      # No default on purpose: this gates POST /api/v1/bootstrap/setup, the one-time
+      # Super-Admin creation endpoint. Leaving it unset disables that endpoint entirely
+      # (fails closed, 503) rather than falling back to a guessable value. Set it before
+      # first boot, complete setup at /console/setup/init.html, then you may unset/rotate it.
+      TSI_BOOTSTRAP_TOKEN: "${TSI_BOOTSTRAP_TOKEN:-}"
       TSI_KEYSTORE_ALIAS: "${TSI_KEYSTORE_ALIAS:-tsi_fiduciary}"
       # LOCAL EVALUATION DEFAULTS — override all of these in production via environment or secrets manager
       JWT_SECRET: "${JWT_SECRET:-tsi-dpdp-cms-local-dev-secret-do-not-use-in-production}"

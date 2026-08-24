@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.*;
 import java.util.UUID;
 
@@ -17,6 +19,11 @@ public class AdminSetup implements Action {
 
     // Define the fixed role ID for the Super Administrator setup
     private static final String SUPER_ADMIN_ROLE_NAME = "ADMIN";
+
+    // Shared secret gating initial_setup. Must be set by whoever deploys the app
+    // (e.g. injected from their secrets manager) — there is no built-in fallback,
+    // so setup stays disabled (fails closed) until this is explicitly configured.
+    private static final String BOOTSTRAP_TOKEN_ENV = "TSI_BOOTSTRAP_TOKEN";
 
     // --- Mock Hashing Utility ---
     // In a production environment, use a secure library like Spring Security's BCrypt
@@ -34,6 +41,20 @@ public class AdminSetup implements Action {
                 return;
             }
 
+            String bootstrapToken = System.getenv(BOOTSTRAP_TOKEN_ENV);
+            if (bootstrapToken == null || bootstrapToken.isEmpty()) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Setup Disabled", "Initial setup is disabled: " + BOOTSTRAP_TOKEN_ENV + " is not configured on the server.", req.getRequestURI());
+                return;
+            }
+
+            String providedToken = (String) input.get("setup_token");
+            if (providedToken == null || !constantTimeEquals(providedToken, bootstrapToken)) {
+                // Checked before any DB access so a caller without the token learns
+                // nothing about whether the system has already been configured.
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Invalid or missing setup token.", req.getRequestURI());
+                return;
+            }
+
             String email = (String) input.get("email");
             String name = (String) input.get("name");
             String password = (String) input.get("password");
@@ -47,7 +68,8 @@ public class AdminSetup implements Action {
             JSONObject result = performInitialSetup(email, name, password);
 
             if (result.containsKey("error")) {
-                int status = "System is already configured.".equals(result.get("error")) ? HttpServletResponse.SC_CONFLICT : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                boolean alreadyConfigured = Boolean.TRUE.equals(result.get("already_configured"));
+                int status = alreadyConfigured ? HttpServletResponse.SC_CONFLICT : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
                 OutputProcessor.errorResponse(res, status, "Setup Failure", (String) result.get("error"), req.getRequestURI());
             } else {
                 OutputProcessor.send(res, HttpServletResponse.SC_CREATED, new JSONObject() {{
@@ -82,10 +104,16 @@ public class AdminSetup implements Action {
 
         try {
             conn = pool.getConnection();
+            // SERIALIZABLE + explicit commit closes the check-then-insert race: two
+            // requests that both observe an empty operators table can no longer both
+            // succeed — Postgres aborts the loser with SQLState 40001 below.
+            conn.setAutoCommit(false);
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
             // 1. CHECK FOR EXISTING ADMIN USERS
             if (isAdminUserExists(conn)) {
-                  return new JSONObject() {{ put("error", "System is already configured. Cannot run initial setup."); }};
+                conn.rollback();
+                return new JSONObject() {{ put("error", "System is already configured. Cannot run initial setup."); put("already_configured", true); }};
             }
 
            // 2. HASH PASSWORD
@@ -93,14 +121,31 @@ public class AdminSetup implements Action {
 
             // 3. CREATE USER AND ASSIGN ROLE (in a single transaction)
             UUID newUserId = createUser(conn, email, name, hashedPassword);
+            conn.commit();
 
             return new JSONObject() {{ put("user_id", newUserId.toString()); put("role", SUPER_ADMIN_ROLE_NAME); }};
 
         } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            if ("40001".equals(e.getSQLState())) {
+                return new JSONObject() {{ put("error", "System is already configured. Cannot run initial setup."); put("already_configured", true); }};
+            }
             throw e; // Re-throw SQL exception for generic handler
         } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+                } catch (SQLException ignored) {}
+            }
             pool.cleanup(null, null, conn);
         }
+    }
+
+    private static boolean constantTimeEquals(String a, String b) {
+        return MessageDigest.isEqual(a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

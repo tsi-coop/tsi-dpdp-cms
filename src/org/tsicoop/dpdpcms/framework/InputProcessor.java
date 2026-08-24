@@ -23,6 +23,33 @@ public class InputProcessor {
     public final static String REQUEST_DATA = "input_json";
     public final static String AUTH_TOKEN = "auth_token";
 
+    private static final long CONSOLE_SESSION_MAX_AGE_SECONDS = 864000L; // 10 days, matches JWTUtil admin token expiry
+
+    /**
+     * Sets the HttpOnly session cookie that ConsoleAuthFilter checks before serving
+     * /console/admin/* and /console/dpo/* pages. Built as a raw header rather than via
+     * jakarta.servlet.http.Cookie because Servlet 5.0's Cookie API has no SameSite support.
+     * Secure is omitted only in the "local" env so http-only local dev keeps working.
+     */
+    public static void setConsoleSessionCookie(HttpServletResponse res, String token) {
+        boolean secure = !"local".equals(System.getenv("TSI_DPDP_CMS_ENV"));
+        StringBuilder cookie = new StringBuilder();
+        cookie.append(Constants.CONSOLE_SESSION_COOKIE).append('=').append(token)
+                .append("; Path=/console; Max-Age=").append(CONSOLE_SESSION_MAX_AGE_SECONDS)
+                .append("; HttpOnly; SameSite=Strict");
+        if (secure) cookie.append("; Secure");
+        res.addHeader("Set-Cookie", cookie.toString());
+    }
+
+    /** Expires the console session cookie set at login. Used on logout. */
+    public static void clearConsoleSessionCookie(HttpServletResponse res) {
+        boolean secure = !"local".equals(System.getenv("TSI_DPDP_CMS_ENV"));
+        StringBuilder cookie = new StringBuilder();
+        cookie.append(Constants.CONSOLE_SESSION_COOKIE).append("=; Path=/console; Max-Age=0; HttpOnly; SameSite=Strict");
+        if (secure) cookie.append("; Secure");
+        res.addHeader("Set-Cookie", cookie.toString());
+    }
+
     private static final String CLIENT_PERMISSIONS = "CLIENT_PERMISSIONS";
 
     private static Map<String,Set<String>> permissionsMap = new ConcurrentHashMap<String, Set<String>>();

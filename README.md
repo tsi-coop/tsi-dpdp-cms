@@ -35,10 +35,18 @@ See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 1.  **Clone the repository to a separate folder**
     ```bash
     git clone https://github.com/tsi-coop/tsi-dpdp-cms.git tsi-dpdp-cms-eval
-    ```
-2.  **Start the TSI DPDP CMS service**
-    ```bash
     cd tsi-dpdp-cms-eval
+    ```
+2.  **Set the one-time setup token**
+
+    Before first boot, generate a random value and put it in a `.env` file next to `docker-compose.yml`:
+    ```bash
+    echo "TSI_BOOTSTRAP_TOKEN=$(openssl rand -hex 32)" >> .env
+    ```
+    This gates the Super-Admin creation endpoint. If it's left unset, that endpoint stays disabled rather than falling back to an insecure default - so this step isn't optional.
+
+3.  **Start the TSI DPDP CMS service**
+    ```bash
     sudo docker compose up -d
     ```
 
@@ -55,7 +63,7 @@ http://localhost:8080/tour
 
 Follow the Guided Journey:
 
-1. System Setup: Initialize your environment and configure master admin credentials.
+1. System Setup: Open `/console/setup/init.html`, enter the `TSI_BOOTSTRAP_TOKEN` value from step 2 as the Setup Token, and configure your master admin credentials.
 
 2. Fiduciary Provisioning: Onboard your Fiduciaries, link Apps, and publish Multilingual Data Policies. [Watch Video](https://youtu.be/216gZPlokuM)
 

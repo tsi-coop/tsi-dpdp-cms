@@ -37,6 +37,34 @@
 	</filter-mapping>
 
 	<!--
+      Server-side gate for the admin/DPO console HTML pages. Previously these
+      static files were served unconditionally (200 OK) to any HTTP client,
+      relying solely on client-side JS to redirect unauthenticated users after
+      the page had already been delivered (CWE-602 / CWE-306). This filter
+      requires a valid session cookie (set at login, see Operator.handleLogin)
+      before the page is dispatched. It is independent of, and does not change,
+      the Bearer-token auth already enforced on every /api/* call above.
+    -->
+	<filter>
+		<filter-name>CONSOLE_AUTH_FILTER</filter-name>
+		<filter-class>org.tsicoop.dpdpcms.framework.ConsoleAuthFilter</filter-class>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>CONSOLE_AUTH_FILTER</filter-name>
+		<url-pattern>/console/admin/*</url-pattern>
+		<dispatcher>REQUEST</dispatcher>
+		<dispatcher>FORWARD</dispatcher>
+	</filter-mapping>
+
+	<filter-mapping>
+		<filter-name>CONSOLE_AUTH_FILTER</filter-name>
+		<url-pattern>/console/dpo/*</url-pattern>
+		<dispatcher>REQUEST</dispatcher>
+		<dispatcher>FORWARD</dispatcher>
+	</filter-mapping>
+
+	<!--
       Partner/reseller white-labeling: rewrites the brand name in served HTML
       when BRAND_NAME is configured (see BrandConfig / BrandingFilter). The
       *.html mapping covers every static page — console, rights portal, tour,
@@ -54,4 +82,21 @@
 		<dispatcher>REQUEST</dispatcher>
 		<dispatcher>FORWARD</dispatcher>
 	</filter-mapping>
+
+	<!--
+      Jetty's bundled webdefault-ee10.xml (merged into every webapp ahead of
+      this file) sets dirAllowed=true on the "default" servlet, so any
+      directory with no matching welcome file (e.g. /console/setup/) is
+      auto-listed. Redeclaring "default" here overrides just that init-param;
+      welcome-file resolution (e.g. /console/ -> /console/index.html) is
+      unaffected since it's tried before the listing fallback.
+    -->
+	<servlet>
+		<servlet-name>default</servlet-name>
+		<servlet-class>org.eclipse.jetty.ee10.servlet.DefaultServlet</servlet-class>
+		<init-param>
+			<param-name>dirAllowed</param-name>
+			<param-value>false</param-value>
+		</init-param>
+	</servlet>
 </web-app>

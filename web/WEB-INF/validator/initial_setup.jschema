@@ -14,12 +14,16 @@
     },
     "password": {
       "type": "string"
+    },
+    "setup_token": {
+      "type": "string"
     }
   },
   "required": [
     "_func",
     "email",
     "name",
-    "password"
+    "password",
+    "setup_token"
   ]
 }

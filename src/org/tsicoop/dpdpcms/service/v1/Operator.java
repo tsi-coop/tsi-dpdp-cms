@@ -155,6 +155,7 @@ public class Operator implements Action {
         if (success) {
             LoginRateLimiter.recordSuccess(clientIp);
             new Audit().logEventAsync(identifier, fidUid, serviceType, userUid, "LOGIN_SUCCESS", "Operator Access Granted");
+            InputProcessor.setConsoleSessionCookie(res, out.get("token").toString());
             OutputProcessor.send(res, 200, out);
         }else{
             new Audit().logEventAsync(identifier, fidUid, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
@@ -173,6 +174,7 @@ public class Operator implements Action {
                     TokenBlocklist.revoke(jti, expiry.getTime());
                 }
             }
+            InputProcessor.clearConsoleSessionCookie(res);
             JSONObject out = new JSONObject();
             out.put("success", true);
             out.put("message", "Logged out successfully.");

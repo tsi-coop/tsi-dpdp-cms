@@ -1,5 +1,12 @@
 # Release Notes
 
+### v0.5.1
+**Security**
+- Fixed all 17 admin and DPO console pages being served to any HTTP client with no server-side login check - the client-side JavaScript redirect wasn't backed by a server-side gate, so a plain `curl` request received the full page source (internal API endpoints, function names, request schemas) with no credentials. Console pages now require a valid server-side session, set via a new login cookie kept separate from the existing API bearer token.
+- Fixed the first-run Super-Admin setup endpoint (`/api/v1/bootstrap/setup`) accepting unauthenticated requests indefinitely - a fresh or reset deployment could have its admin account claimed by whoever reached the endpoint first. Setup now requires a deployment-configured `TSI_BOOTSTRAP_TOKEN` (see the [README](README.md#installation)), and directory listing on the setup path, which disclosed its existence, is disabled.
+
+---
+
 ### v0.5.0
 **Admin Console - Data Fiduciary Domain Validation**
 - Consent Managers can now optionally prove a Data Fiduciary's control of its domain via a standalone "Verify DNS" action on the Fiduciaries list (shown only while validation is outstanding, separate from Edit) that runs a live DNS TXT lookup and shows the resulting PENDING/VALIDATED/FAILED status in a new Validation column - purely an opt-in credibility signal for the CM-DF relationship, it does not gate fiduciary activation, API key issuance, or consent/erasure traffic.
