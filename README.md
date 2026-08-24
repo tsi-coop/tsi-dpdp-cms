@@ -35,6 +35,8 @@ See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 1.  **Clone the repository to a separate folder**
     ```bash
     git clone https://github.com/tsi-coop/tsi-dpdp-cms.git tsi-dpdp-cms-eval
+    ```
+    ```bash
     cd tsi-dpdp-cms-eval
     ```
 2.  **Set the one-time setup token**

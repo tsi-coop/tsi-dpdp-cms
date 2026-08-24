@@ -2,8 +2,8 @@
 
 ### v0.5.1
 **Security**
-- Fixed all 17 admin and DPO console pages being served to any HTTP client with no server-side login check - the client-side JavaScript redirect wasn't backed by a server-side gate, so a plain `curl` request received the full page source (internal API endpoints, function names, request schemas) with no credentials. Console pages now require a valid server-side session, set via a new login cookie kept separate from the existing API bearer token.
-- Fixed the first-run Super-Admin setup endpoint (`/api/v1/bootstrap/setup`) accepting unauthenticated requests indefinitely - a fresh or reset deployment could have its admin account claimed by whoever reached the endpoint first. Setup now requires a deployment-configured `TSI_BOOTSTRAP_TOKEN` (see the [README](README.md#installation)), and directory listing on the setup path, which disclosed its existence, is disabled.
+- Fixed all 17 admin and DPO console pages being served to any HTTP client with no server-side login check - the client-side JavaScript redirect wasn't backed by a server-side gate, so a plain `curl` request received the full page source (internal API endpoints, function names, request schemas) with no credentials. Console pages now require a valid server-side session, set via a new login cookie kept separate from the existing API bearer token. Reported by VulDB: [Client-Side-Only Authentication Allows Complete Bypass](docs/security-fixes/1.md), [Missing Authentication on All Admin and DPO Console Pages](docs/security-fixes/3.md).
+- Fixed the first-run Super-Admin setup endpoint (`/api/v1/bootstrap/setup`) accepting unauthenticated requests indefinitely - a fresh or reset deployment could have its admin account claimed by whoever reached the endpoint first. Setup now requires a deployment-configured `TSI_BOOTSTRAP_TOKEN` (see the [README](README.md#installation)), and directory listing on the setup path, which disclosed its existence, is disabled. Reported by VulDB: [Unauthenticated Super-Admin Bootstrap Endpoint](docs/security-fixes/2.md).
 
 ---
 
