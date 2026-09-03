@@ -21,9 +21,9 @@ See Section 1.2 (Configure Consent Manager) of the System Design document, linke
 
 ### Future Forward Proposals
 
-[Solving Consent Fatigue via Portable Consent Artifacts (PCA) - A Proposal](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
+[Solving Consent Fatigue via Portable Consent Artifacts (PCA)](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
 
-[Standardized Erasure Interface for DPDP Consent Managers - A Proposal](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
+[Standardized Erasure Interface for DPDP Consent Managers](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
 
 
 ## Release Notes
