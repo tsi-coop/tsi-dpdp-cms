@@ -17,6 +17,8 @@ See Section 1.2 (Configure Consent Manager) of the System Design document, linke
 
 [System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/main/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf)
 
+[Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
+
 ### Future Forward Proposals
 
 [Solving Consent Fatigue via Portable Consent Artifacts (PCA) - A Proposal](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
@@ -132,4 +134,6 @@ If you wish to give back your changes to the project, please follow this process
 * **Email the Repository Owner:** Send a brief summary of your modifications and a link to your code branch directly to **admin@tsicoop.org**.
 
 Every contribution is manually evaluated for architectural alignment, readability, and long-term maintenance impact before integration. Thank you for respecting this workflow and helping us maintain a clean, resilient core!
+
+[Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
