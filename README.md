@@ -5,7 +5,7 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 TSI DPDP CMS serves two categories of adopters:
 
 - **Data Fiduciaries**, who can self-host the solution to manage consents of their data principals
-- **Consent Managers**, who can deploy the solution in multi-tenant mode to manage consent on behalf of one or more Data Fiduciaries
+- **Consent Managers**, who can deploy the solution in multi-tenant mode to manage consent on behalf of one or more data fiduciaries
 
 See Section 1.2 (Configure Consent Manager) of the System Design document, linked below, for details on both deployment modes.
 
