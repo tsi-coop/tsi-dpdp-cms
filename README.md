@@ -47,7 +47,7 @@ See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
     ```bash
     echo "TSI_BOOTSTRAP_TOKEN=$(openssl rand -hex 32)" >> .env
     ```
-    This gates the Super-Admin creation endpoint. If it's left unset, that endpoint stays disabled rather than falling back to an insecure default - so this step isn't optional.
+    This is a mandatory security step.
 
 3.  **Start the TSI DPDP CMS service**
     ```bash
