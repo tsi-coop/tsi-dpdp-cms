@@ -447,13 +447,36 @@ DELETE FROM users WHERE id = 98412;
 
 ---
 
-## 6. Production Infrastructure
+## 6. Data Export & Extraction
+
+Beyond the JSON client API (covered in the [System Integration Guide](system-integration-guide.md)), the console exposes bulk, non-proprietary export paths for compliance record-keeping and reporting. All are CSV (`text/csv`), so they open directly in any spreadsheet tool without vendor lock-in.
+
+### RoPA Register Export
+
+`POST /api/v1/console/ropa` with `_func: export_ropa` and a `fiduciary_id` streams the calling Fiduciary's full Record of Processing Activities register as a CSV attachment (`ropa_export.csv`) - activity name, purpose, legal basis, data categories, data subject categories, retention period/event, processors, cross-border transfers, security measures, status, version, and live/withdrawn consent counts per entry. This is a synchronous, on-demand download - no job queue involved.
+
+### Background Export Jobs (Reports Console)
+
+Larger extracts run asynchronously through the `Job` service (`_func: create_job` / `list_jobs` / `download_file`), so a large export doesn't block the request:
+
+1. **`create_job`** queues a `job_type: EXPORT` job with a `subtype` naming the dataset and an optional date range. Supported subtypes: `CONSENT`, `PRINCIPAL`, `COMPLIANCE`, `GRIEVANCE`, `AUDIT`, `PARENT_CONSENT`, `ADMIN_LOGS`, `ROPA_REPORT`.
+2. A background worker (`JobManager`) picks up the `PENDING` job, runs the corresponding query, and writes the result to a CSV file on disk (`TSI_EXPORT_PATH`, default `/var/lib/tsi/exports/`).
+3. **`list_jobs`** polls job status (`PENDING` -> `COMPLETED`) for the console to show progress.
+4. **`download_file`** streams the finished file back as `text/csv` once the job completes. Access is scoped to the caller's own Fiduciary (or `ADMIN`) - a job ID from another tenant returns `403 Forbidden`, and the file path is canonicalized against the export directory to prevent path traversal.
+
+### Bulk CSV Import (Breach Notification)
+
+The reverse direction also exists: the Breach module (`_func` handlers in `Breach.java`) accepts a CSV upload of affected-principal identifiers, queued as a `BREACH_NOTIFY` background job for larger lists than the inline textarea path can handle.
+
+---
+
+## 7. Production Infrastructure
 
 Once a policy is published, the runtime itself needs to be hardened before it holds real personal data in production - secrets management, non-root execution, disk encryption, network isolation, and backups. That is DevOps/system administrator territory, covered in the separate [Production Deployment Guide](production-deployment-guide.md).
 
 ---
 
-## 7. Operational Responsibilities Summary
+## 8. Operational Responsibilities Summary
 
 | Operational Capability | Team Responsibility |
 |---|---|
