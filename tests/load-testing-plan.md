@@ -57,10 +57,7 @@ action (see `docs/security-fixes/2.md`), not a repeatable target.
 
 ## 2. Tooling
 
-**Apache JMeter** (Apache-2.0), matching this project's own license. A k6
-based version of this plan was drafted first, but k6's OSS core is
-AGPL-3.0; JMeter avoids that licensing mismatch entirely, so this plan
-standardizes on it instead.
+**Apache JMeter** (Apache-2.0), matching this project's own license. 
 
 What JMeter provides, mapped to this doc's requirements:
 - Concurrency and request count per stage, set via a `.properties` file
