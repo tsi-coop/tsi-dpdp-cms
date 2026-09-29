@@ -291,7 +291,14 @@ public class InterceptingFilter implements Filter {
                     }
                 }
                 // Fall back to API Key/Secret if no valid principal token
-                if (!authenticated && InputProcessor.processClientHeader(req, res)) {
+                if (!authenticated) {
+                    if (!InputProcessor.processClientHeader(req, res)) {
+                        // processClientHeader already sent its own 401 response
+                        // (missing or invalid key/secret) -- don't fall through to
+                        // the generic 401 below, or the client gets two concatenated
+                        // JSON error bodies in one response.
+                        return;
+                    }
                     if (InputProcessor.hasPermission(req, requiredScope)) {
                         authenticated = true;
                     }

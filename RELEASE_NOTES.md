@@ -1,5 +1,27 @@
 # Release Notes
 
+### v0.5.2
+**Testing**
+- Added a runnable [Apache JMeter](https://jmeter.apache.org/) load test (`tests/`) covering the full consent lifecycle against the client API: notice/policy retrieval, consent capture, processing validation (`validate_consent`), rights/dashboard reads, withdrawal/erasure, grievances, purge polling, and the full guardian OTP login round trip. Concurrency defaults are sized against the real `HikariCP` connection-pool ceiling (`maximumPoolSize=15`) rather than round numbers, and the OTP-login stage doubles as the direct verification tool for this release's rate-limiting fix (see below) - see [`tests/load-testing-plan.md`](tests/load-testing-plan.md) for methodology and [`tests/README.md`](tests/README.md) for a quick-start.
+- Added [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md), a living regression suite covering the console, rights portal, client/public API, webhooks, and the purge lifecycle - intended to be run (and extended) before every release, not just this one. 40 of its 84 cases are already verified against this release; the rest are documented as open, each tagged with exactly what it still needs (a browser walkthrough, a different instance state, or a live webhook endpoint).
+
+**Standards Compliance**
+
+A gap review against `main` surfaced several standards gaps, addressed this release:
+
+- Added `CONTRIBUTING.md` and `SECURITY.md`, formalizing the contribution and vulnerability-disclosure process already described informally in the README.
+- Removed the unused, unreferenced AWS KMS dependency (`KmsService.java`, `software.amazon.awssdk:kms`) - production key management has only ever run through `DB_ENCRYPTION_KEY`.
+- Documented the Voice Consent Gateway tour feature's third-party data flow to Sarvam AI in the [Implementation Guide](docs/guides/implementation-guide.md) - only the notice text goes to Sarvam AI for speech synthesis; the principal's spoken reply is transcribed entirely client-side and never leaves the browser.
+- Added ARIA roles, live regions, keyboard focus management (including a proper modal focus trap), semantic form labels, and WCAG-AA color contrast fixes to the Data Principal rights portal (`web/rights`). The operator console (`web/console`) still needs the same pass and remains open.
+- Closed a real, exploitable gap: the principal OTP request **and verification** endpoints (`request_principal_otp`, `principal_login`) had no rate limiting at all - not just the send step originally flagged, but the actual OTP-verification step, making it brute-forceable within its 5-minute TTL. Both now enforce a per-target limit (the real defense, independent of source IP) plus a generous per-IP secondary limit sized for shared/NAT'd principal traffic; the first-run bootstrap endpoint is similarly rate-limited.
+- Published [`docs/api/openapi.yaml`](docs/api/openapi.yaml), an OpenAPI 3.0 spec for the client API, verified directly against source (not just the existing guides) and linked from the [System Integration Guide](docs/guides/system-integration-guide.md). A static viewer is included at `docs/api/index.html`.
+
+**Bug Fixes**
+- Fixed the client API returning a `500 Internal Server Error` (leaking an internal exception message) instead of a clean `401` when `X-API-Key` was present but not a valid UUID - the key lookup now fails closed on a malformed key instead of throwing.
+- Fixed every "invalid or missing API key" rejection on the client API sending two concatenated JSON objects in a single response body instead of one - a malformed-looking response on the most common auth-failure path for any client with a strict JSON parser.
+
+---
+
 ### v0.5.1
 **Security**
 - Fixed all 17 admin and DPO console pages being served to any HTTP client with no server-side login check - the client-side JavaScript redirect wasn't backed by a server-side gate, so a plain `curl` request received the full page source (internal API endpoints, function names, request schemas) with no credentials. Console pages now require a valid server-side session, set via a new login cookie kept separate from the existing API bearer token. Reported by VulDB: [Client-Side-Only Authentication Allows Complete Bypass](docs/security-fixes/1.md), [Missing Authentication on All Admin and DPO Console Pages](docs/security-fixes/3.md).

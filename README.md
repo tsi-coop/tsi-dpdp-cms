@@ -111,6 +111,18 @@ Pick the guide for your role:
 | Developers building from source | [Local Development Guide](docs/guides/local-development-guide.md) | Prerequisites (JDK, Maven, Docker, Jetty) and step-by-step build/run instructions, for both Docker and non-Docker setups. |
 | DevOps / system administrators going to production | [Production Deployment Guide](docs/guides/production-deployment-guide.md) | Secrets management, running as a non-root user, disk encryption, data-tier isolation, and offsite backups, for both Docker and Binary installs. |
 
+## Load Testing
+
+A runnable [Apache JMeter](https://jmeter.apache.org/) load test lives in [`tests/`](tests/), covering the full consent lifecycle against the client API: notice/policy retrieval, consent capture, processing validation (`validate_consent`), rights/dashboard reads, withdrawal/erasure, grievances, purge polling, and the full guardian OTP login round trip. See [`tests/README.md`](tests/README.md) for a quick-start and [`tests/load-testing-plan.md`](tests/load-testing-plan.md) for methodology and sizing guidance.
+
+## Standards
+
+- **Contribution & security process:** see [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
+- **API spec:** an OpenAPI 3.0 spec for the client API lives at [`docs/api/openapi.yaml`](docs/api/openapi.yaml) (static viewer at `docs/api/index.html`), verified directly against source and cross-linked from the [System Integration Guide](docs/guides/system-integration-guide.md).
+- **Accessibility:** the Data Principal rights portal (`web/rights`) has ARIA roles, live regions, keyboard focus management, semantic form labels, and WCAG-AA color contrast; the operator console (`web/console`) is next.
+- **Rate limiting:** the principal OTP request/verification endpoints and the first-run bootstrap endpoint are rate-limited, both per-target and per-source-IP.
+- **Regression testing:** [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md) is a living, versioned test-case suite covering the console, rights portal, client/public API, webhooks, and the purge lifecycle - run relevant sections before every release.
+
 ## White-Labeling
 
 Partners can rebrand the entire UI - console, login screens, the data-principal rights portal, the evaluator tour, and report footers - with a single environment variable:

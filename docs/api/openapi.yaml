@@ -1,0 +1,1152 @@
+openapi: 3.0.3
+info:
+  title: TSI DPDP CMS Client API
+  version: "1.0.0"
+  description: |
+    The client API for Data Fiduciaries and Data Processors integrating consent
+    capture, processing validation, the rights/dashboard, grievances,
+    notifications, and the purge lifecycle into their own backend stacks.
+
+    **Read this alongside the narrative guides, not instead of them:**
+    [System Integration Guide](../guides/system-integration-guide.md),
+    [Webhook Integration Guide](../guides/webhook-integration-guide.md),
+    [Client Polling Integration Guide](../guides/polling-integration-guide.md).
+    This document is the machine-readable companion; the guides carry
+    workflow context (the purge lifecycle timing, webhook signing, etc.)
+    that doesn't belong in a schema.
+
+    ## Routing model (read before using this spec)
+
+    This is an RPC-style API, not resource-per-URL REST: every call is
+    `POST` to one of five fixed base paths, and the JSON body's `_func`
+    field - not the URL - selects the operation. Anything appended to a
+    base path (e.g. `/api/v1/client/consent/validate`) is parsed but
+    discarded by the router.
+
+    Because of this, each path below documents its operation's request
+    body as a `oneOf` discriminated on `_func`; pick the schema matching
+    the function you're calling. This is the most faithful way to model
+    the real dispatch behavior in OpenAPI, but tooling that expects one
+    URL per operation (client generators, some "try it" UIs) may not
+    reflect that as cleanly as a REST API would - if your tooling
+    struggles with the discriminated union, treat each `x-tsi-...`-tagged
+    schema as the effective single-operation contract for that function.
+
+    ## Ground truth
+
+    Every request/response field and error condition below was verified
+    directly against the service source
+    (`src/org/tsicoop/dpdpcms/service/v1/{Policy,Consent,Grievance,Notification,Compliance}.java`)
+    and `InterceptingFilter.java`, not just the guides. Several real
+    discrepancies between the guides' examples and actual server behavior
+    surfaced during that verification and are called out explicitly below
+    (e.g. `record_consent` silently ignoring `policy_version`/`ip_address`/
+    `timestamp`/`jurisdiction`; two functions whose own 400 error message
+    names the wrong field). Where source and guide disagree, source wins
+    and the guide should be treated as needing a follow-up correction.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: "{baseUrl}/api/v1/client"
+    variables:
+      baseUrl:
+        default: http://localhost:8080
+        description: Base URL of your TSI DPDP CMS deployment.
+
+security:
+  - apiKeyAuth: []
+    apiSecretAuth: []
+  - principalBearerAuth: []
+
+tags:
+  - name: Policy
+    description: Notice content - the published, multilingual consent policy.
+  - name: Consent
+    description: Consent capture, validation, rights/dashboard reads, withdrawal, and erasure.
+  - name: Grievance
+    description: Section 13 grievance submission and lookup.
+  - name: Notification
+    description: Polling for notification events (see the Webhook guide for the push equivalent).
+  - name: Compliance
+    description: Purge-request polling and confirmation (PURGE scope; API key only).
+
+paths:
+  /policy:
+    post:
+      tags: [Policy]
+      summary: Policy operations (list_active_policies / get_policy / get_active_policy)
+      description: |
+        **Known inconsistency vs. the System Integration Guide:** the guide
+        states `get_active_policy` is "the exception" requiring an explicit
+        `fiduciary_id` in the body. In source, `list_active_policies` also
+        requires it explicitly for every caller - unlike every function in
+        `/consent`, `/grievance`, `/notification`, and `/compliance`, this
+        file never falls back to resolving `fiduciary_id` from the API key
+        or from a Principal JWT's stamped request attribute. A Principal-JWT
+        caller who omits it from the body gets a 400, not an automatic
+        resolution.
+      operationId: policyOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/ListActivePoliciesRequest"
+                - $ref: "#/components/schemas/GetPolicyRequest"
+                - $ref: "#/components/schemas/GetActivePolicyRequest"
+              discriminator:
+                propertyName: _func
+                mapping:
+                  list_active_policies: "#/components/schemas/ListActivePoliciesRequest"
+                  get_policy: "#/components/schemas/GetPolicyRequest"
+                  get_active_policy: "#/components/schemas/GetActivePolicyRequest"
+      responses:
+        "200":
+          description: >-
+            Success. Shape depends on `_func`: an array for
+            `list_active_policies`, otherwise a single policy object.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: array
+                    items: { $ref: "#/components/schemas/PolicyListItem" }
+                  - $ref: "#/components/schemas/PolicyDetail"
+                  - $ref: "#/components/schemas/ActivePolicy"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /consent:
+    post:
+      tags: [Consent]
+      summary: >-
+        Consent operations (record_consent / record_parent_consent /
+        get_active_consent / get_consent_record_details /
+        list_consent_history / link_user / validate_consent /
+        withdraw_consent / erasure_request)
+      description: |
+        Unlike `/policy`, every function here resolves `fiduciary_id`
+        automatically when omitted from the body: body value, else the
+        Principal JWT's stamped fiduciary, else the calling App's own
+        fiduciary (via `X-API-Key`/`X-API-Secret`). So for API-key or
+        Principal-JWT callers, `fiduciary_id` is effectively optional
+        everywhere in this operation.
+
+        **Principal-JWT guard:** if authenticated via Bearer JWT, the
+        `user_id` in the body must match the token's subject, or the call
+        is rejected with 403 regardless of which function was requested.
+      operationId: consentOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/RecordConsentRequest"
+                - $ref: "#/components/schemas/RecordParentConsentRequest"
+                - $ref: "#/components/schemas/GetActiveConsentRequest"
+                - $ref: "#/components/schemas/GetConsentRecordDetailsRequest"
+                - $ref: "#/components/schemas/ListConsentHistoryRequest"
+                - $ref: "#/components/schemas/LinkUserRequest"
+                - $ref: "#/components/schemas/ValidateConsentRequest"
+                - $ref: "#/components/schemas/WithdrawConsentRequest"
+                - $ref: "#/components/schemas/ErasureRequestRequest"
+              discriminator:
+                propertyName: _func
+                mapping:
+                  record_consent: "#/components/schemas/RecordConsentRequest"
+                  record_parent_consent: "#/components/schemas/RecordParentConsentRequest"
+                  get_active_consent: "#/components/schemas/GetActiveConsentRequest"
+                  get_consent_record_details: "#/components/schemas/GetConsentRecordDetailsRequest"
+                  list_consent_history: "#/components/schemas/ListConsentHistoryRequest"
+                  link_user: "#/components/schemas/LinkUserRequest"
+                  validate_consent: "#/components/schemas/ValidateConsentRequest"
+                  withdraw_consent: "#/components/schemas/WithdrawConsentRequest"
+                  erasure_request: "#/components/schemas/ErasureRequestRequest"
+      responses:
+        "200":
+          description: >-
+            Success for every function except `record_consent` (201) and
+            `record_parent_consent` (201). For `withdraw_consent` and
+            `erasure_request`, a "not found" or internal-error outcome is
+            still returned as 200 with `success: false` - check that field,
+            not the status code, for those two.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/ConsentRecord"
+                  - $ref: "#/components/schemas/ConsentRecordDetail"
+                  - type: array
+                    items: { $ref: "#/components/schemas/ConsentHistoryEntry" }
+                  - $ref: "#/components/schemas/LinkUserResponse"
+                  - $ref: "#/components/schemas/ValidateConsentResponse"
+                  - $ref: "#/components/schemas/WithdrawOrErasureResponse"
+        "201":
+          description: Success for `record_consent` or `record_parent_consent`.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/RecordConsentResponse"
+                  - $ref: "#/components/schemas/RecordParentConsentResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /grievance:
+    post:
+      tags: [Grievance]
+      summary: Grievance operations (submit_grievance / get_grievance / list_user_grievances)
+      description: |
+        Same Principal-JWT `user_id`-match guard as `/consent` applies
+        here.
+
+        **Undocumented in the guide:** `type` is accepted as free text and
+        stored verbatim - the server does not validate it against any
+        enum. The rights-portal UI itself only ever sends one of
+        `GENERAL_COMPLAINT`, `ERASURE_REQUEST`, `DATA_ACCESS_REQUEST`,
+        `CORRECTION_REQUEST`; only `ERASURE_REQUEST` changes behavior
+        (7-day SLA instead of the 30-day default).
+      operationId: grievanceOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/SubmitGrievanceRequest"
+                - $ref: "#/components/schemas/GetGrievanceRequest"
+                - $ref: "#/components/schemas/ListUserGrievancesRequest"
+              discriminator:
+                propertyName: _func
+                mapping:
+                  submit_grievance: "#/components/schemas/SubmitGrievanceRequest"
+                  get_grievance: "#/components/schemas/GetGrievanceRequest"
+                  list_user_grievances: "#/components/schemas/ListUserGrievancesRequest"
+      responses:
+        "200":
+          description: Success for `get_grievance` or `list_user_grievances`.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/Grievance"
+                  - type: array
+                    items: { $ref: "#/components/schemas/GrievanceSummary" }
+        "201":
+          description: Success for `submit_grievance`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SubmitGrievanceResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /notification:
+    post:
+      tags: [Notification]
+      summary: Notification operations (list_notifications / mark_notification_read)
+      description: |
+        See the [Client Polling Integration Guide](../guides/polling-integration-guide.md)
+        for the recommended polling pattern, and the
+        [Webhook Integration Guide](../guides/webhook-integration-guide.md)
+        for the equivalent push events.
+
+        **Known issue, not yet fixed:** if the body omits `fiduciary_id`,
+        the server falls back to `UUID.fromString(apiKey)` without first
+        checking whether an API key header was even sent. A Principal-JWT
+        caller (no `X-API-Key` header) who also omits `fiduciary_id` from
+        the body will hit a null-pointer path that surfaces as a generic
+        `500`, not a clean `400`. Always pass `fiduciary_id` explicitly
+        from a Principal-JWT context until this is fixed.
+      operationId: notificationOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/ListNotificationsRequest"
+                - $ref: "#/components/schemas/MarkNotificationReadRequest"
+              discriminator:
+                propertyName: _func
+                mapping:
+                  list_notifications: "#/components/schemas/ListNotificationsRequest"
+                  mark_notification_read: "#/components/schemas/MarkNotificationReadRequest"
+      responses:
+        "200":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: array
+                    items: { $ref: "#/components/schemas/Notification" }
+                  - $ref: "#/components/schemas/MarkNotificationReadResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500":
+          description: >-
+            Database error, or the `fiduciary_id`-resolution bug described
+            above. Also returned (instead of a 404) when
+            `mark_notification_read`'s `id` doesn't match any row - the
+            server raises a generic SQL exception for that case rather
+            than a clean not-found response.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /compliance:
+    post:
+      tags: [Compliance]
+      summary: Purge-lifecycle operations (list_purge_requests / update_purge_status)
+      security:
+        - apiKeyAuth: []
+          apiSecretAuth: []
+      description: |
+        **PURGE scope, API key only.** Both functions here require the
+        `PURGE` permission scope, which is unconditionally rejected over a
+        Principal JWT (see `principalBearerAuth`) - this path is only
+        reachable with `X-API-Key`/`X-API-Secret`, hence the operation-level
+        security override above.
+
+        **Authorization gap, already known and documented in the guide:**
+        `update_purge_status` does not check that the request being
+        updated belongs to your fiduciary. Any valid `PURGE`-scoped API key
+        can update *any* fiduciary's purge request by `id`. Only ever call
+        this with an `id` your own App actually received from
+        `list_purge_requests` or a `purge_request_created` webhook - never
+        construct or guess one.
+      operationId: complianceOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/ListPurgeRequestsRequest"
+                - $ref: "#/components/schemas/UpdatePurgeStatusRequest"
+              discriminator:
+                propertyName: _func
+                mapping:
+                  list_purge_requests: "#/components/schemas/ListPurgeRequestsRequest"
+                  update_purge_status: "#/components/schemas/UpdatePurgeStatusRequest"
+      responses:
+        "200":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: array
+                    items: { $ref: "#/components/schemas/PurgeRequestListItem" }
+                  - $ref: "#/components/schemas/UpdatePurgeStatusResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: >-
+            Only reachable for a Bearer-JWT-authenticated console
+            Operator/DPO hitting `update_purge_status` on a request not
+            assigned to them - not applicable to a typical client API-key
+            or Principal-JWT call, which this path otherwise excludes (see
+            above).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: >-
+            Database error, including `update_purge_status` being called
+            with an `id` that doesn't match any row - the server raises a
+            generic SQL exception for that case rather than a clean 404.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        An App's API key (a UUID), issued by an ADMIN console user. Must be
+        paired with the `X-API-Secret` header (see `apiSecretAuth`) -
+        together they resolve server-side to exactly one App and its
+        Fiduciary, so you never pass `fiduciary_id` yourself except where
+        noted (`/policy`'s functions). Each key is granted a fixed set of
+        permission scopes (`READ`/`WRITE`/`PURGE`) at creation time; a key
+        without a function's required scope gets 401.
+    apiSecretAuth:
+      type: apiKey
+      in: header
+      name: X-API-Secret
+      description: |
+        The secret paired with `X-API-Key`. Checked against a server-side
+        hash; never transmitted back to you after key creation, so store it
+        securely at generation time.
+    principalBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        A Data Principal's own portal session token, issued by
+        `POST /api/v1/public/principal` (`_func: principal_login`) after
+        OTP verification. 24-hour expiry. Can call the same functions as an
+        API key, with one exception: `PURGE`-scoped functions
+        (`list_purge_requests`, `update_purge_status`) are rejected
+        outright under this scheme - only an App API key may call them.
+        Additionally, the `user_id` in the request body must match this
+        token's subject on every `/consent` and `/grievance` call, or the
+        request is rejected with 403.
+
+  responses:
+    BadRequest:
+      description: >-
+        Missing or invalid required field(s) for the requested `_func`.
+        Two distinct envelope shapes are possible here, depending on which
+        of two independent validation layers rejected the request - see
+        `Error` and `SchemaValidationError` below.
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - $ref: "#/components/schemas/Error"
+              - $ref: "#/components/schemas/SchemaValidationError"
+    Unauthorized:
+      description: Missing, invalid, or insufficiently-scoped credentials.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: >-
+        The authenticated caller does not have permission for this
+        function (e.g. a Principal JWT calling a PURGE-scoped function, or
+        a `_func` not in the client API's whitelist at all).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: The referenced record does not exist.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    # ── Shared ──────────────────────────────────────────────────────────
+    Error:
+      type: object
+      description: >-
+        Envelope used by every function-level (service-code) error - the
+        `_func`-specific 400s, 403s, and 404s documented throughout this
+        spec. Contrast with SchemaValidationError below, which every
+        request passes through first.
+      properties:
+        timestamp: { type: string, format: date-time }
+        status: { type: integer, example: 400 }
+        error: { type: string, example: "Bad Request" }
+        message: { type: string, example: "user_id and policy_id are required." }
+        path: { type: string, example: "/api/v1/client/consent" }
+      required: [timestamp, status, error, message, path]
+
+    SchemaValidationError:
+      type: object
+      description: >-
+        Every call to every `_func` (all 19 client-reachable functions
+        have a corresponding `.jschema` file server-side) is checked
+        against a JSON Schema *before* it ever reaches the function-level
+        code documented in this spec. That pre-check enforces the same
+        `required` fields already documented on each request schema above,
+        but on rejection returns this narrower 3-field envelope instead of
+        Error's 5-field one - notably, no `message` or `path`, and the raw
+        JSON-Schema-validator output (a bracketed list of violations)
+        lands in `error` instead of a human-readable string. In practice,
+        a plain "field X is required" 400 almost always comes from this
+        layer, not from the function-level check with the same-sounding
+        message documented elsewhere in this spec - that function-level
+        check only fires in the narrower cases the JSON Schema doesn't
+        already cover (e.g. a field that's present but semantically
+        invalid, or a required field the schema doesn't itself enforce
+        because it depends on another field's value).
+      properties:
+        timestamp: { type: string, format: date-time }
+        status: { type: integer, example: 400 }
+        error:
+          type: string
+          example: "[$: required property 'user_id' not found, $: required property 'policy_id' not found]"
+      required: [timestamp, status, error]
+
+    # ── Policy ──────────────────────────────────────────────────────────
+    ListActivePoliciesRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [list_active_policies] }
+        fiduciary_id:
+          type: string
+          format: uuid
+          description: >-
+            Required for every caller, with no automatic resolution from
+            the API key or Principal JWT (see the path-level note above).
+      required: [_func, fiduciary_id]
+
+    GetPolicyRequest:
+      type: object
+      x-tsi-scope: READ
+      description: Archival/audit view of a specific past policy version.
+      properties:
+        _func: { type: string, enum: [get_policy] }
+        policy_id: { type: string, example: "p4" }
+        version:
+          type: string
+          description: Defaults to the empty string (the currently-active version's slot) if omitted.
+      required: [_func, policy_id]
+
+    GetActivePolicyRequest:
+      type: object
+      x-tsi-scope: READ
+      description: >-
+        The one function where `fiduciary_id` must always be passed
+        explicitly, per the System Integration Guide.
+      properties:
+        _func: { type: string, enum: [get_active_policy] }
+        fiduciary_id: { type: string, format: uuid }
+        jurisdiction: { type: string, example: "IN" }
+      required: [_func, fiduciary_id, jurisdiction]
+
+    PolicyListItem:
+      type: object
+      properties:
+        policy_id: { type: string }
+        version: { type: string }
+        jurisdiction: { type: string, example: "IN" }
+        effective_date: { type: string, format: date-time }
+        title:
+          type: string
+          description: Extracted from policy_content.en.title (or the first available language); "Policy" if extraction fails.
+
+    PolicyCommonFields:
+      type: object
+      properties:
+        policy_id: { type: string }
+        version: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        status: { type: string, enum: [DRAFT, UNDER_REVIEW, ACTIVE, ARCHIVED, EXPIRED] }
+        jurisdiction: { type: string, example: "IN" }
+        effective_date: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        last_updated_at: { type: string, format: date-time }
+
+    PolicyDetail:
+      description: get_policy's response. Note policy_content is the raw JSON text here, not a parsed object.
+      allOf:
+        - $ref: "#/components/schemas/PolicyCommonFields"
+        - type: object
+          properties:
+            policy_content:
+              type: string
+              description: Raw JSONB text, not parsed server-side for this call - parse it yourself. Contrast with get_active_policy below.
+
+    ActivePolicy:
+      description: get_active_policy's response. Note policy_content is parsed into an object here, unlike get_policy.
+      allOf:
+        - $ref: "#/components/schemas/PolicyCommonFields"
+        - type: object
+          properties:
+            policy_content:
+              type: object
+              description: Map of ISO 639-1 language code to that language's content.
+              additionalProperties: { $ref: "#/components/schemas/PolicyLanguageContent" }
+
+    PolicyPurpose:
+      type: object
+      properties:
+        id: { type: string, example: "purpose_kyc_identity" }
+        name: { type: string }
+        description: { type: string }
+        legal_basis: { type: string }
+        data_categories_involved:
+          type: array
+          items: { type: string }
+        recipients_or_third_parties:
+          type: array
+          items: { type: string }
+        retention_policy: { type: string }
+        retention_duration_value: { type: integer }
+        retention_duration_unit: { type: string, enum: [DAYS, MONTHS, YEARS] }
+        retention_start_event:
+          type: string
+          description: The only two values the server itself reads/validates.
+          enum: [COLLECTION, CESSATION]
+        is_mandatory_for_service: { type: boolean }
+        is_sensitive: { type: boolean }
+      required: [id, name, is_mandatory_for_service]
+
+    PolicyLanguageContent:
+      type: object
+      description: >-
+        One language's full notice content. Fiduciary-authored, so beyond
+        data_processing_purposes this is informational prose/config, not a
+        strict contract - additional properties are expected and allowed.
+      properties:
+        title: { type: string }
+        introduction: { type: string }
+        general_purpose_description: { type: string }
+        data_processing_purposes:
+          type: array
+          items: { $ref: "#/components/schemas/PolicyPurpose" }
+        data_categories_details:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+              description: { type: string }
+        data_subject_categories:
+          type: array
+          items: { type: string }
+          description: >-
+            Personas this policy applies to (e.g. "customer", "employee") -
+            surfaced pre-login by the public `list_fiduciary_personas`
+            function.
+        security_measures: { type: string }
+        processors:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              country: { type: string }
+              role: { type: string }
+              contact: { type: string }
+        cross_border_transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              destination_country: { type: string }
+              safeguard: { type: string }
+              processor: { type: string }
+        data_principal_rights_summary: { type: string }
+        grievance_redressal_info: { type: string }
+      required: [data_processing_purposes]
+      additionalProperties: true
+
+    # ── Consent ─────────────────────────────────────────────────────────
+    DataPointConsent:
+      type: object
+      description: Per-purpose consent granted/denied.
+      properties:
+        data_point_id: { type: string, example: "purpose_account_management" }
+        consent_granted: { type: boolean }
+        purpose_agreed_to:
+          type: string
+          description: >-
+            Human-readable purpose name snapshotted at the time of consent
+            for audit purposes - not a live join to the current policy
+            text.
+        timestamp_updated: { type: string, format: date-time }
+      required: [data_point_id, consent_granted, purpose_agreed_to, timestamp_updated]
+
+    RecordConsentRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        Four fields below are accepted but silently ignored server-side -
+        only the guide's own documented "Gotcha" about
+        `consent_status_general` was previously known; `policy_version`,
+        `timestamp`, `ip_address`, and `jurisdiction` are equally ignored
+        and undocumented until now. Sending them is harmless but has no
+        effect.
+      properties:
+        _func: { type: string, enum: [record_consent] }
+        user_id: { type: string }
+        fiduciary_id: { type: string, format: uuid, description: Optional - resolved from the API key/Principal JWT if omitted. }
+        policy_id: { type: string }
+        policy_version:
+          type: string
+          deprecated: true
+          description: >-
+            Ignored. The server always stores an empty string here and
+            resolves against the fiduciary's currently ACTIVE policy
+            version only - you cannot record consent against a
+            non-active/past version via this call.
+        timestamp:
+          type: string
+          format: date-time
+          deprecated: true
+          description: Ignored. The server always stamps the record with its own current server time.
+        jurisdiction:
+          type: string
+          deprecated: true
+          description: 'Ignored. The server always hardcodes "IN" regardless of what is sent here.'
+        language_selected: { type: string, example: "en", description: Defaults to "en" if omitted. }
+        consent_status_general:
+          type: string
+          deprecated: true
+          description: 'Ignored. The server always stores "CONSENT_GIVEN" for this call regardless of what is sent.'
+        consent_mechanism: { type: string, example: "preference_center_save_click" }
+        ip_address:
+          type: string
+          deprecated: true
+          description: Ignored. The server always uses the caller's actual remote address (hashed before storage), not this value.
+        user_agent: { type: string }
+        verification_log_id:
+          type: string
+          format: uuid
+          description: Optional - links this consent to a prior record_parent_consent verification log entry (Section 9 minor/guardian flow).
+        data_point_consents:
+          type: array
+          items: { $ref: "#/components/schemas/DataPointConsent" }
+      required: [_func, user_id, policy_id, data_point_consents]
+
+    RecordConsentResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            consent_record_id: { type: string, format: uuid }
+            user_id: { type: string }
+            sync_token: { type: string, description: JWT for the DPDP Wallet / PCA sync flow. }
+            message: { type: string, example: "Consent recorded successfully." }
+
+    RecordParentConsentRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        Section 9 verifiable-parental-consent logging. Fully client-reachable
+        but entirely undocumented in the System Integration Guide. No field
+        is server-validated as required - a fully empty body still inserts
+        a row (with NULLs) and returns 201 as long as the INSERT itself
+        succeeds.
+      properties:
+        _func: { type: string, enum: [record_parent_consent] }
+        child_principal_id: { type: string }
+        guardian_principal_id: { type: string }
+        verification_mechanism: { type: string }
+        provider_name: { type: string }
+        verification_ref_id: { type: string }
+        proof_metadata:
+          description: Accepted as either a JSON object or a pre-serialized JSON string.
+          oneOf:
+            - type: object
+            - type: string
+      required: [_func]
+
+    RecordParentConsentResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        verification_log_id: { type: string, format: uuid }
+
+    GetActiveConsentRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [get_active_consent] }
+        user_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        policy_id: { type: string, description: Optional - scopes the result to one policy. }
+      required: [_func, user_id]
+
+    GetConsentRecordDetailsRequest:
+      type: object
+      x-tsi-scope: READ
+      description: >-
+        `record_id` is not null-checked before being parsed as a UUID; a
+        missing or malformed value throws and is caught as a generic 400
+        "Invalid input." rather than a specific message.
+      properties:
+        _func: { type: string, enum: [get_consent_record_details] }
+        record_id: { type: string, format: uuid }
+      required: [_func, record_id]
+
+    ListConsentHistoryRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [list_consent_history] }
+        user_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        page: { type: integer, default: 1, minimum: 1 }
+        limit: { type: integer, default: 10, minimum: 1 }
+      required: [_func, user_id]
+
+    LinkUserRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        Consolidates an anonymous pre-login session's consent history onto
+        an authenticated account ID. `age_category`/`guardian_id`/
+        `verification_status` are real, undocumented-in-the-guide optional
+        fields (Section 9 support).
+      properties:
+        _func: { type: string, enum: [link_user] }
+        anonymous_user_id: { type: string }
+        authenticated_user_id: { type: string, description: "Must differ from anonymous_user_id, or this is rejected with 400." }
+        age_category: { type: string, enum: [ADULT, MINOR], default: ADULT }
+        guardian_id: { type: string }
+        verification_status: { type: string, default: NOT_VERIFIED }
+      required: [_func, anonymous_user_id, authenticated_user_id]
+
+    LinkUserResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        message: { type: string, example: "User consent records linked successfully." }
+
+    ValidateConsentRequest:
+      type: object
+      x-tsi-scope: READ
+      description: >-
+        Every successful call is recorded (consent_validations table) -
+        this record is what later determines which Apps get notified when
+        that principal's data needs to be purged. Call this before every
+        processing action, not just once at collection time.
+      properties:
+        _func: { type: string, enum: [validate_consent] }
+        user_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        required_purpose_id: { type: string, example: "purpose_marketing_offers" }
+      required: [_func, user_id, required_purpose_id]
+
+    ValidateConsentResponse:
+      type: object
+      description: >-
+        Always 200, even when consent isn't granted - "not granted" is
+        expressed in the payload, not as a 404. `message` is only present
+        on some code paths; treat it as informational, not something to
+        branch on.
+      properties:
+        success: { type: boolean }
+        consent_granted: { type: boolean }
+        message: { type: string }
+      required: [success, consent_granted]
+
+    WithdrawConsentRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        `reason` is accepted but never actually used by the server despite
+        appearing meaningful in the guide's example. `policy_id` and
+        `purpose_ids` are real, currently undocumented-in-the-guide
+        optional fields: `purpose_ids` enables partial withdrawal (only
+        the listed purposes are denied; everything else stays granted) -
+        omit it for a full withdrawal.
+      properties:
+        _func: { type: string, enum: [withdraw_consent] }
+        user_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        reason: { type: string, deprecated: true, description: Accepted but not used by the server. }
+        policy_id: { type: string, description: Scopes to one policy's most recent record instead of the most recent across all policies. }
+        purpose_ids:
+          type: array
+          items: { type: string }
+          description: Partial withdrawal - only these purposes are denied. Omit for a full withdrawal.
+      required: [_func, user_id]
+
+    ErasureRequestRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        Does **not** synchronously create a purge request - it flags the
+        principal for the nightly Consent Expiry Service batch, which
+        creates the actual purge_requests rows up to ~24h later. See the
+        System Integration Guide, section 8, for the full lifecycle. Same
+        `reason`-is-ignored caveat as withdraw_consent; erasure is always
+        total, so there is no `purpose_ids` equivalent.
+      properties:
+        _func: { type: string, enum: [erasure_request] }
+        user_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        reason: { type: string, deprecated: true, description: Accepted but not used by the server. }
+        policy_id: { type: string }
+      required: [_func, user_id]
+
+    WithdrawOrErasureResponse:
+      type: object
+      description: >-
+        Shared shape for withdraw_consent and erasure_request. A "no
+        consent record found" or internal-error outcome is still HTTP 200
+        with success:false and no record_id/action - check success, not
+        the status code.
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        record_id: { type: string, format: uuid, description: Present only when success is true. }
+        action: { type: string, enum: [CONSENT_WITHDRAWN, ERASURE_REQUEST], description: Present only when success is true. }
+      required: [success, message]
+
+    ConsentRecord:
+      type: object
+      description: get_active_consent's response shape; also the basis for the two variants below.
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        policy_id: { type: string }
+        policy_version: { type: string }
+        timestamp: { type: string, format: date-time }
+        jurisdiction: { type: string, example: "IN" }
+        language_selected: { type: string, example: "en" }
+        consent_status_general:
+          type: string
+          description: Free-form; a record created via record_consent always shows CONSENT_GIVEN here, but records from other mechanisms may differ.
+        consent_mechanism: { type: string }
+        ip_address:
+          type: string
+          description: A hashed value, not the original IP - the server hashes it before storage.
+        user_agent: { type: string, nullable: true }
+        data_point_consents:
+          type: array
+          items: { $ref: "#/components/schemas/DataPointConsent" }
+        is_active_consent: { type: boolean }
+
+    ConsentHistoryEntry:
+      description: list_consent_history's array item shape - ConsentRecord plus a per-entry sync_token.
+      allOf:
+        - $ref: "#/components/schemas/ConsentRecord"
+        - type: object
+          properties:
+            sync_token: { type: string, description: "JWT for the DPDP Wallet / PCA sync flow, issued per record." }
+
+    ConsentRecordDetail:
+      description: >-
+        get_consent_record_details's response - ConsentRecord plus a RoPA
+        cross-reference. Note: its 404 message text is copy-pasted from
+        get_active_consent and references "User ID"/"Fiduciary ID" even
+        though this call takes only record_id - both interpolated values
+        will literally read as null in that message.
+      allOf:
+        - $ref: "#/components/schemas/ConsentRecord"
+        - type: object
+          properties:
+            ropa_entry_id: { type: string, format: uuid, nullable: true }
+            ropa_activity_name: { type: string, nullable: true }
+
+    # ── Grievance ───────────────────────────────────────────────────────
+    SubmitGrievanceRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        `language`, shown in the guide's own example, is read nowhere in
+        source - a dead field, harmless to send but with no effect.
+      properties:
+        _func: { type: string, enum: [submit_grievance] }
+        user_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        type:
+          type: string
+          description: >-
+            Not server-validated against any list - any string is stored
+            verbatim. The rights-portal UI only ever sends
+            GENERAL_COMPLAINT, ERASURE_REQUEST, DATA_ACCESS_REQUEST, or
+            CORRECTION_REQUEST. Only the literal value ERASURE_REQUEST
+            (case-insensitive) changes behavior: a 7-day SLA instead of
+            the 30-day default.
+        subject: { type: string }
+        description: { type: string }
+        attachments:
+          type: array
+          items: { type: string }
+          default: []
+        language: { type: string, deprecated: true, description: Accepted but never read by the server. }
+      required: [_func, user_id, fiduciary_id, type, subject, description]
+
+    SubmitGrievanceResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        grievance_id: { type: string, format: uuid }
+
+    GetGrievanceRequest:
+      type: object
+      x-tsi-scope: READ
+      description: >-
+        A malformed `grievance_id` is rejected with a specific 400
+        ("Invalid 'grievance_id' format."); a *missing* one is not
+        separately checked and falls through to a normal 404 instead.
+      properties:
+        _func: { type: string, enum: [get_grievance] }
+        grievance_id: { type: string, format: uuid }
+      required: [_func, grievance_id]
+
+    ListUserGrievancesRequest:
+      type: object
+      x-tsi-scope: READ
+      description: >-
+        Neither field is null-checked; omitting either returns an empty
+        array with 200, not an error.
+      properties:
+        _func: { type: string, enum: [list_user_grievances] }
+        fiduciary_id: { type: string, format: uuid }
+        user_id: { type: string }
+      required: [_func, fiduciary_id, user_id]
+
+    Grievance:
+      type: object
+      description: >-
+        get_grievance's response. Note submission_timestamp and due_date
+        are NOT ISO-8601 here - they're raw java.sql.Timestamp.toString()
+        output (space-separated, no "T"/timezone designator, e.g.
+        "2026-08-15 09:12:03.4"), unlike every other timestamp in this API.
+      properties:
+        grievance_id: { type: string, format: uuid }
+        user_id: { type: string }
+        status: { type: string, enum: [NEW, IN_PROGRESS, RESOLVED, CLOSED, ESCALATED] }
+        subject: { type: string }
+        description: { type: string }
+        submission_timestamp: { type: string, description: "Non-ISO format; see schema description." }
+        due_date: { type: string, nullable: true, description: "Non-ISO format; see schema description." }
+        assigned_dpo_user_id: { type: string, format: uuid, nullable: true }
+        communication_log: { type: array, items: { type: object }, nullable: true }
+        attachments: { type: array, items: { type: string } }
+
+    GrievanceSummary:
+      type: object
+      description: list_user_grievances's array item - a noticeably thinner shape than get_grievance's.
+      properties:
+        grievance_id: { type: string, format: uuid }
+        type: { type: string }
+        subject: { type: string }
+        status: { type: string, enum: [NEW, IN_PROGRESS, RESOLVED, CLOSED, ESCALATED] }
+        due_date: { type: string, nullable: true, description: "Non-ISO format; see the Grievance schema." }
+
+    # ── Notification ────────────────────────────────────────────────────
+    ListNotificationsRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [list_notifications] }
+        fiduciary_id: { type: string, format: uuid, description: "See the operation-level known-issue note for Principal-JWT callers." }
+        recipient_type: { type: string, description: "Not server-validated; expected values are PRINCIPAL, DPO, APP." }
+        recipient_id:
+          type: string
+          description: If recipient_type is APP and this is omitted, defaults to the calling App's own ID.
+        unread_only:
+          type: boolean
+          description: 'Only a real JSON boolean true is honored; any other value (including the string "true") is treated as false.'
+        page: { type: integer, default: 1, minimum: 1 }
+        limit: { type: integer, default: 10, minimum: 1 }
+      required: [_func]
+
+    MarkNotificationReadRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        The server's own 400 error message (if `id` is omitted) incorrectly
+        names the field "instance_id" - the field to actually send is `id`,
+        exactly as the guide's example already shows.
+      properties:
+        _func: { type: string, enum: [mark_notification_read] }
+        id: { type: string, format: uuid }
+      required: [_func, id]
+
+    MarkNotificationReadResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        message: { type: string, example: "Notification marked as read." }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        recipient_type: { type: string, enum: [PRINCIPAL, DPO, APP] }
+        recipient_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        notification_type:
+          type: string
+          enum:
+            - CONSENT_GIVEN_NOTIFICATION
+            - WITHDRAWAL_ACKNOWLEDGMENT
+            - ERASURE_REQUESTED_NOTIFICATION
+            - PURGE_INIT_NOTIFICATION
+            - PURGE_CONFIRM_NOTIFICATION
+            - PURGE_ONHOLD_NOTIFICATION
+            - EXPIRY_NOTIFICATION
+            - GRIEVANCE_SUBMITTED_NOTIFICATION
+            - GRIEVANCE_RESOLVED_NOTIFICATION
+            - GRIEVANCE_ESCALATED_NOTIFICATION
+            - GRIEVANCE_ASSIGNED_NOTIFICATION
+            - BREACH_NOTIFICATION
+        created_at: { type: string, format: date-time }
+        read_at: { type: string, format: date-time, nullable: true }
+        messages:
+          type: object
+          nullable: true
+          description: Map of language code to message text; null if no message bundle is configured for this fiduciary/type.
+          additionalProperties: { type: string }
+
+    # ── Compliance / Purge ──────────────────────────────────────────────
+    ListPurgeRequestsRequest:
+      type: object
+      x-tsi-scope: PURGE
+      description: >-
+        Results are scoped to purge requests targeting your own App, plus
+        orphaned requests with no App linked (app_id is null) - those are
+        informational, not necessarily yours to act on. Default limit is
+        20 here, unlike every other paginated list in this API (10).
+      properties:
+        _func: { type: string, enum: [list_purge_requests] }
+        fiduciary_id: { type: string, format: uuid }
+        status:
+          type: string
+          description: Not server-validated; meaningful values are PURGE_INITIATED, PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, LEGAL_HOLD_APPLIED.
+        trigger_event: { type: string, example: "CONSENT_REVOKED", description: Free text; no enum enforced. }
+        search: { type: string, description: Matched via ILIKE against user_id OR details. }
+        page: { type: integer, default: 1, minimum: 1 }
+        limit: { type: integer, default: 20, minimum: 1 }
+      required: [_func, fiduciary_id]
+
+    UpdatePurgeStatusRequest:
+      type: object
+      x-tsi-scope: PURGE
+      description: >-
+        The server's own 400 error message (if `id` is omitted) incorrectly
+        names the field "purge_request_id" - the field to actually send is
+        `id`, exactly as the guide's example already shows. `status` is
+        not validated against any enum - any string is accepted and stored
+        verbatim; reserve LEGAL_HOLD_APPLIED for genuine Section 8(1) cases
+        even though the API doesn't enforce that restriction. `details` is
+        not server-required despite the polling guide calling it required
+        as an integration best practice - send it anyway; it becomes part
+        of the compliance audit trail.
+      properties:
+        _func: { type: string, enum: [update_purge_status] }
+        id: { type: string, format: uuid }
+        status:
+          type: string
+          description: Not server-validated; meaningful values are PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, LEGAL_HOLD_APPLIED.
+        details: { type: string, description: "Not server-enforced as required, but strongly recommended - see description above." }
+      required: [_func, id, status]
+
+    UpdatePurgeStatusResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        message: { type: string, example: "Purge status confirmed." }
+
+    PurgeRequestListItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string }
+        purpose_id: { type: string }
+        fiduciary_id: { type: string, format: uuid }
+        app_id: { type: string, format: uuid, nullable: true, description: Null for an orphan request - no App ever called validate_consent for this purpose. }
+        app_name: { type: string, description: '"No Linked Processor" literal when app_id is null.' }
+        trigger_event: { type: string, example: "CONSENT_REVOKED" }
+        status: { type: string, enum: [PURGE_INITIATED, PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, LEGAL_HOLD_APPLIED] }
+        details: { type: string, nullable: true }
+        initiated_at: { type: string, format: date-time }
+        assigned_operator_id: { type: string, format: uuid, nullable: true }

@@ -6,4 +6,7 @@
 /server/.env
 /examples/integration/notifications/build/
 /examples/integration/purge/build/
+/tests/results.jtl
+/tests/report/
+/tests/jmeter.log
 

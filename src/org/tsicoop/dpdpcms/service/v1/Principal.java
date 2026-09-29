@@ -30,6 +30,13 @@ public class Principal implements Action {
     private static final long OTP_TTL_MS = 5 * 60 * 1000L; // 5 minutes, single-use
     private static final SecureRandom OTP_RANDOM = new SecureRandom();
 
+    // Secondary, generous per-IP throttle for the OTP send/verify endpoints (both public,
+    // principal-facing, and prone to shared NAT/corporate IPs -- unlike the console login's
+    // tight 5/15min default, which is tuned for one-admin-per-browser). The real defense
+    // against OTP abuse is the per-target limit declared next to each handler below.
+    private static final int OTP_IP_MAX_ATTEMPTS = 20;
+    private static final long OTP_IP_WINDOW_MS = 15 * 60 * 1000L; // 15 minutes
+
     private static class PendingOtp {
         final String otp;
         final long expiresAt;
@@ -97,6 +104,21 @@ public class Principal implements Action {
             return;
         }
 
+        // Two independent limits. Per-target (fiduciary_id:user_id) is the real defense --
+        // it closes the OTP brute-force risk regardless of how many IPs it's spread across.
+        // Per-IP is a generous secondary layer, namespaced and separately keyed from the
+        // console login's bucket (and from the OTP-send bucket below) so this public,
+        // principal-facing endpoint doesn't inherit the console's tight 5/15min default --
+        // a shared NAT/corporate IP with several principals logging in around the same time
+        // shouldn't lock each other out.
+        String clientIp = LoginRateLimiter.getClientIp(req);
+        String ipKey = "otp-verify-ip:" + clientIp;
+        String targetKey = "otp-verify:" + fiduciaryIdStr + ":" + userId;
+        if (!LoginRateLimiter.isAllowed(ipKey, OTP_IP_MAX_ATTEMPTS, OTP_IP_WINDOW_MS) || !LoginRateLimiter.isAllowed(targetKey)) {
+            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many login attempts. Please try again later.", req.getRequestURI());
+            return;
+        }
+
         UUID fiduciaryId;
         try {
             fiduciaryId = UUID.fromString(fiduciaryIdStr);
@@ -130,6 +152,9 @@ public class Principal implements Action {
             pendingOtps.remove(cacheKey); // single-use
         }
 
+        LoginRateLimiter.recordSuccess(ipKey);
+        LoginRateLimiter.recordSuccess(targetKey);
+
         // Fetch all active policies for this fiduciary
         JSONArray policies = getActivePolicies(fiduciaryId);
 
@@ -159,6 +184,9 @@ public class Principal implements Action {
         OutputProcessor.send(res, HttpServletResponse.SC_OK, response);
     }
 
+    private static final int OTP_SEND_MAX_ATTEMPTS = 3;
+    private static final long OTP_SEND_WINDOW_MS = 60 * 60 * 1000L; // 1 hour
+
     /**
      * Generates and dispatches a real OTP for EMAIL_OTP/MOBILE_OTP fiduciaries via the
      * fiduciary's configured 'OTP' webhook (WebhookDispatcher); no-ops for DUMMY_OTP
@@ -171,6 +199,18 @@ public class Principal implements Action {
 
         if (fiduciaryIdStr == null || fiduciaryIdStr.isEmpty() || userId == null || userId.isEmpty()) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "fiduciary_id and user_id are required.", req.getRequestURI());
+            return;
+        }
+
+        // Two independent limits, same rationale as handleLogin above: a generous per-IP
+        // secondary layer, and the real defense -- per target (3/hour, since each send
+        // costs a real SMS/email) -- which stops a target being bombed regardless of how
+        // many IPs it comes from.
+        String clientIp = LoginRateLimiter.getClientIp(req);
+        String ipKey = "otp-send-ip:" + clientIp;
+        String targetKey = "otp-send:" + fiduciaryIdStr + ":" + userId;
+        if (!LoginRateLimiter.isAllowed(ipKey, OTP_IP_MAX_ATTEMPTS, OTP_IP_WINDOW_MS) || !LoginRateLimiter.isAllowed(targetKey, OTP_SEND_MAX_ATTEMPTS, OTP_SEND_WINDOW_MS)) {
+            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many OTP requests. Please try again later.", req.getRequestURI());
             return;
         }
 

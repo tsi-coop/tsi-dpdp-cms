@@ -389,6 +389,14 @@ With no vendor dashboard, the DPO runs email-driven compliance reviews for third
 - **Access security verification** - the vendor must declare its security posture (e.g. ISO 27001 or SOC 2 Type II audit certificates).
 - **Repository logging** - contracts are filed in a secure corporate directory as legal proof of compliance in the event of a Data Protection Board (DPB) audit.
 
+### Step 3: Third-Party Data Flows in Illustrative Features
+
+The evaluator tour's Voice Consent Gateway (`web/tour/voice-based-consent.html`) is an illustrative feature, not a production integration, but its data flow to a third party should still be disclosed:
+
+- **What is sent to Sarvam AI:** only the notice/purpose text being read aloud (e.g. "We collect your phone number for loan servicing") is sent to Sarvam AI's Text-to-Speech API, along with the target language and speaker settings, to synthesize the audio played to the data principal.
+- **What is not sent to Sarvam AI:** the data principal's spoken affirmation ("yes" / "I agree" / etc.) is captured and transcribed entirely client-side, using the browser's built-in Web Speech API (`SpeechRecognition`). It is never transmitted to Sarvam AI.
+- **Illustrative only:** this flow exists to demonstrate the voice-consent concept in the tour. A production deployment that wires up a real TTS/STT vendor for consent collection must run it through the same vendor verification process as Step 2 above (DPA, security posture, repository logging) before handling real data principal data.
+
 ---
 
 ## 5. Policy Publishing & Data Lifecycle Execution

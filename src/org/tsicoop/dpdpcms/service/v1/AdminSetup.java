@@ -41,6 +41,15 @@ public class AdminSetup implements Action {
                 return;
             }
 
+            // Namespaced so this one-time bootstrap action doesn't share bucket state with
+            // the unrelated console-login rate limit for the same IP.
+            String clientIp = LoginRateLimiter.getClientIp(req);
+            String rateLimitKey = "setup:" + clientIp;
+            if (!LoginRateLimiter.isAllowed(rateLimitKey)) {
+                OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many setup attempts. Please try again later.", req.getRequestURI());
+                return;
+            }
+
             String bootstrapToken = System.getenv(BOOTSTRAP_TOKEN_ENV);
             if (bootstrapToken == null || bootstrapToken.isEmpty()) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Setup Disabled", "Initial setup is disabled: " + BOOTSTRAP_TOKEN_ENV + " is not configured on the server.", req.getRequestURI());
@@ -72,6 +81,7 @@ public class AdminSetup implements Action {
                 int status = alreadyConfigured ? HttpServletResponse.SC_CONFLICT : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
                 OutputProcessor.errorResponse(res, status, "Setup Failure", (String) result.get("error"), req.getRequestURI());
             } else {
+                LoginRateLimiter.recordSuccess(rateLimitKey);
                 OutputProcessor.send(res, HttpServletResponse.SC_CREATED, new JSONObject() {{
                     put("success", true);
                     put("message", "Super Administrator created successfully.");

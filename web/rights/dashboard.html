@@ -90,7 +90,7 @@
 <body>
 
 <!-- Sticky Header -->
-<div class="portal-header">
+<header class="portal-header">
     <div class="header-inner">
         <div style="display:flex;align-items:center;gap:16px;">
             <span style="font-size:1.05rem;font-weight:800;color:var(--tsi-primary);white-space:nowrap;">TSI DPDP CMS</span>
@@ -101,10 +101,10 @@
         </div>
         <button onclick="handleLogout()" style="font-size:0.8rem;font-weight:700;color:#b91c1c;background:none;border:none;cursor:pointer;text-decoration:underline;">Logout</button>
     </div>
-</div>
+</header>
 
 <!-- Main content -->
-<div class="page-container">
+<main class="page-container">
     <h1 style="color:var(--tsi-dark);font-size:1.75rem;font-weight:800;margin:20px 0 6px;">My Privacy Dashboard</h1>
     <p style="color:#64748b;font-size:0.875rem;margin:0 0 16px;">Manage your consent preferences and data rights.</p>
 
@@ -117,14 +117,14 @@
             <span style="font-size:0.65rem;padding:2px 8px;border-radius:9999px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;">Active Session</span>
         </div>
         <div id="pca-toggle-wrap" style="position:relative;display:none;flex-shrink:0;">
-            <button onclick="togglePcaPopover()" style="background:#f0fdfa;border:1px solid #99f6e4;color:var(--tsi-primary);font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;padding:6px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+            <button onclick="togglePcaPopover()" aria-expanded="false" aria-controls="pca-popover" style="background:#f0fdfa;border:1px solid #99f6e4;color:var(--tsi-primary);font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;padding:6px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
                 PCA QR
             </button>
             <div id="pca-popover" style="display:none;flex-direction:column;align-items:center;gap:6px;position:absolute;right:0;top:calc(100% + 8px);z-index:50;background:white;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);padding:12px;">
-                <div id="qrcode-container" style="padding:6px;background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);"></div>
+                <div id="qrcode-container" role="img" aria-label="QR code encoding your Portable Consent Artifact" style="padding:6px;background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);"></div>
                 <button onclick="downloadPCA()" style="background:none;border:none;font-size:0.65rem;font-weight:800;color:var(--tsi-primary);text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;white-space:nowrap;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Download PCA
                 </button>
             </div>
@@ -133,26 +133,26 @@
 
     <!-- Tab panel -->
     <div class="card overflow-hidden">
-        <div class="tab-bar">
-            <button class="tab-btn active" onclick="setTab('consent')">Manage Consent</button>
-            <button class="tab-btn"        onclick="setTab('history')">Consent History</button>
-            <button class="tab-btn"        onclick="setTab('grievance')">Requests & Grievances</button>
+        <div class="tab-bar" role="tablist">
+            <button class="tab-btn active" id="tab-btn-consent"   role="tab" aria-selected="true"  aria-controls="tab-content" onclick="setTab('consent')">Manage Consent</button>
+            <button class="tab-btn"        id="tab-btn-history"   role="tab" aria-selected="false" aria-controls="tab-content" onclick="setTab('history')">Consent History</button>
+            <button class="tab-btn"        id="tab-btn-grievance" role="tab" aria-selected="false" aria-controls="tab-content" onclick="setTab('grievance')">Requests & Grievances</button>
         </div>
-        <div id="tab-content" style="padding: 28px; min-height: 400px;">
-            <div class="spinner"><div class="spin-ring"></div><p>Loading...</p></div>
+        <div id="tab-content" role="tabpanel" aria-labelledby="tab-btn-consent" style="padding: 28px; min-height: 400px;">
+            <div class="spinner" role="status" aria-live="polite"><div class="spin-ring"></div><p>Loading...</p></div>
         </div>
     </div>
-</div>
+</main>
 
 <!-- Modal: Consent Record Details -->
-<div id="detail-modal" class="modal-overlay" style="display:none;">
+<div id="detail-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="detail-modal-heading">
     <div class="modal-content">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px;">
             <div>
-                <h2 style="margin:0;font-size:1.15rem;font-weight:700;color:var(--tsi-dark);">Consent Record Details</h2>
-                <p id="modal-record-ref" style="margin:4px 0 0;font-size:0.7rem;font-family:monospace;color:#94a3b8;"></p>
+                <h2 id="detail-modal-heading" style="margin:0;font-size:1.15rem;font-weight:700;color:var(--tsi-dark);">Consent Record Details</h2>
+                <p id="modal-record-ref" style="margin:4px 0 0;font-size:0.7rem;font-family:monospace;color:#64748b;"></p>
             </div>
-            <button onclick="document.getElementById('detail-modal').style.display='none'" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#94a3b8;">&times;</button>
+            <button onclick="closeModal(document.getElementById('detail-modal'))" aria-label="Close" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;">&times;</button>
         </div>
         <h3 style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin-bottom:12px;">Purpose Allowances</h3>
         <div id="modal-purposes"></div>
@@ -162,14 +162,14 @@
 </div>
 
 <!-- Withdraw-consent purpose-selection modal -->
-<div id="withdraw-modal" class="modal-overlay" style="display:none;">
+<div id="withdraw-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="withdraw-modal-heading">
     <div class="modal-content" style="max-width:500px;">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
             <div>
-                <h2 style="margin:0;font-size:1.1rem;font-weight:700;color:var(--tsi-dark);">Withdraw Consent</h2>
+                <h2 id="withdraw-modal-heading" style="margin:0;font-size:1.1rem;font-weight:700;color:var(--tsi-dark);">Withdraw Consent</h2>
                 <p id="withdraw-modal-title" style="margin:4px 0 0;font-size:0.8rem;color:#64748b;"></p>
             </div>
-            <button id="withdraw-modal-close" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#94a3b8;">&times;</button>
+            <button id="withdraw-modal-close" aria-label="Close" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;">&times;</button>
         </div>
         <p style="margin:0 0 6px;font-size:0.8rem;color:#64748b;">Select the purposes you wish to withdraw consent for.</p>
         <p style="margin:0 0 14px;font-size:0.75rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 10px;">Withdrawing mandatory purposes will restrict or terminate your access to the service.</p>
@@ -194,6 +194,55 @@
         window.location.href = 'index.html';
     }
 
+    // ── Modal accessibility helpers (focus management, Escape, Tab-trap) ─
+    let lastFocusedBeforeModal = null;
+
+    function openModal(modal, focusEl) {
+        lastFocusedBeforeModal = document.activeElement;
+        modal.style.display = 'flex';
+        const target = focusEl || modal.querySelector('button, [href], input, select, textarea, [tabindex]');
+        if (target) target.focus();
+    }
+
+    function closeModal(modal) {
+        modal.style.display = 'none';
+        if (lastFocusedBeforeModal && document.body.contains(lastFocusedBeforeModal)) {
+            lastFocusedBeforeModal.focus();
+        }
+        lastFocusedBeforeModal = null;
+    }
+
+    function getVisibleModal() {
+        const detail = document.getElementById('detail-modal');
+        const withdraw = document.getElementById('withdraw-modal');
+        if (detail && detail.style.display === 'flex') return detail;
+        if (withdraw && withdraw.style.display === 'flex') return withdraw;
+        return null;
+    }
+
+    document.addEventListener('keydown', (e) => {
+        const modal = getVisibleModal();
+        if (!modal) return;
+        if (e.key === 'Escape') {
+            closeModal(modal);
+            return;
+        }
+        if (e.key === 'Tab') {
+            const focusables = Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]'))
+                .filter(el => !el.disabled && el.offsetParent !== null);
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
     // ── Tab management ──────────────────────────────────────────────────
     const tabs = ['consent', 'history', 'grievance'];
     let activeTab = 'consent';
@@ -201,14 +250,17 @@
     function setTab(tab) {
         activeTab = tab;
         document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-            btn.classList.toggle('active', tabs[i] === tab);
+            const isActive = tabs[i] === tab;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-selected', String(isActive));
         });
+        document.getElementById('tab-content').setAttribute('aria-labelledby', 'tab-btn-' + tab);
         loadTab(tab);
     }
 
     async function loadTab(tab) {
         const area = document.getElementById('tab-content');
-        area.innerHTML = '<div class="spinner"><div class="spin-ring"></div><p>Loading...</p></div>';
+        area.innerHTML = '<div class="spinner" role="status" aria-live="polite"><div class="spin-ring"></div><p>Loading...</p></div>';
         if (tab === 'consent')   await renderConsentTab(area);
         if (tab === 'history')   await renderHistoryTab(area);
         if (tab === 'grievance') await renderGrievanceTab(area);
@@ -240,7 +292,7 @@
         if (policies.length > 1) {
             const pills = policies.map(p => {
                 const isActive = p.policy_id === activePolicyEntry.policy_id;
-                return `<button onclick="selectPolicy('${esc(p.policy_id)}')" style="padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;border:2px solid ${isActive ? 'var(--tsi-primary)' : '#e2e8f0'};background:${isActive ? 'var(--tsi-primary)' : 'white'};color:${isActive ? 'white' : '#475569'};transition:all 0.2s;">${esc(p.title || p.policy_id)}</button>`;
+                return `<button onclick="selectPolicy('${esc(p.policy_id)}')" aria-pressed="${isActive}" style="padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;border:2px solid ${isActive ? 'var(--tsi-primary)' : '#e2e8f0'};background:${isActive ? 'var(--tsi-primary)' : 'white'};color:${isActive ? 'white' : '#475569'};transition:all 0.2s;">${esc(p.title || p.policy_id)}</button>`;
             }).join('');
             // Only claim we've scoped to the persona when every remaining policy actually
             // carries that tag -- if none matched, portal.js fell back to the unfiltered
@@ -248,17 +300,17 @@
             const personaLower = (SESSION.persona || '').toLowerCase();
             const allMatchPersona = personaLower && policies.every(p => (p.personas || []).some(c => (c || '').toLowerCase() === personaLower));
             const personaHint = allMatchPersona
-                ? `<p style="font-size:0.7rem;color:#94a3b8;margin:6px 0 0;">Showing policies for: <strong style="color:#0891b2;">${esc(getPersonaLabel(SESSION.persona))}</strong> — you can still view any policy above.</p>`
+                ? `<p style="font-size:0.7rem;color:#64748b;margin:6px 0 0;">Showing policies for: <strong style="color:#0e7490;">${esc(getPersonaLabel(SESSION.persona))}</strong> — you can still view any policy above.</p>`
                 : '';
             selectorHtml = `
                 <div style="margin-bottom:20px;">
-                    <p style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin:0 0 8px;">Select Policy</p>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">${pills}</div>
+                    <p style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#64748b;margin:0 0 8px;">Select Policy</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;" role="group" aria-label="Select Policy">${pills}</div>
                     ${personaHint}
                 </div>`;
         }
 
-        area.innerHTML = selectorHtml + '<div id="preference-center-body"><div class="spinner"><div class="spin-ring"></div><p>Loading policy...</p></div></div>';
+        area.innerHTML = selectorHtml + '<div id="preference-center-body"><div class="spinner" role="status" aria-live="polite"><div class="spin-ring"></div><p>Loading policy...</p></div></div>';
 
         await loadPolicyPreferenceCenter(activePolicyEntry.policy_id);
     }
@@ -320,10 +372,10 @@
                 <div style="flex:1;padding-right:16px;">
                     <div style="font-weight:700;font-size:0.875rem;color:#1e293b;">${esc(p.name)}</div>
                     <div class="purpose-desc">${esc(p.description || '')}</div>
-                    ${p.is_mandatory_for_service ? '<span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;color:#0891b2;">Required for service</span>' : ''}
+                    ${p.is_mandatory_for_service ? '<span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;color:#0e7490;">Required for service</span>' : ''}
                 </div>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-${esc(p.id)}" ${checked ? 'checked' : ''} ${disabled}>
+                    <input type="checkbox" id="toggle-${esc(p.id)}" aria-label="${esc(p.name)}" ${checked ? 'checked' : ''} ${disabled}>
                     <span class="toggle-slider"></span>
                 </label>
             </div>`;
@@ -332,7 +384,7 @@
         let langOptions = langs.map(l => `<option value="${l}" ${l === currentLang ? 'selected' : ''}>${l.toUpperCase()}</option>`).join('');
 
         area.innerHTML = `
-            <div id="save-success" class="success-banner">Your consent preferences have been saved.</div>
+            <div id="save-success" class="success-banner" role="status" aria-live="polite">Your consent preferences have been saved.</div>
 
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <div>
@@ -340,7 +392,7 @@
                     <p style="margin:4px 0 0;font-size:0.8rem;color:#64748b;">${esc(lc.general_purpose_description || '')}</p>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:0.7rem;color:#64748b;font-weight:700;text-transform:uppercase;">Language:</span>
+                    <label for="lang-select" style="font-size:0.7rem;color:#64748b;font-weight:700;text-transform:uppercase;">Language:</label>
                     <select id="lang-select" style="font-size:0.8rem;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;outline:none;" onchange="changeLang(this.value)">${langOptions}</select>
                 </div>
             </div>
@@ -351,7 +403,7 @@
                 <button class="btn-primary" onclick="savePreferences()">Save My Preferences</button>
             </div>
 
-            <div id="save-success-bottom" class="success-banner" style="margin-top:16px;margin-bottom:0;">Your consent preferences have been saved.</div>
+            <div id="save-success-bottom" class="success-banner" role="status" aria-live="polite" style="margin-top:16px;margin-bottom:0;">Your consent preferences have been saved.</div>
         `;
     }
 
@@ -464,7 +516,7 @@
         if (historyCache.length > 0 && SESSION.pcaQrEnabled !== false) setTimeout(updateQR, 0);
 
         if (historyCache.length === 0) {
-            area.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#94a3b8;">
+            area.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#64748b;">
                 <p style="font-size:1rem;font-weight:600;">No consent records found.</p>
                 <p style="font-size:0.875rem;">Your consent records will appear here once you save preferences.</p>
             </div>${renderSelfVerify()}`;
@@ -506,7 +558,7 @@
                     displayStatus = 'ACTIVE';
                 }
                 return `<tr>
-                    <td style="font-family:monospace;font-size:0.7rem;color:#94a3b8;">...${esc(rec.id.slice(-6))}</td>
+                    <td style="font-family:monospace;font-size:0.7rem;color:#64748b;">...${esc(rec.id.slice(-6))}</td>
                     <td style="color:#64748b;">${esc(formatTimestamp(rec.timestamp))}</td>
                     <td style="color:#64748b;font-size:0.8rem;font-style:italic;">${esc(mech.replace(/_/g,' '))}</td>
                     <td>${getStatusBadge(displayStatus)}</td>
@@ -519,7 +571,7 @@
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px 10px 0 0;border-bottom:none;">
                         <div>
                             <div style="font-size:0.875rem;font-weight:700;color:#1e293b;">${esc(policyTitle)}</div>
-                            <div style="font-size:0.7rem;font-family:monospace;color:#94a3b8;margin-top:2px;">${esc(policyId)}</div>
+                            <div style="font-size:0.7rem;font-family:monospace;color:#64748b;margin-top:2px;">${esc(policyId)}</div>
                         </div>
                         <div style="display:flex;gap:8px;">
                             <button class="btn-warn withdraw-policy-btn"
@@ -551,7 +603,7 @@
             <h2 style="margin:0 0 6px;font-size:1rem;font-weight:700;color:#1e293b;">Consent History</h2>
             <p style="margin:0 0 20px;font-size:0.8rem;color:#64748b;">Records are grouped by consent policy. Use Withdraw or Erasure Request to act on a specific policy.</p>
             ${sectionsHtml}
-            <p style="font-size:0.7rem;color:#94a3b8;margin-top:4px;font-style:italic;">* Mandatory data is retained until account closure.</p>
+            <p style="font-size:0.7rem;color:#64748b;margin-top:4px;font-style:italic;">* Mandatory data is retained until account closure.</p>
             ${renderSelfVerify()}
         `;
 
@@ -582,7 +634,7 @@
                     }
                     <button class="btn-primary" onclick="checkConsent()" style="padding:9px 16px;">Check Status</button>
                 </div>
-                <div id="verify-result"></div>
+                <div id="verify-result" role="status" aria-live="polite"></div>
             </div>
         `;
     }
@@ -630,14 +682,14 @@
             </div>`;
         });
 
-        document.getElementById('modal-purposes').innerHTML = purposeHtml || '<p style="color:#94a3b8;font-size:0.8rem;">No purpose data available.</p>';
+        document.getElementById('modal-purposes').innerHTML = purposeHtml || '<p style="color:#64748b;font-size:0.8rem;">No purpose data available.</p>';
         document.getElementById('modal-provenance').innerHTML = `
             <p><strong>Policy:</strong> ${esc(rec.policy_id)} v${esc(rec.policy_version)}</p>
             <p><strong>Mechanism:</strong> ${esc(rec.consent_mechanism)}</p>
             <p><strong>Timestamp:</strong> ${esc(formatTimestamp(rec.timestamp))}</p>
             <p><strong>Session IP:</strong> ${esc(rec.ip_address || 'Encrypted')}</p>
         `;
-        document.getElementById('detail-modal').style.display = 'flex';
+        openModal(document.getElementById('detail-modal'));
     }
 
     function openWithdrawModal(policyId, policyTitle) {
@@ -669,7 +721,7 @@
 
         const listEl = document.getElementById('withdraw-purpose-list');
         if (eligible.length === 0) {
-            listEl.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:12px;">No eligible purposes found for withdrawal.</p>';
+            listEl.innerHTML = '<p style="color:#64748b;font-size:0.85rem;text-align:center;padding:12px;">No eligible purposes found for withdrawal.</p>';
         } else {
             listEl.innerHTML = eligible.map(p => `
                 <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:8px;cursor:${p.active ? 'pointer' : 'default'};opacity:${p.active ? '1' : '0.55'};">
@@ -678,7 +730,7 @@
                         style="margin-top:2px;width:15px;height:15px;accent-color:var(--tsi-primary);cursor:${p.active ? 'pointer' : 'not-allowed'};">
                     <span>
                         <span style="display:block;font-weight:700;font-size:0.85rem;color:#1e293b;">${esc(p.name)}</span>
-                        <span style="font-size:0.7rem;color:${p.active ? (p.mandatory ? '#b45309' : '#15803d') : '#94a3b8'};">
+                        <span style="font-size:0.7rem;color:${p.active ? (p.mandatory ? '#b45309' : '#15803d') : '#64748b'};">
                             ${p.active ? (p.mandatory ? 'Active · Required for service' : 'Active') : 'Already Withdrawn'}
                         </span>
                     </span>
@@ -696,7 +748,7 @@
             selAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
         };
 
-        modal.style.display = 'flex';
+        openModal(modal);
     }
 
     async function withdrawConsent(policyId, purposeIds) {
@@ -739,7 +791,7 @@
 
     function renderGrievanceView(area, list) {
         let rows = list.length === 0
-            ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:#94a3b8;font-style:italic;">No requests or grievances submitted yet.</td></tr>`
+            ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;font-style:italic;">No requests or grievances submitted yet.</td></tr>`
             : list.map(r => `<tr>
                 <td style="font-family:monospace;font-size:0.75rem;color:#64748b;">${esc(r.grievance_id)}</td>
                 <td style="font-weight:700;font-size:0.8rem;color:#1e293b;">${esc((r.type||'').replace(/_/g,' '))}</td>
@@ -759,22 +811,22 @@
             <div id="grievance-form-container" style="display:none;">
                 <div class="grievance-form">
                     <h3 style="margin:0 0 20px;font-size:0.875rem;font-weight:700;color:#1e293b;">Submit a New Request</h3>
-                    <label>Request Category</label>
+                    <label for="g-type">Request Category</label>
                     <select id="g-type">
                         <option value="GENERAL_COMPLAINT">General Inquiry</option>
                         <option value="ERASURE_REQUEST">Right to Erasure (Deletion)</option>
                         <option value="DATA_ACCESS_REQUEST">Data Portability Request</option>
                         <option value="CORRECTION_REQUEST">Correction Request</option>
                     </select>
-                    <label>Subject</label>
+                    <label for="g-subject">Subject</label>
                     <input type="text" id="g-subject" placeholder="Brief summary of your request">
-                    <label>Detailed Description</label>
+                    <label for="g-description">Detailed Description</label>
                     <textarea id="g-description" rows="4" placeholder="Explain your request in detail..."></textarea>
                     <div style="display:flex;gap:10px;justify-content:flex-end;">
                         <button onclick="toggleGrievanceForm()" style="background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:10px 16px;">Cancel</button>
                         <button class="btn-primary" id="submit-grievance-btn" onclick="submitGrievance()">Submit Request</button>
                     </div>
-                    <div id="g-error" style="display:none;color:#b91c1c;font-size:0.8rem;margin-top:10px;"></div>
+                    <div id="g-error" role="alert" aria-live="assertive" style="display:none;color:#b91c1c;font-size:0.8rem;margin-top:10px;"></div>
                 </div>
             </div>
             <div style="overflow-x:auto;">
@@ -890,7 +942,10 @@
 
     function togglePcaPopover() {
         const pop = document.getElementById('pca-popover');
-        pop.style.display = pop.style.display === 'flex' ? 'none' : 'flex';
+        const expanded = pop.style.display !== 'flex';
+        pop.style.display = expanded ? 'flex' : 'none';
+        const btn = document.querySelector('[aria-controls="pca-popover"]');
+        if (btn) btn.setAttribute('aria-expanded', String(expanded));
     }
 
     // Close the PCA popover when clicking outside it
@@ -899,6 +954,8 @@
         const pop = document.getElementById('pca-popover');
         if (pop.style.display === 'flex' && !wrap.contains(e.target)) {
             pop.style.display = 'none';
+            const btn = document.querySelector('[aria-controls="pca-popover"]');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
         }
     });
 
@@ -936,19 +993,19 @@
 
     // Close detail modal on backdrop click
     document.getElementById('detail-modal').addEventListener('click', function(e) {
-        if (e.target === this) this.style.display = 'none';
+        if (e.target === this) closeModal(this);
     });
 
     // Withdraw modal: close on backdrop click, close button, and cancel button
     const _wModal = document.getElementById('withdraw-modal');
     _wModal.addEventListener('click', function(e) {
-        if (e.target === this) this.style.display = 'none';
+        if (e.target === this) closeModal(this);
     });
     document.getElementById('withdraw-modal-close').addEventListener('click', () => {
-        _wModal.style.display = 'none';
+        closeModal(_wModal);
     });
     document.getElementById('withdraw-cancel-btn').addEventListener('click', () => {
-        _wModal.style.display = 'none';
+        closeModal(_wModal);
     });
     document.getElementById('withdraw-submit-btn').addEventListener('click', async () => {
         const selected = Array.from(_wModal.querySelectorAll('.withdraw-purpose-chk:checked')).map(el => el.value);
@@ -956,7 +1013,7 @@
             alert('Please select at least one purpose to withdraw.');
             return;
         }
-        _wModal.style.display = 'none';
+        closeModal(_wModal);
         await withdrawConsent(_wModal.dataset.policyId, selected);
     });
 </script>

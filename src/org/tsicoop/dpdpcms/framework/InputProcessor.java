@@ -100,12 +100,19 @@ public class InputProcessor {
             scopeSet = (Set<String>) permissionsMap.get(key);
         }
         else {
+            UUID keyUuid;
+            try {
+                keyUuid = UUID.fromString(key);
+            } catch (Exception e) {
+                // Malformed (non-UUID) key -- treat as "no permissions", not a crash.
+                return null;
+            }
             try {
                 pool = new PoolDB();
                 conn = pool.getConnection();
                 String sql = "SELECT fiduciary_id, permissions, key_value FROM api_keys WHERE id = ? AND status = 'ACTIVE'";
                 pstmt = conn.prepareStatement(sql);
-                pstmt.setObject(1, UUID.fromString(key));
+                pstmt.setObject(1, keyUuid);
                 rs = pstmt.executeQuery();
 
                 if (rs.next() && new PasswordHasher().checkPassword(secret, rs.getString("key_value"))) {
@@ -224,6 +231,14 @@ public class InputProcessor {
         }
         apiClientCache.remove(cacheKey);
 
+        UUID keyUuid;
+        try {
+            keyUuid = UUID.fromString(apiKey);
+        } catch (Exception e) {
+            // Malformed (non-UUID) key -- not a valid client, not a server error.
+            return false;
+        }
+
         boolean valid = false;
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -233,7 +248,7 @@ public class InputProcessor {
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, UUID.fromString(apiKey));
+            pstmt.setObject(1, keyUuid);
             rs = pstmt.executeQuery();
             if (rs.next()) {
                 String status = rs.getString("status");

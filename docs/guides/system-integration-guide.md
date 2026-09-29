@@ -9,6 +9,8 @@
 
 This guide covers the client API: the endpoints your backend calls to run notice delivery, capture consent, validate processing authorization in real time, drive a Data Principal's rights dashboard, and track purge fulfillment.
 
+A machine-readable [OpenAPI 3.0 spec](../api/openapi.yaml) for this same API is also available - use it for client generation, request/response validation, or a structured reference alongside this guide's narrative walkthrough. It was verified directly against the service source, and calls out several real discrepancies from this guide's own examples (silently-ignored fields, two error messages that name the wrong field, and more) - where the two disagree, the spec's notes reflect actual server behavior.
+
 It doesn't cover:
 
 - **Consuming events after the fact** - see the [Webhook Integration Guide](webhook-integration-guide.md) (push) and the [Client Polling Integration Guide](polling-integration-guide.md) (pull) for `list_notifications`/`list_purge_requests` and their event equivalents.
