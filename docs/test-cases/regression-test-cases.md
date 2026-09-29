@@ -508,6 +508,7 @@ shape - the OpenAPI spec is the source of truth for the latter.
 **Steps:** Call `list_purge_requests` where at least one request has `app_id: null`.
 **Expected Result:** Orphaned requests appear alongside the calling App's own, with `app_name: "No Linked Processor"`.
 **Last Verified:** v0.5.2 · 2026-09-28 · pass
+
 ---
 
 ## 6. Public API
@@ -580,6 +581,7 @@ Full contract: [Webhook Integration Guide](../guides/webhook-integration-guide.m
 **Steps:** Call `update_purge_status` with `status: LEGAL_HOLD_APPLIED`.
 **Expected Result:** Accepted (not server-restricted to DPO-only today - by design, per the guide's caveat); `PURGE_ONHOLD_NOTIFICATION` fires.
 **Last Verified:** v0.5.2 · 2026-09-28 · pass (LEGAL_HOLD_APPLIED accepted, PURGE_ONHOLD_NOTIFICATION confirmed)
+
 ---
 
 ## 9. Cross-Cutting / Non-Functional
