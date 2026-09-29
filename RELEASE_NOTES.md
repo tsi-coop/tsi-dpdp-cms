@@ -5,7 +5,7 @@
 - Added a runnable [Apache JMeter](https://jmeter.apache.org/) load test (`tests/`) covering the full consent lifecycle against the client API: notice/policy retrieval, consent capture, processing validation (`validate_consent`), rights/dashboard reads, withdrawal/erasure, grievances, purge polling, and the full guardian OTP login round trip. Concurrency defaults are sized against the real `HikariCP` connection-pool ceiling (`maximumPoolSize=15`) rather than round numbers, and the OTP-login stage doubles as the direct verification tool for this release's rate-limiting fix (see below) - see [`tests/load-testing-plan.md`](tests/load-testing-plan.md) for methodology and [`tests/README.md`](tests/README.md) for a quick-start.
 - Added [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md), a living regression suite covering the console, rights portal, client/public API, webhooks, and the purge lifecycle - intended to be run (and extended) before every release, not just this one. 40 of its 84 cases are already verified against this release; the rest are documented as open, each tagged with exactly what it still needs (a browser walkthrough, a different instance state, or a live webhook endpoint).
 
-**Standards Compliance**
+**Standards**
 
 A gap review against `main` surfaced several standards gaps, addressed this release:
 
