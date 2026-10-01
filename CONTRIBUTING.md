@@ -15,6 +15,11 @@ and securely managed. To give back a change:
 There is no separate PR-based intake process at this time; email is the
 process.
 
+## Code of conduct
+
+All interactions with the project, including contribution emails, are
+covered by our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Reporting security issues
 
 Do not open a public issue or PR for a vulnerability. See

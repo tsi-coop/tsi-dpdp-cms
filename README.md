@@ -121,16 +121,17 @@ Pick the guide for your role:
 
 ## Data Portability & Non-PII Extraction
 
-The TSI DPDP CMS ensures that all system-generated configurations, audit logs, and processing definitions can be freely imported and exported using open, non-proprietary formats:
+The TSI DPDP CMS lets administrators export system-generated configurations, audit logs, and processing definitions in open, non-proprietary formats:
 
-* **Formats Supported:** All administrative configuration schemas, Record of Processing Activities (RoPA) logs, and event streams are structured natively in JSON and CSV.
-* **Interoperable APIs:** The system exposes standard REST API endpoints and webhook pipelines, allowing seamless integration, state migration, or synchronization with external data protection systems.
-* **Non-PII Separation:** Analytical data, tenant metrics, and system configuration profiles can be extracted fully decoupled from sensitive Personal Identifiable Information (PII) or Data Principal identities.
+* **Formats Supported:** Administrative configuration, Record of Processing Activities (RoPA) records, and event data are structured in JSON and CSV. The RoPA registry can be exported as CSV from the DPO console.
+* **Interoperable APIs:** The system exposes standard REST API endpoints (see the [OpenAPI spec](docs/api/openapi.yaml)) and HMAC-signed webhooks (see the [Webhook Integration Guide](docs/guides/webhook-integration-guide.md)), allowing integration and synchronization with external data protection systems.
+* **Non-PII Separation:** System configuration, RoPA definitions, and aggregate metrics can be extracted without Data Principal identities. Exports that reference individual consent or audit records may contain principal identifiers and should be handled as personal data.
 
 ## Privacy, Security, & Compliance
 
-* **Regulatory Compliance:** Architected strictly in accordance with India's Digital Personal Data Protection (DPDP) Act, 2023, enforcing immutable consent logs and verifiable consent withdrawal pipelines.
-* **Security Patching:** To ensure robust safety-by-design, this repository actively patches and mitigates vulnerabilities. Standard deployments should utilize version 0.5.1 or later, which resolves client-side security enforcement issues identified in earlier builds (CVE-2026-84840 / CVE-2026-84841).
+* **Regulatory Compliance:** Built in accordance with India's Digital Personal Data Protection (DPDP) Act, 2023, with signed, immutable audit and compliance log entries and verifiable consent withdrawal and erasure workflows.
+* **Security Patching:** This repository actively patches and mitigates vulnerabilities. Standard deployments should use version 0.5.1 or later, which fixed missing server-side authentication on the admin and DPO console pages and on the first-run setup endpoint (CVE-2026-84840 / CVE-2026-84841). See the [release notes](RELEASE_NOTES.md) for details and [`SECURITY.md`](SECURITY.md) for how to report vulnerabilities.
+* **Community Conduct:** Participation in the project is governed by the [Code of Conduct](CODE_OF_CONDUCT.md), which sets expected behavior and explains how to report harassment or abuse.
 
 ## Testing
 
