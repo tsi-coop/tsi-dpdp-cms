@@ -114,14 +114,14 @@ Pick the guide for your role:
 ## Standards
 
 - **Contribution & security process:** see [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
-- **API spec:** an OpenAPI 3.0 spec for the client API lives at [`docs/api/openapi.yaml`](docs/api/openapi.yaml) (static viewer at `docs/api/index.html`), verified directly against source and cross-linked from the [System Integration Guide](docs/guides/system-integration-guide.md).
-- **Accessibility:** the Data Principal rights portal (`web/rights`) has ARIA roles, live regions, keyboard focus management, semantic form labels, and WCAG-AA color contrast; the operator console (`web/console`) is next.
+- **API spec:** an OpenAPI 3.0 spec for the client API lives at [`docs/api/openapi.yaml`](docs/api/openapi.yaml) (static viewer at `docs/api/index.html`).
+- **Accessibility:** the Data Principal rights portal (`web/rights`) has ARIA roles, live regions, keyboard focus management, semantic form labels, and WCAG-AA color contrast.
 - **Rate limiting:** the principal OTP request/verification endpoints and the first-run bootstrap endpoint are rate-limited, both per-target and per-source-IP.
 - **Testing:** see the [Testing](#testing) section below for the regression suite and load test.
 
 ## Testing
 
-- **Regression tests:** [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md) is a living, versioned suite of test cases covering the admin/DPO consoles, the data principal rights portal, the client and public APIs, webhooks, and the full purge lifecycle. Cases are organized by capability area, tagged `API` (executable directly against a running instance, no browser needed) or `UI` (manual console/portal walkthrough), and prioritized `Critical`/`High`/`Medium`. Run the relevant sections before every release and record pass/fail in each case's `Last Verified` field.
+- **Regression tests:** [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md) is a living, versioned suite of test cases covering the admin/DPO consoles, the data principal rights portal, the client and public APIs, webhooks, and the full purge lifecycle.
 - **Load testing:** a runnable [Apache JMeter](https://jmeter.apache.org/) load test lives in [`tests/`](tests/), covering the full consent lifecycle against the client API: notice/policy retrieval, consent capture, processing validation (`validate_consent`), rights/dashboard reads, withdrawal/erasure, grievances, purge polling, and the full guardian OTP login round trip. See [`tests/README.md`](tests/README.md) for a quick-start and [`tests/load-testing-plan.md`](tests/load-testing-plan.md) for methodology and sizing guidance.
 
 ## White-Labeling
