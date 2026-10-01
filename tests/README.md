@@ -275,7 +275,4 @@ Treat `maximumPoolSize=15` as the next thing to tune.
 **Scope of this conclusion:** all three runs were against one local
 Docker instance on one machine, not production hardware, network, or
 concurrent real-world traffic. "Zero leaks" and "graceful degradation"
-are true for the concurrency levels actually tried here; they aren't a
-claim that `maximumPoolSize=15` is the right number for production, only
-that the failure mode when it's exceeded is a clean timeout rather than
-something worse.
+are true for the concurrency levels actually tried here. Tuning `maximumPoolSize=15` for your needs should give you the right result.

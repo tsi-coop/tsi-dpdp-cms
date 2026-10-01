@@ -37,10 +37,7 @@ OTP** in DPO Console → Settings (the default for a newly created
 Fiduciary), the server accepts a fixed placeholder value instead of
 dispatching a real OTP over SMS/email/voice. That value is `1234`,
 hardcoded as `PLACEHOLDER_OTP` in
-`src/org/tsicoop/dpdpcms/service/v1/Principal.java` (not `123456`; that
-longer value only appears as a hardcoded placeholder in the standalone
-tour demo page `web/tour/parent-consent.html`, which doesn't call the real
-backend at all). Because that value is fixed and known, the test plan can
+`src/org/tsicoop/dpdpcms/service/v1/Principal.java`. Because that value is fixed and known, the test plan can
 script the **full** `request_principal_otp` → `principal_login` flow, not
 just issuance, something a real OTP delivery flow normally rules out for
 automated load testing.
