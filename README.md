@@ -119,6 +119,19 @@ Pick the guide for your role:
 - **Rate limiting:** the principal OTP request/verification endpoints and the first-run bootstrap endpoint are rate-limited, both per-target and per-source-IP.
 - **Testing:** see the [Testing](#testing) section below for the regression suite and load test.
 
+## Data Portability & Non-PII Extraction
+
+The TSI DPDP CMS ensures that all system-generated configurations, audit logs, and processing definitions can be freely imported and exported using open, non-proprietary formats:
+
+* **Formats Supported:** All administrative configuration schemas, Record of Processing Activities (RoPA) logs, and event streams are structured natively in **JSON** and **CSV**.
+* **Interoperable APIs:** The system exposes standard **REST API endpoints and webhook pipelines**, allowing seamless integration, state migration, or synchronization with external data protection systems.
+* **Non-PII Separation:** Analytical data, tenant metrics, and system configuration profiles can be extracted fully decoupled from sensitive Personal Identifiable Information (PII) or Data Principal identities.
+
+## Privacy, Security, & Compliance
+
+* **Regulatory Compliance:** Architected strictly in accordance with India's **Digital Personal Data Protection (DPDP) Act, 2023**, enforcing immutable consent logs and verifiable consent withdrawal pipelines.
+* **Security Patching:** To ensure robust safety-by-design, this repository actively patches and mitigates vulnerabilities. Standard deployments should utilize **version 0.5.1 or later**, which resolves client-side security enforcement issues identified in earlier builds (CVE-2026-84840 / CVE-2026-84841).
+
 ## Testing
 
 - **Regression tests:** [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md) is a living, versioned suite of test cases covering the admin/DPO consoles, the data principal rights portal, the client and public APIs, webhooks, and the full purge lifecycle.
