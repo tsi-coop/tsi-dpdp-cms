@@ -123,14 +123,14 @@ Pick the guide for your role:
 
 The TSI DPDP CMS ensures that all system-generated configurations, audit logs, and processing definitions can be freely imported and exported using open, non-proprietary formats:
 
-* **Formats Supported:** All administrative configuration schemas, Record of Processing Activities (RoPA) logs, and event streams are structured natively in **JSON** and **CSV**.
-* **Interoperable APIs:** The system exposes standard **REST API endpoints and webhook pipelines**, allowing seamless integration, state migration, or synchronization with external data protection systems.
+* **Formats Supported:** All administrative configuration schemas, Record of Processing Activities (RoPA) logs, and event streams are structured natively in JSON and CSV.
+* **Interoperable APIs:** The system exposes standard REST API endpoints and webhook pipelines, allowing seamless integration, state migration, or synchronization with external data protection systems.
 * **Non-PII Separation:** Analytical data, tenant metrics, and system configuration profiles can be extracted fully decoupled from sensitive Personal Identifiable Information (PII) or Data Principal identities.
 
 ## Privacy, Security, & Compliance
 
-* **Regulatory Compliance:** Architected strictly in accordance with India's **Digital Personal Data Protection (DPDP) Act, 2023**, enforcing immutable consent logs and verifiable consent withdrawal pipelines.
-* **Security Patching:** To ensure robust safety-by-design, this repository actively patches and mitigates vulnerabilities. Standard deployments should utilize **version 0.5.1 or later**, which resolves client-side security enforcement issues identified in earlier builds (CVE-2026-84840 / CVE-2026-84841).
+* **Regulatory Compliance:** Architected strictly in accordance with India's Digital Personal Data Protection (DPDP) Act, 2023, enforcing immutable consent logs and verifiable consent withdrawal pipelines.
+* **Security Patching:** To ensure robust safety-by-design, this repository actively patches and mitigates vulnerabilities. Standard deployments should utilize version 0.5.1 or later, which resolves client-side security enforcement issues identified in earlier builds (CVE-2026-84840 / CVE-2026-84841).
 
 ## Testing
 
