@@ -627,3 +627,35 @@ Full contract: [Webhook Integration Guide](../guides/webhook-integration-guide.m
 **Steps:** Configure the system in Consent Manager mode per the System Design doc §1.2; onboard two distinct Fiduciaries under it.
 **Expected Result:** Each Fiduciary's data (policies, consents, apps) stays isolated; console navigation correctly scopes an operator to their assigned Fiduciary/Fiduciaries.
 **Last Verified:**
+
+### TC-XCUT-09: Unauthenticated admin/DPO requests get 401, not schema errors
+**Type:** API · **Priority:** Critical
+**Steps:** With **no** `Authorization` header, `POST` `{"_func": "<func>"}` (no other fields) to each of: `/api/v1/admin/job` (`list_jobs`, `create_job`), `/api/v1/admin/apikey` (`list_api_keys`, `generate_api_key`), `/api/v1/admin/operator` (`list_users`, `create_user`), `/api/v1/admin/ropa` (`list_entries`, `create_entry`). Repeat each with `Authorization: Bearer invalid`.
+**Expected Result:** Every request returns `401` with `Unauthorized`. The body never contains `required property` or any field name. (Regression for [security fix 4](../security-fixes/4.md).)
+**Last Verified:** v0.5.3 (unreleased build) · 2026-10-02 · pass - 16/16 requests returned 401 with no field names. The same script against the published v0.5.2 image returned 400 with field names on 14 of 16.
+
+### TC-XCUT-10: Authenticated requests still get schema validation errors
+**Type:** API · **Priority:** High
+**Preconditions:** A valid admin bearer token (`login` with `identifier` + `password`).
+**Steps:** With the token, `POST` `{"_func": "<func>"}` (required fields omitted) to `/api/v1/admin/job` (`create_job`, `list_jobs`), `/api/v1/admin/apikey` (`list_api_keys`) and `/api/v1/admin/ropa` (`create_entry`).
+**Expected Result:** `400`, with an error naming the missing required fields (e.g. `create_job` → `fiduciary_id`, `job_type`, `subtype`). Confirms moving validation after authentication did not disable it.
+**Last Verified:** v0.5.3 (unreleased build) · 2026-10-02 · pass
+
+### TC-XCUT-11: Client API returns 401 before schema validation
+**Type:** API · **Priority:** High
+**Preconditions:** A Fiduciary, App and API key (`X-API-Key` is the `key_id`, `X-API-Secret` is the full `raw_api_key`).
+**Steps:** `POST /api/v1/client/consent` with `{"_func": "get_active_consent"}` (`user_id` omitted): (a) with no key headers, (b) with a well-formed but unknown key, (c) with a real `key_id` and a wrong secret, (d) with the valid key and secret. Also `{"_func": "list_jobs"}` with no key.
+**Expected Result:** (a)-(c) `401` with a single JSON error object (see TC-ADM-14) and no `required property` text. (d) `400` naming `user_id`. A non-whitelisted `_func` returns `403`.
+**Last Verified:** v0.5.3 (unreleased build) · 2026-10-02 · pass - the published v0.5.2 image returned 400 with `user_id` named for (a) and (b).
+
+### TC-XCUT-12: Unauthenticated-by-design functions still validate their payload
+**Type:** API · **Priority:** Medium
+**Steps:** `POST` with required fields omitted to: (a) `/api/v1/bootstrap/setup` (`initial_setup`); (b) `/api/v1/public/principal` (`request_principal_otp`); (c) `/api/v1/admin/operator` (`login`, `reset_password`).
+**Expected Result:** Each returns `400` naming the missing fields (not `401`), because these functions are intentionally reachable without a token. Their schemas are therefore public by design; they are gated by their own controls (bootstrap token, rate limiting) as documented elsewhere in this suite.
+**Last Verified:** v0.5.3 (unreleased build) · 2026-10-02 · pass
+
+### TC-XCUT-13: A failed login does not block the audit log
+**Type:** API · **Priority:** Critical
+**Steps:** On a fresh instance, `POST /api/v1/admin/operator` with `_func: login` for an unknown identifier (`401`). Complete first-run setup, log in as the admin (`200`), then log in once with a wrong password (`401`). Wait for the audit flush (up to about 3 minutes) and query `audit_logs` or open the DPO audit page.
+**Expected Result:** Three rows are written: `LOGIN_FAILURE`, `LOGIN_SUCCESS`, `LOGIN_FAILURE`, with failed logins filed under the system fiduciary (`00000000-0000-0000-0000-000000000000`). The application log contains no `CRITICAL: Failed to write audit batch` line.
+**Last Verified:** v0.5.3 (unreleased build) · 2026-10-02 · pass

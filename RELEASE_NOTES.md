@@ -1,5 +1,15 @@
 # Release Notes
 
+### v0.5.3
+**Security**
+- Fixed the API dispatcher validating the request payload against its JSON schema *before* checking authentication. An unauthenticated caller who sent a valid `_func` with required fields omitted received a `400` naming every missing field (e.g. `required property 'fiduciary_id' not found`), letting them map the internal parameter schema of the admin and DPO APIs (job, API key, operator, ROPA and others) without credentials. Authentication now runs first: a missing or invalid token returns `401` with no field names, and payload validation only happens for authenticated callers (or for the few functions that are unauthenticated by design). The same ordering is applied to the client API. Affects v0.5.2 and earlier - the v0.5.1 console and bootstrap fixes did not change this ordering. Reported by VulDB: [API Parameter Schema Enumerable Without Authentication](docs/security-fixes/4.md).
+
+
+**Bug Fixes**
+- Fixed the audit log silently stopping after a failed console login. A failed login (wrong password, unknown user, or inactive account) queued its audit event without a fiduciary, which made the whole batch fail the hash step; the failed batch was re-queued on every flush, so no audit event - including later successful ones - was ever written until the application restarted. Failed logins are now recorded against the system fiduciary, and any audit event with a missing fiduciary or user is defaulted rather than blocking the queue.
+
+---
+
 ### v0.5.2
 **Testing**
 - Added a runnable [Apache JMeter](https://jmeter.apache.org/) load test (`tests/`) covering the full consent lifecycle against the client API: notice/policy retrieval, consent capture, processing validation (`validate_consent`), rights/dashboard reads, withdrawal/erasure, grievances, purge polling, and the full guardian OTP login round trip. Concurrency defaults are sized against the real `HikariCP` connection-pool ceiling (`maximumPoolSize=15`) rather than round numbers, and the OTP-login stage doubles as the direct verification tool for this release's rate-limiting fix (see below) - see [`tests/load-testing-plan.md`](tests/load-testing-plan.md) for methodology and [`tests/README.md`](tests/README.md) for a quick-start.

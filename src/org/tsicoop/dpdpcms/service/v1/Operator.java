@@ -158,7 +158,8 @@ public class Operator implements Action {
             InputProcessor.setConsoleSessionCookie(res, out.get("token").toString());
             OutputProcessor.send(res, 200, out);
         }else{
-            new Audit().logEventAsync(identifier, fidUid, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
+            // fidUid is only resolved after a successful password check, so it is null here
+            new Audit().logEventAsync(identifier, fidUid != null ? fidUid : ADMIN_FID_UUID, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
             OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
         }
     }

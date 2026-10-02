@@ -143,7 +143,15 @@ public class Audit implements Action {
         OutputProcessor.send(res, 202, output);
     }
 
+    // Events with no owning fiduciary (e.g. a failed login for an unknown user) are filed under
+    // the system/admin fiduciary, matching the ADMIN_FID_UUID convention used across the services.
+    private static final UUID SYSTEM_FIDUCIARY_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
     public void logEventAsync(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) {
+        // A null fiduciary or user would make the whole batch fail in logEvents() (the hash step and the
+        // NOT NULL user_id column), and the failed batch is re-queued, blocking every later audit event.
+        if (fiduciaryId == null) fiduciaryId = SYSTEM_FIDUCIARY_ID;
+        if (userId == null) userId = "UNKNOWN";
         auditCache.add(new AuditEntry(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails, Timestamp.from(Instant.now())));
     }
 

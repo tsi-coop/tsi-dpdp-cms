@@ -262,9 +262,9 @@ public class InterceptingFilter implements Filter {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required '_func' attribute in input JSON.", uri);
                 return;
             }
-            if (!InputProcessor.validate(req, res)) { // Validates content-type and basic body parsing
-                return; // Error response already sent by InputProcessor
-            }
+            // NOTE: schema validation (InputProcessor.validate) must run only AFTER authentication.
+            // Its 400 responses name missing required fields, which would otherwise let
+            // unauthenticated callers enumerate the API parameter schema.
 
             // Enforce _func whitelist for Client APIs
             if (CLIENT_URI_PATH.equalsIgnoreCase(apiCategory)) {
@@ -328,6 +328,11 @@ public class InterceptingFilter implements Filter {
             if (!authenticated) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", errorMessage, uri);
                 return;
+            }
+
+            // Authenticated (or explicitly unauthenticated-by-design): now validate the payload
+            if (!InputProcessor.validate(req, res)) { // Validates content-type and basic body parsing
+                return; // Error response already sent by InputProcessor
             }
 
             // --- Instantiate and execute Servlet ---
