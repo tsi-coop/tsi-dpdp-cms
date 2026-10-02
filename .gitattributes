@@ -1,0 +1,9 @@
+# Keep GitHub's language bar focused on the Java backend: the HTML under web/ is the
+# console, rights portal and tour UI, and the SQL/shell files are DB init and ops scripts,
+# not separate code bases.
+*.html linguist-detectable=false
+*.html linguist-vendored
+*.sql linguist-detectable=false
+*.sql linguist-vendored
+*.sh linguist-detectable=false
+*.sh linguist-vendored
