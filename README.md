@@ -107,10 +107,10 @@ Pick the guide for your role:
 |---|---|---|
 | Compliance officers, DPOs, and the engineers configuring policy with them | [Implementation Guide](docs/guides/implementation-guide.md) | Data discovery, RoPA authoring, JSON policy compilation, DPIA, and the policy publishing/lifecycle workflow. |
 | Developers at Data Fiduciaries/Processors integrating the client API | [System Integration Guide](docs/guides/system-integration-guide.md) | Authentication, permission scopes, and the policy/consent/grievance/purge endpoints for capturing consent and validating processing in real time. |
-| Developers integrating a chatbot, IVR, or helpline CRM | [Chatbot and Voice Helpline Integration Guide](docs/guides/chatbot-and-voice-integration-guide.md) | Architecture diagrams, conversational and call lifecycles, and guardrails (deterministic consent, gated tool calls, unified phone-hash identity) for conversational channels. |
 | Developers consuming notification and purge events after the fact | [Webhook Integration Guide](docs/guides/webhook-integration-guide.md)<br><br>[Client Polling Integration Guide](docs/guides/polling-integration-guide.md) | Push delivery (HMAC-SHA256-signed webhooks for Notification/Purge/OTP, v0.4.8+) and its reliable pull-based counterpart - the reconciliation path for anything a missed webhook delivery would drop. |
 | Developers building from source | [Local Development Guide](docs/guides/local-development-guide.md) | Prerequisites (JDK, Maven, Docker, Jetty) and step-by-step build/run instructions, for both Docker and non-Docker setups. |
 | DevOps / system administrators going to production | [Production Deployment Guide](docs/guides/production-deployment-guide.md) | Secrets management, running as a non-root user, disk encryption, data-tier isolation, and offsite backups, for both Docker and Binary installs. |
+| **Illustration:** Developers integrating a chatbot, IVR, or helpline CRM | [Chatbot and Voice Helpline Integration Guide](docs/guides/chatbot-and-voice-integration-guide.md) | Architecture diagrams, conversational and call lifecycles, and guardrails (deterministic consent, gated tool calls, unified phone-hash identity) for conversational channels. |
 
 ## Standards
 
