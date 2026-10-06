@@ -1,0 +1,128 @@
+========================================================================
+ROPA REQUIREMENTS DOCUMENT
+Activity : thebanyan_helpline_v1
+Sector   : NGO / Mental Health Helpline
+Standard : Digital Personal Data Protection Act, 2023 (India)
+========================================================================
+
+DESCRIPTION
+------------------------------------------------------------------------
+ROPA requirements for The Banyan's mental health helpline. Covers
+support with consented referral and follow-up, emergency response when
+life is at risk, and reports about people in distress (third-party
+data). Consent is captured once per call by IVR key press. Callers may
+stay pseudonymous.
+
+When someone calls, the IVR plays a short notice in their language and
+asks for one key press: 
+1 for their own support (including referral and follow-up if they ask)
+2 to report someone in need. 
+
+That single press is recorded as the consent, with a timestamp and language.
+If the counsellor judges there's an immediate risk to life, they can 
+escalate to emergency services under legitimate use, with no consent needed
+and a log entry for each disclosure.
+
+COMPLIANCE LIFECYCLE
+------------------------------------------------------------------------
+  1. DPO defined requirements in this template
+  2. Engineer configured policy (thebanyan_helpline_v1)
+  3. System auto-derived ROPA draft on publish
+  4. DPO verified draft against this template
+  5. DPO published (dpo_id auto-recorded)
+
+PROCESSING ACTIVITY
+------------------------------------------------------------------------
+  Activity Name : thebanyan_helpline_v1
+  Legal Basis   : MIXED
+  Purpose       :
+    - Support, Referral & Follow-up
+    - Reporting Someone Who Needs Help
+    - Emergency Response (Risk to Life)
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_helpline_support         Consent (IVR: press 1)
+  purpose_community_report         Consent of reporter (IVR: press 2) /
+                                   Legitimate Use for the person in distress
+  purpose_crisis_escalation        Consent (verbal confirmation by caller),
+                                   else Legitimate Use / Medical Emergency
+
+DATA SUBJECT CATEGORIES
+------------------------------------------------------------------------
+  - caller
+  - minor_caller
+  - reported_person
+
+DATA CATEGORIES  (10 total)
+------------------------------------------------------------------------
+  caller_name (optional)         mobile_number                age
+  gender                         preferred_language           mental_health_concerns
+  risk_assessment                current_location            reported_person_details
+  referral_details
+
+SECURITY MEASURES
+------------------------------------------------------------------------
+AES-256 at rest, TLS 1.3 in transit, India-hosted. Counsellor-only
+access, masked mobile numbers, full access logs, no disclosure to
+family or employers except to prevent a threat to life.
+
+DATA PROCESSORS  (2 declared)
+------------------------------------------------------------------------
+  Name           Country    Role                              Contact
+  -------------- ---------- --------------------------------- ----------------------------
+  Exotel         IN         Cloud Telephony & IVR            privacy@exotel.com
+  AWS            IN         Cloud Hosting (Mumbai Region)     aws-india-dpa@amazon.com
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_helpline_support         Exotel, AWS
+  purpose_community_report         AWS
+  purpose_crisis_escalation        AWS
+
+CROSS-BORDER TRANSFERS
+------------------------------------------------------------------------
+  No cross-border transfers.
+
+RETENTION BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_helpline_support         2 YEARS         COLLECTION
+  purpose_community_report         1 YEAR          COLLECTION
+  purpose_crisis_escalation        3 YEARS         COLLECTION
+
+LINKED CONSENT POLICY
+------------------------------------------------------------------------
+  - thebanyan_helpline_v1
+
+DPO REVIEW NOTES
+------------------------------------------------------------------------
+  1. IVR captures one consent per call (press 1 support, press 2
+     reporting someone); store the consent artefact with timestamp and
+     language. Referral is offered by the counsellor only on request.
+  2. Emergency: the counsellor first asks the caller to confirm sharing
+     with 112 or a responder and logs the confirmation as consent. If the
+     caller cannot or does not respond and life is at risk, disclose
+     under Section 7. Log each disclosure with time, recipient, basis
+     (consent or Section 7) and reason for audit.
+  2a. No purpose is mandatory for the service; declining any of them must
+     not stop the call.
+  3. Reported persons are not on the call and cannot consent; collect
+     only location and condition, and move them into thebanyan_patient_v1
+     (with its own consent) if they enter care.
+  4. Callers under 18: confirm with counsel whether the health-service
+     exemption from guardian consent applies.
+  5. Calls are not recorded. Mask mobile numbers on dashboards; purge jobs
+     must cover AWS backups and Exotel call logs.
+
+========================================================================
+NOTE: This document records the DPO's ROPA requirements before system
+configuration. Once the corresponding consent policy is published, the
+system will auto-derive a ROPA draft. The DPO should verify the draft
+against this document before publishing the ROPA entry.
+========================================================================

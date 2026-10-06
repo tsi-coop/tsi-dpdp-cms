@@ -1,0 +1,269 @@
+{
+  "en": {
+    "language": "en",
+    "title": "The Banyan Helpline - Privacy Policy",
+    "introduction": "The Banyan Helpline offers confidential mental health support and helps people reach care. You may call for yourself, for a family member, or to tell us about someone who needs help. This policy explains what we collect on a call, why, and how long we keep it, under the DPDP Act, 2023. You can call without giving your name. Consent is taken once, by a key press at the start of the call.",
+    "general_purpose_description": "We use your data to listen and support you, to act fast if a life is at risk, and, if you tell us about someone in need, to help them.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_helpline_support",
+        "name": "Support, Referral & Follow-up",
+        "description": "To listen and support you, speak in your language, call back if the line drops and, if you ask, connect you to a Banyan service or local mental health provider and check on you later. A nickname is fine. Press 1 on the call to agree.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": [
+          "caller_name",
+          "mobile_number",
+          "age",
+          "gender",
+          "preferred_language",
+          "mental_health_concerns",
+          "current_location",
+          "referral_details"
+        ],
+        "recipients_or_third_parties": [
+          "Exotel",
+          "Partner Care Providers"
+        ],
+        "retention_policy": "1 year from the call; 2 years if you were referred.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_community_report",
+        "name": "Reporting Someone Who Needs Help",
+        "description": "If you tell us about a person in distress or living on the street, we note where they are and what help they need so our team can reach them. We keep your contact only to ask for details.",
+        "legal_basis": "Consent of the reporter (DPDP Act, Section 6(1)(a)); Legitimate Use for the person in distress (Section 7)",
+        "data_categories_involved": [
+          "caller_name",
+          "mobile_number",
+          "reported_person_details",
+          "current_location"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "1 year from the report.",
+        "retention_duration_value": 1,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_crisis_escalation",
+        "name": "Emergency Response (Risk to Life)",
+        "description": "If you or someone you speak of is at immediate risk of suicide, self-harm or harm by others, the counsellor will first ask you to confirm that we may share your location and phone number with emergency services (112) or a nearby responder. If you cannot or do not respond and your life is at risk, we may still do so to keep you safe.",
+        "legal_basis": "Consent where the caller confirms; otherwise Legitimate Use - Medical Emergency / Threat to Life (DPDP Act, Section 7)",
+        "data_categories_involved": [
+          "caller_name",
+          "mobile_number",
+          "current_location",
+          "risk_assessment"
+        ],
+        "recipients_or_third_parties": [
+          "Emergency Services (112)"
+        ],
+        "retention_policy": "3 years, for follow-up and legal records.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      }
+    ],
+    "data_categories_details": [
+      {
+        "id": "caller_name",
+        "name": "Name or Alias",
+        "description": "Optional. Any name you choose."
+      },
+      {
+        "id": "mobile_number",
+        "name": "Mobile Number",
+        "description": "The number you call from. Used for call-backs, referrals and emergencies."
+      },
+      {
+        "id": "age",
+        "name": "Age",
+        "description": "For age-appropriate support and to identify minors."
+      },
+      {
+        "id": "gender",
+        "name": "Gender",
+        "description": "Self-declared, to address you correctly."
+      },
+      {
+        "id": "preferred_language",
+        "name": "Preferred Language",
+        "description": "Language for support and call-backs."
+      },
+      {
+        "id": "mental_health_concerns",
+        "name": "Mental Health Concerns",
+        "description": "Sensitive health data: what you share about how you feel."
+      },
+      {
+        "id": "risk_assessment",
+        "name": "Risk Assessment",
+        "description": "Sensitive health data: counsellor's rating of suicide or self-harm risk."
+      },
+      {
+        "id": "current_location",
+        "name": "Current Location",
+        "description": "Where you or the person in need are, collected only to send help."
+      },
+      {
+        "id": "reported_person_details",
+        "name": "Reported Person Details",
+        "description": "Description and condition of a person you tell us about."
+      },
+      {
+        "id": "referral_details",
+        "name": "Referral Details",
+        "description": "Service chosen, date and status of the referral."
+      }
+    ],
+    "data_subject_categories": [
+      "caller",
+      "minor_caller",
+      "reported_person"
+    ],
+    "security_measures": "AES-256 at rest, TLS 1.3 in transit, hosted in India. Only trained counsellors can access records; mobile numbers are masked on dashboards; all access is logged; nothing is disclosed to family or employers except to prevent a threat to life.",
+    "processors": [
+      {
+        "name": "Exotel",
+        "country": "IN",
+        "role": "Cloud Telephony & Call Recording",
+        "contact": "privacy@exotel.com"
+      },
+      {
+        "name": "AWS",
+        "country": "IN",
+        "role": "Cloud Hosting (Mumbai Region)",
+        "contact": "aws-india-dpa@amazon.com"
+      }
+    ],
+    "cross_border_transfers": [],
+    "data_principal_rights_summary": "You can access, correct and delete your data, and withdraw consent at any time, without affecting your support. A parent or guardian can act for a caller under 18. Records kept for emergency or legal reasons are deleted when their retention period ends.",
+    "grievance_redressal_info": "Data Protection Officer: dpo@thebanyan.example | Helpline: 1800-000-0000. If unresolved, you may complain to the Data Protection Board of India.",
+    "buttons": {
+      "accept_all": "I Agree",
+      "reject_all_non_essential": "Support Only",
+      "manage_preferences": "Choose What I Share",
+      "save_preferences": "Save My Choices"
+    },
+    "links": {
+      "full_privacy_policy_text": "Full Privacy Policy",
+      "full_privacy_policy_url": "https://thebanyan.example/privacy",
+      "terms_of_service_text": "Terms of Use",
+      "terms_of_service_url": "https://thebanyan.example/terms"
+    },
+    "important_note": "Mental health data is sensitive. We ask for your consent once, at the start of the call. If your life is at risk, we may act to keep you safe without waiting for consent."
+  },
+  "ta": {
+    "language": "ta",
+    "title": "தி பனியன் உதவி எண் - தனியுரிமைக் கொள்கை",
+    "introduction": "தி பனியன் உதவி எண் ரகசியமான மனநல ஆதரவை வழங்கி, சிகிச்சையை அணுக உதவுகிறது. நீங்கள் உங்களுக்காக, குடும்ப உறுப்பினருக்காக அல்லது உதவி தேவைப்படும் ஒருவரைப் பற்றித் தெரிவிக்க அழைக்கலாம். DPDP சட்டம், 2023-ன் கீழ் அழைப்பில் நாங்கள் என்ன தகவல் பெறுகிறோம், ஏன், எவ்வளவு காலம் வைத்திருக்கிறோம் என்பதை இக்கொள்கை விளக்குகிறது. பெயர் சொல்லாமலும் அழைக்கலாம். அழைப்பின் தொடக்கத்தில் ஒரு விசையை அழுத்தி ஒருமுறை மட்டுமே சம்மதம் பெறப்படுகிறது.",
+    "general_purpose_description": "உங்கள் பேச்சைக் கேட்டு ஆதரவளிக்கவும், உயிருக்கு ஆபத்து இருந்தால் உடனடியாகச் செயல்படவும், உதவி தேவைப்படும் ஒருவரைப் பற்றித் தெரிவித்தால் அவருக்கு உதவவும் உங்கள் தகவலைப் பயன்படுத்துகிறோம்.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_helpline_support",
+        "name": "ஆதரவு, பரிந்துரை & பின்தொடர்தல்",
+        "description": "உங்களுக்குச் செவிமடுத்து ஆதரவளிக்க, உங்கள் மொழியில் பேச, அழைப்பு துண்டிக்கப்பட்டால் மீண்டும் அழைக்க, நீங்கள் கேட்டால் பனியன் சேவை அல்லது உள்ளூர் மனநல சேவையுடன் இணைத்து பின்னர் நலம் விசாரிக்க. புனைபெயர் போதுமானது. சம்மதிக்க அழைப்பில் 1 ஐ அழுத்தவும்.",
+        "legal_basis": "சம்மதம் (DPDP சட்டம், பிரிவு 6(1)(a))",
+        "data_categories_involved": [
+          "caller_name",
+          "mobile_number",
+          "age",
+          "gender",
+          "preferred_language",
+          "mental_health_concerns",
+          "current_location",
+          "referral_details"
+        ],
+        "recipients_or_third_parties": [
+          "Exotel",
+          "Partner Care Providers"
+        ],
+        "retention_policy": "அழைப்பிலிருந்து 1 ஆண்டு; பரிந்துரைக்கப்பட்டால் 2 ஆண்டுகள்.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_community_report",
+        "name": "உதவி தேவைப்படுபவரைப் பற்றித் தெரிவித்தல்",
+        "description": "துயரத்தில் உள்ளவர் அல்லது தெருவில் வாழ்பவரைப் பற்றித் தெரிவித்தால், அவர் இருக்கும் இடத்தையும் தேவையான உதவியையும் குறித்துக் கொள்கிறோம். விவரம் கேட்க மட்டுமே உங்கள் தொடர்பை வைத்திருப்போம்.",
+        "legal_basis": "தெரிவிப்பவரின் சம்மதம் (பிரிவு 6(1)(a)); துயரத்தில் உள்ளவருக்கு நியாயமான பயன்பாடு (பிரிவு 7)",
+        "data_categories_involved": [
+          "caller_name",
+          "mobile_number",
+          "reported_person_details",
+          "current_location"
+        ],
+        "recipients_or_third_parties": [],
+        "retention_policy": "அறிக்கையிலிருந்து 1 ஆண்டு.",
+        "retention_duration_value": 1,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      },
+      {
+        "id": "purpose_crisis_escalation",
+        "name": "அவசரகால நடவடிக்கை (உயிருக்கு ஆபத்து)",
+        "description": "நீங்கள் அல்லது நீங்கள் குறிப்பிடும் ஒருவர் தற்கொலை, தன்னைத்தானே காயப்படுத்துதல் அல்லது பிறரால் தீங்கு ஏற்படும் உடனடி ஆபத்தில் இருந்தால், உங்கள் இருப்பிடம் மற்றும் தொலைபேசி எண்ணை அவசர சேவைகளுக்கு (112) அல்லது அருகிலுள்ள உதவியாளருக்குப் பகிர ஆலோசகர் முதலில் உங்கள் உறுதிப்படுத்தலைக் கேட்பார். நீங்கள் பதிலளிக்க இயலாவிட்டால் அல்லது பதிலளிக்காவிட்டால், உங்கள் உயிருக்கு ஆபத்து இருக்கும் நிலையில், உங்களைப் பாதுகாக்க நாங்கள் அவ்வாறு செய்யலாம்.",
+        "legal_basis": "அழைப்பாளர் உறுதிப்படுத்தினால் சம்மதம்; இல்லையெனில் நியாயமான பயன்பாடு - மருத்துவ அவசரம் / உயிருக்கு அச்சுறுத்தல் (DPDP சட்டம், பிரிவு 7)",
+        "data_categories_involved": [
+          "caller_name",
+          "mobile_number",
+          "current_location",
+          "risk_assessment"
+        ],
+        "recipients_or_third_parties": [
+          "Emergency Services (112)"
+        ],
+        "retention_policy": "3 ஆண்டுகள்.",
+        "retention_duration_value": 3,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": true
+      }
+    ],
+    "data_categories_details": [
+      {
+        "id": "caller_name",
+        "name": "பெயர் அல்லது புனைபெயர்",
+        "description": "விருப்பத்திற்குரியது."
+      },
+      {
+        "id": "mobile_number",
+        "name": "கைபேசி எண்",
+        "description": "மீண்டும் அழைக்க, பரிந்துரை மற்றும் அவசரத்திற்கு."
+      },
+      {
+        "id": "mental_health_concerns",
+        "name": "மனநல கவலைகள்",
+        "description": "உணர்திறன் மிக்க சுகாதாரத் தரவு."
+      }
+    ],
+    "security_measures": "AES-256 குறியாக்கம், TLS 1.3, இந்தியாவில் சேமிப்பு. பயிற்சி பெற்ற ஆலோசகர்கள் மட்டுமே அணுகலாம்; கைபேசி எண்கள் மறைக்கப்படும்; அனைத்து அணுகலும் பதிவு செய்யப்படும்.",
+    "data_principal_rights_summary": "உங்கள் தரவைப் பார்க்கவும், திருத்தவும், நீக்கவும், எப்போது வேண்டுமானாலும் சம்மதத்தைத் திரும்பப் பெறவும் உங்களுக்கு உரிமை உண்டு; இது உங்கள் ஆதரவைப் பாதிக்காது. 18 வயதுக்குட்பட்டவர் சார்பில் பெற்றோர் அல்லது பாதுகாவலர் செயல்படலாம்.",
+    "grievance_redressal_info": "தரவு பாதுகாப்பு அதிகாரி: dpo@thebanyan.example | உதவி எண்: 1800-000-0000.",
+    "buttons": {
+      "accept_all": "நான் சம்மதிக்கிறேன்",
+      "reject_all_non_essential": "ஆதரவு மட்டும்",
+      "manage_preferences": "நான் பகிர்வதைத் தேர்வு செய்",
+      "save_preferences": "என் தேர்வுகளைச் சேமி"
+    },
+    "links": {
+      "full_privacy_policy_text": "முழு தனியுரிமைக் கொள்கை",
+      "terms_of_service_text": "பயன்பாட்டு விதிமுறைகள்"
+    },
+    "important_note": "மனநலத் தரவு உணர்திறன் மிக்கது. அழைப்பின் தொடக்கத்தில் ஒருமுறை மட்டுமே சம்மதம் கேட்கிறோம். உங்கள் உயிருக்கு ஆபத்து இருந்தால், சம்மதத்திற்குக் காத்திருக்காமல் உங்களைப் பாதுகாக்க நாங்கள் செயல்படலாம்."
+  }
+}
