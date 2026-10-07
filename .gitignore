@@ -10,3 +10,7 @@
 /tests/report/
 /tests/jmeter.log
 
+
+# Python bytecode
+__pycache__/
+*.pyc
