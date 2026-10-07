@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Consent Banner Demo</title>
+<style>body{font-family:system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 16px;line-height:1.6}
+footer{margin-top:60px;border-top:1px solid #ddd;padding-top:12px;font-size:14px}</style>
+
+<!-- Held back until the visitor grants this purpose. Replace the id with one from your policy. -->
+<script type="text/plain" data-consent-category="purpose_analytics">
+  window.demoAnalyticsRan = true;
+  document.dispatchEvent(new Event('demo:analytics'));
+</script>
+</head>
+<body>
+<h1>Example website</h1>
+<p>This page uses the standalone TSI DPDP consent banner. Make a choice in the banner and watch the panel below update. After you choose, you can mock a sign-in to see the anonymous id replaced by an account id.</p>
+<div id="status" aria-live="polite" style="border:1px solid #ddd;border-radius:8px;padding:12px 16px;background:#fafafa;font-size:14px"></div>
+
+<div id="events" style="margin-top:12px;font-size:13px"></div>
+
+<dialog id="signin" style="border:1px solid #ccc;border-radius:10px;padding:20px;max-width:340px">
+  <form method="dialog" id="signin-form">
+    <h3 style="margin-top:0">Sign in (mock)</h3>
+    <p style="font-size:13px;margin-top:0">Any email works. No password; this is a fake session for the demo.</p>
+    <input id="u" type="email" required placeholder="alice@example.com" style="width:100%;padding:8px;box-sizing:border-box">
+    <p id="signin-err" style="color:#b91c1c;font-size:13px;margin:6px 0 0"></p>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" id="signin-cancel">Cancel</button><button value="ok">Sign in</button>
+    </div>
+  </form>
+</dialog>
+
+<footer>
+  <a href="privacy.html">Privacy notice</a> ·
+  <a href="#" data-dpdp-open>Cookie settings</a>
+</footer>
+
+<script src="consent-banner.js" defer
+        data-policy-url="/consent-api/policy"
+        data-consent-url="/consent-api/consent"
+        data-privacy-url="privacy.html"></script>
+<script>
+  // Demo only: shows what the widget and proxy do. Real sites don't need any of this.
+  var session = { user: null, available: true };
+  function anonId() { try { return localStorage.getItem('dpdp_consent_anon_id') || ''; } catch (e) { return ''; } }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  function render() {
+    var p = window.DPDPConsent && DPDPConsent.getPreferences(), el = document.getElementById('status');
+    if (!p) { el.innerHTML = '<strong>Consent status:</strong> no decision yet. Nothing optional has run.'; return; }
+    var rows = Object.keys(p).map(function (k) { return '<li><code>' + esc(k) + '</code>: ' + (p[k] ? 'granted' : 'declined') + '</li>'; }).join('');
+    var anon = anonId(), ident;
+    if (session.user) {
+      ident = 'Signed in as <strong>' + esc(session.user) + '</strong> <small>(was <code>' + esc(anon) + '</code> before sign-in)</small> ' +
+              '<button id="signout">Sign out</button>';
+    } else {
+      ident = 'Anonymous user id: <code>' + esc(anon) + '</code> ' +
+              (session.available ? '<button id="signin-btn">Sign in</button>' : '<small>(mock sign-in disabled on this server)</small>');
+    }
+    el.innerHTML = '<strong>Consent status</strong><ul>' + rows + '</ul>' +
+      'Gated analytics script: <strong>' + (window.demoAnalyticsRan ? 'running' : 'blocked') + '</strong>' +
+      '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e5e5"><strong>User id:</strong> ' + ident + '</div>';
+    var b = document.getElementById('signin-btn'); if (b) b.onclick = function () { document.getElementById('signin').showModal(); };
+    var o = document.getElementById('signout'); if (o) o.onclick = function () { fetch('/demo/logout').then(refresh); };
+  }
+
+  function refresh() {
+    return fetch('/demo/whoami').then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (w) {
+      session.user = w.user; session.available = true;
+      var ev = document.getElementById('events');
+      ev.innerHTML = w.events.length ? '<strong>What the proxy sent to the CMS</strong><ol>' + w.events.map(function (e) {
+        return e.kind === 'link'
+          ? '<li><code>link_user</code>: <code>' + esc(e.anon_id) + '</code> &rarr; <strong>' + esc(e.user_id) + '</strong></li>'
+          : '<li><code>record_consent</code> as <strong>' + esc(e.user_id) + '</strong> (granted: ' + esc((e.granted || []).join(', ') || 'none') + ')</li>';
+      }).join('') + '</ol>' : '';
+    }).catch(function () { session.available = false; }).then(render);
+  }
+
+  document.getElementById('signin-cancel').onclick = function () { document.getElementById('signin').close(); };
+  document.getElementById('signin-form').onsubmit = function (e) {
+    e.preventDefault();
+    var u = document.getElementById('u').value, a = anonId();
+    fetch('/demo/login?user=' + encodeURIComponent(u) + (a ? '&anon=' + encodeURIComponent(a) : ''))
+      .then(function (r) { if (!r.ok) throw 0; document.getElementById('signin').close(); return refresh(); })
+      .catch(function () { document.getElementById('signin-err').textContent = 'Sign-in failed.'; });
+  };
+
+  document.addEventListener('dpdp:consent', function () { render(); setTimeout(refresh, 400); });
+  document.addEventListener('demo:analytics', render);
+  window.addEventListener('load', function () { setTimeout(refresh, 500); });
+</script>
+</body>
+</html>

@@ -1,0 +1,484 @@
+{
+  "en": {
+    "language": "en",
+    "title": "Example Co. Website - Privacy & Cookie Notice",
+    "introduction": "This notice explains what personal data we collect when you visit www.example.com, why we use it, who we share it with and how long we keep it, in line with the Digital Personal Data Protection Act (DPDP), 2023. Only essential processing is on by default; everything else needs your consent, which you can change or withdraw at any time using 'Cookie settings' in the page footer.",
+    "general_purpose_description": "We use data to keep this website secure and working, answer your enquiries, send newsletters you ask for, understand how the site is used, and measure our advertising.",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_site_essential",
+        "name": "Essential Website Operation & Security",
+        "description": "Strictly necessary cookies and server logs that keep the site working and secure: load balancing, session handling, fraud and bot protection, and remembering your cookie choices. The site cannot work safely without these.",
+        "legal_basis": "Legitimate Use - Website Security & Operation (DPDP Act, Section 7)",
+        "data_categories_involved": [
+          "ip_address",
+          "device_info",
+          "cookie_identifiers"
+        ],
+        "recipients_or_third_parties": [
+          "Cloudflare"
+        ],
+        "retention_policy": "Server and security logs are kept for 12 months from collection.",
+        "retention_duration_value": 12,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_contact_enquiry",
+        "name": "Responding to Your Enquiries",
+        "description": "When you submit the contact or support form we use your details to reply to you and to track your request until it is resolved.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": [
+          "full_name",
+          "email_address",
+          "phone_number",
+          "message_content"
+        ],
+        "recipients_or_third_parties": [
+          "Zoho Corporation"
+        ],
+        "retention_policy": "Kept for 2 years after your enquiry, then deleted.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_newsletter",
+        "name": "Newsletter & Product Updates",
+        "description": "To send you the newsletter and product announcements you subscribed to. Every email contains an unsubscribe link.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": [
+          "full_name",
+          "email_address"
+        ],
+        "recipients_or_third_parties": [
+          "Mailchimp"
+        ],
+        "retention_policy": "Until you unsubscribe or withdraw consent, or 2 years after your last engagement with an email.",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_analytics",
+        "name": "Website Analytics",
+        "description": "Analytics cookies that tell us which pages are visited and how the site performs, so we can improve it. IP addresses are truncated before storage.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": [
+          "cookie_identifiers",
+          "pages_visited",
+          "device_info",
+          "ip_address"
+        ],
+        "recipients_or_third_parties": [
+          "GoogleAnalytics"
+        ],
+        "retention_policy": "Analytics data is retained for 14 months from collection.",
+        "retention_duration_value": 14,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_marketing",
+        "name": "Advertising & Marketing Measurement",
+        "description": "Advertising cookies and pixels that measure how our ads perform and show you relevant ads on other platforms.",
+        "legal_basis": "Consent (DPDP Act, Section 6(1)(a))",
+        "data_categories_involved": [
+          "cookie_identifiers",
+          "ad_interaction",
+          "device_info"
+        ],
+        "recipients_or_third_parties": [
+          "MetaPlatforms",
+          "GoogleAds"
+        ],
+        "retention_policy": "Advertising identifiers are retained for 6 months from collection or until you withdraw consent.",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      {
+        "id": "ip_address",
+        "name": "IP Address",
+        "description": "Network address of your device, used for security and approximate location. Truncated for analytics."
+      },
+      {
+        "id": "device_info",
+        "name": "Device & Browser Information",
+        "description": "Browser type, operating system, screen size and language."
+      },
+      {
+        "id": "cookie_identifiers",
+        "name": "Cookie Identifiers",
+        "description": "Random identifiers stored in your browser to recognise your session or device."
+      },
+      {
+        "id": "full_name",
+        "name": "Full Name",
+        "description": "Name you enter in our forms."
+      },
+      {
+        "id": "email_address",
+        "name": "Email Address",
+        "description": "Used to reply to enquiries and to deliver the newsletter."
+      },
+      {
+        "id": "phone_number",
+        "name": "Phone Number",
+        "description": "Optional number you provide so we can call you back."
+      },
+      {
+        "id": "message_content",
+        "name": "Message Content",
+        "description": "The text and attachments you send us through the contact form."
+      },
+      {
+        "id": "pages_visited",
+        "name": "Pages Visited",
+        "description": "Pages you view, time spent and how you arrived at the site."
+      },
+      {
+        "id": "ad_interaction",
+        "name": "Advertising Interaction",
+        "description": "Whether you clicked or viewed one of our ads and any resulting action on the site."
+      }
+    ],
+    "data_subject_categories": [
+      "website_visitor"
+    ],
+    "security_measures": "TLS 1.3 in transit, AES-256 encryption at rest for CRM and mailing-list data, role-based access, WAF and bot protection, IP truncation for analytics, and non-essential tags blocked until consent is recorded.",
+    "processors": [
+      {
+        "name": "Cloudflare",
+        "country": "US",
+        "role": "CDN, WAF & Bot Protection",
+        "contact": "privacy@cloudflare.com"
+      },
+      {
+        "name": "Zoho Corporation",
+        "country": "IN",
+        "role": "CRM & Enquiry Management",
+        "contact": "privacy@zohocorp.com"
+      },
+      {
+        "name": "Mailchimp",
+        "country": "US",
+        "role": "Email Newsletter Delivery",
+        "contact": "privacy@mailchimp.com"
+      },
+      {
+        "name": "GoogleAnalytics",
+        "country": "US",
+        "role": "Website Analytics",
+        "contact": "google-privacy@google.com"
+      },
+      {
+        "name": "MetaPlatforms",
+        "country": "US",
+        "role": "Advertising Measurement",
+        "contact": "privacy@fb.com"
+      },
+      {
+        "name": "GoogleAds",
+        "country": "US",
+        "role": "Advertising Measurement",
+        "contact": "google-privacy@google.com"
+      }
+    ],
+    "cross_border_transfers": [
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "Cloudflare"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "Mailchimp"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "GoogleAnalytics"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "MetaPlatforms"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "GoogleAds"
+      }
+    ],
+    "data_principal_rights_summary": "Under the DPDP Act 2023 you can access your data, have it corrected or erased, withdraw consent at any time, nominate someone to exercise your rights, and complain to us or to the Data Protection Board. Withdrawing consent is as easy as giving it: use 'Cookie settings' in the footer.",
+    "grievance_redressal_info": "Contact our Data Protection Officer: Email: dpo@example.com | Phone: +91 80 1234 5678 | Address: 100 Example Street, Bengaluru, Karnataka. We respond within the period prescribed by law.",
+    "buttons": {
+      "accept_all": "Accept all",
+      "reject_all_non_essential": "Essential only",
+      "manage_preferences": "Cookie settings",
+      "save_preferences": "Save my choices"
+    },
+    "links": {
+      "full_privacy_policy_text": "Full Privacy Policy",
+      "full_privacy_policy_url": "https://www.example.com/privacy",
+      "terms_of_service_text": "Terms of Use",
+      "terms_of_service_url": "https://www.example.com/terms"
+    },
+    "important_note": "Advertising and analytics data may be processed in the United States under Standard Contractual Clauses. You can decline both without losing access to the website."
+  },
+  "hi": {
+    "language": "hi",
+    "title": "Example Co. वेबसाइट - गोपनीयता एवं कुकी सूचना",
+    "introduction": "यह सूचना बताती है कि जब आप www.example.com पर आते हैं तो हम कौन-सा व्यक्तिगत डेटा एकत्र करते हैं, क्यों उपयोग करते हैं, किसके साथ साझा करते हैं और कितने समय तक रखते हैं, डिजिटल व्यक्तिगत डेटा संरक्षण अधिनियम (DPDP), 2023 के अनुसार। डिफ़ॉल्ट रूप से केवल आवश्यक प्रसंस्करण चालू रहता है; बाकी सब के लिए आपकी सहमति चाहिए, जिसे आप पेज के फ़ुटर में 'कुकी सेटिंग्स' से कभी भी बदल या वापस ले सकते हैं।",
+    "general_purpose_description": "हम डेटा का उपयोग वेबसाइट को सुरक्षित और चालू रखने, आपके प्रश्नों का उत्तर देने, आपके अनुरोध पर न्यूज़लेटर भेजने, साइट के उपयोग को समझने और अपने विज्ञापनों को मापने के लिए करते हैं।",
+    "data_processing_purposes": [
+      {
+        "id": "purpose_site_essential",
+        "name": "आवश्यक वेबसाइट संचालन और सुरक्षा",
+        "description": "वे अनिवार्य कुकीज़ और सर्वर लॉग जो साइट को चालू और सुरक्षित रखते हैं: लोड बैलेंसिंग, सेशन प्रबंधन, धोखाधड़ी व बॉट सुरक्षा, और आपके कुकी विकल्प याद रखना। इनके बिना साइट सुरक्षित रूप से नहीं चल सकती।",
+        "legal_basis": "वैध उपयोग - वेबसाइट सुरक्षा व संचालन (DPDP अधिनियम, धारा 7)",
+        "data_categories_involved": [
+          "IP पता",
+          "डिवाइस और ब्राउज़र जानकारी",
+          "कुकी पहचानकर्ता"
+        ],
+        "recipients_or_third_parties": [
+          "Cloudflare"
+        ],
+        "retention_policy": "सर्वर और सुरक्षा लॉग संग्रह से 12 महीने तक रखे जाते हैं।",
+        "retention_duration_value": 12,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": true,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_contact_enquiry",
+        "name": "आपके प्रश्नों का उत्तर देना",
+        "description": "जब आप संपर्क या सहायता फ़ॉर्म जमा करते हैं, हम आपके विवरण का उपयोग आपको उत्तर देने और अनुरोध के समाधान तक उसे ट्रैक करने के लिए करते हैं।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6(1)(a))",
+        "data_categories_involved": [
+          "पूरा नाम",
+          "ईमेल पता",
+          "फ़ोन नंबर",
+          "संदेश की सामग्री"
+        ],
+        "recipients_or_third_parties": [
+          "Zoho Corporation"
+        ],
+        "retention_policy": "आपके प्रश्न के 2 वर्ष बाद तक रखा जाता है, फिर हटा दिया जाता है।",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_newsletter",
+        "name": "न्यूज़लेटर और उत्पाद अपडेट",
+        "description": "आपके द्वारा सदस्यता लिए गए न्यूज़लेटर और उत्पाद घोषणाएँ भेजने के लिए। हर ईमेल में सदस्यता समाप्त करने का लिंक होता है।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6(1)(a))",
+        "data_categories_involved": [
+          "पूरा नाम",
+          "ईमेल पता"
+        ],
+        "recipients_or_third_parties": [
+          "Mailchimp"
+        ],
+        "retention_policy": "आपके सदस्यता समाप्त करने या सहमति वापस लेने तक, या ईमेल से आपकी अंतिम सहभागिता के 2 वर्ष बाद तक।",
+        "retention_duration_value": 2,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_analytics",
+        "name": "वेबसाइट एनालिटिक्स",
+        "description": "एनालिटिक्स कुकीज़ जो बताती हैं कि कौन-से पेज देखे जाते हैं और साइट कैसा प्रदर्शन करती है, ताकि हम उसे बेहतर बना सकें। IP पते संग्रह से पहले छोटे कर दिए जाते हैं।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6(1)(a))",
+        "data_categories_involved": [
+          "कुकी पहचानकर्ता",
+          "देखे गए पेज",
+          "डिवाइस और ब्राउज़र जानकारी",
+          "IP पता"
+        ],
+        "recipients_or_third_parties": [
+          "GoogleAnalytics"
+        ],
+        "retention_policy": "एनालिटिक्स डेटा संग्रह से 14 महीने तक रखा जाता है।",
+        "retention_duration_value": 14,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      },
+      {
+        "id": "purpose_marketing",
+        "name": "विज्ञापन और मार्केटिंग मापन",
+        "description": "विज्ञापन कुकीज़ और पिक्सेल जो हमारे विज्ञापनों का प्रदर्शन मापते हैं और अन्य प्लेटफ़ॉर्म पर प्रासंगिक विज्ञापन दिखाते हैं।",
+        "legal_basis": "सहमति (DPDP अधिनियम, धारा 6(1)(a))",
+        "data_categories_involved": [
+          "कुकी पहचानकर्ता",
+          "विज्ञापन सहभागिता",
+          "डिवाइस और ब्राउज़र जानकारी"
+        ],
+        "recipients_or_third_parties": [
+          "MetaPlatforms",
+          "GoogleAds"
+        ],
+        "retention_policy": "विज्ञापन पहचानकर्ता संग्रह से 6 महीने तक या सहमति वापस लेने तक रखे जाते हैं।",
+        "retention_duration_value": 6,
+        "retention_duration_unit": "MONTHS",
+        "retention_start_event": "COLLECTION",
+        "is_mandatory_for_service": false,
+        "is_sensitive": false
+      }
+    ],
+    "data_categories_details": [
+      {
+        "id": "ip_address",
+        "name": "IP पता",
+        "description": "आपके डिवाइस का नेटवर्क पता, सुरक्षा और अनुमानित स्थान के लिए। एनालिटिक्स के लिए छोटा किया जाता है।"
+      },
+      {
+        "id": "device_info",
+        "name": "डिवाइस और ब्राउज़र जानकारी",
+        "description": "ब्राउज़र प्रकार, ऑपरेटिंग सिस्टम, स्क्रीन आकार और भाषा।"
+      },
+      {
+        "id": "cookie_identifiers",
+        "name": "कुकी पहचानकर्ता",
+        "description": "आपके ब्राउज़र में संग्रहीत यादृच्छिक पहचानकर्ता जो आपके सेशन या डिवाइस को पहचानते हैं।"
+      },
+      {
+        "id": "full_name",
+        "name": "पूरा नाम",
+        "description": "फ़ॉर्म में आपके द्वारा दर्ज नाम।"
+      },
+      {
+        "id": "email_address",
+        "name": "ईमेल पता",
+        "description": "प्रश्नों का उत्तर देने और न्यूज़लेटर भेजने के लिए।"
+      },
+      {
+        "id": "phone_number",
+        "name": "फ़ोन नंबर",
+        "description": "वैकल्पिक नंबर ताकि हम आपको वापस कॉल कर सकें।"
+      },
+      {
+        "id": "message_content",
+        "name": "संदेश की सामग्री",
+        "description": "संपर्क फ़ॉर्म से आपके द्वारा भेजा गया पाठ और अनुलग्नक।"
+      },
+      {
+        "id": "pages_visited",
+        "name": "देखे गए पेज",
+        "description": "आपके द्वारा देखे गए पेज, बिताया समय और आप साइट पर कैसे पहुँचे।"
+      },
+      {
+        "id": "ad_interaction",
+        "name": "विज्ञापन सहभागिता",
+        "description": "क्या आपने हमारे विज्ञापन पर क्लिक किया या उसे देखा और उसके बाद साइट पर क्या किया।"
+      }
+    ],
+    "data_subject_categories": [
+      "website_visitor"
+    ],
+    "security_measures": "ट्रांज़िट में TLS 1.3, CRM और मेलिंग-सूची डेटा के लिए AES-256 एन्क्रिप्शन, भूमिका-आधारित पहुँच, WAF व बॉट सुरक्षा, एनालिटिक्स हेतु IP ट्रंकेशन, और सहमति दर्ज होने तक गैर-आवश्यक टैग अवरुद्ध।",
+    "processors": [
+      {
+        "name": "Cloudflare",
+        "country": "US",
+        "role": "CDN, WAF & Bot Protection",
+        "contact": "privacy@cloudflare.com"
+      },
+      {
+        "name": "Zoho Corporation",
+        "country": "IN",
+        "role": "CRM & Enquiry Management",
+        "contact": "privacy@zohocorp.com"
+      },
+      {
+        "name": "Mailchimp",
+        "country": "US",
+        "role": "Email Newsletter Delivery",
+        "contact": "privacy@mailchimp.com"
+      },
+      {
+        "name": "GoogleAnalytics",
+        "country": "US",
+        "role": "Website Analytics",
+        "contact": "google-privacy@google.com"
+      },
+      {
+        "name": "MetaPlatforms",
+        "country": "US",
+        "role": "Advertising Measurement",
+        "contact": "privacy@fb.com"
+      },
+      {
+        "name": "GoogleAds",
+        "country": "US",
+        "role": "Advertising Measurement",
+        "contact": "google-privacy@google.com"
+      }
+    ],
+    "cross_border_transfers": [
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "Cloudflare"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "Mailchimp"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "GoogleAnalytics"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "MetaPlatforms"
+      },
+      {
+        "destination_country": "US",
+        "safeguard": "Standard Contractual Clauses (SCC)",
+        "processor": "GoogleAds"
+      }
+    ],
+    "data_principal_rights_summary": "DPDP अधिनियम 2023 के तहत आप अपने डेटा तक पहुँचने, उसे सुधारने या मिटाने, किसी भी समय सहमति वापस लेने, किसी को नामित करने और हमें या डेटा संरक्षण बोर्ड को शिकायत करने का अधिकार रखते हैं। सहमति वापस लेना उतना ही आसान है जितना देना: फ़ुटर में 'कुकी सेटिंग्स' का उपयोग करें।",
+    "grievance_redressal_info": "हमारे डेटा संरक्षण अधिकारी से संपर्क करें: ईमेल: dpo@example.com | फ़ोन: +91 80 1234 5678 | पता: 100 एग्ज़ाम्पल स्ट्रीट, बेंगलुरु, कर्नाटक।",
+    "buttons": {
+      "accept_all": "सभी स्वीकार करें",
+      "reject_all_non_essential": "केवल आवश्यक",
+      "manage_preferences": "कुकी सेटिंग्स",
+      "save_preferences": "मेरे विकल्प सुरक्षित करें"
+    },
+    "links": {
+      "full_privacy_policy_text": "पूर्ण गोपनीयता नीति",
+      "full_privacy_policy_url": "https://www.example.com/privacy",
+      "terms_of_service_text": "उपयोग की शर्तें",
+      "terms_of_service_url": "https://www.example.com/terms"
+    },
+    "important_note": "विज्ञापन और एनालिटिक्स डेटा मानक संविदात्मक खंडों (SCC) के अंतर्गत संयुक्त राज्य अमेरिका में संसाधित हो सकता है। आप दोनों को अस्वीकार करके भी वेबसाइट का उपयोग जारी रख सकते हैं।"
+  }
+}

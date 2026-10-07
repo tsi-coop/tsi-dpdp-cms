@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy Notice</title>
+<style>body{font-family:system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 16px;line-height:1.6}</style>
+</head>
+<body>
+<a href="index.html">&larr; Back</a>
+<!-- Rendered live from the published policy, so it can't drift from what users consent to. -->
+<div id="notice">Loading…</div>
+
+<script src="consent-banner.js" defer
+        data-policy-url="/consent-api/policy"
+        data-consent-url="/consent-api/consent"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    // consent-banner.js is deferred, so wait for it, then render.
+    var t = setInterval(function () {
+      if (window.DPDPConsent) { clearInterval(t); DPDPConsent.renderNotice(document.getElementById('notice')); }
+    }, 50);
+  });
+</script>
+</body>
+</html>

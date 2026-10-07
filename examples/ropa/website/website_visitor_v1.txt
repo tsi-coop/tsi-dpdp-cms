@@ -1,0 +1,111 @@
+========================================================================
+ROPA REQUIREMENTS DOCUMENT
+Activity : website_visitor_v1
+Sector   : General / Corporate Website
+Standard : Digital Personal Data Protection Act, 2023 (India)
+========================================================================
+
+DESCRIPTION
+------------------------------------------------------------------------
+ROPA requirements for a standard corporate website's visitor consent
+policy. Covers essential site operation and security, contact-form
+enquiries, newsletter subscriptions, website analytics, and advertising
+measurement. Intended as a starting template: replace the illustrative
+processors, retention periods and contacts with your organisation's own.
+
+COMPLIANCE LIFECYCLE
+------------------------------------------------------------------------
+  1. DPO defined requirements in this template
+  2. Engineer configured policy (website_visitor_v1)
+  3. System auto-derived ROPA draft on publish
+  4. DPO verified draft against this template
+  5. DPO published (dpo_id auto-recorded)
+
+PROCESSING ACTIVITY
+------------------------------------------------------------------------
+  Activity Name : website_visitor_v1
+  Legal Basis   : MIXED
+  Purpose       :
+    - Essential Website Operation & Security
+    - Responding to Your Enquiries
+    - Newsletter & Product Updates
+    - Website Analytics
+    - Advertising & Marketing Measurement
+
+LEGAL BASIS BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Legal Basis
+  -------------------------------- -------------------------------------------
+  purpose_site_essential           Legitimate Use
+  purpose_contact_enquiry          Consent
+  purpose_newsletter               Consent
+  purpose_analytics                Consent
+  purpose_marketing                Consent
+
+DATA SUBJECT CATEGORIES
+------------------------------------------------------------------------
+  - website_visitor
+
+DATA CATEGORIES  (9 total)
+------------------------------------------------------------------------
+  ip_address                     device_info                    cookie_identifiers
+  full_name                      email_address                  phone_number
+  message_content                pages_visited                  ad_interaction
+
+SECURITY MEASURES
+------------------------------------------------------------------------
+TLS 1.3 in transit, AES-256 encryption at rest for CRM and mailing-list
+data, role-based access, WAF and bot protection, IP truncation for
+analytics, and non-essential tags blocked until consent is recorded.
+
+DATA PROCESSORS  (6 declared)
+------------------------------------------------------------------------
+  Name             Country    Role                           Contact
+  ---------------- ---------- ------------------------------ ----------------------------
+  Cloudflare       US         CDN, WAF & Bot Protection      privacy@cloudflare.com
+  Zoho Corporation IN         CRM & Enquiry Management       privacy@zohocorp.com
+  Mailchimp        US         Email Newsletter Delivery      privacy@mailchimp.com
+  GoogleAnalytics  US         Website Analytics              google-privacy@google.com
+  MetaPlatforms    US         Advertising Measurement        privacy@fb.com
+  GoogleAds        US         Advertising Measurement        google-privacy@google.com
+
+PURPOSE-PROCESSOR MAPPING
+------------------------------------------------------------------------
+  Purpose                          Authorised Processors
+  -------------------------------- ------------------------------
+  purpose_site_essential           Cloudflare
+  purpose_contact_enquiry          Zoho Corporation
+  purpose_newsletter               Mailchimp
+  purpose_analytics                GoogleAnalytics
+  purpose_marketing                MetaPlatforms, GoogleAds
+
+CROSS-BORDER TRANSFERS
+------------------------------------------------------------------------
+  Destination    Safeguard                                    Processor
+  -------------- -------------------------------------------- ----------------------------
+  US             Standard Contractual Clauses (SCC)           Cloudflare
+  US             Standard Contractual Clauses (SCC)           Mailchimp
+  US             Standard Contractual Clauses (SCC)           GoogleAnalytics
+  US             Standard Contractual Clauses (SCC)           MetaPlatforms
+  US             Standard Contractual Clauses (SCC)           GoogleAds
+
+RETENTION BY PURPOSE
+------------------------------------------------------------------------
+  Purpose                          Period          Start Event
+  -------------------------------- --------------- --------------------
+  purpose_site_essential           12 MONTHS       COLLECTION
+  purpose_contact_enquiry          2 YEARS         COLLECTION
+  purpose_newsletter               2 YEARS         COLLECTION
+  purpose_analytics                14 MONTHS       COLLECTION
+  purpose_marketing                6 MONTHS        COLLECTION
+
+LINKED CONSENT POLICY
+------------------------------------------------------------------------
+  - website_visitor_v1
+
+========================================================================
+NOTE: This document records the DPO's ROPA requirements before system
+configuration. Once the corresponding consent policy is published, the
+system will auto-derive a ROPA draft. The DPO should verify the draft
+against this document before publishing the ROPA entry.
+========================================================================
