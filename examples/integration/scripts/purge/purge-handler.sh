@@ -17,7 +17,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 API_KEY="${API_KEY:?Set API_KEY to an App's API key (UUID)}"
@@ -36,11 +36,11 @@ fi
 BUILD_DIR="$SCRIPT_DIR/build"
 mkdir -p "$BUILD_DIR"
 
-if [ ! -f "$BUILD_DIR/examples/integration/purge/PurgeHandler.class" ] \
-   || [ "$SCRIPT_DIR/PurgeHandler.java" -nt "$BUILD_DIR/examples/integration/purge/PurgeHandler.class" ]; then
+if [ ! -f "$BUILD_DIR/examples/integration/scripts/purge/PurgeHandler.class" ] \
+   || [ "$SCRIPT_DIR/PurgeHandler.java" -nt "$BUILD_DIR/examples/integration/scripts/purge/PurgeHandler.class" ]; then
   echo "Compiling PurgeHandler.java..."
   javac -cp "$JSON_SIMPLE_JAR" -d "$BUILD_DIR" "$SCRIPT_DIR/PurgeHandler.java"
 fi
 
-exec java -cp "$BUILD_DIR:$JSON_SIMPLE_JAR" examples.integration.purge.PurgeHandler \
+exec java -cp "$BUILD_DIR:$JSON_SIMPLE_JAR" examples.integration.scripts.purge.PurgeHandler \
   "$BASE_URL" "$API_KEY" "$API_SECRET" "$POLL_SECONDS"

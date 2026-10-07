@@ -11,7 +11,7 @@
 # resulting notification.
 #
 # This is a synchronous, one-shot curl+jq tool, the same style as
-# examples/integration/consent/test-consent-lifecycle.sh.
+# examples/integration/scripts/consent/test-consent-lifecycle.sh.
 #
 # Requires: curl, jq.
 #
@@ -133,7 +133,7 @@ do_submit() {
   "user_id": "$USER_ID",
   "type": "GENERAL_COMPLAINT",
   "subject": "test-grievance-lifecycle.sh check",
-  "description": "Automated check submitted by examples/integration/grievance/test-grievance-lifecycle.sh."
+  "description": "Automated check submitted by examples/integration/scripts/grievance/test-grievance-lifecycle.sh."
 }
 JSON
 )

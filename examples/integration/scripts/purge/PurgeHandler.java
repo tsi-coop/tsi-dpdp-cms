@@ -1,4 +1,4 @@
-package examples.integration.purge;
+package examples.integration.scripts.purge;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -31,8 +31,8 @@ import java.util.Map;
  * PURGE_INITIATED, so it simply reappears on the next poll.
  *
  * Build/run (standalone, outside the project's Maven module):
- *   javac -cp json-simple-1.1.1.jar examples/integration/purge/PurgeHandler.java
- *   java  -cp .:json-simple-1.1.1.jar examples.integration.purge.PurgeHandler \
+ *   javac -cp json-simple-1.1.1.jar examples/integration/scripts/purge/PurgeHandler.java
+ *   java  -cp .:json-simple-1.1.1.jar examples.integration.scripts.purge.PurgeHandler \
  *         http://localhost:8080 &lt;API_KEY&gt; &lt;API_SECRET&gt; [poll_seconds]
  *
  * The API key/secret identify exactly one App -- list_purge_requests scopes results to

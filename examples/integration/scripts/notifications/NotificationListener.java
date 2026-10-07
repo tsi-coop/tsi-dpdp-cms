@@ -1,4 +1,4 @@
-package examples.integration.notifications;
+package examples.integration.scripts.notifications;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -27,8 +27,8 @@ import java.util.Set;
  * a real integration sends email/SMS/push/etc — the implementer decides the channel(s).
  *
  * Build/run (standalone, outside the project's Maven module):
- *   javac -cp json-simple-1.1.1.jar examples/integration/notifications/NotificationListener.java
- *   java  -cp .:json-simple-1.1.1.jar examples.integration.notifications.NotificationListener \
+ *   javac -cp json-simple-1.1.1.jar examples/integration/scripts/notifications/NotificationListener.java
+ *   java  -cp .:json-simple-1.1.1.jar examples.integration.scripts.notifications.NotificationListener \
  *         http://localhost:8080 &lt;API_KEY&gt; &lt;API_SECRET&gt; [poll_seconds] [preferred_language]
  *
  * If the DPO has configured a message for a notification's type (via the Settings

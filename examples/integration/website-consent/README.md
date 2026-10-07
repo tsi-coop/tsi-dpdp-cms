@@ -33,4 +33,4 @@ The demo's gated script is tied to `purpose_analytics`, which matches the sample
 Use another policy by changing `data-consent-category` in `index.html`.
 
 Full details, security notes and production guidance:
-[Website Consent Banner Integration Guide](../../docs/guides/website-consent-banner-integration-guide.md).
+[Website Consent Banner Integration Guide](../../../docs/guides/website-consent-banner-integration-guide.md).

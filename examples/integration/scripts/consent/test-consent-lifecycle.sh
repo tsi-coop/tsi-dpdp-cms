@@ -6,7 +6,7 @@
 # list_notifications.
 #
 # This is a synchronous, one-shot curl+jq tool -- unlike the polling examples under
-# examples/integration/notifications/ and examples/integration/purge/, there's no need
+# examples/integration/scripts/notifications/ and examples/integration/scripts/purge/, there's no need
 # for a long-lived Java client just to fire a request and check the result.
 #
 # Requires: curl, jq.

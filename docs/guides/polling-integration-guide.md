@@ -24,9 +24,9 @@ results are scoped to that fiduciary automatically.
 
 Reference implementations for both live in this repo:
 
-- `examples/integration/notifications/NotificationListener.java` (with
+- `examples/integration/scripts/notifications/NotificationListener.java` (with
   `notification-listener.sh` to compile and run it)
-- `examples/integration/purge/PurgeHandler.java` (with `purge-handler.sh`)
+- `examples/integration/scripts/purge/PurgeHandler.java` (with `purge-handler.sh`)
 
 ### Polling vs. webhooks
 
@@ -188,10 +188,10 @@ Maven module:
 
 ```bash
 BASE_URL=http://localhost:8080 API_KEY=<uuid> API_SECRET=<secret> \
-POLL_SECONDS=10 ./examples/integration/notifications/notification-listener.sh
+POLL_SECONDS=10 ./examples/integration/scripts/notifications/notification-listener.sh
 
 BASE_URL=http://localhost:8080 API_KEY=<uuid> API_SECRET=<secret> \
-POLL_SECONDS=10 ./examples/integration/purge/purge-handler.sh
+POLL_SECONDS=10 ./examples/integration/scripts/purge/purge-handler.sh
 ```
 
 `NotificationListener` just prints what it sees (a placeholder `[NOTIFY]`

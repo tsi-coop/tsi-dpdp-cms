@@ -17,7 +17,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 API_KEY="${API_KEY:?Set API_KEY to an App's API key (UUID)}"
@@ -36,11 +36,11 @@ fi
 BUILD_DIR="$SCRIPT_DIR/build"
 mkdir -p "$BUILD_DIR"
 
-if [ ! -f "$BUILD_DIR/examples/integration/notifications/NotificationListener.class" ] \
-   || [ "$SCRIPT_DIR/NotificationListener.java" -nt "$BUILD_DIR/examples/integration/notifications/NotificationListener.class" ]; then
+if [ ! -f "$BUILD_DIR/examples/integration/scripts/notifications/NotificationListener.class" ] \
+   || [ "$SCRIPT_DIR/NotificationListener.java" -nt "$BUILD_DIR/examples/integration/scripts/notifications/NotificationListener.class" ]; then
   echo "Compiling NotificationListener.java..."
   javac -cp "$JSON_SIMPLE_JAR" -d "$BUILD_DIR" "$SCRIPT_DIR/NotificationListener.java"
 fi
 
-exec java -cp "$BUILD_DIR:$JSON_SIMPLE_JAR" examples.integration.notifications.NotificationListener \
+exec java -cp "$BUILD_DIR:$JSON_SIMPLE_JAR" examples.integration.scripts.notifications.NotificationListener \
   "$BASE_URL" "$API_KEY" "$API_SECRET" "$POLL_SECONDS"

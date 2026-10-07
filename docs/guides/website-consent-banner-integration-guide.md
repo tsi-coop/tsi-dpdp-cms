@@ -19,7 +19,7 @@ policy in front of website visitors as:
 Every choice is written to the CMS as an auditable consent record
 (`record_consent`), tied to the policy the visitor saw.
 
-A ready-to-run reference lives in [`examples/website-consent/`](../../examples/website-consent/).
+A ready-to-run reference lives in [`examples/integration/website-consent/`](../../examples/integration/website-consent/).
 
 > **Not a cookie scanner.** Consent here is per *processing purpose* in your
 > policy, not per individual cookie. Model your cookie use as purposes
@@ -122,7 +122,7 @@ Your proxy should:
 - Copy only known fields, validate types, and cap body size (the example uses 32 KB).
 - Rate-limit per IP, since this endpoint is public.
 
-`examples/website-consent/proxy/server.py` does all of this in about 100 lines of
+`examples/integration/website-consent/proxy/server.py` does all of this in about 100 lines of
 standard-library Python; port it to your stack.
 
 > **IP address caveat.** The CMS records the *caller's* address

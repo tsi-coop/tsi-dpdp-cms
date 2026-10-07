@@ -4,8 +4,8 @@
 .env
 .help
 /server/.env
-/examples/integration/notifications/build/
-/examples/integration/purge/build/
+/examples/integration/scripts/notifications/build/
+/examples/integration/scripts/purge/build/
 /tests/results.jtl
 /tests/report/
 /tests/jmeter.log
