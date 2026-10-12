@@ -132,7 +132,7 @@ The TSI DPDP CMS lets administrators export system-generated configurations, aud
 ## Privacy, Security, & Compliance
 
 * **Regulatory Compliance:** Built in accordance with India's Digital Personal Data Protection (DPDP) Act, 2023, with signed, immutable audit and compliance log entries and verifiable consent withdrawal and erasure workflows.
-* **Security Patching:** This repository actively patches and mitigates vulnerabilities. Standard deployments should use version 0.5.1 or later, which fixed missing server-side authentication on the admin and DPO console pages and on the first-run setup endpoint (CVE-2026-84840 / CVE-2026-84841). See the [release notes](RELEASE_NOTES.md) for details and [`SECURITY.md`](SECURITY.md) for how to report vulnerabilities.
+* **Security Patching:** This repository actively patches and mitigates vulnerabilities. Standard deployments should use version 0.5.3 or later. Version 0.5.1 fixed missing server-side authentication on the admin and DPO console pages and on the first-run setup endpoint (CVE-2026-84840 / CVE-2026-84841); version 0.5.3 fixed the API dispatcher validating request payloads before authentication, which let unauthenticated callers enumerate parameter names (CVE-2026-108810, Low). See the [release notes](RELEASE_NOTES.md) for details and [`SECURITY.md`](SECURITY.md) for how to report vulnerabilities.
 * **Community Conduct:** Participation in the project is governed by the [Code of Conduct](CODE_OF_CONDUCT.md), which sets expected behavior and explains how to report harassment or abuse.
 
 ## Testing
