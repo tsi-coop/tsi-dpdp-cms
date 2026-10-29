@@ -134,7 +134,7 @@ The TSI DPDP CMS lets administrators export system-generated configurations, aud
 
 ## Release Notes
 
-Check out [v0.5.3 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.3)
+Check out [v0.5.4 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.4)
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 
