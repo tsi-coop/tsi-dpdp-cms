@@ -1,220 +1,434 @@
 # Production Deployment Guide
 
-**Document Version:** 1.0
-**Audience:** Whoever is taking a TSI DPDP CMS install from evaluation to production - you don't need to be a senior DevOps engineer to follow this.
+**Document Version:** 1.1
+**Audience:** Whoever is taking a TSI DPDP CMS install from evaluation to production.
 
 ---
 
-## Overview
+## What this guide gets you
 
-The Docker and Binary steps in the main [README](../README.md) are enough to get the system running for evaluation. But a production instance holds real personal data - names, contact details, consent records, and the audit ledger that proves compliance - so before you point real users at it, there are five things worth locking down.
+The Docker and Binary steps in the main [README](../README.md) get the system running for evaluation. A production instance holds real personal data (names, contact details, consent records and the audit ledger that proves compliance), so this guide walks you through the settings that make it safe to point real users at.
 
-None of these are exotic. They're standard practice for any production system, not something specific to this project, and each one below comes with the exact commands to run and a way to check you got it right. Take them one at a time - you don't have to do all five in one sitting.
+Follow the steps in order, and do the **checkpoint** at the end of each one before you move on. Each checkpoint tells you what you should see. Pick the section that matches how you installed the system:
 
-| # | Guardrail | In one sentence |
-|---|---|---|
-| 1 | Keep secrets out of the repo | Replace the example passwords/keys with your own before going live. |
-| 2 | Don't run as root | Run the app as a low-privilege user, so a bug in it can't take over the whole server. |
-| 3 | Encrypt the disk | Turn on full-disk encryption when you set up the server (most cloud providers do this in one click). |
-| 4 | Keep the database private | Make sure Postgres isn't reachable from the internet - only your app should be able to talk to it. |
-| 5 | Back up automatically, offsite | Schedule a daily backup that leaves the server, so you don't lose everything if it does. |
+- [Docker](#docker): the standard install.
+- [Binary](#binary): Jetty running directly on the server.
 
-The steps below show each guardrail for both Docker and Binary deployments - use whichever section matches how you installed the system.
+It takes about an hour the first time. Afterwards it is a checklist you can reuse.
+
+## Before you start
+
+You need three things in place first. All of them happen outside this project:
+
+1. **An encrypted disk.** If a disk is ever lost, stolen or sold, encryption is what keeps the data on it unreadable. Turn it on when you create the server:
+   - Your own server: enable LUKS (the Linux installer has a checkbox, e.g. "Encrypt the new Ubuntu installation").
+   - A cloud server: tick the managed disk encryption option when creating it (AWS EBS encryption, Azure Disk Encryption, GCP CMEK).
+
+   This covers the database, the reports and the signing keystore, because they all live on that disk. It is in addition to the database encryption you set up in Step 1.
+2. **HTTPS in front of the application.** In production the console's login cookie is marked secure, so logins only work over `https://`. Put a reverse proxy (for example nginx or Caddy) with a certificate in front of port 8080. Setting that up is outside this guide.
+3. **A server that only you can reach.** Open only the ports your users need (normally 443). The database port must not be open to the internet; Step 3 makes sure of that.
+
+---
 
 ## Docker
 
-### 1. Keep secrets out of the repo
+### First, decide where your database runs
 
-**Why:** `docker-compose.yml` ships with placeholder passwords (like `secure_dev_password`) so evaluation works out of the box. Those placeholders are fine for trying the system out, but they're published in this public repo, so anyone can guess them - they must never be used in production.
+| | Where PostgreSQL runs | Typical use |
+|---|---|---|
+| **Database in Docker** | In a container started by this project's `docker-compose.yml`, on the same server as the app. | The standard install. |
+| **Database on a different server** | On another machine you manage, or a managed service (AWS RDS, Azure Database, Cloud SQL). | You already have a database server, or want the data off the application server. |
 
-**Do this:**
+Parts of the steps below apply to only one of the two. They are labelled **Database in Docker** or **Database on a different server**: do the one that matches you and skip the other. Anything without a label applies to both.
+
+### Step 1: Create your `.env` and set real secrets
+
+The shipped `docker-compose.yml` has placeholder passwords (like `secure_dev_password`) so evaluation works out of the box. They are published in this public repo, so they must never be used in production.
+
+1. Create the file and make it private:
+
+   ```bash
+   cp .example .env
+   chmod 600 .env
+   ```
+
+2. Generate a random value for each secret. Run this once per secret and copy each result:
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+3. Open `.env` in an editor and set these:
+
+   | Setting | What to put |
+   |---|---|
+   | `POSTGRES_PASSWD` | A strong password. With a database on a different server, use the password of the database user you create in Step 2. |
+   | `JWT_SECRET` | A random value |
+   | `DB_ENCRYPTION_KEY` | A random value. **Never change it later:** data already encrypted with it becomes unreadable. |
+   | `TSI_LOOKUP_SALT` | A random value |
+   | `TSI_BOOTSTRAP_TOKEN` | A random value. You use it once, in Step 6. |
+   | `TSI_KEYSTORE_PASS` | A strong password (not `changeit`). Used in Step 2. |
+   | `TSI_KEYSTORE_PATH` | `/etc/tsi/keystore.p12` |
+   | `TSI_KEYSTORE_ALIAS` | `tsi_fiduciary` |
+   | `ALLOWED_ORIGINS` | Your public address, e.g. `https://consent.example.com` |
+   | `DB_PORT_MAP` | **Database in Docker only.** `127.0.0.1:5432:5432` (add this line: it keeps the database off the network) |
+   | `DB_HOST` | **Database on a different server only.** Its address, e.g. `10.0.1.20` (add this line) |
+   | `TSI_DPDP_CMS_ENV` | `production` (the example file says `local`) |
+
+   `TSI_DPDP_CMS_ENV=production` switches on the production safeguards. The Rights Portal stops accepting the demo `DUMMY_OTP` login, and evidence certificates are signed with your own keystore instead of a throwaway key. It also makes the application insist on an SSL database connection, which is Step 2.
+
+4. **Save a copy of `.env` somewhere safe now** (a password manager or encrypted vault). Without `DB_ENCRYPTION_KEY`, your backups cannot be read.
+
+> **Checkpoint:** run `grep -c "<" .env`. It should print `0`, meaning no `<placeholder>` values are left. Also confirm `TSI_DPDP_CMS_ENV=production` is in the file.
+
+### Step 2: Create the keystore and prepare the database
+
+The signing keystore is needed in both cases. After it, follow **only** the part for your database. Files created here stay on the server and are never committed to Git.
+
+#### 2a. The signing keystore (everyone)
+
+It signs the evidence certificates. Without it, certificates cannot be verified later.
 
 ```bash
-cp .example .env
-chmod 600 .env
+mkdir -p keystore
+keytool -genkeypair -alias tsi_fiduciary -keyalg RSA -keysize 3072 \
+  -sigalg SHA256withRSA -dname "CN=Your Organisation Name" \
+  -storetype PKCS12 -keystore keystore/keystore.p12 \
+  -validity 3650
 ```
 
-Then open `.env` and set real values for all of `POSTGRES_PASSWD`, `JWT_SECRET`, `DB_ENCRYPTION_KEY`, `TSI_LOOKUP_SALT`, `TSI_KEYSTORE_PASS`, `TSI_BOOTSTRAP_TOKEN`, and `ALLOWED_ORIGINS`. For the random ones, generate a strong value with:
+When `keytool` asks for a password, enter the same value you set for `TSI_KEYSTORE_PASS`. (If `keytool` is not installed, install a Java runtime, or run the command inside any Java container.) The alias `tsi_fiduciary` must match `TSI_KEYSTORE_ALIAS`.
+
+Give the keystore to the `jetty` user in the app image (use `sudo`, or the `docker run` form shown in 2b if you have no `sudo`):
 
 ```bash
-openssl rand -hex 32
+sudo chown 999:999 keystore/keystore.p12
+chmod 600 keystore/keystore.p12
 ```
 
-`.example` shows which fields need this. One thing to know up front: `DB_ENCRYPTION_KEY` can never be changed later without losing access to already-encrypted data, so back it up as soon as you set it (guardrail 5 covers how).
+#### 2b. Database in Docker: create the database certificate
 
-`TSI_BOOTSTRAP_TOKEN` has no built-in default, unlike the others - leave it unset and the one-time Super-Admin setup endpoint (`/console/setup/init.html`) refuses every request instead of falling back to a guessable value. After `docker compose up -d`, open that URL, enter the same value you put in `.env` as the Setup Token, and create your admin account. You can unset or rotate `TSI_BOOTSTRAP_TOKEN` afterward - it's only checked while `operators` has no admin row yet.
+The application connects to the database over SSL in production, and the bundled Postgres has SSL turned off by default. This creates a certificate for it. A self-signed one is fine here, because the connection is inside Docker's private network.
 
-### 2. Don't run as root
+```bash
+mkdir -p certs
+openssl req -new -x509 -days 3650 -nodes -subj "/CN=postgres_db" \
+  -keyout certs/server.key -out certs/server.crt
+```
 
-**Why:** The container image already defines a low-privilege `jetty` user, but the shipped `docker-compose.yml` overrides it to run as `root` (a workaround for a file-permission issue). Running as `root` means that if the app were ever compromised, the attacker would have full control of the container, not just the app - not a risk worth taking in production.
+Now give the right owners, so the containers can read the files:
 
-**Do this:** Create a small override file (Compose merges this automatically - you don't edit the shipped file):
+```bash
+sudo chown 70:70 certs/server.key certs/server.crt       # the 'postgres' user in the database image
+chmod 600 certs/server.key
+```
+
+No `sudo` on this machine? This does the same thing through Docker:
+
+```bash
+docker run --rm -v "$PWD/certs:/certs" postgres:15-alpine sh -c 'chown 70:70 /certs/* && chmod 600 /certs/server.key'
+docker run --rm -v "$PWD/keystore:/ks" alpine sh -c 'chown 999:999 /ks/keystore.p12 && chmod 600 /ks/keystore.p12'
+```
+
+> **Checkpoint:** `ls -ln certs keystore` shows `70` as the owner of the two certs files and `999` as the owner of `keystore.p12`.
+
+#### 2c. Database on a different server: prepare it and load the schema
+
+Skip 2b: you do not need a database certificate.
+
+**Prepare the database server**
+
+- Postgres 13 or later, with SSL on. The application connects with `sslmode=require` in production and refuses a database without SSL. It encrypts the connection but does not check the certificate's issuer, so a self-signed certificate is fine. A managed service normally has SSL on already.
+- Create the database and a user that owns it (run as a Postgres admin). Use the same names and password as `POSTGRES_USER`, `POSTGRES_DB` and `POSTGRES_PASSWD` in your `.env`:
+
+  ```sql
+  CREATE USER tsi_admin WITH PASSWORD '<POSTGRES_PASSWD from .env>';
+  CREATE DATABASE tsi_cms OWNER tsi_admin;
+  ALTER DATABASE tsi_cms SET app.enc_key = '<DB_ENCRYPTION_KEY from .env>';
+  ```
+
+  The last line stores the encryption key as a database setting. It is what `db/03z_enc_key.sh` does for the database in Docker. It must be run by a Postgres admin: the database owner is refused (`permission denied to set parameter "app.enc_key"`). Use the exact `DB_ENCRYPTION_KEY` value from your `.env`, and never change it later.
+- Allow only the application server. In `postgresql.conf` set `listen_addresses` to the server's private address, and in `pg_hba.conf` add one line (the address is the application server's):
+
+  ```
+  hostssl  tsi_cms  tsi_admin  10.0.1.15/32  scram-sha-256
+  ```
+
+  Then reload Postgres. On a managed service, do the same with its security group or firewall rule. Keep the server on a private subnet with no public IP, and never open port 5432 to the internet.
+
+**Load the schema (once)**
+
+The database in Docker loads the `db/` scripts by itself on first start. A separate database does not, so load them from the application server (as the `tsi_admin` user, after the admin step above). Run this from the project folder (replace `<db-host>`):
+
+```bash
+set -a; source .env; set +a
+export PGPASSWORD="$POSTGRES_PASSWD" PGSSLMODE=require
+PSQL="psql -h <db-host> -U $POSTGRES_USER -d $POSTGRES_DB -v ON_ERROR_STOP=1"
+
+for f in db/*.sql; do echo "== $f"; $PSQL -f "$f"; done
+```
+
+The scripts create the `pgcrypto` and `uuid-ossp` extensions. If your managed service does not let the database owner create them, ask an admin to run `CREATE EXTENSION pgcrypto; CREATE EXTENSION "uuid-ossp";` first.
+
+> **Checkpoint:** the loop ends without an `ERROR`, and a new `psql` connection as `tsi_admin` prints your key for `SHOW app.enc_key;`. Run the loop only once: if it fails halfway, fix the cause and get help before re-running it on a half-loaded database.
+
+### Step 3: Create the override file
+
+You do not edit the shipped `docker-compose.yml`. Instead, create a file next to it called `docker-compose.override.yml`. Docker Compose merges it in automatically. Use the file for your database.
+
+**Database in Docker:**
 
 ```yaml
 # docker-compose.override.yml
 services:
   jetty_app:
-    user: "999:999"   # the built-in 'jetty' user's numeric ID
+    user: "999:999"            # run the app as the low-privilege 'jetty' user, not root
+    volumes:
+      - ./keystore:/etc/tsi:ro # the signing keystore from Step 2a
+
+  postgres_db:
+    volumes:
+      - ./certs:/certs:ro      # the database certificate from Step 2b
+    command: >
+      postgres -c ssl=on
+      -c ssl_cert_file=/certs/server.crt
+      -c ssl_key_file=/certs/server.key
 ```
 
-Then fix the ownership of the volume that `root` was working around, one time:
+**Database on a different server:**
+
+```yaml
+# docker-compose.override.yml
+services:
+  jetty_app:
+    user: "999:999"            # run the app as the low-privilege 'jetty' user, not root
+    volumes:
+      - ./keystore:/etc/tsi:ro # the signing keystore from Step 2a
+    environment:
+      POSTGRES_HOST: "jdbc:postgresql://${DB_HOST}:5432"   # DB_HOST from your .env; change the port if yours differs
+    depends_on: !reset []      # do not wait for the bundled database
+
+  postgres_db:
+    profiles: ["bundled-db"]   # the bundled database is never started
+```
+
+`!reset` needs Docker Compose 2.24 or later (`docker compose version`). On an older version, leave out the `depends_on` line and start the app with `docker compose up -d --no-deps jetty_app` instead of `docker compose up -d` in Step 5.
+
+What each part does:
+
+- **`user: "999:999"`:** the shipped file runs the app as `root` to work around a file-permission issue. If the app were ever compromised, `root` would give an attacker control of the whole container. This runs it as the unprivileged `jetty` user instead (Step 4 fixes the permission issue properly).
+- **The keystore mount:** makes your keystore visible to the app at `/etc/tsi/keystore.p12`, read-only.
+- **The Postgres settings (Database in Docker):** turn SSL on with your certificate.
+- **The database port (Database in Docker):** already limited to this machine by `DB_PORT_MAP` in Step 1.
+- **`POSTGRES_HOST` and `profiles` (Database on a different server):** point the app at your database and stop the bundled one from starting.
+
+Add the two new folders to `.gitignore` so they are never committed:
+
+```bash
+printf '/certs/\n/keystore/\n' >> .gitignore
+```
+
+> **Checkpoint:** `docker compose config > /dev/null && echo OK` prints `OK`. If it prints an error, check the indentation in the override file (use spaces, not tabs).
+
+### Step 4: Fix the reports folder permissions (once)
+
+The reports volume was created for `root`. Give it to the `jetty` user so the app can write to it:
 
 ```bash
 docker compose run --rm --user root --entrypoint sh jetty_app \
   -c "chown -R 999:999 \$TSI_EXPORT_PATH"
 ```
 
-Restart, and check it worked:
+This also starts the database container, which is fine.
+
+### Step 5: Start the system and check it
 
 ```bash
 docker compose up -d
+```
+
+Wait about 30 seconds, then run these checks one by one.
+
+**1. The app runs as the `jetty` user, not root:**
+
+```bash
 docker compose exec jetty_app id
 ```
 
-**You're looking for:** `uid=999(jetty)` in the output, not `uid=0(root)`.
+> You should see `uid=999(jetty)`, not `uid=0(root)`.
 
-### 3. Encrypt the disk
+**2. The database has SSL on:**
 
-**Why:** If the physical or virtual disk is ever lost, stolen, or improperly decommissioned, an unencrypted disk means the data on it is just... readable. Encryption makes that data useless without the key.
-
-**Do this:** This happens at the server level, not in Docker - turn it on when you provision the machine:
-
-- Self-managed server: enable LUKS (Linux's built-in full-disk encryption) - most Linux installers have a checkbox for this, e.g. "Encrypt the new Ubuntu installation for security" in the Ubuntu Server installer.
-- Cloud provider: turn on their managed disk encryption (AWS EBS encryption, Azure Disk Encryption, GCP CMEK) - usually also a checkbox at server-creation time.
-
-That's it for this one - Docker automatically stores its data (the database, reports, and signing keystore) on this same disk, so encrypting the disk covers all of them. This is in addition to, not instead of, the database-level encryption you already set up in guardrail 1 via `DB_ENCRYPTION_KEY`.
-
-### 4. Keep the database private
-
-**Why:** Your app already reaches the database over Docker's internal network, so nothing else needs to. But the default setup also publishes the database port to the whole machine (handy for connecting a local database tool while you're evaluating) - in production, that's an open door you don't need.
-
-**Do this:** Pick one - either restrict it to the local machine only:
-
-```
-DB_PORT_MAP=127.0.0.1:5432:5432
-```
-
-in `.env`, or remove the port publishing entirely:
-
-```yaml
-# docker-compose.override.yml
-services:
-  postgres_db:
-    ports: []
-```
-
-**Check it worked:** From the server itself, `ss -tlnp | grep 5432` should show at most a `127.0.0.1` binding. From another machine, `nc -zv <host-ip> 5432` should fail to connect. (A host firewall is a good extra layer too, but don't rely on it alone - Docker can bypass firewall rules, so this port-publishing change is the one that actually matters.)
-
-### 5. Back up automatically, offsite
-
-**Why:** If this server is ever lost, corrupted, or hit by ransomware, an offsite backup is what gets you back up and running - and, for this system specifically, it's what preserves your compliance evidence (the audit ledger) even if the original is gone.
-
-**What needs to go offsite every day:**
-
-- The database (includes the audit/compliance ledger)
-- The generated reports folder
-- `.env` (without `DB_ENCRYPTION_KEY`, the encrypted data in the backup is unreadable)
-- The signing keystore file (without it, previously-signed compliance evidence can't be re-verified)
-
-**Do this:** Here's a daily backup script that covers all four, encrypts the bundle, and ships it offsite:
+*Database in Docker:*
 
 ```bash
-#!/bin/bash
-# /opt/tsi-backup/backup.sh
-set -euo pipefail
-STAMP=$(date +%Y%m%d_%H%M%S)
-OUT=/var/backups/tsi-dpdp-cms; mkdir -p "$OUT"
-cd /path/to/tsi-dpdp-cms
-
-# 1. Dump the database (safer than copying its files while it's running)
-docker compose exec -T postgres_db pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -F c \
-  > "$OUT/db_${STAMP}.dump"
-
-# 2. Copy the generated reports
-docker compose exec -T jetty_app tar czf - -C "$TSI_EXPORT_PATH" . \
-  > "$OUT/reports_${STAMP}.tar.gz"
-
-# 3. Copy the secrets file and signing keystore
-tar czf "$OUT/secrets_${STAMP}.tar.gz" .env "$TSI_KEYSTORE_PATH"
-
-# 4. Bundle everything into one encrypted file before it leaves this server
-tar cz "$OUT"/*_"${STAMP}"* | gpg --symmetric --cipher-algo AES256 \
-  -o "$OUT/bundle_${STAMP}.tar.gz.gpg"
-rm "$OUT"/{db,reports,secrets}_"${STAMP}"*
-
-# 5. Upload it somewhere that can't be modified or deleted for 30 days
-aws s3 cp "$OUT/bundle_${STAMP}.tar.gz.gpg" s3://your-offsite-bucket/tsi-dpdp-cms/ \
-  --object-lock-mode COMPLIANCE \
-  --object-lock-retain-until-date "$(date -d '+30 days' --iso-8601=seconds)"
-
-find "$OUT" -type f -mtime +7 -delete
+docker compose exec postgres_db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SHOW ssl;"
 ```
 
-Schedule it to run every night:
+> You should see `on`. (Load your `.env` first with `set -a; source .env; set +a` if `$POSTGRES_USER` is empty.)
+
+*Database on a different server:*
 
 ```bash
-crontab -e
-# add this line:
-0 2 * * * /opt/tsi-backup/backup.sh >> /var/log/tsi-backup.log 2>&1
+psql "host=$DB_HOST user=$POSTGRES_USER dbname=$POSTGRES_DB sslmode=require" -c "SHOW ssl;"
 ```
 
-An "immutable, object-locked" destination (step 5) just means: once uploaded, that backup can't be deleted or overwritten for 30 days - even by someone with your S3 credentials. That protects it from ransomware that also reaches this server. One habit worth building: actually try restoring from a backup once in a while. A backup you've never restored is a guess, not a guarantee.
+> You should see `on`.
+
+**3. The app started in production mode:**
+
+```bash
+docker compose logs jetty_app | grep "Service started"
+```
+
+> You should see `... Service started in production environment`. If you see `[WARNING]` about the environment, or `local environment`, check `TSI_DPDP_CMS_ENV` in `.env`.
+
+**4. The database is not reachable from outside:**
+
+*Database in Docker:*
+
+```bash
+ss -tlnp | grep 5432
+```
+
+> You should see only `127.0.0.1:5432`, never `0.0.0.0:5432`. From another machine, `nc -zv <server-ip> 5432` should fail to connect.
+
+*Database on a different server:* from a machine that is **not** the application server, `nc -zv <db-host> 5432` should fail to connect.
+
+**If every request shows an error page**, run `docker compose logs jetty_app | tail -30`. The line `The server does not support SSL` means the database does not have SSL on. *Database in Docker:* Step 3's Postgres settings were not applied, so run `docker compose up -d` again and repeat check 2. *Database on a different server:* turn SSL on there (Step 2c). If the log shows `Connection refused`, `timed out` or `no pg_hba.conf entry`, the firewall, `listen_addresses` or the `pg_hba.conf` line is blocking the application server.
+
+### Step 6: Create the admin account
+
+This only works once, and only with the token you set in Step 1.
+
+1. Open `https://<your-address>/console/setup/init.html`.
+2. Enter the `TSI_BOOTSTRAP_TOKEN` value as the **Setup Token**, then create your Super-Admin account.
+3. Sign in to the console.
+4. Go to **Settings** and, for every organisation, set the OTP delivery mode to **Email OTP** or **Mobile OTP**. In production, an organisation still on `DUMMY_OTP` cannot log its principals in.
+
+You can now remove or change `TSI_BOOTSTRAP_TOKEN`. It is only checked until the first admin exists.
+
+> **Checkpoint:** you can sign in to the console over `https://`.
+
+### Step 7: Set up backups
+
+Do this on day one, not later. It takes about 20 minutes, and the [Backup and Restore Guide](backup-and-restore-guide.md) walks you through it step by step. In short:
+
+```bash
+./backup/backup.sh                              # take a backup now
+./backup/restore.sh <the-backup-file>.sql.gz    # prove it can be restored (safe, touches nothing live)
+```
+
+Then schedule it nightly, store a copy off the server, and keep an encrypted copy of your `.env` and keystore. All three are explained in that guide.
+
+*Database on a different server:* `backup/backup.sh` backs up the database in Docker only. Use the `pg_dump` approach in [Binary Step 6](#step-6-set-up-backups) with `-h <db-host>`, or your provider's managed snapshots plus a `pg_dump` copy.
+
+> **Checkpoint:** the restore check ends with `Verification complete - backup is restorable.`
+
+**You are done with the Docker setup.** For upgrades, see [Upgrading to a new release](#upgrading-to-a-new-release) below.
+
+---
 
 ## Binary
 
-Same five guardrails, same reasons - here's what each looks like on a bare-metal Jetty deployment instead of Docker.
+These steps are the same ones as above, for Jetty running directly on the server. First decide where Postgres runs:
 
-### 1. Keep secrets out of the repo
+- **Database on this server (localhost):** Postgres is installed on the same machine as Jetty.
+- **Database on a different server:** Postgres is on another machine, or is a managed service (AWS RDS, Azure Database, Cloud SQL).
 
-`server/.env` is already excluded from Git, so you're covered there. Lock it down and generate real values the same way as the Docker section:
+Only Step 1 and Step 4 differ. They are labelled for each case.
+
+### Step 1: Set real secrets
+
+`server/.env` is already excluded from Git.
 
 ```bash
 chmod 600 server/.env
-openssl rand -hex 32   # for each random secret .example asks for
+openssl rand -hex 32     # run once per secret, and copy each result
 ```
 
-Never commit a filled-in `.env` - and treat files like `production.env` the same way; they should only ever hold placeholders.
+Open `server/.env` and set real values for `POSTGRES_PASSWD`, `JWT_SECRET`, `DB_ENCRYPTION_KEY` (never change it later: data already encrypted with it becomes unreadable), `TSI_LOOKUP_SALT`, `TSI_BOOTSTRAP_TOKEN`, `TSI_KEYSTORE_PASS` (not `changeit`) and `ALLOWED_ORIGINS`. Set `TSI_DPDP_CMS_ENV=production`. Set `POSTGRES_HOST`: `jdbc:postgresql://localhost:5432` for a database on this server, or `jdbc:postgresql://<db-host>:5432` for one on a different server. Treat files such as `production.env` the same way: never commit real values. **Save a copy of the file somewhere safe now**, since without `DB_ENCRYPTION_KEY` your backups cannot be read.
 
-### 2. Don't run as root
+> **Checkpoint:** no `<placeholder>` values are left in `server/.env`, and `TSI_DPDP_CMS_ENV=production` is set.
 
-**Do this:** Create a dedicated, low-privilege system account for the app, instead of running it as your own user or root:
+### Step 2: Create the signing keystore
+
+```bash
+sudo mkdir -p /etc/tsi
+sudo keytool -genkeypair -alias tsi_fiduciary -keyalg RSA -keysize 3072 \
+  -sigalg SHA256withRSA -dname "CN=Your Organisation Name" \
+  -storetype PKCS12 -keystore /etc/tsi/keystore.p12 -validity 3650
+```
+
+Enter the same password as `TSI_KEYSTORE_PASS`. Set `TSI_KEYSTORE_PATH=/etc/tsi/keystore.p12` and `TSI_KEYSTORE_ALIAS=tsi_fiduciary` in `server/.env`. Step 3 gives the `tsicms` user access to this file.
+
+### Step 3: Run the app as its own low-privilege user
+
+Do not run it as root or as your own login.
 
 ```bash
 sudo useradd --system --home /opt/tsi-dpdp-cms --shell /usr/sbin/nologin tsicms
 sudo chown -R tsicms:tsicms /opt/tsi-dpdp-cms "$JETTY_BASE" "$TSI_EXPORT_PATH"
+sudo chown tsicms:tsicms /etc/tsi/keystore.p12 && sudo chmod 600 /etc/tsi/keystore.p12
 sudo -u tsicms ./serve.sh
 ```
 
-For anything long-running, wrap this in a `systemd` unit with `User=tsicms`, rather than leaving it in a terminal session that closes when you log out.
+For a long-running service, wrap this in a `systemd` unit with `User=tsicms`, so it keeps running after you log out.
 
-### 3. Encrypt the disk
+> **Checkpoint:** `ps -o user= -C java` shows `tsicms`.
 
-Exactly the same as the Docker section - enable LUKS or your cloud provider's managed disk encryption when you set up the server. That one setting covers the Postgres data directory, `$JETTY_BASE`, `$TSI_EXPORT_PATH`, and the keystore file, since they all live on the same disk.
+### Step 4: Make the database private, and turn on SSL
 
-### 4. Keep the database private
+#### Database on this server (localhost)
 
-**Do this:** Tell Postgres to only listen on the local machine, and firewall the port off from the internet:
+In `postgresql.conf`, make Postgres listen only on this machine and turn on SSL:
 
 ```
-# postgresql.conf
 listen_addresses = 'localhost'
+ssl = on
+ssl_cert_file = '/etc/postgresql/server.crt'
+ssl_key_file  = '/etc/postgresql/server.key'
 ```
 
-Restrict `pg_hba.conf` to the application server's address, then:
+Create the certificate (or use one from your CA). A self-signed one is fine, since the app only requires an encrypted connection and does not check who issued the certificate:
 
 ```bash
+sudo openssl req -new -x509 -days 3650 -nodes -subj "/CN=localhost" \
+  -keyout /etc/postgresql/server.key -out /etc/postgresql/server.crt
+sudo chown postgres:postgres /etc/postgresql/server.key /etc/postgresql/server.crt
+sudo chmod 600 /etc/postgresql/server.key
+```
+
+In `pg_hba.conf`, use `hostssl` instead of `host` for the application's entry, so non-SSL connections are rejected. Then restart Postgres and block the port from the internet:
+
+```bash
+sudo systemctl restart postgresql
 sudo ufw deny 5432/tcp
 ```
 
-If Postgres runs on a separate machine from the app, put it on a private subnet with no public IP - reachable only from the app server's private address, not from the internet at all.
+> **Checkpoint:** `psql -c "SHOW ssl;"` prints `on`, and `ss -tlnp | grep 5432` shows only `127.0.0.1`.
 
-### 5. Back up automatically, offsite
+#### Database on a different server
 
-Same idea as Docker, just talking to Postgres and the filesystem directly instead of through `docker compose exec`:
+Put the database on a private subnet with no public IP, reachable only from the application server. Prepare and load it exactly as in [Docker Step 2c](#2c-database-on-a-different-server-prepare-it-and-load-the-schema): create the database and user, allow only the application server in `pg_hba.conf` with a `hostssl` line, and load the schema. The `psql` commands are the same. Then:
+
+- Make sure `POSTGRES_HOST` in `server/.env` points to it (Step 1).
+- On the database server, open port 5432 only to the application server, for example `sudo ufw allow from <app-server-ip> to any port 5432 proto tcp`. On a managed service, use its security group or firewall rule. Never open it to the internet.
+
+> **Checkpoint:** from the application server, `psql "host=<db-host> user=<user> dbname=<db> sslmode=require" -c "SHOW ssl;"` prints `on`, and `nc -zv <db-host> 5432` from any other machine fails to connect. A managed Postgres service normally has SSL on already.
+
+### Step 5: Start, create the admin, and check
+
+Start the application as in Step 3. Check the log for `Service started in production environment`. Then create the admin account and set each organisation's OTP mode, exactly as in Docker Step 6 (open `/console/setup/init.html` with your `TSI_BOOTSTRAP_TOKEN`).
+
+> **Checkpoint:** you can sign in to the console over `https://`.
+
+### Step 6: Set up backups
+
+The scripts in `backup/` are written for Docker. On a Binary install, use the same ideas with the commands below. Save this as `/opt/tsi-backup/backup.sh`:
 
 ```bash
 #!/bin/bash
-# /opt/tsi-backup/backup.sh
 set -euo pipefail
 STAMP=$(date +%Y%m%d_%H%M%S)
 OUT=/var/backups/tsi-dpdp-cms; mkdir -p "$OUT"
@@ -223,17 +437,52 @@ pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -F c -f "$OUT/db_${STAMP}.dump"
 tar czf "$OUT/exports_${STAMP}.tar.gz" "$TSI_EXPORT_PATH"
 tar czf "$OUT/secrets_${STAMP}.tar.gz" /path/to/server/.env "$TSI_KEYSTORE_PATH"
 
+# Encrypt everything into one file before it leaves the server (you will be asked for a passphrase: store it in a password manager)
 tar cz "$OUT"/*_"${STAMP}"* | gpg --symmetric --cipher-algo AES256 -o "$OUT/bundle_${STAMP}.tar.gz.gpg"
 rm "$OUT"/{db,exports,secrets}_"${STAMP}"*
 
+# Copy it off the server (here: S3 with Object Lock, so it cannot be deleted for 30 days, even with your credentials)
 aws s3 cp "$OUT/bundle_${STAMP}.tar.gz.gpg" s3://your-offsite-bucket/tsi-dpdp-cms/ \
   --object-lock-mode COMPLIANCE --object-lock-retain-until-date "$(date -d '+30 days' --iso-8601=seconds)"
 
 find "$OUT" -type f -mtime +7 -delete
 ```
 
-Schedule it the same way via `crontab -e`, and test a restore every so often once you're live.
+Schedule it nightly with `crontab -e`:
+
+```
+0 2 * * * /opt/tsi-backup/backup.sh >> /var/log/tsi-backup.log 2>&1
+```
+
+> **Checkpoint:** run it once by hand, then actually restore from the result on a spare machine. A backup you have never restored is a guess, not a guarantee.
 
 ---
 
-That's the whole list. Once you've done this for one deployment, it's a checklist you can reuse for the next one - most of it is copy-paste plus your own values.
+## Upgrading to a new release
+
+The scripts in `db/` run automatically only when the database is first created. When you upgrade an existing install, you apply the new ones yourself, once. The [release notes](../../RELEASE_NOTES.md) say which. They are written to be safe to run again.
+
+**Docker**
+
+1. Back up first: `./backup/backup.sh`
+2. Pull the new image and restart:
+
+   ```bash
+   docker compose pull && docker compose up -d
+   ```
+
+3. Apply the scripts the release notes name. This example is for v0.5.4; `POSTGRES_USER` and `POSTGRES_DB` are the values from your `.env`:
+
+   ```bash
+   set -a; source .env; set +a
+   for f in db/14_policy_version_backfill.sql db/15_breach_deadline.sql db/16_webhook_deliveries.sql db/17_notification_log.sql; do
+     docker compose exec -T postgres_db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 < "$f"
+   done
+   ```
+
+**Binary:** back up, deploy the new WAR, then run each script with `psql -h <host> -U <user> -d <db> -v ON_ERROR_STOP=1 -f db/<file>.sql` and restart Jetty.
+
+**After upgrading, check:**
+
+- The output of `db/14_policy_version_backfill.sql`. It prints a `NOTICE` for any policy it could not safely renumber, and a final count of consent rows still without a version.
+- Each organisation's OTP mode in **Settings -> Rights Management App**. In production, an organisation still on `DUMMY_OTP` cannot log its principals in until it is switched to Email or Mobile OTP.

@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "List webhook deliveries",
+  "type": "object",
+  "properties": {
+    "_func": { "type": "string" },
+    "fiduciary_id": { "type": "string" },
+    "status": { "type": "string", "enum": ["PENDING", "DELIVERED", "FAILED"] },
+    "category": { "type": "string", "enum": ["NOTIFICATION", "PURGE"] },
+    "page": { "type": "integer" },
+    "limit": { "type": "integer" }
+  },
+  "required": ["_func", "fiduciary_id"]
+}

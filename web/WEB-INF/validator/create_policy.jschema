@@ -9,6 +9,12 @@
     "policy_id": {
       "type": "string"
     },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+(\\.\\d+){0,2}$",
+      "maxLength": 10,
+      "description": "Mandatory policy version: numbers separated by dots (e.g. 1.0, 2.1.3). Consent records are stamped with this."
+    },
     "fiduciary_id": {
       "type": "string"
     },
@@ -229,6 +235,7 @@
   "required": [
     "_func",
     "policy_id",
+    "version",
     "policy_content"
   ]
 }

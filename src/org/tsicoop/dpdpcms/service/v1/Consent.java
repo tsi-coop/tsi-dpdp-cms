@@ -3,6 +3,8 @@ package org.tsicoop.dpdpcms.service.v1; // Package changed as requested
 import org.tsicoop.dpdpcms.ces.CESUtil;
 import org.tsicoop.dpdpcms.ces.CESService;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.MinorConsentAudit;
+import org.tsicoop.dpdpcms.util.PolicyVersion;
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -119,7 +121,7 @@ public class Consent implements Action {
             switch (func.toLowerCase()) {
                 case "record_consent": // Used for initial grant, update, or withdrawal
                     String policyId = (String) input.get("policy_id");
-                    String policyVersion = "";
+                    String policyVersion = input.get("policy_version") != null ? ((String) input.get("policy_version")).trim() : "";
                     String timestampStr = (String) input.get("timestamp");
                     String jurisdiction = "IN";
                     String languageSelected = input.get("language_selected")!=null?(String) input.get("language_selected"):"en";
@@ -142,6 +144,20 @@ public class Consent implements Action {
                     }
 
                     Timestamp timestamp = Timestamp.from(Instant.now());
+
+                    // Consent is always stamped with the version of the policy that is ACTIVE now.
+                    // A client that names a version (policy_version) must name that one; a blank
+                    // or missing value means "the active version".
+                    String activeVersion = PolicyVersion.resolveActive(policyId, fiduciaryId);
+                    if (activeVersion == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Referenced policy (ID: " + policyId + ") not found, not active, or does not belong to fiduciary.", req.getRequestURI());
+                        return;
+                    }
+                    if (!policyVersion.isEmpty() && !policyVersion.equals(activeVersion)) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_CONFLICT, "Conflict", "Policy version mismatch: consent was presented against version '" + policyVersion + "' but the active version of policy '" + policyId + "' is '" + activeVersion + "'. Re-fetch the active policy and ask the principal again.", req.getRequestURI());
+                        return;
+                    }
+                    policyVersion = activeVersion;
 
                     // Check if policy exists (important for provenance)
                     JSONObject policy = getPolicy(policyId, policyVersion, fiduciaryId);
@@ -212,6 +228,17 @@ public class Consent implements Action {
                     int principalsLimit = (input.get("limit") instanceof Long) ? ((Long)input.get("limit")).intValue() : 20;
                     outputArray = listPrincipalsFromDb(fiduciaryId, principalsLimit);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
+                    break;
+
+                case "minor_guardian_audit": // Guardian-reference audit for minors' consent (Principals screen)
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'minor_guardian_audit'.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
+                    int auditLimit = (input.get("limit") instanceof Long) ? Math.min(500, Math.max(1, ((Long) input.get("limit")).intValue())) : 100;
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK,
+                            minorGuardianAudit(fiduciaryId, Boolean.TRUE.equals(input.get("active_only")), auditLimit));
                     break;
 
                 case "link_user": // Used to link anonymous ID to authenticated ID
@@ -1102,6 +1129,69 @@ public class Consent implements Action {
             pool.cleanup(rs, pstmt, conn);
         }
         return principalsArray;
+    }
+
+    /**
+     * Guardian-reference audit for principals flagged MINOR: summary counts plus the most recent
+     * consent records whose finding is not OK. The full list is the MINOR_GUARDIAN_AUDIT export.
+     */
+    @SuppressWarnings("unchecked")
+    private JSONObject minorGuardianAudit(UUID fiduciaryId, boolean activeOnly, int limit) throws SQLException {
+        String scope = activeOnly ? " WHERE active" : "";
+        String summarySql = "SELECT COUNT(DISTINCT principal) AS minor_principals, COUNT(*) AS consents, " +
+                "COUNT(*) FILTER (WHERE finding = '" + MinorConsentAudit.OK + "') AS ok, " +
+                "COUNT(*) FILTER (WHERE finding = '" + MinorConsentAudit.MISSING_LOG + "') AS missing_log, " +
+                "COUNT(*) FILTER (WHERE finding = '" + MinorConsentAudit.LOG_MISMATCH + "') AS log_mismatch " +
+                "FROM (" + MinorConsentAudit.ROWS_SQL + ") t" + scope;
+        String findingsSql = "SELECT * FROM (" + MinorConsentAudit.ROWS_SQL + ") t " +
+                "WHERE finding <> '" + MinorConsentAudit.OK + "'" + (activeOnly ? " AND active" : "") +
+                " ORDER BY consent_timestamp DESC LIMIT ?";
+
+        JSONObject out = new JSONObject();
+        JSONObject summary = new JSONObject();
+        JSONArray findings = new JSONArray();
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(summarySql);
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                summary.put("minor_principals", rs.getInt("minor_principals"));
+                summary.put("consents", rs.getInt("consents"));
+                summary.put("ok", rs.getInt("ok"));
+                summary.put("missing_log", rs.getInt("missing_log"));
+                summary.put("log_mismatch", rs.getInt("log_mismatch"));
+            }
+            pool.cleanup(rs, pstmt, null);
+
+            pstmt = conn.prepareStatement(findingsSql);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setInt(2, limit);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                JSONObject row = new JSONObject();
+                row.put("principal", rs.getString("principal"));
+                row.put("consent_id", rs.getString("consent_id"));
+                row.put("policy_id", rs.getString("policy_id"));
+                row.put("policy_version", rs.getString("policy_version"));
+                row.put("consent_timestamp", rs.getTimestamp("consent_timestamp").toInstant().toString());
+                row.put("active", rs.getBoolean("active"));
+                row.put("guardian_id", rs.getString("guardian_id"));
+                row.put("verification_log_id", rs.getString("verification_log_id"));
+                row.put("finding", rs.getString("finding"));
+                findings.add(row);
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        out.put("summary", summary);
+        out.put("findings", findings);
+        out.put("limit", limit);
+        return out;
     }
 
     /**

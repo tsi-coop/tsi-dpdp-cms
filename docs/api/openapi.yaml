@@ -40,8 +40,8 @@ info:
     and `InterceptingFilter.java`, not just the guides. Several real
     discrepancies between the guides' examples and actual server behavior
     surfaced during that verification and are called out explicitly below
-    (e.g. `record_consent` silently ignoring `policy_version`/`ip_address`/
-    `timestamp`/`jurisdiction`; two functions whose own 400 error message
+    (e.g. `record_consent` silently ignoring `ip_address`/`timestamp`/
+    `jurisdiction`; two functions whose own 400 error message
     names the wrong field). Where source and guide disagree, source wins
     and the guide should be treated as needing a follow-up correction.
   license:
@@ -198,6 +198,11 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: >-
+            `record_consent` only: the `policy_version` sent is not the
+            policy's active version. The message names the version sent
+            and the active one.
 
   /grievance:
     post:
@@ -505,7 +510,10 @@ components:
         policy_id: { type: string, example: "p4" }
         version:
           type: string
-          description: Defaults to the empty string (the currently-active version's slot) if omitted.
+          description: >-
+            The policy version to fetch. Optional: if omitted, the policy's
+            only non-archived version is used; if it has none or several,
+            the call fails with `400` asking for `version`.
       required: [_func, policy_id]
 
     GetActivePolicyRequest:
@@ -659,12 +667,12 @@ components:
       type: object
       x-tsi-scope: WRITE
       description: >-
-        Four fields below are accepted but silently ignored server-side -
-        only the guide's own documented "Gotcha" about
-        `consent_status_general` was previously known; `policy_version`,
+        Three fields below (besides `consent_status_general`) are accepted
+        but silently ignored server-side - only the guide's own documented
+        "Gotcha" about `consent_status_general` was previously known;
         `timestamp`, `ip_address`, and `jurisdiction` are equally ignored
         and undocumented until now. Sending them is harmless but has no
-        effect.
+        effect. `policy_version` is NOT ignored: see its description.
       properties:
         _func: { type: string, enum: [record_consent] }
         user_id: { type: string }
@@ -672,12 +680,17 @@ components:
         policy_id: { type: string }
         policy_version:
           type: string
-          deprecated: true
+          example: "1.0"
           description: >-
-            Ignored. The server always stores an empty string here and
-            resolves against the fiduciary's currently ACTIVE policy
-            version only - you cannot record consent against a
-            non-active/past version via this call.
+            The policy version the principal was shown (the `version`
+            from `get_active_policy`). Optional: when omitted or blank the
+            server uses the policy's currently ACTIVE version. When
+            present it must equal the active version, otherwise the call
+            fails with `409` naming both versions (re-fetch the active
+            policy and ask again). The stored consent record, and the
+            evidence certificate, carry the resolved version - never a
+            blank. You cannot record consent against a non-active/past
+            version via this call.
         timestamp:
           type: string
           format: date-time
@@ -701,7 +714,11 @@ components:
         verification_log_id:
           type: string
           format: uuid
-          description: Optional - links this consent to a prior record_parent_consent verification log entry (Section 9 minor/guardian flow).
+          description: >-
+            Optional - links this consent to a prior record_parent_consent verification log entry
+            (Section 9 minor/guardian flow). The caller is responsible for sending it for every
+            consent recorded for a child; the CMS does not enforce it but audits it (see the
+            Parental Consent Guide, docs/guides/parental-consent-guide.md).
         data_point_consents:
           type: array
           items: { $ref: "#/components/schemas/DataPointConsent" }
@@ -723,11 +740,14 @@ components:
       type: object
       x-tsi-scope: WRITE
       description: >-
-        Section 9 verifiable-parental-consent logging. Fully client-reachable
-        but entirely undocumented in the System Integration Guide. No field
-        is server-validated as required - a fully empty body still inserts
-        a row (with NULLs) and returns 201 as long as the INSERT itself
-        succeeds.
+        Section 9 verifiable-parental-consent logging; see the Parental
+        Consent Guide (docs/guides/parental-consent-guide.md) for the full
+        flow. The service does not validate individual fields itself, but
+        `child_principal_id`, `guardian_principal_id` and
+        `verification_mechanism` are NOT NULL in the database, so omitting
+        any of them makes the insert fail and the call returns 400
+        ("Parental Consent Failed"). Success is 201 with a
+        `verification_log_id`.
       properties:
         _func: { type: string, enum: [record_parent_consent] }
         child_principal_id: { type: string }
@@ -1101,7 +1121,7 @@ components:
         fiduciary_id: { type: string, format: uuid }
         status:
           type: string
-          description: Not server-validated; meaningful values are PURGE_INITIATED, PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, LEGAL_HOLD_APPLIED.
+          description: Not server-validated; meaningful values are PURGE_INITIATED, PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED, LEGAL_HOLD_APPLIED.
         trigger_event: { type: string, example: "CONSENT_REVOKED", description: Free text; no enum enforced. }
         search: { type: string, description: Matched via ILIKE against user_id OR details. }
         page: { type: integer, default: 1, minimum: 1 }
@@ -1126,7 +1146,7 @@ components:
         id: { type: string, format: uuid }
         status:
           type: string
-          description: Not server-validated; meaningful values are PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, LEGAL_HOLD_APPLIED.
+          description: Not server-validated; meaningful values are PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED, LEGAL_HOLD_APPLIED.
         details: { type: string, description: "Not server-enforced as required, but strongly recommended - see description above." }
       required: [_func, id, status]
 
@@ -1146,7 +1166,7 @@ components:
         app_id: { type: string, format: uuid, nullable: true, description: Null for an orphan request - no App ever called validate_consent for this purpose. }
         app_name: { type: string, description: '"No Linked Processor" literal when app_id is null.' }
         trigger_event: { type: string, example: "CONSENT_REVOKED" }
-        status: { type: string, enum: [PURGE_INITIATED, PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, LEGAL_HOLD_APPLIED] }
+        status: { type: string, enum: [PURGE_INITIATED, PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED, LEGAL_HOLD_APPLIED] }
         details: { type: string, nullable: true }
         initiated_at: { type: string, format: date-time }
         assigned_operator_id: { type: string, format: uuid, nullable: true }

@@ -58,6 +58,8 @@
             }
         }
 
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
         .nav-link {
             display: flex;
             align-items: center;
@@ -117,15 +119,19 @@
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
             <a href="dashboard.html" class="nav-link active">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link">Audit</a>
             <a href="legal.html" class="nav-link">Legal</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
@@ -192,6 +198,30 @@
                 <span class="text-3xl font-black text-slate-800" id="metric-grievances-total">--</span>
                 <span class="text-[11px] font-bold text-orange-600" id="metric-grievances-pending">(-- Pending)</span>
             </div>
+        </div>
+    </div>
+
+    <!-- Section: Breach notification deadlines (open incidents only) -->
+    <div class="card mb-8" id="breach-deadline-card">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-slate-700 tracking-tight">Breach Notification Deadlines</h2>
+            <span id="breach-overdue-chip" class="hidden px-3 py-1 rounded-full text-[10px] font-black uppercase bg-red-600 text-white"></span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                <tr class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">
+                    <th class="px-4 py-3">Incident</th>
+                    <th class="px-4 py-3">Severity</th>
+                    <th class="px-4 py-3">Detected</th>
+                    <th class="px-4 py-3">Deadline</th>
+                    <th class="px-4 py-3">Time</th>
+                </tr>
+                </thead>
+                <tbody id="breach-deadline-body" class="bg-white divide-y divide-slate-50 text-sm text-slate-600">
+                <tr><td colspan="5" class="p-6 text-center text-slate-400 italic">Loading...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -343,6 +373,71 @@
         }
     }
 
+    // --- Breach notification deadlines ---
+    // seconds_remaining comes from the server (so a wrong browser clock can't skew it);
+    // between fetches the countdown is advanced locally from the moment it was received.
+    let breachDeadlines = [];
+    let breachDeadlinesFetchedAt = 0;
+
+    function escHtml(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatDuration(totalSeconds) {
+        const s = Math.max(0, Math.floor(totalSeconds));
+        const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+        if (d > 0) return `${d}d ${h}h ${m}m`;
+        if (h > 0) return `${h}h ${m}m`;
+        return `${m}m`;
+    }
+
+    function renderBreachDeadlines() {
+        const tbody = document.getElementById('breach-deadline-body');
+        const chip = document.getElementById('breach-overdue-chip');
+        if (breachDeadlines.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400 italic">No open breach incidents.</td></tr>';
+            chip.classList.add('hidden');
+            return;
+        }
+        const elapsed = (Date.now() - breachDeadlinesFetchedAt) / 1000;
+        let overdueCount = 0;
+        tbody.innerHTML = breachDeadlines.map(b => {
+            const remaining = b.seconds_remaining - elapsed;
+            const overdue = remaining < 0;
+            if (overdue) overdueCount++;
+            const timeCell = overdue
+                ? `<span class="font-black text-red-600">OVERDUE by ${formatDuration(-remaining)}</span>`
+                : `<span class="font-semibold ${remaining < 6 * 3600 ? 'text-amber-600' : 'text-slate-600'}">${formatDuration(remaining)} left</span>`;
+            return `
+                <tr class="${overdue ? 'bg-red-50' : 'hover:bg-slate-50'} transition-colors">
+                    <td class="px-4 py-3 font-bold text-slate-700"><a href="breach.html" class="hover:underline">${escHtml(b.title)}</a></td>
+                    <td class="px-4 py-3 text-xs font-black uppercase">${escHtml(b.severity)}</td>
+                    <td class="px-4 py-3 text-slate-500">${new Date(b.detected_at).toLocaleString()}</td>
+                    <td class="px-4 py-3 text-slate-500">${new Date(b.notification_deadline).toLocaleString()}</td>
+                    <td class="px-4 py-3">${timeCell}</td>
+                </tr>`;
+        }).join('');
+        chip.textContent = `${overdueCount} overdue`;
+        chip.classList.toggle('hidden', overdueCount === 0);
+    }
+
+    async function loadBreachDeadlines() {
+        try {
+            const response = await fetch(API_URL_DASHBOARD, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_breach_deadlines", "fiduciary_id": FIDUCIARY_ID, "limit": 10 })
+            });
+            const data = await response.json();
+            if (!Array.isArray(data)) throw new Error('unexpected response');
+            breachDeadlines = data;
+            breachDeadlinesFetchedAt = Date.now();
+            renderBreachDeadlines();
+        } catch (error) {
+            document.getElementById('breach-deadline-body').innerHTML = '<tr><td colspan="5" class="p-6 text-center text-red-500">Failed to load breach deadlines.</td></tr>';
+        }
+    }
+
     function handleLogout() {
         localStorage.clear();
         window.location.href = "../index.html";
@@ -352,6 +447,9 @@
         setupFilter();
         loadDpoMetrics();
         loadPendingGrievances();
+        loadBreachDeadlines();
+        setInterval(renderBreachDeadlines, 30 * 1000);   // advance the countdown
+        setInterval(loadBreachDeadlines, 5 * 60 * 1000); // pick up status changes / new incidents
 
         if (FIDUCIARY_ID) document.getElementById('fiduciary-id-display').textContent = FIDUCIARY_ID;
 

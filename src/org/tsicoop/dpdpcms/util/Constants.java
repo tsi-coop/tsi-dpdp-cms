@@ -31,6 +31,7 @@ public class Constants {
     public static final String EVENT_PURGE_IN_PROGRESS = "PURGE_IN_PROGRESS";
     public static final String EVENT_PURGE_COMPLETED = "PURGE_COMPLETED";
     public static final String EVENT_PURGE_FAILED = "PURGE_FAILED";
+    public static final String EVENT_PURGE_CANCELLED = "PURGE_CANCELLED";
     public static final String EVENT_LEGAL_HOLD_APPLIED = "LEGAL_HOLD_APPLIED"; // Section 8(1) Exception
 
     // -- Purge Trigger Event

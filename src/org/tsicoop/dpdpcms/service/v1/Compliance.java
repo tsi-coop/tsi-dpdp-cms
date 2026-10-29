@@ -132,7 +132,7 @@ public class Compliance implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'purge_request_id' is required for 'update_purge_status'.", req.getRequestURI());
                         return;
                     }
-                    String status = (String) input.get("status"); // COMPLETED, FAILED, IN_PROGRESS
+                    String status = (String) input.get("status"); // PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED, LEGAL_HOLD_APPLIED
                     String details = (String) input.get("details");
                     if (!updatePurgeStatus(purgeRequestId, status, details, loginUserId, appId, callerRole)) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This purge request is not assigned to you.", req.getRequestURI());

@@ -58,4 +58,4 @@ For phone-based helplines, both the telephony switch (IVR gateway) and the agent
 
 ## 4. Choosing Between Webhooks and Polling
 
-Purge and notification events can be consumed by webhook (push, best-effort, single attempt) or by polling (pull, reliable). For both channels above, use webhooks for low-latency cleanup and run a periodic poll as the reconciliation path for anything a missed delivery would drop. See the [Webhook Integration Guide](webhook-integration-guide.md) and the [Client Polling Integration Guide](polling-integration-guide.md).
+Purge and notification events can be consumed by webhook (push, retried with backoff but still not guaranteed) or by polling (pull, reliable). For both channels above, use webhooks for low-latency cleanup and run a periodic poll as the reconciliation path for anything a missed delivery would drop. See the [Webhook Integration Guide](webhook-integration-guide.md) and the [Client Polling Integration Guide](polling-integration-guide.md).

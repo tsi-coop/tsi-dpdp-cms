@@ -6,7 +6,9 @@ import jakarta.servlet.annotation.WebListener;
 import org.json.simple.JSONObject;
 import org.tsicoop.dpdpcms.ces.CESService;
 import org.tsicoop.dpdpcms.framework.PoolDB;
+import org.tsicoop.dpdpcms.util.MinorConsentAudit;
 import org.tsicoop.dpdpcms.framework.SystemConfig;
+import org.tsicoop.dpdpcms.framework.WebhookDispatcher;
 import org.tsicoop.dpdpcms.service.v1.Audit;
 
 import java.io.File;
@@ -49,6 +51,9 @@ public class JobManager implements ServletContextListener {
 
         // Schedule the polling task every 2 minutes
         scheduler.scheduleAtFixedRate(this::checkAndExecuteJobs, 1, 2, TimeUnit.MINUTES);
+
+        // Retries failed webhook deliveries with backoff (its own thread: it must not wait behind long jobs)
+        WebhookDispatcher.startRetryWorker();
     }
 
     private void checkAndExecuteJobs() {
@@ -255,7 +260,7 @@ public class JobManager implements ServletContextListener {
         CESService cesService = new CESService();
         for (String userId : userIds) {
             try {
-                cesService.insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), notificationType);
+                cesService.insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), notificationType, breachId);
             } catch (SQLException e) {
                 e.printStackTrace(); // One failed notification must not fail the rest of the batch
             }
@@ -349,6 +354,18 @@ public class JobManager implements ServletContextListener {
                 break;
             case "PARENT_CONSENT":
                 sql = "SELECT id, verified_at, child_principal_id as principal, guardian_principal_id as guardian, verification_mechanism, provider_name, verification_ref_id, proof_metadata FROM parental_verification_logs WHERE fiduciary_id=? AND verified_at BETWEEN ? AND ?";
+                break;
+            case "MINOR_GUARDIAN_AUDIT":
+                // Non-OK findings first, then newest consents first; period filters on consent time
+                sql = "SELECT * FROM (" + MinorConsentAudit.ROWS_SQL + " AND cr.timestamp BETWEEN ? AND ?) t " +
+                      "ORDER BY (finding = 'OK'), consent_timestamp DESC";
+                break;
+            case "NOTIFICATION_LOG":
+                // One row per notification: who, what kind, when, read or not, and the message text that
+                // was saved when it was created (message_snapshot is NULL for rows from before db/17).
+                sql = "SELECT n.created_at, n.recipient_type, n.recipient_id AS recipient, n.notification_type, " +
+                      "n.read_at, n.breach_id, n.message_snapshot->>'en' AS message_en, n.message_snapshot::text AS message_all_languages " +
+                      "FROM notifications n WHERE n.fiduciary_id=? AND n.created_at BETWEEN ? AND ? ORDER BY n.created_at";
                 break;
             case "ADMIN_LOGS":
                 sql = "SELECT timestamp, user_id as user, audit_action as action, context_details as details FROM audit_logs WHERE service_type='ADMIN_CONSOLE' AND fiduciary_id=? AND timestamp BETWEEN ? AND ? ORDER BY timestamp asc";
@@ -457,6 +474,7 @@ public class JobManager implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         running = false;
+        WebhookDispatcher.stopRetryWorker();
         new Audit().logEvents();
         if (scheduler != null) {
             scheduler.shutdownNow();

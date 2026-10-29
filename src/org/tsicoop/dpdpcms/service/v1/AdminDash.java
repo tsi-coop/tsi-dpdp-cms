@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.tsicoop.dpdpcms.util.BreachDeadline;
 import org.tsicoop.dpdpcms.util.Constants;
 
 import java.sql.*;
@@ -47,6 +48,10 @@ public class AdminDash implements Action {
                 case "get_dpo_metrics":
                     if (rejectIfNotOwnFiduciary(input, isAdmin, req, res)) return;
                     OutputProcessor.send(res, 200, getDpoMetrics(input));
+                    break;
+                case "list_breach_deadlines":
+                    if (rejectIfNotOwnFiduciary(input, isAdmin, req, res)) return;
+                    OutputProcessor.send(res, 200, listBreachDeadlines(input));
                     break;
                 case "list_pending_grievances":
                     if (rejectIfNotOwnFiduciary(input, isAdmin, req, res)) return;
@@ -149,7 +154,7 @@ public class AdminDash implements Action {
             conn = pool.getConnection();
             metrics.put("active_fiduciaries", getSimpleCount(conn, pool, "SELECT COUNT(*) FROM fiduciaries WHERE status IN ('ACTIVE', 'PENDING')"));
             metrics.put("active_processors", getSimpleCount(conn, pool, "SELECT COUNT(*) FROM apps WHERE status = 'ACTIVE'"));
-            metrics.put("failed_purges", getSimpleCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE status = 'FAILED'"));
+            metrics.put("failed_purges", getSimpleCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE status = 'PURGE_FAILED'"));
         } finally {
             if (pool != null && conn != null) pool.cleanup(null, null, conn);
         }
@@ -195,7 +200,7 @@ public class AdminDash implements Action {
 
             // 4. Purge Requests (Total and Pending)
             metrics.put("purge_total", getCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE fiduciary_id = ? AND initiated_at >= ?::timestamp AND initiated_at <= ?::timestamp", fiduciaryId, start, end));
-            metrics.put("purge_pending", getCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE fiduciary_id = ? AND status NOT IN ('PURGE_COMPLETED','LEGAL_HOLD_APPLIED') AND initiated_at >= ?::timestamp AND initiated_at <= ?::timestamp", fiduciaryId, start, end));
+            metrics.put("purge_pending", getCount(conn, pool, "SELECT COUNT(*) FROM purge_requests WHERE fiduciary_id = ? AND status NOT IN ('PURGE_COMPLETED','LEGAL_HOLD_APPLIED','PURGE_CANCELLED') AND initiated_at >= ?::timestamp AND initiated_at <= ?::timestamp", fiduciaryId, start, end));
 
             // 5. Grievances (Total and Pending)
             metrics.put("grievances_total", getCount(conn, pool, "SELECT COUNT(*) FROM grievances WHERE fiduciary_id = ? AND submission_timestamp >= ?::timestamp AND submission_timestamp <= ?::timestamp", fiduciaryId, start, end));
@@ -229,6 +234,43 @@ public class AdminDash implements Action {
         } finally {
             if (pool != null) pool.cleanup(rs, pstmt, null);
         }
+    }
+
+    /**
+     * OPEN breach incidents with a running notification clock, most urgent first, for the
+     * dashboard countdown. seconds_remaining is negative once a deadline has passed.
+     */
+    @SuppressWarnings("unchecked")
+    private JSONArray listBreachDeadlines(JSONObject input) throws SQLException {
+        JSONArray arr = new JSONArray();
+        int limit = (input.get("limit") instanceof Long) ? ((Long) input.get("limit")).intValue() : 10;
+        UUID fiduciaryId = UUID.fromString((String) input.get("fiduciary_id"));
+        String sql = "SELECT id, title, severity, status, detected_at, notification_deadline, responded_at FROM breach_incidents " +
+                "WHERE fiduciary_id = ? AND status = 'OPEN' AND notification_deadline IS NOT NULL " +
+                "ORDER BY notification_deadline ASC LIMIT ?";
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, fiduciaryId);
+            pstmt.setInt(2, limit);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                JSONObject row = new JSONObject();
+                row.put("id", rs.getString("id"));
+                row.put("title", rs.getString("title"));
+                row.put("severity", rs.getString("severity"));
+                row.put("detected_at", rs.getTimestamp("detected_at").toInstant().toString());
+                BreachDeadline.describe(row, rs.getString("status"), rs.getTimestamp("notification_deadline"), rs.getTimestamp("responded_at"));
+                arr.add(row);
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return arr;
     }
 
     /**

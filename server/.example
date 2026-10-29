@@ -25,6 +25,9 @@ DB_ENCRYPTION_KEY=<generate-with-openssl-rand-hex-32>
 # TSI_LOOKUP_SALT: HMAC salt for pseudonymising user IDs in audit logs.
 # Generate with: openssl rand -hex 32
 TSI_LOOKUP_SALT=<generate-with-openssl-rand-hex-32>
+# TSI_BOOTSTRAP_TOKEN: required for the one-time Super-Admin setup at /console/setup/init.html.
+# Generate with: openssl rand -hex 32
+TSI_BOOTSTRAP_TOKEN=<generate-with-openssl-rand-hex-32>
 TSI_DPDP_CMS_ENV=local
 TSI_DPDP_CMS_HOME=
 TSI_EXPORT_PATH=/var/lib/tsi/exports/

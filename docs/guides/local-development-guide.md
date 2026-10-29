@@ -1,198 +1,300 @@
 # Local Development Guide
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Audience:** Developers building the TSI DPDP CMS from source, with or without Docker.
 
 ---
 
-## Overview
+## What this guide gets you
 
-The [Installation](../README.md#installation) section of the main README covers the fastest path to a running instance for evaluation - `docker compose up -d` or the prebuilt binary release. This guide is for the other case: building the WAR from source and running it yourself, either inside Docker or directly on a Linux/Windows server via Jetty.
+A running copy of the TSI DPDP CMS built from your own source code, with a database and an admin account, on your own machine. You choose one of two paths:
 
-## Prerequisites
+- **[Path A: Docker](#path-a-docker)** (recommended): Docker runs the database and the application for you. About 15 minutes.
+- **[Path B: Without Docker](#path-b-without-docker)**: you install PostgreSQL and Jetty yourself. About 45 minutes.
 
-Before you begin, ensure you have the following software installed on your development machine or server:
+If you only want to try the system and do not need to change the code, the [README](../../README.md#installation) has a faster route: `docker compose up -d` with the prebuilt image.
 
-* **Java Development Kit (JDK) 17 or higher**: Required to build and run the Java application.
-    * **Installation Steps:**
-        * **Linux (Ubuntu/Debian):**
-            ```bash
-            sudo apt update
-            sudo apt install openjdk-17-jdk
-            ```
-        * **Windows:** Download the JDK 17 installer from Oracle (requires account) or Adoptium (Eclipse Temurin, recommended open-source distribution) and follow the installation wizard. Ensure `JAVA_HOME` environment variable is set and `%JAVA_HOME%\bin` is in your system's `Path`.
-    * **Verification:**
-        ```bash
-        java -version
-        javac -version
-        ```
+Do the **checkpoint** at the end of each step before moving on. It tells you what you should see.
 
-* **Apache Maven 3.6.0 or higher**: Project build automation tool.
-    * **Installation Steps:**
-        * **Linux (Ubuntu/Debian):**
-            ```bash
-            sudo apt install maven
-            ```
-        * **Windows:** Download the Maven binary zip from the Apache Maven website, extract it, and add the `bin` directory to your system's `Path` environment variable.
-    * **Verification:**
-        ```bash
-        mvn -v
-        ```
+> **Using this for production?** This guide is for development. Use the [Production Deployment Guide](production-deployment-guide.md) for real data.
 
-* **Docker Desktop (For Docker based development)**: Essential for containerizing and running the application and database locally.
-    * **Installation Steps:**
-        * **Windows:** Download and install Docker Desktop from the [official Docker website](https://www.docker.com/products/docker-desktop/).
-        * **Linux:** Follow the official Docker Engine installation guide for your specific distribution (e.g., [Docker Docs](https://docs.docker.com/engine/install/)). Install Docker Compose separately if using Docker Engine.
-    * **Configuration & Verification (Windows Specific):**
-        * Ensure **WSL 2** is enabled and configured. Open PowerShell as Administrator and run `wsl --install` or `wsl --update`.
-        * Verify **virtualization (Intel VT-x / AMD-V)** is enabled in your computer's BIOS/UEFI settings.
-        * Start Docker Desktop and wait for the whale icon in the system tray to turn solid.
-    * **Verification:**
-        ```bash
-        docker --version
-        docker compose version # Or docker compose --version for older installations
-        ```
+---
 
-* **Git**: For cloning the repository.
-    * **Installation Steps:**
-        * **Linux (Ubuntu/Debian):**
-            ```bash
-            sudo apt install git
-            ```
-        * **Windows:** Download the Git for Windows installer from [git-scm.com](https://git-scm.com/download/win) and follow the installation wizard.
-    * **Verification:**
-        ```bash
-        git --version
-        ```
+## Step 0: Install the tools
 
-* **Jetty (For Non Docker Development)**:Navigate to the Eclipse Jetty Downloads page.
+You need these on your machine. Skip any you already have, and check each with its command.
 
-    * Download the Jetty 11 (Standard) distribution (e.g., jetty-home-11.x.x.tar.gz or .zip).
+| Tool | Version | Check | Needed for |
+|---|---|---|---|
+| JDK | 17 or higher | `java -version` and `javac -version` | Both paths |
+| Apache Maven | 3.6 or higher | `mvn -v` | Both paths |
+| Git | any | `git --version` | Both paths |
+| Docker and Docker Compose | recent | `docker --version` and `docker compose version` | Path A |
+| PostgreSQL | 15 or higher | `psql --version` | Path B |
+| Jetty | **12.x** (not 11) | see Path B, Step 2 | Path B |
 
-    * Extract the archive to a permanent directory:
+**Installing on Ubuntu or Debian:**
 
-        Linux/macOS: /opt/jetty-home
+```bash
+sudo apt update
+sudo apt install openjdk-17-jdk maven git
+```
 
-        Windows: C:\jetty-home
+Docker: follow the [official install guide](https://docs.docker.com/engine/install/) for your distribution.
 
-## Build
+**Installing on Windows:**
 
-### Using Docker
+- JDK 17: install Eclipse Temurin from [adoptium.net](https://adoptium.net) and make sure `JAVA_HOME` is set and `%JAVA_HOME%\bin` is on your `Path`.
+- Maven: download the binary zip from the Apache Maven site, extract it, and add its `bin` folder to your `Path`.
+- Git: [git-scm.com](https://git-scm.com/download/win).
+- Docker Desktop: install it, make sure **WSL 2** is enabled (`wsl --install` in an administrator PowerShell) and virtualization is on in the BIOS, then start it and wait for the whale icon to stop animating.
 
-Follow these steps to get the TSI DPDP CMS solution running on your local machine using Docker Compose:
+> **Checkpoint:** every command in the "Check" column for your path prints a version number.
 
-1.  **Change Docker to Dev mode:**
+---
 
-    To build from local source, uncomment the block below in docker-compose.yml
-    ```bash
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ```
+## Path A: Docker
 
-2.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/tsi-coop/tsi-dpdp-cms.git
-    cd tsi-dpdp-cms
-    ```
+### Step 1: Get the code
 
-3.  **Create `.env` File:**
-    This file stores sensitive configurations (passwords, API keys, etc.) and is **NOT** committed to Git.
-    ```bash
-    cp .example .env
-    ```
-    Now, **edit the newly created `.env` file** and fill in the placeholder values.
+```bash
+git clone https://github.com/tsi-coop/tsi-dpdp-cms.git
+cd tsi-dpdp-cms
+```
 
-4.  **Build the Java WAR File:**
-    Navigate to the project root and build your Java application.
-    ```bash
-    mvn clean package
-    ```
-    This will create `target/tsi_dpdp_cms.war`
+### Step 2: Create your `.env` file
 
-5.  **Initialize PostgreSQL Database Schema:**
-    The `postgres` Docker image only runs initialization scripts on its *first* startup when the data directory is empty. To ensure your schema is loaded:
-    ```bash
-    docker compose down -v 
-    ```
+The `.env` file holds passwords and keys. It is never committed to Git.
 
-6.  **Build and Start Docker Services:**
-    This command will build your application's Docker image and start both the PostgreSQL database and the Jetty application.
-    ```bash
-    docker compose up --build -d
-    ```
-    * `--build`: Ensures Docker images are rebuilt, picking up any changes in your Java code or Dockerfile.
-    * `-d`: Runs the containers in detached mode (in the background).
+```bash
+cp .example .env
+```
 
-7.  **Verify Services and Check Logs:**
-    * Check if containers are running: `docker ps`
-    * Monitor PostgreSQL logs for schema initialization: `docker compose logs -f postgres_db`
-    * Monitor Jetty application logs for successful deployment: `docker compose logs -f jetty_app`
+Open `.env` in an editor and replace every `<...>` placeholder:
 
-### Using Scripts (without docker)
+| Setting | What to put |
+|---|---|
+| `POSTGRES_DB` | `tsi_cms` |
+| `POSTGRES_USER` | `tsi_admin` |
+| `POSTGRES_PASSWD` | Any password (local use only) |
+| `JWT_SECRET`, `DB_ENCRYPTION_KEY`, `TSI_LOOKUP_SALT`, `TSI_BOOTSTRAP_TOKEN` | A different random value for each. Generate one with `openssl rand -hex 32`, run once per setting. |
 
-These steps describe how to install and run the TSI DPDP CMS solution directly on a Linux/Windows server without using Docker.
+Leave `TSI_DPDP_CMS_ENV=local`. That turns on the relaxed development behaviour (no SSL needed for the database, demo OTP allowed).
 
-1.   **Clone the Repository:**
-     ```bash
-     git clone https://github.com/tsi-coop/tsi-dpdp-cms.git
-     cd tsi-dpdp-cms
-     ```
+> **Checkpoint:** `grep -c "<" .env` prints `0`, meaning no placeholders are left.
 
-2.  **PostgreSQL Database Setup:**
-    * Log in as the PostgreSQL superuser (e.g., `postgres` user on Linux).
-    ```bash
-    sudo -i -u postgres psql
-    ```
-    * Create the database and user:
-    ```sql
-    CREATE DATABASE <<your-db-name-here>>;
-    CREATE USER <<your-db-user-here>> WITH ENCRYPTED PASSWORD '<<your_db_password_here>>';
-    ```
-    * Connect to the new database and grant permissions: (Note: These steps are required for PostgreSQL 15+ compatibility)
-    ```sql
-    \c <<your-db-name-here>>
-    ALTER SCHEMA public OWNER TO <<your-db-user-here>>;
-    GRANT ALL PRIVILEGES ON SCHEMA public TO <<your-db-user-here>>;
-    GRANT ALL PRIVILEGES ON DATABASE <<your-db-name-here>> TO <<your-db-user-here>>;
-    ```
-    * Exit the postgres user: `exit`
-    * **Initialize Schema:** Execute the `db/init.sql` script to create the necessary tables.
-    ```bash
-    psql -U <<your-db-user-here>> -d <<your-db-name-here>> -h localhost -f /path/to/tsi-dpdp-cms/db/init.sql
-    ```
+### Step 3: Build the application
 
-3.  **Build WAR:**
-    ```bash
-    cd /path/to/tsi-dpdp-cms
-    mvn clean package
-    ```
-    This will generate `target/tsi-dpdp-cms.war`.
+```bash
+mvn clean package
+```
 
-4.  **Deploy Solution (linux):**
-    ```bash
-    cd /path/to/tsi-dpdp-cms/server
-    cp .example .env
-    ```
-    Now, **edit the newly created `.env` file** and fill in the placeholder values.
+This takes a minute or two the first time. It ends with `BUILD SUCCESS` and creates `target/tsi_dpdp_cms.war`.
 
-    ```bash
-    ./set-base.sh #Sets the jetty base directory
-    ./serve.sh # Copies the target/tsi-dpdp-cms.war to $JETTY_BASE/webapps/ROOT.war. Starts the server in 8080
-    ```
-5. **Deploy Solution (windows):**
-   ```bash
-   cd /path/to/tsi-dpdp-cms/server
-   copy .example .env
-   ```
-   Now, **edit the newly created `.env` file** and fill in the placeholder values.
+> **Checkpoint:** `ls -l target/tsi_dpdp_cms.war` shows the file.
 
-   ```bash
-   set-base.bat #Sets the jetty base directory
-   serve.bat # Copies the target/tsi_dpdp_cms.war to %JETTY_BASE%/webapps/ROOT.war. Starts the server in 8080
-   ```
-6. **Validation Step:**
-   To confirm server status.
-   ```bash
-   curl -I http://localhost:8080
-   ```
+### Step 4: Start everything
+
+```bash
+docker compose up --build -d
+```
+
+- `--build` makes Docker build an image from the WAR you just made.
+- `-d` runs the containers in the background.
+- On the very first start, the database creates its tables automatically from the scripts in `db/`.
+
+Wait about 30 seconds.
+
+> **Checkpoint:** `docker compose ps` shows two containers, `tsi_dpdp_cms_db` (healthy) and `tsi_dpdp_cms_server` (running).
+
+### Step 5: Check the logs
+
+```bash
+docker compose logs jetty_app | grep "Service started"
+```
+
+> You should see something like `TSI DPDP CMS v0.5.4 Service started in local environment`.
+
+If it does not appear, look at the end of the log with `docker compose logs --tail 40 jetty_app`. The error is usually a missing `.env` value from Step 2.
+
+### Step 6: Create the admin account
+
+1. Open <http://localhost:8080/console/setup/init.html>.
+2. Enter your `TSI_BOOTSTRAP_TOKEN` value as the **Setup Token**.
+3. Create your Super-Admin account, then sign in.
+
+> **Checkpoint:** you are signed in to the console. You can also explore the guided tour at <http://localhost:8080/tour>.
+
+### After you change code
+
+Rebuild and restart:
+
+```bash
+mvn clean package
+docker compose up --build -d
+```
+
+### Starting over with an empty database
+
+The database tables are only created the first time the database starts. If you need a clean slate (for example, after a change to a script in `db/`):
+
+```bash
+docker compose down -v
+docker compose up --build -d
+```
+
+> **Warning:** `-v` deletes the database volume. All data in it is lost. That is what you want in development, but never run it against data you care about.
+
+---
+
+## Path B: Without Docker
+
+### Step 1: Get the code
+
+```bash
+git clone https://github.com/tsi-coop/tsi-dpdp-cms.git
+cd tsi-dpdp-cms
+```
+
+### Step 2: Install Jetty 12
+
+The application needs **Jetty 12** (the `ee10` environment). Jetty 11 will not work.
+
+1. Download a Jetty 12 "jetty-home" archive (`jetty-home-12.x.x.tar.gz` or `.zip`) from the Eclipse Jetty downloads page.
+2. Extract it somewhere permanent: `/opt/jetty-home` on Linux, `C:\jetty-home` on Windows.
+3. Create an empty folder for Jetty's working files, for example `/opt/jetty-base` (`C:\jetty-base` on Windows). You will need both paths in Step 5.
+
+### Step 3: Create the database
+
+Open a PostgreSQL shell as the superuser:
+
+```bash
+sudo -i -u postgres psql
+```
+
+Run these, changing the names and password to your own:
+
+```sql
+CREATE DATABASE tsi_cms;
+CREATE USER tsi_admin WITH ENCRYPTED PASSWORD 'choose-a-password';
+\c tsi_cms
+ALTER SCHEMA public OWNER TO tsi_admin;
+GRANT ALL PRIVILEGES ON SCHEMA public TO tsi_admin;
+GRANT ALL PRIVILEGES ON DATABASE tsi_cms TO tsi_admin;
+```
+
+(The `ALTER SCHEMA` and `GRANT` lines are required for PostgreSQL 15 and later.)
+
+Next, give the database its encryption key. Generate one with `openssl rand -hex 32`, **save it** (you will put the same value in `.env` in Step 5), and run:
+
+```sql
+ALTER DATABASE tsi_cms SET app.enc_key = 'paste-your-key-here';
+\q
+```
+
+The key must be set **before** the tables are created, because the schema scripts use it.
+
+Now load the tables. The scripts in `db/` must run in order, which the `*.sql` pattern guarantees:
+
+```bash
+for f in db/*.sql; do
+  psql -U tsi_admin -d tsi_cms -h localhost -v ON_ERROR_STOP=1 -q -f "$f" || break
+done
+```
+
+(`db/03z_enc_key.sh` is skipped because you set the key by hand above. It exists for Docker only.)
+
+> **Checkpoint:** this prints `24`:
+>
+> ```bash
+> psql -U tsi_admin -d tsi_cms -h localhost -tAc "select count(*) from information_schema.tables where table_schema='public'"
+> ```
+
+### Step 4: Build the application
+
+```bash
+mvn clean package
+```
+
+> **Checkpoint:** `target/tsi_dpdp_cms.war` exists.
+
+### Step 5: Configure the server
+
+**Linux:**
+
+```bash
+cd server
+cp .example .env
+```
+
+**Windows:**
+
+```bat
+cd server
+copy .example .env
+```
+
+Open `server\.env` and fill in the values:
+
+| Setting | What to put |
+|---|---|
+| `JAVA_HOME` | Your JDK 17 folder |
+| `JETTY_HOME` | The folder from Step 2, e.g. `/opt/jetty-home` |
+| `JETTY_BASE` | Your empty working folder, e.g. `/opt/jetty-base` |
+| `POSTGRES_HOST` | `jdbc:postgresql://localhost:5432` (the example says `5433`; use the port your PostgreSQL really listens on) |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWD` | The values from Step 3 |
+| `DB_ENCRYPTION_KEY` | The **same** key you gave the database in Step 3 |
+| `JWT_SECRET`, `TSI_LOOKUP_SALT`, `TSI_BOOTSTRAP_TOKEN` | A random value for each (`openssl rand -hex 32`) |
+| `TSI_DPDP_CMS_HOME` | The project folder, e.g. `/home/you/tsi-dpdp-cms` |
+| `TSI_EXPORT_PATH` | A folder the application can write to, e.g. `/var/lib/tsi/exports/` (create it first) |
+
+Leave `TSI_DPDP_CMS_ENV=local`.
+
+> **Checkpoint:** `grep -c "<" .env` prints `0`, and the `TSI_EXPORT_PATH` folder exists.
+
+### Step 6: Start the server
+
+**Linux:**
+
+```bash
+./set-base.sh     # one time: prepares the Jetty working folder
+./serve.sh        # copies the WAR into place and starts Jetty on port 8080
+```
+
+**Windows:**
+
+```bat
+set-base.bat
+serve.bat
+```
+
+Leave that window open: it is the running server.
+
+> **Checkpoint:** in a second window, `curl -I http://localhost:8080` returns a response (a `200` or a redirect), and the first window shows `Service started in local environment`.
+
+### Step 7: Create the admin account
+
+Same as Docker Step 6: open <http://localhost:8080/console/setup/init.html>, enter your `TSI_BOOTSTRAP_TOKEN` as the Setup Token, and create the Super-Admin.
+
+> **Checkpoint:** you are signed in to the console.
+
+### After you change code
+
+Stop the server (Ctrl+C), run `mvn clean package` in the project folder, then `./serve.sh` again. It copies the new WAR into place on every start.
+
+---
+
+## About the version number
+
+The application version lives in one place: the `<version>` in `pom.xml`. The build copies it into `version.properties`, and the running application reads it to stamp the startup log, evidence certificates, breach reports and CSV exports. To cut a release, change `pom.xml` only and never hardcode a version elsewhere in the code.
+
+## Common problems
+
+| Problem | Likely cause and fix |
+|---|---|
+| Login fails or the setup page refuses the token (Path B) | A value is missing from `server/.env`, usually `JWT_SECRET` or `TSI_BOOTSTRAP_TOKEN`. Fill it in and restart. |
+| `JWT_SECRET environment variable must be set` in the log | Same as above. |
+| `no pg_hba.conf entry` or password errors | The database user or password in `.env` does not match what you created. |
+| Encrypted fields fail or the scripts error on `app.enc_key` | The database key was not set before loading the tables (Path B, Step 3), or it differs from `DB_ENCRYPTION_KEY`. |
+| Port 8080 or 5432 already in use | Something else is using it. Stop that program, or change `APP_PORT_MAP` / `DB_PORT_MAP` in `.env` (Docker). |
+| Tables missing after changing a `db/` script (Docker) | Scripts only run on the first start. Use the "Starting over" steps above. |

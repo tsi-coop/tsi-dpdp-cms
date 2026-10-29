@@ -548,9 +548,23 @@ public class CESService {
                                          String recipientId,
                                          String fiduciaryId,
                                          String notificationType) throws SQLException {
+        return insertNotification(recipientType, recipientId, fiduciaryId, notificationType, null);
+    }
+
+    /**
+     * As above, for a notification that belongs to a breach incident (breachId may be null).
+     * The message bundle in effect now is saved on the row (message_snapshot), so the
+     * Notification Log can show what was sent even if the template is edited later.
+     */
+    public JSONObject insertNotification(String recipientType,
+                                         String recipientId,
+                                         String fiduciaryId,
+                                         String notificationType,
+                                         UUID breachId) throws SQLException {
         JSONObject response = new JSONObject();
-        String sql = "INSERT INTO notifications (recipient_type, recipient_id, fiduciary_id, notification_type) " +
-                "VALUES (?, ?, ?, ?) RETURNING id, created_at";
+        JSONObject messages = resolveNotificationMessages(fiduciaryId, notificationType);
+        String sql = "INSERT INTO notifications (recipient_type, recipient_id, fiduciary_id, notification_type, message_snapshot, breach_id) " +
+                "VALUES (?, ?, ?, ?, ?::jsonb, ?) RETURNING id, created_at";
 
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -567,6 +581,8 @@ public class CESService {
             stmt.setString(2, recipientId);
             stmt.setObject(3, UUID.fromString(fiduciaryId));
             stmt.setString(4, notificationType);
+            stmt.setString(5, messages != null ? messages.toJSONString() : null);
+            stmt.setObject(6, breachId);
 
             rs = stmt.executeQuery();
             if (rs.next()) {
@@ -586,7 +602,7 @@ public class CESService {
             payload.put("recipient_id", recipientId);
             payload.put("notification_type", notificationType);
             payload.put("created_at", createdAt);
-            payload.put("messages", resolveNotificationMessages(fiduciaryId, notificationType));
+            payload.put("messages", messages);
             WebhookDispatcher.dispatch(fiduciaryId, "NOTIFICATION", "notification_created", payload);
         }
         return response;

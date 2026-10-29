@@ -1,5 +1,7 @@
 package org.tsicoop.dpdpcms.service.v1;
 
+import org.tsicoop.dpdpcms.util.AppVersion;
+import org.tsicoop.dpdpcms.util.BreachDeadline;
 import org.tsicoop.dpdpcms.framework.*;
 import org.tsicoop.dpdpcms.util.Constants;
 import org.tsicoop.dpdpcms.ces.CESService;
@@ -176,6 +178,39 @@ public class Breach implements Action {
                     break;
                 }
 
+                case "get_breach_settings": {
+                    if (fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' is required for 'get_breach_settings'.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
+                    int hours = getDeadlineHours(fiduciaryId);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{
+                        put("deadline_hours", hours);
+                        put("min_hours", BreachDeadline.MIN_HOURS);
+                        put("max_hours", BreachDeadline.MAX_HOURS);
+                    }});
+                    break;
+                }
+
+                case "set_breach_settings": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
+                    Object hoursObj = input.get("deadline_hours");
+                    if (fiduciaryId == null || !(hoursObj instanceof Long) || !BreachDeadline.isValidHours(((Long) hoursObj).intValue())) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                                "'fiduciary_id' and a whole-number 'deadline_hours' between " + BreachDeadline.MIN_HOURS + " and " + BreachDeadline.MAX_HOURS + " are required for 'set_breach_settings'.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
+                    int newHours = ((Long) hoursObj).intValue();
+                    setDeadlineHours(fiduciaryId, newHours);
+                    new Audit().logEventAsync(loginUserId != null ? getOperatorEmail(loginUserId) : "SYSTEM", fiduciaryId,
+                            Constants.SERVICE_TYPE_DPO_CONSOLE, loginUserId, "BREACH_DEADLINE_CONFIGURED",
+                            new JSONObject() {{ put("deadline_hours", newHours); }}.toJSONString());
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("deadline_hours", newHours); }});
+                    break;
+                }
+
                 case "download_breach_report": {
                     String id = (String) input.get("id");
                     if (id == null || id.isEmpty()) {
@@ -245,8 +280,9 @@ public class Breach implements Action {
         UUID breachId = null;
 
         String sqlInsert = "INSERT INTO breach_incidents (fiduciary_id, title, description, detected_at, affected_purpose_id, affected_policy_id, " +
-                "affected_data_categories, actionable_steps, severity, affected_principal_count, created_by_user_id, notification_type) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?) RETURNING id";
+                "affected_data_categories, actionable_steps, severity, affected_principal_count, created_by_user_id, notification_type, notification_deadline) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?) RETURNING id";
+        Timestamp notificationDeadline = BreachDeadline.deadlineFor(detectedAt, getDeadlineHours(fiduciaryId));
 
         try {
             conn = pool.getConnection();
@@ -263,6 +299,7 @@ public class Breach implements Action {
             pstmt.setInt(10, affectedUserIds.size());
             pstmt.setObject(11, loginUserId);
             pstmt.setString(12, notificationType);
+            pstmt.setTimestamp(13, notificationDeadline);
 
             rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -295,7 +332,7 @@ public class Breach implements Action {
         // Fire-and-forget per principal -- one failed notification must not fail the report.
         for (String userId : affectedUserIds) {
             try {
-                new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), notificationType);
+                new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), notificationType, finalBreachId);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -313,6 +350,7 @@ public class Breach implements Action {
         JSONObject output = new JSONObject();
         output.put("success", true);
         output.put("id", breachId.toString());
+        output.put("notification_deadline", notificationDeadline.toInstant().toString());
         output.put("affected_principal_count", affectedUserIds.size());
         output.put("csv_job_queued", csvJobQueued);
         return output;
@@ -381,10 +419,48 @@ public class Breach implements Action {
         return userIds;
     }
 
+    /** The fiduciary's configured breach notification window in hours (default 72). */
+    private int getDeadlineHours(UUID fiduciaryId) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT breach_deadline_hours FROM fiduciaries WHERE id = ?");
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int hours = rs.getInt(1);
+                if (BreachDeadline.isValidHours(hours)) return hours;
+            }
+            return BreachDeadline.DEFAULT_HOURS;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    private void setDeadlineHours(UUID fiduciaryId, int hours) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("UPDATE fiduciaries SET breach_deadline_hours = ?, last_updated_at = NOW() WHERE id = ?");
+            pstmt.setInt(1, hours);
+            pstmt.setObject(2, fiduciaryId);
+            if (pstmt.executeUpdate() == 0) {
+                throw new SQLException("Fiduciary not found.");
+            }
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
+    }
+
     private JSONArray listBreachesFromDb(UUID fiduciaryId, String statusFilter, int page, int limit) throws SQLException {
         JSONArray result = new JSONArray();
         StringBuilder sqlBuilder = new StringBuilder(
-                "SELECT id, title, severity, status, affected_principal_count, detected_at, reported_at, notification_type FROM breach_incidents WHERE fiduciary_id = ?");
+                "SELECT id, title, severity, status, affected_principal_count, detected_at, reported_at, notification_type, notification_deadline, responded_at FROM breach_incidents WHERE fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
@@ -417,6 +493,7 @@ public class Breach implements Action {
                 row.put("detected_at", rs.getTimestamp("detected_at").toInstant().toString());
                 row.put("reported_at", rs.getTimestamp("reported_at").toInstant().toString());
                 row.put("notification_type", rs.getString("notification_type"));
+                BreachDeadline.describe(row, rs.getString("status"), rs.getTimestamp("notification_deadline"), rs.getTimestamp("responded_at"));
                 result.add(row);
             }
         } finally {
@@ -428,7 +505,8 @@ public class Breach implements Action {
     private JSONObject getBreachFromDb(UUID id) throws SQLException {
         JSONObject breach = null;
         String sql = "SELECT id, fiduciary_id, title, description, detected_at, reported_at, affected_purpose_id, affected_policy_id, " +
-                "affected_data_categories, actionable_steps, severity, status, resolution_notes, affected_principal_count, notification_type " +
+                "affected_data_categories, actionable_steps, severity, status, resolution_notes, affected_principal_count, notification_type, " +
+                "notification_deadline, responded_at " +
                 "FROM breach_incidents WHERE id = ?";
 
         PoolDB pool = new PoolDB();
@@ -449,6 +527,7 @@ public class Breach implements Action {
 
         if (breach != null) {
             breach.put("affected_principals", listAffectedPrincipals(id));
+            breach.put("notification_messages", getSentNotificationMessages(id));
         }
         return breach;
     }
@@ -469,12 +548,18 @@ public class Breach implements Action {
         breach.put("resolution_notes", rs.getString("resolution_notes"));
         breach.put("affected_principal_count", rs.getInt("affected_principal_count"));
         breach.put("notification_type", rs.getString("notification_type"));
+        BreachDeadline.describe(breach, rs.getString("status"), rs.getTimestamp("notification_deadline"), rs.getTimestamp("responded_at"));
         return breach;
     }
 
     private JSONArray listAffectedPrincipals(UUID breachId) throws SQLException {
         JSONArray result = new JSONArray();
-        String sql = "SELECT user_id, notified_at FROM breach_affected_principals WHERE breach_id = ? ORDER BY notified_at ASC";
+        // read_at / notification_id come from the notification row linked to this breach; they are
+        // NULL for breaches reported before db/17_notification_log.sql, which have no linked row.
+        String sql = "SELECT bap.user_id, bap.notified_at, n.id AS notification_id, n.read_at " +
+                "FROM breach_affected_principals bap " +
+                "LEFT JOIN notifications n ON n.breach_id = bap.breach_id AND n.recipient_type = 'PRINCIPAL' AND n.recipient_id = bap.user_id " +
+                "WHERE bap.breach_id = ? ORDER BY bap.notified_at ASC";
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -488,6 +573,8 @@ public class Breach implements Action {
                 JSONObject row = new JSONObject();
                 row.put("user_id", rs.getString("user_id"));
                 row.put("notified_at", rs.getTimestamp("notified_at").toInstant().toString());
+                row.put("notification_logged", rs.getObject("notification_id") != null);
+                row.put("read_at", rs.getTimestamp("read_at") != null ? rs.getTimestamp("read_at").toInstant().toString() : null);
                 result.add(row);
             }
         } finally {
@@ -496,8 +583,36 @@ public class Breach implements Action {
         return result;
     }
 
+    /**
+     * The message bundle that was actually sent for this breach (saved on the notification row when it
+     * was created), or null for breaches reported before db/17_notification_log.sql.
+     */
+    private Object getSentNotificationMessages(UUID breachId) throws SQLException {
+        String sql = "SELECT message_snapshot FROM notifications WHERE breach_id = ? AND message_snapshot IS NOT NULL LIMIT 1";
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setObject(1, breachId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return new org.json.simple.parser.JSONParser().parse(rs.getString("message_snapshot"));
+            }
+        } catch (org.json.simple.parser.ParseException e) {
+            throw new SQLException("Could not parse saved notification message: " + e.getMessage(), e);
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        return null;
+    }
+
     private void updateBreachStatus(UUID id, String status, String resolutionNotes, UUID loginUserId, UUID appId) throws SQLException {
-        String sql = "UPDATE breach_incidents SET status = ?, resolution_notes = ?, last_updated_at = NOW() WHERE id = ?";
+        // The notification clock stops the first time an incident leaves OPEN
+        String sql = "UPDATE breach_incidents SET status = ?, resolution_notes = ?, last_updated_at = NOW(), " +
+                "responded_at = CASE WHEN ? <> 'OPEN' THEN COALESCE(responded_at, NOW()) ELSE responded_at END WHERE id = ?";
         String sqlFetchFiduciary = "SELECT fiduciary_id FROM breach_incidents WHERE id = ?";
 
         PoolDB pool = new PoolDB();
@@ -510,7 +625,8 @@ public class Breach implements Action {
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, status);
             pstmt.setString(2, resolutionNotes);
-            pstmt.setObject(3, id);
+            pstmt.setString(3, status);
+            pstmt.setObject(4, id);
             int affected = pstmt.executeUpdate();
             if (affected == 0) {
                 throw new SQLException("Updating breach status failed, breach incident not found.");
@@ -572,6 +688,9 @@ public class Breach implements Action {
         document.add(new Paragraph("Status: " + breach.get("status"), bodyFont));
         document.add(new Paragraph("Detected At: " + breach.get("detected_at"), bodyFont));
         document.add(new Paragraph("Reported At: " + breach.get("reported_at"), bodyFont));
+        if (breach.get("notification_deadline") != null) {
+            document.add(new Paragraph("Notification Deadline: " + breach.get("notification_deadline") + " (" + breach.get("deadline_state") + ")", bodyFont));
+        }
         document.add(new Paragraph(" "));
 
         document.add(new Paragraph("Description", headingFont));
@@ -601,7 +720,7 @@ public class Breach implements Action {
             document.add(new Paragraph(" "));
         }
 
-        Paragraph footer = new Paragraph("Generated " + Instant.now() + " -- Prepared for management / Data Protection Board review.", footerFont);
+        Paragraph footer = new Paragraph("Generated " + Instant.now() + " by " + AppVersion.display() + " -- Prepared for management / Data Protection Board review.", footerFont);
         footer.setAlignment(Element.ALIGN_LEFT);
         document.add(footer);
 

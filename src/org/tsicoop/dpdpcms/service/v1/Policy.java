@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.PolicyVersion;
 import org.tsicoop.dpdpcms.util.RopaDeriver;
 
 import java.sql.Connection;
@@ -63,10 +64,23 @@ public class Policy implements Action {
             // Extract common parameters
             String policyIdStr = (String) input.get("policy_id");
             String versionStr = (String) input.get("version");
-            if(versionStr == null) versionStr = "";
+            versionStr = versionStr == null ? "" : versionStr.trim();
             String jurisdiction = (String) input.get("jurisdiction");
             UUID fiduciaryId = resolveFiduciaryId(req);
             boolean isAdmin = "ADMIN".equalsIgnoreCase(InputProcessor.getVerifiedRole(req));
+
+            // Calls that address one existing version may omit 'version' when the policy has a
+            // single open (non-archived) version; otherwise the caller must say which one.
+            if (versionStr.isEmpty() && policyIdStr != null && !policyIdStr.isEmpty()
+                    && (func.equalsIgnoreCase("get_policy") || func.equalsIgnoreCase("update_policy")
+                    || func.equalsIgnoreCase("publish_policy") || func.equalsIgnoreCase("delete_policy"))) {
+                String soleVersion = PolicyVersion.soleOpenVersion(policyIdStr);
+                if (soleVersion == null) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'version' is required for '" + func + "': policy '" + policyIdStr + "' does not have exactly one open version.", req.getRequestURI());
+                    return;
+                }
+                versionStr = soleVersion;
+            }
 
             switch (func.toLowerCase()) {
                 case "list_active_policies":
@@ -129,6 +143,10 @@ public class Policy implements Action {
                     if (InputProcessor.rejectIfOperator(req, res)) return;
                     JSONObject policyContent = (JSONObject) input.get("policy_content");
 
+                    if (!PolicyVersion.isValid(versionStr)) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "A valid 'version' is required for 'create_policy': numbers separated by dots, at most 10 characters (e.g. 1.0 or 2.1.3).", req.getRequestURI());
+                        return;
+                    }
                     if (policyIdStr == null || policyIdStr.isEmpty() || jurisdiction == null || jurisdiction.isEmpty() || policyContent == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields (policy_id, jurisdiction, policy_content) for 'create_policy'.", req.getRequestURI());
                         return;
@@ -186,7 +204,7 @@ public class Policy implements Action {
                         return;
                     }
 
-                    output = updatePolicyInDb(policyIdStr, fiduciaryId, policyContent);
+                    output = updatePolicyInDb(policyIdStr, versionStr, fiduciaryId, policyContent);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     break;
 
@@ -707,7 +725,7 @@ public class Policy implements Action {
         return new JSONObject() {{ put("success", true); put("data", output); }};
     }
 
-    private JSONObject updatePolicyInDb(String policyId, UUID fiduciaryId, JSONObject policyContent) throws SQLException {
+    private JSONObject updatePolicyInDb(String policyId, String version, UUID fiduciaryId, JSONObject policyContent) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
@@ -720,7 +738,7 @@ public class Policy implements Action {
 
         sqlBuilder.append(" WHERE id = ? AND version = ? AND status = 'DRAFT'");
         params.add(policyId);
-        params.add("");
+        params.add(version);
 
         try {
             conn = pool.getConnection();
@@ -856,18 +874,23 @@ public class Policy implements Action {
         try {
             conn = pool.getConnection();
 
-            pstmt = conn.prepareStatement("UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ? AND fiduciary_id = ?");
+            pstmt = conn.prepareStatement("UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ? AND version = ? AND fiduciary_id = ?");
             pstmt.setString(1, policyId);
-            pstmt.setObject(2, fiduciaryId);
+            pstmt.setString(2, version);
+            pstmt.setObject(3, fiduciaryId);
             pstmt.executeUpdate();
             pool.cleanup(null, pstmt, null);
 
-            // Retire any ROPA entries whose linked_policy_ids contains this policy
+            // Retire the ROPA entries linked to this policy -- but only once no other version of
+            // it is still open, since ROPA links are by policy id (not version).
             pstmt = conn.prepareStatement(
                 "UPDATE ropa_entries SET status = 'retired', updated_at = NOW() " +
-                "WHERE linked_policy_ids @> ?::jsonb AND status != 'retired'"
+                "WHERE linked_policy_ids @> ?::jsonb AND status != 'retired' " +
+                "AND NOT EXISTS (SELECT 1 FROM consent_policies WHERE id = ? AND fiduciary_id = ? AND status <> 'ARCHIVED')"
             );
             pstmt.setString(1, "[\"" + policyId + "\"]");
+            pstmt.setString(2, policyId);
+            pstmt.setObject(3, fiduciaryId);
             pstmt.executeUpdate();
 
             success = true;

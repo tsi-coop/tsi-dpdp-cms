@@ -42,6 +42,8 @@
 
         .sidebar.open { transform: translateX(0); }
 
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
         .nav-link {
             display: flex;
             align-items: center;
@@ -138,15 +140,19 @@
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link">Audit</a>
             <a href="legal.html" class="nav-link">Legal</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link active">Settings</a>
         </nav>
@@ -166,6 +172,25 @@
     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h1 class="text-2xl font-black text-slate-800 tracking-tight">Settings</h1>
     </div>
+
+    <details class="settings-section">
+        <summary>
+            <span>Breach Notification Deadline</span>
+            <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="settings-section-body">
+            <p class="text-sm text-slate-600 mb-3">
+                How long, in hours from detection, your team has to act on a reported breach before it is shown as
+                overdue on the dashboard. The statutory window is 72 hours; you can shorten it for your own
+                standard but not lengthen it. A change applies to breaches reported from now on.
+            </p>
+            <div class="flex gap-2 items-center">
+                <input type="number" id="breach-deadline-hours" min="1" max="72" step="1" value="72" class="w-28 p-2 border border-gray-300 rounded-md text-sm" aria-label="Breach notification deadline in hours">
+                <span class="text-sm text-slate-500">hours</span>
+                <button class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90" onclick="saveBreachDeadline()">Save</button>
+            </div>
+        </div>
+    </details>
 
     <details class="settings-section">
         <summary>
@@ -212,6 +237,7 @@
                 Push notifications and purge events to your own systems as they happen, alongside the existing
                 poll-based APIs (nothing changes there). Each webhook is signed - verify the
                 <code>X-TSI-Signature</code> header (HMAC-SHA256 of the request body, using your secret) before trusting a delivery.
+                A delivery that fails is retried automatically with increasing delays (see <a href="compliance.html" class="underline primary-text">Compliance &rarr; Webhook Deliveries</a>); polling stays the safety net.
             </p>
             <div id="webhook-configs-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="card text-center text-gray-500 col-span-2">Loading webhook configuration...</div>
@@ -629,7 +655,48 @@
         }
     }
 
+    const API_URL_BREACH = '/api/v1/admin/breach';
+
+    async function loadBreachDeadline() {
+        try {
+            const response = await fetch(API_URL_BREACH, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "get_breach_settings", "fiduciary_id": FIDUCIARY_ID })
+            });
+            if (!response.ok) throw new Error(response.status);
+            const settings = await response.json();
+            document.getElementById('breach-deadline-hours').value = settings.deadline_hours;
+        } catch (e) {
+            console.error("Could not load breach deadline setting", e);
+        }
+    }
+
+    async function saveBreachDeadline() {
+        const input = document.getElementById('breach-deadline-hours');
+        const hours = Number(input.value);
+        if (!Number.isInteger(hours) || hours < 1 || hours > 72) {
+            return alert("Enter a whole number of hours between 1 and 72.");
+        }
+        try {
+            const response = await fetch(API_URL_BREACH, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "set_breach_settings", "fiduciary_id": FIDUCIARY_ID, "deadline_hours": hours })
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                alert("Breach notification deadline saved: " + hours + " hours.");
+            } else {
+                alert("Error: " + (data.message || data.error || "Save failed."));
+            }
+        } catch (e) {
+            alert("Network error while saving the breach deadline.");
+        }
+    }
+
     async function init() {
+        loadBreachDeadline();
         const [languages, existingMessages, webhookConfigs, rightsAppConfig] = await Promise.all([
             loadSupportedLanguages(), loadExistingMessages(), loadWebhookConfigs(), loadRightsAppConfig()
         ]);
@@ -647,6 +714,7 @@
 
     window.saveMessage = saveMessage;
     window.addBreachType = addBreachType;
+    window.saveBreachDeadline = saveBreachDeadline;
     window.saveWebhookConfig = saveWebhookConfig;
     window.toggleWebhookEnabled = toggleWebhookEnabled;
     window.onRightsOtpModeChange = onRightsOtpModeChange;

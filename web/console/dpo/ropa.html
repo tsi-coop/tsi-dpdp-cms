@@ -25,6 +25,8 @@
         }
         @media (max-width: 1023px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } }
         @media (min-width: 1024px) { body { padding-left: 250px; } }
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
         .nav-link { display: flex; align-items: center; padding: 10px 20px; margin: 5px 0; border-radius: 6px; color: #4a5568; transition: all 0.2s ease; }
         .nav-link:hover, .nav-link.active { background-color: #e5f5f4; color: var(--tsi-primary); font-weight: 600; }
         .card { background-color: var(--card-bg); border-radius: var(--radius); box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); padding: 20px; border: 1px solid #e2e8f0; }
@@ -88,15 +90,19 @@
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
             <a href="dashboard.html"   class="nav-link">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="policies.html"    class="nav-link">Policies</a>
             <a href="ropa.html"        class="nav-link active">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="principals.html"  class="nav-link">Principals</a>
             <a href="compliance.html"  class="nav-link">Compliance</a>
             <a href="grievances.html"  class="nav-link">Grievances</a>
             <a href="breach.html"      class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="audit.html"       class="nav-link">Audit</a>
             <a href="legal.html"       class="nav-link">Legal</a>
             <a href="reports.html"     class="nav-link">Reports</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html"    class="nav-link">Settings</a>
         </nav>

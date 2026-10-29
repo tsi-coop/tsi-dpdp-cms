@@ -1,5 +1,6 @@
 package org.tsicoop.dpdpcms.service.v1;
 
+import org.tsicoop.dpdpcms.util.AppVersion;
 import org.tsicoop.dpdpcms.framework.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -84,6 +85,23 @@ public class Job implements Action {
         String subtype = (String) input.get("subtype");   // CONSENT, PRINCIPAL, etc.
         String startDate = (String) input.get("start_date");
         String endDate = (String) input.get("end_date");
+
+        // The Notification Log can hold a row per notification sent, so it is limited to one day per
+        // export to keep it from loading the system (the same date for start and end).
+        if ((jobType == null || "EXPORT".equalsIgnoreCase(jobType)) && "NOTIFICATION_LOG".equalsIgnoreCase(subtype)) {
+            try {
+                if (startDate == null || startDate.isEmpty() || !startDate.equals(endDate)) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                            "The Notification Log can be exported for one day at a time: send the same date as 'start_date' and 'end_date'.", req.getRequestURI());
+                    return;
+                }
+                java.sql.Date.valueOf(startDate);
+            } catch (IllegalArgumentException e) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                        "'start_date' must be in the format yyyy-MM-dd.", req.getRequestURI());
+                return;
+            }
+        }
 
         String sql = "INSERT INTO jobs (id, fiduciary_id, job_type, subtype, start_date, end_date, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', NOW())";
         Connection conn = null;
@@ -225,6 +243,7 @@ public class Job implements Action {
         res.setContentType("text/csv");
         res.setCharacterEncoding("UTF-8");
         res.setHeader("Content-Disposition", "attachment; filename=\"TSI_DPDP_Export_" + jobId.substring(0,8) + ".csv\"");
+        res.setHeader("X-TSI-Generated-By", AppVersion.display());
         res.setContentLength((int) file.length());
 
         // Stream from Disk to Response Output

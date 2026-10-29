@@ -8,7 +8,7 @@
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com/"></script>
     <script>
-        window.ENV_SERVER_URL = window.ENV_SERVER_URL || 'http://localhost:8080';
+        window.ENV_SERVER_URL = window.ENV_SERVER_URL || ''; // same origin: a hardcoded localhost:8080 broke this page on any other host or port
     </script>
     <style>
         :root {
@@ -34,6 +34,8 @@
             padding-top: 20px; position: fixed; height: 100vh; overflow-y: auto; z-index: 50; border-right: 1px solid #e2e8f0;
         }
 
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
         .nav-link {
             display: flex; align-items: center; padding: 10px 20px; margin: 5px 0;
             border-radius: 6px; color: #4a5568; transition: all 0.2s ease;
@@ -99,15 +101,19 @@
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link">Audit</a>
             <a href="legal.html" class="nav-link active">Legal</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
@@ -210,6 +216,10 @@
                 </div>
             </div>
 
+            <div id="view-nonprod-banner" class="hidden mb-8 p-4 border-2 border-red-600 bg-red-50 text-red-700 text-xs font-black uppercase tracking-wide text-center">
+                Non-production certificate: signed with a transient key. Unverifiable; not for use as evidence.
+            </div>
+
             <div class="grid grid-cols-2 gap-12 mb-10">
                 <div>
                     <h4 class="text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 mb-3 pb-1">Identity & Purpose</h4>
@@ -222,6 +232,8 @@
                     <p class="text-[11px] text-slate-700"><strong>Hardware MAC:</strong> <span id="view-mac" class="font-mono">--</span></p>
                     <p class="text-[11px] text-slate-700"><strong>Source Host IP:</strong> <span id="view-ip" class="font-mono">--</span></p>
                     <p class="text-[11px] text-slate-700"><strong>System Runtime:</strong> <span id="view-os">--</span></p>
+                    <p class="text-[11px] text-slate-700"><strong>Software:</strong> <span id="view-software" class="font-mono">--</span></p>
+                    <p class="text-[11px] text-slate-700"><strong>Signing Key:</strong> <span id="view-signing-key" class="font-mono">--</span></p>
                 </div>
             </div>
 
@@ -346,13 +358,17 @@
             document.getElementById('view-ip').textContent = env.server_ip || 'Internal';
             document.getElementById('view-mac').textContent = env.mac_address || '---';
             document.getElementById('view-os').textContent = (env.os_name || 'System') + " (" + (env.os_version || 'v1') + ")";
+            const nonProd = data.signing_key_status === 'NON_PRODUCTION_UNVERIFIABLE';
+            document.getElementById('view-nonprod-banner').classList.toggle('hidden', !nonProd);
+            document.getElementById('view-signing-key').textContent = nonProd ? 'NON-PRODUCTION (transient, unverifiable)' : (data.signing_key_status === 'PRODUCTION' ? 'Production keystore' : '(not recorded)');
+            document.getElementById('view-software').textContent = env.software_version ? (env.software || 'TSI DPDP CMS') + " v" + env.software_version : '(not recorded)';
 
             // Validated Chain Execution
             const trailBody = document.getElementById('view-trail-body');
             trailBody.innerHTML = (data.evidence_trail || []).map(t => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-2 font-mono text-slate-500">${t.ts}</td>
-                    <td class="p-2 font-black text-slate-800 uppercase tracking-tighter">${t.act}</td>
+                    <td class="p-2 font-black text-slate-800 uppercase tracking-tighter">${t.act}${t.policy_id ? `<div class="font-mono font-normal normal-case tracking-normal text-[10px] text-slate-500">policy ${t.policy_id} &middot; version ${t.policy_version || '(unversioned)'}</div>` : ''}</td>
                     <td class="p-2 font-mono text-teal-700 break-all border-l border-slate-100">${t.hash}</td>
                 </tr>
             `).join('');

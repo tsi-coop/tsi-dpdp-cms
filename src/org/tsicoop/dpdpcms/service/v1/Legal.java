@@ -1,10 +1,13 @@
 package org.tsicoop.dpdpcms.service.v1;
 
+import org.tsicoop.dpdpcms.util.AppVersion;
+import org.tsicoop.dpdpcms.util.Env;
 import org.tsicoop.dpdpcms.framework.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.io.FileInputStream;
 import java.net.InetAddress;
@@ -98,6 +101,8 @@ public class Legal implements Action {
             
             // 3. Capture Environmental Metadata (BSA S.62 Chain of Custody)
             JSONObject envMetadata = new JSONObject();
+            envMetadata.put("software", AppVersion.product());
+            envMetadata.put("software_version", AppVersion.get());
             envMetadata.put("os_name", System.getProperty("os.name"));
             envMetadata.put("os_version", System.getProperty("os.version"));
             envMetadata.put("java_version", System.getProperty("java.version"));
@@ -111,7 +116,16 @@ public class Legal implements Action {
             certData.put("principal_id", userId);
             certData.put("fiduciary_name", fiduciaryName);
             certData.put("case_ref_id", caseRefId);
+            // Production signs with the configured keystore; any other environment signs with a
+            // throwaway key whose public half is never kept, so the signature can't be verified.
+            // The status is part of the signed data so it travels with the certificate.
+            boolean verifiableKey = Env.isProduction();
+            certData.put("signing_key_status", verifiableKey ? "PRODUCTION" : "NON_PRODUCTION_UNVERIFIABLE");
+            if (!verifiableKey) {
+                certData.put("signing_notice", "NON-PRODUCTION CERTIFICATE: signed with a transient key that was discarded after signing. This signature cannot be verified and this certificate must not be relied on as evidence. Certificates issued with " + Env.VAR + "=production and a configured keystore are verifiable.");
+            }
             certData.put("evidence_trail", evidenceTrail);
+            certData.put("policies", summarizePolicies(evidenceTrail));
             certData.put("system_metadata", envMetadata);
             certData.put("generated_at", new java.util.Date().toString());
 
@@ -123,7 +137,8 @@ public class Legal implements Action {
             certData.put("signature_alg", "SHA256withRSA");
 
             // 6. Prepare Attestation Text (Standard BSA S.62 Legal Language)
-            String attestation = "I hereby certify that the electronic records for Principal " + userId + 
+            String attestation = (verifiableKey ? "" : "[NON-PRODUCTION - UNVERIFIABLE: signed with a transient key; not for use as evidence.] ")
+                                + "I hereby certify that the electronic records for Principal " + userId + 
                                 " were produced by a computer system operating properly during the period of " +
                                 "record generation. The hardware MAC (" + envMetadata.get("mac_address") + 
                                 ") and hash chain integrity have been verified and cryptographically signed.";
@@ -147,7 +162,8 @@ public class Legal implements Action {
                 output.put("success", true);
                 output.put("certificate_id", rs.getObject(1).toString());
                 output.put("fiduciary_name", fiduciaryName);
-                output.put("signature_verified", true);
+                output.put("signature_verified", verifiableKey);
+                output.put("signing_key_status", verifiableKey ? "PRODUCTION" : "NON_PRODUCTION_UNVERIFIABLE");
                 OutputProcessor.send(res, 201, output);
             }
         } catch (Exception e) {
@@ -183,11 +199,9 @@ public class Legal implements Action {
      * Configuration is retrieved strictly from System Properties for high security.
      */
     private String signCertificateData(String data) throws Exception {
-        String env = System.getenv("TSI_DPDP_CMS_ENV");
-        if (env == null) env = "development";
         PrivateKey privateKey = null;
 
-        if ("production".equalsIgnoreCase(env)) {
+        if (Env.isProduction()) {
             // --- PRODUCTION MODE: LOAD FROM SYSTEM ENV ---
             String path = System.getenv("TSI_KEYSTORE_PATH");
             String alias = System.getenv("TSI_KEYSTORE_ALIAS");
@@ -342,6 +356,33 @@ public class Legal implements Action {
     /**
      * Internal helper to fetch a validated audit trail for inclusion in a certificate.
      */
+    /**
+     * Distinct (policy_id, policy_version) pairs appearing in the trail, with the first and last
+     * time each was recorded against. An empty policy_version marks an event stamped before
+     * version stamping was enforced; the audit chain is immutable so those stay as written.
+     */
+    @SuppressWarnings("unchecked")
+    private JSONArray summarizePolicies(JSONArray trail) {
+        java.util.LinkedHashMap<String, JSONObject> byKey = new java.util.LinkedHashMap<>();
+        for (Object o : trail) {
+            JSONObject e = (JSONObject) o;
+            if (e.get("policy_id") == null) continue;
+            String key = e.get("policy_id") + "\u0000" + e.get("policy_version");
+            JSONObject p = byKey.get(key);
+            if (p == null) {
+                p = new JSONObject();
+                p.put("policy_id", e.get("policy_id"));
+                p.put("policy_version", e.get("policy_version"));
+                p.put("first_seen", e.get("ts"));
+                byKey.put(key, p);
+            }
+            p.put("last_seen", e.get("ts"));
+        }
+        JSONArray out = new JSONArray();
+        out.addAll(byKey.values());
+        return out;
+    }
+
     private JSONArray fetchValidatedTrail(Connection conn, String uid, UUID fid) throws SQLException {
         JSONArray trail = new JSONArray();
         PreparedStatement pstmt = null;
@@ -356,7 +397,7 @@ public class Legal implements Action {
 
         // Broad search: match user_id or context_details.
         // Also check both the specific Fiduciary ID AND the System Admin ID (for background jobs).
-        String sql = "SELECT timestamp, audit_action, current_log_hash, prev_log_hash FROM audit_logs " +
+        String sql = "SELECT timestamp, audit_action, current_log_hash, prev_log_hash, context_details FROM audit_logs " +
                      "WHERE (user_id ILIKE ? OR user_id = ? OR context_details ILIKE ?) " +
                      "AND (fiduciary_id = ? OR fiduciary_id = ?) " +
                      "ORDER BY timestamp ASC";
@@ -375,6 +416,20 @@ public class Legal implements Action {
                 entry.put("act", rs.getString(2));
                 entry.put("hash", rs.getString(3));
                 entry.put("prev_hash", rs.getString(4));
+                // Consent events record which policy version the principal agreed to; carry it
+                // into the evidence so a certificate shows exactly what text was consented to.
+                String details = rs.getString(5);
+                if (details != null && details.startsWith("{") && details.contains("\"policy_id\"")) {
+                    try {
+                        JSONObject ctx = (JSONObject) new JSONParser().parse(details);
+                        if (ctx.get("policy_id") != null) {
+                            entry.put("policy_id", ctx.get("policy_id"));
+                            entry.put("policy_version", ctx.get("policy_version") != null ? ctx.get("policy_version") : "");
+                        }
+                    } catch (Exception ignored) {
+                        // Non-JSON context: nothing to extract
+                    }
+                }
                 trail.add(entry);
             }
         } finally {

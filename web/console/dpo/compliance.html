@@ -48,6 +48,8 @@
             transform: translateX(0);
         }
 
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
         .nav-link {
             display: flex;
             align-items: center;
@@ -162,15 +164,19 @@
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link active">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link">Audit</a>
             <a href="legal.html" class="nav-link">Legal</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
@@ -190,6 +196,10 @@
     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h1 class="text-2xl font-black text-slate-800 tracking-tight">Compliance Enforcement</h1>
         <div class="flex gap-3">
+            <a id="webhook-deliveries-link" href="webhook-deliveries.html" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition duration-150 flex items-center gap-2">
+                Webhook Deliveries
+                <span id="webhook-failed-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-600 text-white"></span>
+            </a>
             <button onclick="openCesJobsModal()" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition duration-150 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
                 View Jobs
@@ -210,8 +220,11 @@
                 <select id="status-filter" class="p-2 border border-gray-300 rounded-md text-sm">
                     <option value="ALL">Status: ALL</option>
                     <option value="PURGE_INITIATED">INITIATED</option>
+                    <option value="NOT_PICKED_UP">NOT PICKED UP (&gt;24h)</option>
                     <option value="PURGE_IN_PROGRESS">IN PROGRESS</option>
                     <option value="PURGE_COMPLETED">COMPLETED</option>
+                    <option value="PURGE_FAILED">FAILED</option>
+                    <option value="PURGE_CANCELLED">CANCELLED</option>
                     <option value="LEGAL_HOLD_APPLIED">LEGAL HOLD</option>
                 </select>
             </div>
@@ -288,6 +301,7 @@
                     <option value="PURGE_IN_PROGRESS">In Progress</option>
                     <option value="PURGE_COMPLETED">Completed (Data Purged)</option>
                     <option value="PURGE_FAILED">Failed (Manual Review Needed)</option>
+                    <option value="PURGE_CANCELLED">Cancelled (Request Withdrawn)</option>
                     <option value="LEGAL_HOLD_APPLIED">Under Legal Hold</option>
                 </select>
             </div>
@@ -383,6 +397,7 @@
     if (IS_OPERATOR) {
         document.querySelectorAll('a[href="policies.html"], a[href="settings.html"], a[href="team.html"]').forEach(el => el.remove());
         document.getElementById('run-compliance-check-btn').remove();
+        document.getElementById('webhook-deliveries-link').remove();
         document.getElementById('assignment-section').remove();
     }
     const USER_NAME = localStorage.getItem('username');
@@ -429,6 +444,7 @@
             case 'PURGE_IN_PROGRESS': colorClass = 'bg-yellow-100 text-yellow-800'; break;
             case 'PURGE_COMPLETED': colorClass = 'bg-green-100 text-green-800'; break;
             case 'PURGE_FAILED': colorClass = 'bg-red-100 text-red-800'; break;
+            case 'PURGE_CANCELLED': colorClass = 'bg-gray-200 text-gray-700'; break;
             // Updated color for Legal Hold as requested
             case 'LEGAL_HOLD_APPLIED': colorClass = 'bg-orange-100 text-orange-800'; break;
             default: colorClass = 'bg-gray-100 text-gray-800';
@@ -436,8 +452,18 @@
         return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colorClass}">${status.replace(/_/g, ' ')}</span>`;
     }
 
+    // A request still PURGE_INITIATED after this long has not been picked up by the app (polling or webhook).
+    const NOT_PICKED_UP_HOURS = 24;
+
+    function isNotPickedUp(req) {
+        return req.status === 'PURGE_INITIATED'
+            && (Date.now() - new Date(req.initiated_at).getTime()) > NOT_PICKED_UP_HOURS * 3600 * 1000;
+    }
+
     function createRequestRow(req) {
         const row = document.createElement('tr');
+        const notPickedUp = isNotPickedUp(req)
+            ? `<div class="text-[10px] font-black uppercase text-amber-700 whitespace-normal" title="Still INITIATED ${NOT_PICKED_UP_HOURS}+ hours after it was raised: the app has not picked it up">Not picked up</div>` : '';
         row.innerHTML = `
             <td class="px-2 py-2 font-mono text-gray-600 truncate" title="${esc(req.id)}">...${req.id.slice(-8)}</td>
             <td class="px-2 py-2 text-gray-800 truncate" title="${esc(req.user_id)}">${esc(req.user_id)}</td>
@@ -445,7 +471,7 @@
             <td class="px-2 py-2 text-gray-600 truncate" title="${esc(req.trigger_event)}">${esc(req.trigger_event)}</td>
             <td class="px-2 py-2 text-gray-600 truncate" title="${esc(req.app_name)}">${esc(req.app_name)}</td>
             <td class="px-2 py-2 text-gray-600 truncate">${new Date(req.initiated_at).toLocaleDateString()}</td>
-            <td class="px-2 py-2 truncate">${createStatusBadge(req.status)}</td>
+            <td class="px-2 py-2">${createStatusBadge(req.status)}${notPickedUp}</td>
             <td class="px-2 py-2 text-gray-600 truncate">${OperatorMap[req.assigned_operator_id] || 'Unassigned'}</td>
             <td class="px-2 py-2">
                 <button class="text-indigo-600 hover:text-indigo-900 font-medium" onclick="viewPurgeRequest('${req.id}')">Manage</button>
@@ -462,7 +488,8 @@
                 "_func": "list_purge_requests",
                 "fiduciary_id": localStorage.getItem('fiduciary_id'),
                 "search": searchInput.value,
-                "status": statusFilter.value === 'ALL' ? '' : statusFilter.value
+                "status": statusFilter.value === 'ALL' ? ''
+                        : statusFilter.value === 'NOT_PICKED_UP' ? 'PURGE_INITIATED' : statusFilter.value
             };
 
             const response = await fetch(API_URL_PURGE, {
@@ -477,7 +504,8 @@
                 handleLogout();
                 return;
             }
-            const requests = data || [];
+            let requests = data || [];
+            if (statusFilter.value === 'NOT_PICKED_UP') requests = requests.filter(isNotPickedUp);
 
             tableBody.innerHTML = '';
             if (requests.length === 0) {
@@ -624,6 +652,24 @@
     });
 
 
+    // Failed-webhook count on the Webhook Deliveries button, so a failure is noticed from this screen.
+    async function loadWebhookFailedBadge() {
+        try {
+            const response = await fetch('/api/v1/admin/notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_webhook_deliveries", "fiduciary_id": FIDUCIARY_ID, "status": "FAILED", "page": 1, "limit": 1 })
+            });
+            if (!response.ok) return;
+            const failed = ((await response.json()).counts || {}).FAILED || 0;
+            const badge = document.getElementById('webhook-failed-badge');
+            badge.textContent = `${failed} failed`;
+            badge.classList.toggle('hidden', failed === 0);
+        } catch (e) {
+            console.error("Could not load webhook failure count", e);
+        }
+    }
+
     // --- Init ---
     tableBody = document.getElementById('purge-table-body');
     countSpan = document.getElementById('request-count');
@@ -634,6 +680,7 @@
 
     document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
     document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
+    if (!IS_OPERATOR) loadWebhookFailedBadge();
     statusFilter.addEventListener('change', loadPurgeRequests);
     searchInput.addEventListener('input', () => { loadPurgeRequests(); });
 

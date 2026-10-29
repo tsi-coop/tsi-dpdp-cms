@@ -2,6 +2,7 @@ package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.ces.CESUtil;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.PolicyVersion;
 import org.tsicoop.dpdpcms.framework.*;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -186,7 +187,8 @@ public class Wallet implements Action {
             return res;
         }
         UUID fiduciaryUuid = UUID.fromString(ctx.fiduciaryId);
-        JSONObject policy = new Consent().getPolicy(policyId, "", fiduciaryUuid);
+        String policyVersion = PolicyVersion.resolveActive(policyId, fiduciaryUuid);
+        JSONObject policy = policyVersion != null ? new Consent().getPolicy(policyId, policyVersion, fiduciaryUuid) : null;
         if (policy == null) {
             res.put("success", false);
             res.put("message", "Referenced policy not found or does not belong to this fiduciary.");
@@ -195,7 +197,7 @@ public class Wallet implements Action {
 
         JSONArray revisedConsents = CESUtil.appendConsentExpiry(policy, dataPointConsents, Constants.ACTION_CONSENT_GIVEN);
         Timestamp timestamp = Timestamp.from(Instant.now());
-        JSONObject dbResult = new Consent().recordConsentToDb(ctx.userId, fiduciaryUuid, policyId, "",
+        JSONObject dbResult = new Consent().recordConsentToDb(ctx.userId, fiduciaryUuid, policyId, policyVersion,
                 timestamp, "IN", "en", "CONSENT_GIVEN", "WALLET_GRANT",
                 "0.0.0.0", null, revisedConsents, null, null);
 

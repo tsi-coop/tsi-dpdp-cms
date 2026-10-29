@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Minor guardian-reference audit",
+  "type": "object",
+  "properties": {
+    "_func": { "type": "string" },
+    "fiduciary_id": { "type": "string" },
+    "active_only": { "type": "boolean" },
+    "limit": { "type": "integer" }
+  },
+  "required": ["_func", "fiduciary_id"]
+}

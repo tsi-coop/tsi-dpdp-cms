@@ -29,10 +29,9 @@
 # generated and printed so you can reuse it). It is required for "withdraw"/"erase" run
 # on their own -- pass the USER_ID printed by an earlier "give" run.
 #
-# Note: record_consent always resolves the policy with an empty version string
-# server-side (Consent.java), so POLICY_ID must refer to a policy created with the
-# default blank version -- true for any policy created via the DPO console's
-# "Create New Policy" flow.
+# Note: record_consent stamps the consent with the policy's ACTIVE version. POLICY_VERSION
+# is optional: when set it must equal the active version (a mismatch is rejected with 409);
+# when unset the server uses the active version.
 
 set -uo pipefail
 
@@ -59,6 +58,7 @@ BASE_URL="${BASE_URL:-http://localhost:8080}"
 API_KEY="${API_KEY:?Set API_KEY to an App API key (UUID)}"
 API_SECRET="${API_SECRET:?Set API_SECRET to that App API secret}"
 POLICY_ID="${POLICY_ID:?Set POLICY_ID to an active policy under this App fiduciary}"
+POLICY_VERSION="${POLICY_VERSION:-}"
 
 if [ -n "$USER_ID_ARG" ]; then
   USER_ID="$USER_ID_ARG"
@@ -140,6 +140,7 @@ do_give() {
   "_func": "record_consent",
   "user_id": "$USER_ID",
   "policy_id": "$POLICY_ID",
+  "policy_version": "$POLICY_VERSION",
   "language_selected": "en",
   "data_point_consents": [
     {"data_point_id": "purpose_demo_alpha", "consent_granted": true,  "purpose_agreed_to": "Demo Purpose Alpha", "timestamp_updated": "$now"},

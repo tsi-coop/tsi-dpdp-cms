@@ -1,4 +1,11 @@
-# Load Test: Consent Lifecycle
+# Tests
+
+| Test | What it covers |
+|---|---|
+| [Load test (JMeter)](#load-test-consent-lifecycle) | Consent lifecycle against the client API. |
+| [Production setup rehearsal](#production-setup-rehearsal) | The Docker steps of the [Production Deployment Guide](../docs/guides/production-deployment-guide.md), run locally. |
+
+## Load Test: Consent Lifecycle
 
 Runnable [Apache JMeter](https://jmeter.apache.org/) load test against the
 TSI DPDP CMS client API, covering the consent lifecycle: notice/policy
@@ -49,7 +56,9 @@ System Setup):
 5. **OTP mode**: leave the App's Rights Management config on the default
    **Dummy OTP** delivery mode (DPO Console → Settings) so stage 8's full
    login round trip works out of the box; see "OTP login round trip"
-   below.
+   below. From v0.5.4 the server refuses Dummy OTP logins when
+   `TSI_DPDP_CMS_ENV=production`, so run this suite against a `local` /
+   non-production instance (never against production).
 
 With those five values in hand, edit `load-test.properties` (see
 "Configure" below), then come back here for the last setup step.
@@ -276,3 +285,26 @@ Treat `maximumPoolSize=15` as the next thing to tune.
 Docker instance on one machine, not production hardware, network, or
 concurrent real-world traffic. "Zero leaks" and "graceful degradation"
 are true for the concurrency levels actually tried here. Tuning `maximumPoolSize=15` for your needs should give you the right result.
+
+## Production setup rehearsal
+
+`prod-setup-test.sh` follows the Docker steps of the [Production Deployment Guide](../docs/guides/production-deployment-guide.md) on one machine, so you can check the guide (and your Docker host) before touching a real server. It works in a throwaway copy of the repo, with its own container names, throwaway secrets and host port 18080 (15432 for the bundled database). Your real `.env`, volumes and containers are not touched.
+
+```bash
+mvn package                          # the Dockerfile copies target/tsi_dpdp_cms.war
+tests/prod-setup-test.sh             # both modes
+tests/prod-setup-test.sh bundled     # Database in Docker only
+tests/prod-setup-test.sh external    # Database on a different server only
+tests/prod-setup-test.sh both --keep # leave containers and the scratch folder for inspection
+```
+
+Needs `docker compose`, `openssl`, `curl` and `tar`. The exit code is the number of failed checks.
+
+| Mode | What it does |
+|---|---|
+| `bundled` | Production `.env`, keystore, database certificate and override file, then starts the stack. |
+| `external` | Starts a second Postgres (SSL on, no published port) on its own Docker network as the "remote server", creates the user and database, loads the `db/` schema, then starts the app against it with the bundled database switched off. |
+
+Checks per mode: `.env` has no placeholders; the app runs as the `jetty` user (uid 999); the log says `Service started in production environment`; database SSL is on; the database port is bound to `127.0.0.1` only (bundled) or not published at all (external); the console answers 200.
+
+Not covered: HTTPS and logins (there is no TLS proxy), `pg_hba.conf` address restrictions (everything is on local networks), and the Binary install.

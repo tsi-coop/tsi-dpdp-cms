@@ -1,6 +1,6 @@
 # Client Polling Integration Guide
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Audience:** Developers integrating downstream systems with TSI DPDP CMS.
 
 ---
@@ -31,11 +31,73 @@ Reference implementations for both live in this repo:
 ### Polling vs. webhooks
 
 If you've also set up the [Webhook Integration Guide](webhook-integration-guide.md),
-webhooks get you lower latency, but delivery is best-effort and single-attempt
-with no retry queue (see that guide, section 7). Polling is unconditionally
-reliable - so even with webhooks configured, keep a poll running (at a longer
-interval, e.g. every few minutes) as your reconciliation path for anything a
-missed webhook delivery would otherwise drop.
+webhooks get you lower latency, and since v0.5.4 failed deliveries are retried
+with backoff for about 14.5 hours (see that guide, section 7), but a delivery
+can still end up Failed and events can arrive more than once or out of order.
+Polling is unconditionally reliable - so even with webhooks configured, keep a
+poll running (at a longer interval, e.g. every few minutes) as your
+reconciliation path for anything a webhook delivery would otherwise drop.
+
+## Quick start: your first poll in 5 steps
+
+This gets both polls working with `curl`. The sections after it are the full reference.
+
+**Step 1: Get an API key and secret.** An ADMIN creates one for your App in the console (**API Keys**). Choose the scopes you need: `READ` for `list_notifications`, `WRITE` for `mark_notification_read`, `PURGE` for the purge calls. The console shows the secret once, so copy it then. Put the values in your shell:
+
+```bash
+export BASE_URL=http://localhost:8080
+export API_KEY=<your-key>
+export API_SECRET=<your-secret>
+```
+
+**Step 2: Fetch unread notifications.**
+
+```bash
+curl -s -X POST "$BASE_URL/api/v1/client/notification" \
+  -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" -H "X-API-Secret: $API_SECRET" \
+  -d '{"_func":"list_notifications","unread_only":true,"limit":50}'
+```
+
+You get a JSON array (empty `[]` if nothing is new). A `401` means the key, the secret or the `READ` scope is wrong.
+
+**Step 3: Mark one handled**, after you have dispatched it (email, SMS, push), so it stops appearing:
+
+```bash
+curl -s -X POST "$BASE_URL/api/v1/client/notification" \
+  -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" -H "X-API-Secret: $API_SECRET" \
+  -d '{"_func":"mark_notification_read","id":"<id-from-step-2>"}'
+```
+
+Run Step 2 again: that notification is gone.
+
+**Step 4: Fetch purge requests, then confirm one.**
+
+```bash
+curl -s -X POST "$BASE_URL/api/v1/client/compliance" \
+  -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" -H "X-API-Secret: $API_SECRET" \
+  -d '{"_func":"list_purge_requests","status":"PURGE_INITIATED","limit":50}'
+```
+
+For each request, delete the user's data in your own system, then write the outcome back (`details` is required and becomes part of the compliance record):
+
+```bash
+curl -s -X POST "$BASE_URL/api/v1/client/compliance" \
+  -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" -H "X-API-Secret: $API_SECRET" \
+  -d '{"_func":"update_purge_status","id":"<id-from-above>","status":"PURGE_COMPLETED","details":"Purged from CRM contact table"}'
+```
+
+A confirmed request stops appearing in the `PURGE_INITIATED` list.
+
+**Step 5: Run it on a timer.** Wrap Steps 2 to 4 in a loop that runs every 30 seconds, or start from the reference clients in section 4, which already do this:
+
+```bash
+BASE_URL=$BASE_URL API_KEY=$API_KEY API_SECRET=$API_SECRET POLL_SECONDS=30 \
+  ./examples/integration/scripts/notifications/notification-listener.sh
+```
+
+Everything else (response shapes, the other purge statuses, intervals) is in the sections below.
+
+---
 
 ## 2. Notification Polling
 
@@ -162,10 +224,13 @@ in your own system, write the outcome back:
 
 For a normal integration, `status` is `PURGE_COMPLETED` or `PURGE_FAILED` -
 the two example clients above only ever use these. The full set of
-meaningful values also includes `PURGE_IN_PROGRESS` and `LEGAL_HOLD_APPLIED`
-(the DPO Console's own dropdown offers all four); see the
+meaningful values also includes `PURGE_IN_PROGRESS`, `PURGE_CANCELLED` and
+`LEGAL_HOLD_APPLIED` (the DPO Console's own dropdown offers all five). A
+`PURGE_CANCELLED` request was withdrawn before the purge ran: it stops matching
+the `PURGE_INITIATED` filter, and an App that has already fetched it must not
+purge it; see the
 [System Integration Guide](system-integration-guide.md#9-confirming-purge-status)
-for the caveats around those two before using them from an integration.
+for the caveats around these statuses before using them from an integration.
 For an orphan request (`app_id` is `null`) where nothing was ever held,
 complete it with a `details` note explaining that, rather than reporting
 failure. `details` is required on every call - use it to leave an audit

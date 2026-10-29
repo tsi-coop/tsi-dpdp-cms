@@ -25,14 +25,7 @@ See Section 1.2 (Configure Consent Manager) of the System Design document, linke
 
 [Standardized Erasure Interface for DPDP Consent Managers](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
 
-
-## Release Notes
-
-See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
-
 ## Installation
-
-### Docker
 
 1.  **Clone the repository to a separate folder**
     ```bash
@@ -53,10 +46,6 @@ See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
     ```bash
     sudo docker compose up -d
     ```
-
-### Binary
-
-Check out [v0.5.3 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.3)
 
 ## Post-Installation Steps
 
@@ -83,13 +72,13 @@ Follow the Guided Journey:
 
 8. Grievance Management: Section 13: Review, assign, and resolve grievances raised by Data Principals within statutory timelines. [Watch Video](https://youtu.be/OGrfJgHgmJg)
 
-9. Breach Notification: Section 8(6): Report a breach, notify affected Principals, generate the PDF record, and bulk-notify via CSV upload through the Job Manager. [Watch Video](https://youtu.be/lHOAQSIrxh8)
+9. Breach Notification: Section 8(6): Report a breach, notify affected Principals, track the 72-hour notification deadline (configurable, with a countdown and overdue state on the DPO Dashboard), generate the PDF record, and bulk-notify via CSV upload through the Job Manager. [Watch Video](https://youtu.be/lHOAQSIrxh8)
 
 10. Legal Module: Turn activity logs into verified, BSA Section 63-compliant digital evidence that holds up in court and meets regulatory rules. [Watch Video](https://youtu.be/neS4x46erHA) | [Securing Court-Ready Evidence under BSA Section 62](https://techadvisory.substack.com/p/dpdp-consent-manager-securing-court)
 
 11. System Integration: API specifications for Data Fiduciaries and Processors to integrate CMS logic into backend technical stacks. [Watch Video](https://youtu.be/P6kY9aBc_gM)
 
-12. Verifiable Parental Consent: Experience the Section 9 workflow: verifiable parental consent with OTP-based guardian identification for learners under 18. [Watch Video](https://youtu.be/kz4idKMBLXk)
+12. Verifiable Parental Consent: Experience the Section 9 workflow: recording verifiable parental consent for learners under 18. The demo uses a placeholder OTP for guardian identification; an OTP alone is not strong verification, see the [Parental Consent Guide](docs/guides/parental-consent-guide.md#is-an-otp-enough-for-verifiable-consent). [Watch Video](https://youtu.be/kz4idKMBLXk)
 
 13. DPDP Wallet Demo: Experience portable privacy. Checkout the [DPDP Wallet](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via) concept, then download your PCA from the User Dashboard to manage your processing rights independently. [Watch Video](https://youtu.be/1N4TYXfamsw)
 
@@ -110,7 +99,9 @@ Pick the guide for your role:
 | Developers consuming notification and purge events after the fact | [Webhook Integration Guide](docs/guides/webhook-integration-guide.md)<br><br>[Client Polling Integration Guide](docs/guides/polling-integration-guide.md) | Push delivery (HMAC-SHA256-signed webhooks for Notification/Purge/OTP, v0.4.8+) and its reliable pull-based counterpart - the reconciliation path for anything a missed webhook delivery would drop. |
 | Developers building from source | [Local Development Guide](docs/guides/local-development-guide.md) | Prerequisites (JDK, Maven, Docker, Jetty) and step-by-step build/run instructions, for both Docker and non-Docker setups. |
 | DevOps / system administrators going to production | [Production Deployment Guide](docs/guides/production-deployment-guide.md) | Secrets management, running as a non-root user, disk encryption, data-tier isolation, and offsite backups, for both Docker and Binary installs. |
+| DevOps / system administrators protecting the data | [Backup and Restore Guide](docs/guides/backup-and-restore-guide.md) | What to back up (database, reports, encrypted `.env` and signing keystore), scheduling, proving a backup restores, and disaster recovery, using the scripts in [`backup/`](backup/). |
 | Developers integrating a chatbot, IVR, or helpline CRM | [Chatbot and Voice Helpline Integration Guide](docs/guides/chatbot-and-voice-integration-guide.md) | Architecture diagrams, conversational and call lifecycles, and guardrails (deterministic consent, gated tool calls, unified phone-hash identity) for conversational channels. |
+| Developers and DPOs handling children's data (Section 9) | [Parental Consent Guide](docs/guides/parental-consent-guide.md) | The call sequence for recording guardian consent, what the CMS stores, the Minor Consent Audit for DPOs and auditors, and what the CMS does not verify. |
 | Web developers adding a cookie / consent banner and privacy notice to a website | [Website Consent Banner Integration Guide](docs/guides/website-consent-banner-integration-guide.md) | Standalone drop-in banner and preference center, script gating, a privacy notice page rendered from the published policy, the backend proxy that keeps API credentials off the browser, and anonymous-to-logged-in user linking. Runnable reference and sample website policy/RoPA in [`examples/integration/website-consent`](examples/integration/website-consent/), [`examples/policy/website`](examples/policy/website/) and [`examples/ropa/website`](examples/ropa/website/). |
 
 ## Standards
@@ -139,6 +130,13 @@ The TSI DPDP CMS lets administrators export system-generated configurations, aud
 
 - **Regression tests:** [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md) is a living, versioned suite of test cases covering the admin/DPO consoles, the data principal rights portal, the client and public APIs, webhooks, and the full purge lifecycle.
 - **Load testing:** a runnable [Apache JMeter](https://jmeter.apache.org/) load test lives in [`tests/`](tests/), covering the full consent lifecycle against the client API: notice/policy retrieval, consent capture, processing validation (`validate_consent`), rights/dashboard reads, withdrawal/erasure, grievances, purge polling, and the full guardian OTP login round trip. See [`tests/README.md`](tests/README.md) for a quick-start and [`tests/load-testing-plan.md`](tests/load-testing-plan.md) for methodology and sizing guidance.
+- **Production setup rehearsal:** [`tests/prod-setup-test.sh`](tests/prod-setup-test.sh) follows the Docker steps of the [Production Deployment Guide](docs/guides/production-deployment-guide.md) in a throwaway copy of the repo, for both a database in Docker and a database on a different server, and checks the result (non-root user, production mode, database SSL, database not exposed). Run `mvn package`, then `tests/prod-setup-test.sh`. See [`tests/README.md`](tests/README.md#production-setup-rehearsal).
+
+## Release Notes
+
+Check out [v0.5.3 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.3)
+
+See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 
 ## White-Labeling
 

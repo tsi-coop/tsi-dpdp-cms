@@ -6,7 +6,7 @@
 
     <groupId>org.tsicoop.dpdpcms</groupId>
     <artifactId>tsi_dpdp_cms</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.5.4</version>
     <packaging>war</packaging>
 
     <name>TSI_DPDP_CMS</name>
@@ -146,6 +146,15 @@
     <build>
         <finalName>${project.artifactId}</finalName>
         <sourceDirectory>src</sourceDirectory>
+
+        <!-- Single source of truth for the application version: <version> above is filtered into
+             version.properties at build time and read at runtime by util/AppVersion. -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
 
         <plugins>
             <plugin>

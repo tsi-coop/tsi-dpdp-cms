@@ -1,6 +1,8 @@
 package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available
+import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.Env;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
@@ -160,6 +162,61 @@ public class Notification implements Action {
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, outputArray);
                     break;
 
+                case "list_webhook_deliveries": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
+                    String deliveryStatus = (String) input.get("status");
+                    String deliveryCategory = (String) input.get("category");
+                    if (fiduciaryId == null
+                            || (deliveryStatus != null && !deliveryStatus.isEmpty() && !(deliveryStatus.equals("PENDING") || deliveryStatus.equals("DELIVERED") || deliveryStatus.equals("FAILED")))
+                            || (deliveryCategory != null && !deliveryCategory.isEmpty() && !(deliveryCategory.equals("NOTIFICATION") || deliveryCategory.equals("PURGE")))) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                                "'fiduciary_id' is required for 'list_webhook_deliveries'; 'status' may be PENDING, DELIVERED or FAILED and 'category' NOTIFICATION or PURGE.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
+                    int deliveryPage = (input.get("page") instanceof Long) ? Math.max(1, ((Long) input.get("page")).intValue()) : 1;
+                    int deliveryLimit = (input.get("limit") instanceof Long) ? Math.min(100, Math.max(1, ((Long) input.get("limit")).intValue())) : 20;
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK,
+                            listWebhookDeliveriesFromDb(fiduciaryId, deliveryStatus, deliveryCategory, deliveryPage, deliveryLimit));
+                    break;
+                }
+
+                case "get_webhook_delivery": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
+                    String deliveryIdStr = (String) input.get("id");
+                    if (fiduciaryId == null || deliveryIdStr == null || deliveryIdStr.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' and 'id' are required for 'get_webhook_delivery'.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
+                    JSONObject delivery = getWebhookDeliveryFromDb(fiduciaryId, UUID.fromString(deliveryIdStr));
+                    if (delivery == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Webhook delivery not found.", req.getRequestURI());
+                        return;
+                    }
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, delivery);
+                    break;
+                }
+
+                case "retry_webhook_delivery": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
+                    String retryIdStr = (String) input.get("id");
+                    if (fiduciaryId == null || retryIdStr == null || retryIdStr.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'fiduciary_id' and 'id' are required for 'retry_webhook_delivery'.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
+                    if (!requeueFailedWebhookDelivery(fiduciaryId, UUID.fromString(retryIdStr))) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "No FAILED webhook delivery with that id.", req.getRequestURI());
+                        return;
+                    }
+                    new Audit().logEventAsync(loginUserId != null ? loginUserId.toString() : "SYSTEM", fiduciaryId,
+                            Constants.SERVICE_TYPE_DPO_CONSOLE, loginUserId, "WEBHOOK_DELIVERY_RETRY_REQUESTED",
+                            new JSONObject() {{ put("delivery_id", retryIdStr); }}.toJSONString());
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Delivery queued for retry."); }});
+                    break;
+                }
+
                 case "set_rights_app_config": {
                     if (InputProcessor.rejectIfOperator(req, res)) return;
                     String otpMode = (String) input.get("otp_mode");
@@ -169,6 +226,11 @@ public class Notification implements Action {
                             || !(otpMode.equals("DUMMY_OTP") || otpMode.equals("EMAIL_OTP") || otpMode.equals("MOBILE_OTP"))) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
                                 "'fiduciary_id' and 'otp_mode' (DUMMY_OTP, EMAIL_OTP, or MOBILE_OTP) are required for 'set_rights_app_config'.", req.getRequestURI());
+                        return;
+                    }
+                    if (Env.isProduction() && otpMode.equals("DUMMY_OTP")) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                                "DUMMY_OTP is a demo mode and is disabled in production (" + Env.VAR + "=production). Choose EMAIL_OTP or MOBILE_OTP.", req.getRequestURI());
                         return;
                     }
                     if (rejectIfNotOwnFiduciary(fiduciaryId, loginUserId, req, res)) return;
@@ -435,6 +497,119 @@ public class Notification implements Action {
                     throw new SQLException("No existing webhook configured for this category -- 'secret' is required when configuring it for the first time.");
                 }
             }
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
+    }
+
+    /**
+     * Delivery history for the DPO console: per-status counts for the fiduciary plus one page
+     * of deliveries (newest first), optionally filtered by status and category. The body is
+     * left out of the list -- get_webhook_delivery returns it.
+     */
+    @SuppressWarnings("unchecked")
+    private JSONObject listWebhookDeliveriesFromDb(UUID fiduciaryId, String status, String category, int page, int limit) throws SQLException {
+        JSONObject out = new JSONObject();
+        JSONObject counts = new JSONObject();
+        counts.put("PENDING", 0); counts.put("DELIVERED", 0); counts.put("FAILED", 0);
+        JSONArray deliveries = new JSONArray();
+
+        StringBuilder sql = new StringBuilder(
+                "SELECT id, category, event_type, status, attempts, last_http_status, last_error, created_at, last_attempt_at, next_attempt_at, delivered_at " +
+                "FROM webhook_deliveries WHERE fiduciary_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(fiduciaryId);
+        if (status != null && !status.isEmpty()) { sql.append(" AND status = ?"); params.add(status); }
+        if (category != null && !category.isEmpty()) { sql.append(" AND category = ?"); params.add(category); }
+        sql.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add((page - 1) * limit);
+
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("SELECT status, COUNT(*) FROM webhook_deliveries WHERE fiduciary_id = ? GROUP BY status");
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) counts.put(rs.getString(1), rs.getInt(2));
+            pool.cleanup(rs, pstmt, null);
+
+            pstmt = conn.prepareStatement(sql.toString());
+            for (int i = 0; i < params.size(); i++) pstmt.setObject(i + 1, params.get(i));
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                deliveries.add(mapWebhookDeliveryRow(rs, false));
+            }
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+        out.put("counts", counts);
+        out.put("deliveries", deliveries);
+        out.put("page", page);
+        out.put("limit", limit);
+        return out;
+    }
+
+    private JSONObject getWebhookDeliveryFromDb(UUID fiduciaryId, UUID id) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(
+                    "SELECT id, category, event_type, status, attempts, last_http_status, last_error, created_at, last_attempt_at, next_attempt_at, delivered_at, body " +
+                    "FROM webhook_deliveries WHERE id = ? AND fiduciary_id = ?");
+            pstmt.setObject(1, id);
+            pstmt.setObject(2, fiduciaryId);
+            rs = pstmt.executeQuery();
+            return rs.next() ? mapWebhookDeliveryRow(rs, true) : null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private JSONObject mapWebhookDeliveryRow(ResultSet rs, boolean withBody) throws SQLException {
+        JSONObject row = new JSONObject();
+        row.put("id", rs.getString("id"));
+        row.put("category", rs.getString("category"));
+        row.put("event_type", rs.getString("event_type"));
+        row.put("status", rs.getString("status"));
+        row.put("attempts", rs.getInt("attempts"));
+        row.put("last_http_status", rs.getObject("last_http_status"));
+        row.put("last_error", rs.getString("last_error"));
+        row.put("created_at", rs.getTimestamp("created_at").toInstant().toString());
+        row.put("last_attempt_at", rs.getTimestamp("last_attempt_at") != null ? rs.getTimestamp("last_attempt_at").toInstant().toString() : null);
+        row.put("next_attempt_at", rs.getTimestamp("next_attempt_at") != null ? rs.getTimestamp("next_attempt_at").toInstant().toString() : null);
+        row.put("delivered_at", rs.getTimestamp("delivered_at") != null ? rs.getTimestamp("delivered_at").toInstant().toString() : null);
+        if (withBody) {
+            String body = rs.getString("body");
+            try {
+                row.put("body", new JSONParser().parse(body));
+            } catch (ParseException e) {
+                row.put("body", body);
+            }
+        }
+        return row;
+    }
+
+    /** Puts a FAILED delivery back in the queue for a fresh round of attempts; false if it isn't FAILED. */
+    private boolean requeueFailedWebhookDelivery(UUID fiduciaryId, UUID id) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(
+                    "UPDATE webhook_deliveries SET status = 'PENDING', attempts = 0, next_attempt_at = NOW() " +
+                    "WHERE id = ? AND fiduciary_id = ? AND status = 'FAILED'");
+            pstmt.setObject(1, id);
+            pstmt.setObject(2, fiduciaryId);
+            return pstmt.executeUpdate() > 0;
         } finally {
             pool.cleanup(null, pstmt, conn);
         }

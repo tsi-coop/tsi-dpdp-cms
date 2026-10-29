@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Set breach notification settings",
+  "type": "object",
+  "properties": {
+    "_func": { "type": "string" },
+    "fiduciary_id": { "type": "string" },
+    "deadline_hours": { "type": "integer", "minimum": 1, "maximum": 72 }
+  },
+  "required": ["_func", "fiduciary_id", "deadline_hours"]
+}

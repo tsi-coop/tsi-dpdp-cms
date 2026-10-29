@@ -47,6 +47,8 @@
             transform: translateX(0);
         }
 
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
         .nav-link {
             display: flex;
             align-items: center;
@@ -217,15 +219,19 @@
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link active">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link">Audit</a>
             <a href="legal.html" class="nav-link">Legal</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
@@ -273,6 +279,7 @@
                 <thead>
                 <tr class="table-header">
                     <th class="px-4 py-3 text-sm">Policy ID</th>
+                    <th class="px-4 py-3 text-sm">Version</th>
                     <th class="px-4 py-3 text-sm">Jurisdiction</th>
                     <th class="px-4 py-3 text-sm">Status</th>
                     <th class="px-4 py-3 text-sm">Effective Date</th>
@@ -281,7 +288,7 @@
                 </thead>
                 <tbody id="policy-table-body" class="bg-white divide-y divide-gray-200">
                 <tr>
-                    <td colspan="5" class="p-4 text-center text-gray-500">
+                    <td colspan="6" class="p-4 text-center text-gray-500">
                         Loading Policy data...
                     </td>
                 </tr>
@@ -312,10 +319,14 @@
                 <input type="hidden" id="policy-id-hidden" name="policyId" value="">
                 <input type="hidden" id="policy-version-hidden" name="version" value="">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
                         <label for="policy-id-input" class="block text-sm font-medium text-gray-700 font-bold mb-1">Policy ID (Unique Key)</label>
-                        <input type="text" id="policy-id-input" name="policy_id" required placeholder="e.g., WEB_PRIVACY_V1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm outline-none focus:ring-2 focus:ring-teal-600">
+                        <input type="text" id="policy-id-input" name="policy_id" required placeholder="e.g., WEB_PRIVACY" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm outline-none focus:ring-2 focus:ring-teal-600">
+                    </div>
+                    <div>
+                        <label for="policy-version-input" class="block text-sm font-medium text-gray-700 font-bold mb-1">Version</label>
+                        <input type="text" id="policy-version-input" required maxlength="10" pattern="\d+(\.\d+){0,2}" placeholder="e.g., 1.0" title="Numbers separated by dots, e.g. 1.0 or 2.1.3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm outline-none focus:ring-2 focus:ring-teal-600">
                     </div>
                     <div>
                         <label for="policy-jurisdiction-select" class="block text-sm font-medium text-gray-700 font-bold mb-1">Jurisdiction</label>
@@ -497,13 +508,13 @@
 
     let timeout; // Debounce
     let tableBody, searchInput, statusFilter, policyModalOverlay, policyForm, errorMessageP;
-    let policyIdHidden, policyIdInput, policyJurisdictionSelect;
+    let policyIdHidden, policyIdInput, policyJurisdictionSelect, policyVersionInput;
     let parsedPolicyJson = null;
 
     async function loadPolicies() {
         const searchTerm = searchInput.value || "";
         const statusVal = statusFilter.value === 'ALL' ? "" : statusFilter.value;
-        tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 font-medium">Syncing with Registry...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500 font-medium">Syncing with Registry...</td></tr>`;
         errorMessageP.classList.add('hidden');
 
         try {
@@ -534,13 +545,13 @@
             if (Array.isArray(policies)) {
                 tableBody.innerHTML = '';
                 if (policies.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">No policies match the criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500 italic">No policies match the criteria.</td></tr>`;
                 } else {
                     policies.forEach(p => tableBody.appendChild(createPolicyRow(p)));
                 }
             }
         } catch (error) {
-            tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600 font-bold">API Connection Error.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600 font-bold">API Connection Error.</td></tr>`;
         }
     }
 
@@ -563,13 +574,14 @@
 
         const actionsHtml = `
             <button class="text-indigo-600 hover:text-indigo-900 font-bold text-xs mr-3" onclick="viewRopa('${policy.id}')">View ROPA</button>
-            ${(isDraft && !IS_OPERATOR) ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-3" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}')">Edit</button>` : ''}
+            ${(isDraft && !IS_OPERATOR) ? `<button class="text-orange-600 hover:text-orange-800 font-bold text-xs mr-3" onclick="editPolicy('${policy.id}', '${policy.fiduciary_id}', '${policy.version}')">Edit</button>` : ''}
             ${(isUnderReview && !IS_OPERATOR) ? `<button class="text-blue-600 hover:text-blue-800 font-bold text-xs mr-3" onclick="reviewRopa('${policy.id}')">Review ROPA</button>` : ''}
-            ${(!isArchived && !IS_OPERATOR) ? `<button class="text-red-600 hover:text-red-800 font-bold text-xs" onclick="deletePolicy('${policy.id}', '${policy.fiduciary_id}')">Delete</button>` : ''}
+            ${(!isArchived && !IS_OPERATOR) ? `<button class="text-red-600 hover:text-red-800 font-bold text-xs" onclick="deletePolicy('${policy.id}', '${policy.fiduciary_id}', '${policy.version}')">Delete</button>` : ''}
         `;
 
         row.innerHTML = `
             <td class="px-4 py-4 whitespace-nowrap text-sm font-bold text-slate-800">${policy.id}</td>
+            <td class="px-4 py-4 whitespace-nowrap text-sm font-mono text-slate-600">${policy.version || '—'}</td>
             <td class="px-4 py-4 whitespace-nowrap text-sm text-slate-500">${policy.jurisdiction}</td>
             <td class="px-4 py-4 whitespace-nowrap">
                 ${createStatusBadge(policy.status)}
@@ -592,18 +604,21 @@
         await loadRopaReviewEntries(policyId);
     }
 
-    async function editPolicy(id, fid) {
+    async function editPolicy(id, fid, version) {
         showModal('Edit Policy Draft', true);
         try {
             const res = await fetch(API_URL_POLICY, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify({ "_func": "get_policy", "policy_id": id, "fiduciary_id": fid })
+                body: JSON.stringify({ "_func": "get_policy", "policy_id": id, "version": version, "fiduciary_id": fid })
             });
             const p = await res.json();
             policyIdInput.value = id;
             policyIdInput.disabled = true;
             policyIdHidden.value = id;
+            policyVersionInput.value = version;
+            policyVersionInput.disabled = true;
+            document.getElementById('policy-version-hidden').value = version;
             policyJurisdictionSelect.value = p.jurisdiction;
             const content = typeof p.policy_content === 'string' ? JSON.parse(p.policy_content) : p.policy_content;
             parsedPolicyJson = content;
@@ -614,13 +629,13 @@
         } catch(e) { alert("Load Failed."); }
     }
 
-    async function deletePolicy(id, fid) {
+    async function deletePolicy(id, fid, version) {
         if (!confirm(`Confirm Permanent Deletion of [${id}]?`)) return;
         try {
             const res = await fetch(API_URL_POLICY, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify({ "_func": "delete_policy", "policy_id": id, "fiduciary_id": fid })
+                body: JSON.stringify({ "_func": "delete_policy", "policy_id": id, "version": version, "fiduciary_id": fid })
             });
 
             if (res.ok) {
@@ -644,6 +659,8 @@
         document.getElementById('error-list').innerHTML = '';
         policyIdHidden.value = '';
         policyIdInput.disabled = false;
+        policyVersionInput.disabled = false;
+        document.getElementById('policy-version-hidden').value = '';
         document.getElementById('ropa-review-panel').style.display = 'none';
         document.getElementById('save-policy-btn').textContent = 'Next →';
         const stepHint = document.getElementById('modal-step-hint');
@@ -674,6 +691,7 @@
         policyForm = document.getElementById('policy-form');
         errorMessageP = document.getElementById('policy-error-message');
         policyIdHidden = document.getElementById('policy-id-hidden');
+        policyVersionInput = document.getElementById('policy-version-input');
         policyIdInput = document.getElementById('policy-id-input');
         policyJurisdictionSelect = document.getElementById('policy-jurisdiction-select');
 
@@ -712,6 +730,7 @@
             const payload = {
                 "_func": isEditing ? "update_policy" : "create_policy",
                 "policy_id": isEditing ? policyIdHidden.value : policyIdInput.value.trim(),
+                "version": isEditing ? document.getElementById('policy-version-hidden').value : policyVersionInput.value.trim(),
                 "policy_content": json,
                 "jurisdiction": policyJurisdictionSelect.value
             };
@@ -734,7 +753,7 @@
                     const pubRes = await fetch(API_URL_POLICY, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                        body: JSON.stringify({ "_func": "publish_policy", "policy_id": savedPolicyId, "fiduciary_id": fidId })
+                        body: JSON.stringify({ "_func": "publish_policy", "policy_id": savedPolicyId, "version": payload.version, "fiduciary_id": fidId })
                     });
                     const pubData = await pubRes.json();
                     if (pubRes.ok) {

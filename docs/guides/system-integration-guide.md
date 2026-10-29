@@ -77,7 +77,7 @@ Both fields are required - this is the one call where you must pass `fiduciary_i
 { "_func": "get_policy", "policy_id": "p4" }
 ```
 
-For archival/audit view of a specific past version, rather than the live one.
+For archival/audit view of a specific past version, rather than the live one. `version` is optional: if you leave it out, the policy's only non-archived version is returned, and if the policy has none or several you get a `400` asking you to name one. Policy versions are mandatory and dotted-numeric (for example `1.0` or `2.1.3`).
 
 ### Record Consent
 
@@ -86,7 +86,7 @@ For archival/audit view of a specific past version, rather than the live one.
   "_func": "record_consent",
   "user_id": "data_principal_xyz123",
   "policy_id": "p13",
-  "policy_version": "",
+  "policy_version": "1.0",
   "timestamp": "2025-11-30T10:00:00Z",
   "jurisdiction": "IN",
   "language_selected": "en",
@@ -107,7 +107,13 @@ For archival/audit view of a specific past version, rather than the live one.
 
 Required: `user_id`, `policy_id`, and `data_point_consents` (each entry requires `data_point_id`, `consent_granted`, `purpose_agreed_to`, `timestamp_updated`). Everything else is optional context.
 
+**Policy version:** every consent record is stamped with the policy's currently `ACTIVE` version, and that version is part of the evidence certificate. Send `policy_version` as the version your UI actually showed the principal (it is the `version` returned by `get_active_policy`). If it is omitted or blank, the active version is used. If it is present but is not the active version - for example the DPO published a new version while the principal was reading the notice - the call is rejected with `409 Conflict` and the message names both versions; re-fetch the active policy, show it, and ask again. A policy with no active version returns `400`.
+
 **Gotcha:** whatever you send for `consent_status_general` is ignored - the server always records `CONSENT_GIVEN` for this call. Don't rely on that field to represent a partial/declined state; per-purpose grant/deny lives in `data_point_consents`.
+
+### Minors (children)
+
+If the principal is a child, **your application is responsible** for collecting verifiable parental consent and telling the CMS: call `record_parent_consent`, then `link_user` with `age_category: "MINOR"` and the `guardian_id`, then send the resulting `verification_log_id` with every `record_consent` for that child. The CMS records the reference and lets the DPO audit it afterwards; it does not verify age or guardians and will not refuse a consent that lacks the reference. The full flow, the audit view and the limits are in the [Parental Consent Guide](parental-consent-guide.md).
 
 ### Link Identity
 
@@ -202,7 +208,9 @@ Design accordingly: don't build an integration that expects `erasure_request` to
 }
 ```
 
-`id`, `status`, and `details` are all required. Meaningful `status` values (matching what the DPO Console itself offers): `PURGE_IN_PROGRESS`, `PURGE_COMPLETED`, `PURGE_FAILED`, `LEGAL_HOLD_APPLIED`.
+`id`, `status`, and `details` are all required. Meaningful `status` values (matching what the DPO Console itself offers): `PURGE_IN_PROGRESS`, `PURGE_COMPLETED`, `PURGE_FAILED`, `PURGE_CANCELLED`, `LEGAL_HOLD_APPLIED`.
+
+`PURGE_CANCELLED` means the erasure request was withdrawn before the purge ran (for example the Data Principal changed their mind). It is normally set by the DPO from the console, not by an integration. If your App receives a `purge_request_status_updated` event (or sees the status when polling) with `PURGE_CANCELLED` for a request it has not yet purged, it must not purge. A cancelled request no longer matches the `PURGE_INITIATED` filter, so apps polling `list_purge_requests` for `PURGE_INITIATED` simply stop seeing it. Do not set `PURGE_CANCELLED` on a request that is already `PURGE_COMPLETED`: the data is gone, and the record should show that.
 
 **Caveat:** the API does not validate `status` against that list, and does not check that a request belongs to your fiduciary before applying the update. Only ever call this with an `id` your App itself received from `list_purge_requests` or a `purge_request_created` event - never construct or guess an `id`. Reserve `LEGAL_HOLD_APPLIED` for genuine Section 8(1) legal-hold cases; it's not restricted to DPO-only use at the API layer today, so treat it as a status your integration should set deliberately and rarely, not a default.
 

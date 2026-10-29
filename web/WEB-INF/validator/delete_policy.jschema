@@ -8,6 +8,9 @@
     },
     "policy_id": {
       "type": "string"
+    },
+    "version": {
+      "type": "string"
     }
   },
   "required": [

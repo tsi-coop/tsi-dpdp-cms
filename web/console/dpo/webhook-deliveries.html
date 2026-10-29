@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Webhook Deliveries</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 800px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .status-pill {
+             font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 9999px; text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+    <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <span class="text-xl font-bold primary-text">Compliance</span>
+    <div class="text-sm text-gray-500">DPO User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="policies.html" class="nav-link">Policies</a>
+            <a href="ropa.html" class="nav-link">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="principals.html" class="nav-link">Principals</a>
+            <a href="compliance.html" class="nav-link active">Compliance</a>
+            <a href="grievances.html" class="nav-link">Grievances</a>
+            <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="audit.html" class="nav-link">Audit</a>
+            <a href="legal.html" class="nav-link">Legal</a>
+            <a href="reports.html" class="nav-link">Reports</a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="team.html" class="nav-link">Team</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username" class="font-bold text-slate-700">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        </div>
+    </div>
+</div>
+
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div>
+            <a href="compliance.html" class="text-sm font-medium primary-text hover:underline">&larr; Back to Compliance Enforcement</a>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight mt-1">Webhook Deliveries</h1>
+        </div>
+        <a href="settings.html" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition duration-150">Webhook Settings</a>
+    </div>
+
+    <div class="card">
+        <p class="text-sm text-slate-600 mb-3">
+            Every notification and purge event sent to your webhooks. A failed attempt is retried automatically
+            (after 1 min, 5 min, 30 min, 2 h and 12 h); after the last attempt the delivery is marked
+            <strong>Failed</strong> and stays here so you can fix the endpoint and retry it. Your endpoint may
+            receive the same event more than once - de-duplicate on <code>delivery_id</code>.
+        </p>
+        <div class="flex flex-wrap items-center gap-3 mb-3">
+            <select id="webhook-delivery-status" class="p-2 border border-gray-300 rounded-md text-sm" onchange="whGoPage(1)">
+                <option value="FAILED">Failed</option>
+                <option value="PENDING">Retrying / pending</option>
+                <option value="DELIVERED">Delivered</option>
+                <option value="">All</option>
+            </select>
+            <button class="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 hover:bg-gray-50" onclick="loadWebhookDeliveries()">Refresh</button>
+            <span id="webhook-delivery-counts" class="text-xs text-slate-500"></span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                <tr class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">
+                    <th class="px-3 py-2">Created</th>
+                    <th class="px-3 py-2">Event</th>
+                    <th class="px-3 py-2">Status</th>
+                    <th class="px-3 py-2">Attempts</th>
+                    <th class="px-3 py-2">Last result</th>
+                    <th class="px-3 py-2">Next attempt</th>
+                    <th class="px-3 py-2"></th>
+                </tr>
+                </thead>
+                <tbody id="webhook-deliveries-body" class="divide-y divide-slate-50 text-slate-600">
+                <tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="flex items-center justify-between mt-3 text-sm text-slate-600">
+            <span id="webhook-delivery-range" class="text-xs text-slate-500"></span>
+            <div class="flex gap-2">
+                <button id="webhook-prev-btn" class="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed" onclick="whGoPage(whPage - 1)" disabled>Previous</button>
+                <button id="webhook-next-btn" class="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed" onclick="whGoPage(whPage + 1)" disabled>Next</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const API_URL_NOTIFICATION = '/api/v1/admin/notification';
+    // Operators cannot see webhook deliveries; send them back to Compliance.
+    if (localStorage.getItem('role') === 'OPERATOR') {
+        window.location.replace('compliance.html');
+    }
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
+    document.getElementById('username').textContent = localStorage.getItem('username') || 'DPO User';
+
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-backdrop').classList.toggle('hidden');
+    }
+
+    // --- Webhook deliveries ---
+    const MAX_WEBHOOK_ATTEMPTS = 6;
+    const WEBHOOK_PAGE_SIZE = 30;
+    let whPage = 1;
+
+    function whEsc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function whStatusBadge(status) {
+        const cls = status === 'FAILED' ? 'bg-red-100 text-red-800' : status === 'DELIVERED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+        const label = status === 'PENDING' ? 'RETRYING' : status;
+        return `<span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${cls}">${label}</span>`;
+    }
+
+    async function whCall(func, extra) {
+        const response = await fetch(API_URL_NOTIFICATION, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify({ "_func": func, "fiduciary_id": FIDUCIARY_ID, ...extra })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || data.error || response.status);
+        return data;
+    }
+
+    function whGoPage(page) {
+        whPage = Math.max(1, page);
+        loadWebhookDeliveries();
+    }
+
+    async function loadWebhookDeliveries() {
+        const body = document.getElementById('webhook-deliveries-body');
+        const status = document.getElementById('webhook-delivery-status').value;
+        try {
+            const data = await whCall('list_webhook_deliveries', { ...(status ? { status } : {}), page: whPage, limit: WEBHOOK_PAGE_SIZE });
+            const c = data.counts || {};
+            const total = status ? (c[status] || 0) : (c.FAILED || 0) + (c.PENDING || 0) + (c.DELIVERED || 0);
+            // The page we asked for no longer exists (e.g. the last row on it was just retried): step back.
+            if (whPage > 1 && (!data.deliveries || data.deliveries.length === 0) && total > 0) {
+                whPage = Math.max(1, Math.ceil(total / WEBHOOK_PAGE_SIZE));
+                return loadWebhookDeliveries();
+            }
+            const shown = (data.deliveries || []).length;
+            const from = shown ? (whPage - 1) * WEBHOOK_PAGE_SIZE + 1 : 0;
+            document.getElementById('webhook-delivery-range').textContent = total ? `Showing ${from}\u2013${from + shown - 1} of ${total}` : '';
+            document.getElementById('webhook-prev-btn').disabled = whPage <= 1;
+            document.getElementById('webhook-next-btn').disabled = whPage * WEBHOOK_PAGE_SIZE >= total;
+            document.getElementById('webhook-delivery-counts').textContent =
+                `${c.FAILED || 0} failed \u00b7 ${c.PENDING || 0} retrying \u00b7 ${c.DELIVERED || 0} delivered (delivered history is kept 7 days)`;
+
+            if (!data.deliveries || data.deliveries.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Nothing to show.</td></tr>';
+                return;
+            }
+            body.innerHTML = data.deliveries.map(d => {
+                const result = d.last_error ? whEsc(d.last_error) : (d.last_http_status ? 'HTTP ' + d.last_http_status : '\u2014');
+                const next = d.status === 'PENDING' && d.next_attempt_at ? new Date(d.next_attempt_at).toLocaleString() : '\u2014';
+                const retryBtn = d.status === 'FAILED'
+                    ? `<button class="text-indigo-600 hover:text-indigo-900 font-medium mr-3" onclick="retryWebhookDelivery('${d.id}')">Retry</button>` : '';
+                return `
+                    <tr>
+                        <td class="px-3 py-2 whitespace-nowrap">${new Date(d.created_at).toLocaleString()}</td>
+                        <td class="px-3 py-2"><span class="font-mono text-xs">${whEsc(d.event_type)}</span><div class="text-[10px] text-slate-400">${whEsc(d.category)}</div></td>
+                        <td class="px-3 py-2">${whStatusBadge(d.status)}</td>
+                        <td class="px-3 py-2">${d.attempts} / ${MAX_WEBHOOK_ATTEMPTS}</td>
+                        <td class="px-3 py-2 text-xs">${result}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs">${next}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${retryBtn}<button class="text-slate-600 hover:text-slate-900 font-medium" onclick="viewWebhookPayload('${d.id}', this)">Payload</button></td>
+                    </tr>`;
+            }).join('');
+        } catch (e) {
+            console.error("Could not load webhook deliveries", e);
+            body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Failed to load deliveries.</td></tr>';
+        }
+    }
+
+    async function retryWebhookDelivery(id) {
+        if (!confirm("Retry this delivery now? It gets a fresh set of attempts.")) return;
+        try {
+            await whCall('retry_webhook_delivery', { id });
+            await loadWebhookDeliveries();
+        } catch (e) {
+            alert("Could not retry: " + e.message);
+        }
+    }
+
+    async function viewWebhookPayload(id, btn) {
+        const row = btn.closest('tr');
+        const next = row.nextElementSibling;
+        if (next && next.classList.contains('wh-payload-row')) { next.remove(); return; }
+        try {
+            const d = await whCall('get_webhook_delivery', { id });
+            const tr = document.createElement('tr');
+            tr.className = 'wh-payload-row';
+            tr.innerHTML = `<td colspan="7" class="px-3 py-2 bg-slate-50"><pre class="text-[11px] whitespace-pre-wrap break-all">${whEsc(JSON.stringify(d.body, null, 2))}</pre></td>`;
+            row.after(tr);
+        } catch (e) {
+            alert("Could not load payload: " + e.message);
+        }
+    }
+
+    document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
+    document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
+
+    loadWebhookDeliveries();
+
+    window.loadWebhookDeliveries = loadWebhookDeliveries;
+    window.whGoPage = whGoPage;
+    window.retryWebhookDelivery = retryWebhookDelivery;
+    window.viewWebhookPayload = viewWebhookPayload;
+    window.handleLogout = () => { localStorage.clear(); window.location.href = "../index.html"; };
+</script>
+</body>
+</html>

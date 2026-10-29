@@ -405,7 +405,9 @@ The evaluator tour's Voice Consent Gateway (`web/tour/voice-based-consent.html`)
 
 The finalized JSON schema is loaded into the system through the DPO Console UI. API-based policy creation and publishing are not currently supported.
 
-**Step A - Create (DRAFT):** Log in to the DPO Console, navigate to **Policies**, and use the policy editor to paste or upload the compiled JSON content. The system saves the entry in `DRAFT` status pending review.
+**Step A - Create (DRAFT):** Log in to the DPO Console, navigate to **Policies**, and use the policy editor to enter the **Policy ID** and a **Version**, and upload the compiled JSON content. The system saves the entry in `DRAFT` status pending review.
+
+The version is mandatory - numbers separated by dots, at most 10 characters (for example `1.0` or `2.1.3`). Every consent a principal gives is stamped with the version that was active at the time, and that version appears in the evidence certificate, so choose it deliberately and move it forward (`1.1`, `2.0`) whenever the notice text changes. A version cannot be reused for the same Policy ID. Policies created before this was enforced were given the version `1.0` by the upgrade (see [Release Notes](../../RELEASE_NOTES.md)).
 
 **Step B - Publish (DRAFT → ACTIVE):** After the DPO verifies the draft against the signed RoPA baseline (compliance lifecycle item 4), they click **Publish** in the console. A fiduciary can have multiple policies active simultaneously (e.g. a customer policy, a vendor policy, an employee policy). However, only one version of any given policy can be `ACTIVE` at a time; attempting to publish a new version while a previous version is still active will be rejected with a conflict error. The active version must be retired before a new one can be published.
 
@@ -459,10 +461,32 @@ Beyond the JSON client API (covered in the [System Integration Guide](system-int
 
 Larger extracts run asynchronously through the `Job` service (`_func: create_job` / `list_jobs` / `download_file`), so a large export doesn't block the request:
 
-1. **`create_job`** queues a `job_type: EXPORT` job with a `subtype` naming the dataset and an optional date range. Supported subtypes: `CONSENT`, `PRINCIPAL`, `COMPLIANCE`, `GRIEVANCE`, `AUDIT`, `PARENT_CONSENT`, `ADMIN_LOGS`, `ROPA_REPORT`.
+1. **`create_job`** queues a `job_type: EXPORT` job with a `subtype` naming the dataset and an optional date range. Supported subtypes: `CONSENT`, `PRINCIPAL`, `COMPLIANCE`, `GRIEVANCE`, `AUDIT`, `PARENT_CONSENT`, `ADMIN_LOGS`, `ROPA_REPORT`, `MINOR_GUARDIAN_AUDIT`, `NOTIFICATION_LOG` (one day per export: `start_date` and `end_date` must be the same date).
 2. A background worker (`JobManager`) picks up the `PENDING` job, runs the corresponding query, and writes the result to a CSV file on disk (`TSI_EXPORT_PATH`, default `/var/lib/tsi/exports/`).
 3. **`list_jobs`** polls job status (`PENDING` -> `COMPLETED`) for the console to show progress.
 4. **`download_file`** streams the finished file back as `text/csv` once the job completes. Access is scoped to the caller's own Fiduciary (or `ADMIN`) - a job ID from another tenant returns `403 Forbidden`, and the file path is canonicalized against the export directory to prevent path traversal.
+
+### Auditing Minor Consent (Guardian Reference)
+
+This section covers the DPO's view. For the full picture - what the application must do, what the CMS stores, and the limits - see the [Parental Consent Guide](parental-consent-guide.md).
+
+The CMS does not decide whether a principal is a minor, and it does not stop a consent being recorded without a guardian reference. That is the collecting application's responsibility: when it knows the principal is a minor, it must record the guardian verification (`record_parent_consent`), flag the principal as a minor (`link_user` with `age_category: MINOR` and the `guardian_id`), and send the resulting `verification_log_id` with every `record_consent`.
+
+What the CMS provides is a way to check afterwards. **DPO Console -> Principals -> Minor Consent Audit** summarises, for every principal flagged `MINOR`, whether each consent record carries a guardian verification reference that belongs to that child:
+
+| Finding | Meaning |
+|---|---|
+| OK | A reference is present, the verification log is for this child and this fiduciary, and its guardian matches the principal's `guardian_id` |
+| Missing reference | The consent has no `verification_log_id` |
+| Reference mismatch | The reference points to a log for a different child, a different fiduciary, or a different guardian |
+
+The panel lists the 100 most recent findings and can be limited to active consents. For an auditor, **Reports -> Minor Guardian Audit** exports every consent record of every flagged minor as CSV (findings first), for the consent-date range you choose - pick a wide range for "everything".
+
+What it cannot tell you: it only covers principals an application has flagged as `MINOR` (the default is `ADULT`), it verifies no one's age or identity, and consents given before an application flagged the principal will show as "Missing reference" - review those with the integration owner rather than treating them as automatic violations.
+
+### Breach Notification Deadline
+
+Every breach reported from v0.5.4 onward carries a deadline of **detection time + 72 hours**. The DPO can shorten the window in **Settings -> Breach Notification Deadline** (1 to 72 hours; it cannot be lengthened past the statutory 72). The deadline is fixed when the breach is reported, so changing the setting later only affects new breaches. The clock runs while the incident is `OPEN` and stops the first time the DPO moves it to `CONTAINED` or `RESOLVED` - which is also when the PDF report for the Data Protection Board becomes available. The DPO Dashboard lists open incidents with a countdown and flags any past their deadline as overdue; the Breach page shows the state for every incident (counting, overdue, met, met late). It is a dashboard view only - no emails or push notifications are sent, so the DPO needs to check the Dashboard. Breaches reported before the upgrade are shown as "not tracked" rather than being given a guessed deadline.
 
 ### Bulk CSV Import (Breach Notification)
 

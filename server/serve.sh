@@ -3,7 +3,9 @@
 # Source the .env file to load variables into the current shell session
 # Adjust path if .env is not in the same directory as the script
 if [ -f ./.env ]; then
+    set -a   # export everything in .env (JWT_SECRET, DB_ENCRYPTION_KEY, TSI_LOOKUP_SALT, TSI_BOOTSTRAP_TOKEN, ...) so the JVM sees it
     source ./.env
+    set +a
 else
     echo "Error: .env file not found. Please create it."
     exit 1

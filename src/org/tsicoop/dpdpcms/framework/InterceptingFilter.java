@@ -1,5 +1,7 @@
 package org.tsicoop.dpdpcms.framework;
 
+import org.tsicoop.dpdpcms.util.AppVersion;
+import org.tsicoop.dpdpcms.util.Env;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -357,6 +359,11 @@ public class InterceptingFilter implements Filter {
         System.out.println("Loaded TSI App Config");
         JSONSchemaValidator.createInstance(filterConfig.getServletContext());
         System.out.println("Loaded TSI Schema Validator");
-        System.out.println("TSI DPDP CMS Service started in " + System.getenv("TSI_DPDP_CMS_ENV") + " environment");
+        System.out.println(AppVersion.display() + " Service started in " + System.getenv("TSI_DPDP_CMS_ENV") + " environment");
+        if (!Env.isSet()) {
+            System.err.println("[WARNING] " + Env.VAR + " is not set. Running as NON-PRODUCTION: DUMMY_OTP principal login is allowed and evidence certificates are signed with a transient key and are unverifiable. Set " + Env.VAR + "=production for a production deployment (or =local for development).");
+        } else if (!Env.isRecognized()) {
+            System.err.println("[WARNING] " + Env.VAR + "='" + Env.raw() + "' is not a recognised value (production, local, development). Treating it as NON-PRODUCTION: DUMMY_OTP login is allowed and certificates are signed with a transient key. If this is a production deployment, set " + Env.VAR + "=production.");
+        }
     }
 }

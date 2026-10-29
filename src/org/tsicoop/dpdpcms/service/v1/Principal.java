@@ -1,6 +1,7 @@
 package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.framework.*;
+import org.tsicoop.dpdpcms.util.Env;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
@@ -138,6 +139,12 @@ public class Principal implements Action {
         boolean pcaQrEnabled = getPcaQrEnabled(fiduciaryId);
 
         if (DUMMY_OTP_MODE.equals(otpMode)) {
+            // The static demo OTP is a back door in production: anyone who knows a principal id
+            // could log in as them. Refuse outright; the DPO must configure EMAIL_OTP or MOBILE_OTP.
+            if (Env.isProduction()) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Login is not available for this organisation yet: it has not set up OTP delivery. Please contact the organisation's Data Protection Officer.", req.getRequestURI());
+                return;
+            }
             if (!PLACEHOLDER_OTP.equals(otp)) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Invalid OTP.", req.getRequestURI());
                 return;
@@ -411,6 +418,8 @@ public class Principal implements Action {
                 fid.put("name", rs.getString("name"));
                 fid.put("primary_domain", rs.getString("primary_domain"));
                 fid.put("otp_mode", rs.getString("otp_mode"));
+                // DUMMY_OTP login is refused in production, so the portal must not offer it
+                fid.put("login_available", !(Env.isProduction() && "DUMMY_OTP".equals(rs.getString("otp_mode"))));
                 fid.put("pca_qr_enabled", rs.getBoolean("pca_qr_enabled"));
                 result.add(fid);
             }

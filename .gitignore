@@ -14,3 +14,8 @@
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Backup config (host-specific, may point at secrets)
+/backup/backup.env
+/certs/
+/keystore/

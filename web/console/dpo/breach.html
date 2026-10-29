@@ -42,6 +42,8 @@
 
         .sidebar.open { transform: translateX(0); }
 
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
         .nav-link {
             display: flex;
             align-items: center;
@@ -121,15 +123,19 @@
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="breach.html" class="nav-link active">Breach</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link">Audit</a>
             <a href="legal.html" class="nav-link">Legal</a>
             <a href="reports.html" class="nav-link">Reports</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
@@ -173,12 +179,13 @@
                     <th class="px-4 py-3 text-sm">Severity</th>
                     <th class="px-4 py-3 text-sm">Affected</th>
                     <th class="px-4 py-3 text-sm">Reported</th>
+                    <th class="px-4 py-3 text-sm">Deadline</th>
                     <th class="px-4 py-3 text-sm">Status</th>
                     <th class="px-4 py-3 text-sm">Actions</th>
                 </tr>
                 </thead>
                 <tbody id="breach-table-body" class="bg-white divide-y divide-gray-200">
-                <tr><td colspan="6" class="p-4 text-center text-gray-500">Loading breach incidents...</td></tr>
+                <tr><td colspan="7" class="p-4 text-center text-gray-500">Loading breach incidents...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -265,6 +272,7 @@
                 <p><strong>Current Status:</strong> <span id="detail-status" class="font-bold"></span></p>
                 <p><strong>Detected At:</strong> <span id="detail-detected"></span></p>
                 <p><strong>Reported At:</strong> <span id="detail-reported"></span></p>
+                <p><strong>Notification Deadline:</strong> <span id="detail-deadline"></span></p>
             </div>
         </div>
 
@@ -273,6 +281,27 @@
 
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Actionable Steps Sent to Principals</h3>
         <p id="detail-actionable-steps" class="p-2 bg-gray-50 rounded-md text-gray-700 mt-2 mb-4"></p>
+
+        <h3 class="font-semibold text-lg mt-4 border-b pb-1">Message Sent to Principals</h3>
+        <div id="detail-sent-message" class="p-2 bg-gray-50 rounded-md text-gray-700 mt-2 mb-4 text-sm"></div>
+
+        <div class="flex justify-between items-center mt-4 border-b pb-1">
+            <h3 class="font-semibold text-lg">Principals Notified</h3>
+            <button type="button" id="download-notified-btn" onclick="downloadNotifiedCsv()" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium">Download CSV</button>
+        </div>
+        <p id="detail-notified-summary" class="text-xs text-gray-500 mt-2"></p>
+        <div class="overflow-x-auto max-h-64 overflow-y-auto mt-2 mb-4">
+            <table class="w-full text-left text-xs">
+                <thead>
+                <tr class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">
+                    <th class="px-3 py-2">Principal</th>
+                    <th class="px-3 py-2">Notified at</th>
+                    <th class="px-3 py-2">Read</th>
+                </tr>
+                </thead>
+                <tbody id="detail-notified-body" class="divide-y divide-slate-50 text-slate-600"></tbody>
+            </table>
+        </div>
 
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Update Status</h3>
         <form id="status-update-form" class="mt-3 space-y-3">
@@ -351,6 +380,30 @@
         return `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${colorClass}">${severity}</span>`;
     }
 
+    function formatDuration(totalSeconds) {
+        const s = Math.max(0, Math.floor(totalSeconds));
+        const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+        if (d > 0) return `${d}d ${h}h ${m}m`;
+        if (h > 0) return `${h}h ${m}m`;
+        return `${m}m`;
+    }
+
+    // Plain-text deadline state, from the server-computed deadline_state / seconds_remaining.
+    function deadlineText(b) {
+        switch (b.deadline_state) {
+            case 'COUNTING': return `${formatDuration(b.seconds_remaining)} left`;
+            case 'OVERDUE': return `OVERDUE by ${formatDuration(-b.seconds_remaining)}`;
+            case 'MET': return 'Met';
+            case 'MET_LATE': return 'Met late';
+            default: return '\u2014';
+        }
+    }
+
+    function deadlineClass(b) {
+        return (b.deadline_state === 'OVERDUE' || b.deadline_state === 'MET_LATE') ? 'text-red-600 font-bold'
+            : b.deadline_state === 'MET' ? 'text-green-700' : 'text-gray-600';
+    }
+
     function createBreachRow(b) {
         const row = document.createElement('tr');
         const reportAvailable = b.status === 'CONTAINED' || b.status === 'RESOLVED';
@@ -362,6 +415,7 @@
             <td class="px-4 py-3 text-sm">${createSeverityBadge(b.severity)}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${b.affected_principal_count}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${new Date(b.reported_at).toLocaleDateString()}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm ${deadlineClass(b)}">${deadlineText(b)}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(b.status)}</td>
             <td class="px-4 py-3 text-sm">
                 <button class="text-indigo-600 hover:text-indigo-900 font-medium" onclick="viewBreach('${b.id}')">Manage</button>${downloadButton}
@@ -371,7 +425,7 @@
     }
 
     async function loadBreaches() {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading breach incidents...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Loading breach incidents...</td></tr>`;
         try {
             const payload = {
                 "_func": "list_breaches",
@@ -392,13 +446,13 @@
             const breaches = data || [];
             tableBody.innerHTML = '';
             if (breaches.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No breach incidents recorded.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No breach incidents recorded.</td></tr>`;
             } else {
                 breaches.forEach(b => tableBody.appendChild(createBreachRow(b)));
             }
             countSpan.textContent = `Total: ${breaches.length} Incidents`;
         } catch (error) {
-            tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">Failed to load breach incidents.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-600">Failed to load breach incidents.</td></tr>`;
         }
     }
 
@@ -472,6 +526,87 @@
         }
     }
 
+    // --- Who was notified, and what they were sent ---
+    const NOTIFIED_ROWS_SHOWN = 200;
+    let currentNotified = [];
+    let currentBreachTitle = '';
+
+    function readLabel(p) {
+        if (!p.notification_logged) return '\u2014';
+        return p.read_at ? new Date(p.read_at).toLocaleString() : 'Unread';
+    }
+
+    function renderNotified(b) {
+        currentNotified = b.affected_principals || [];
+        currentBreachTitle = b.title || 'breach';
+
+        const msgEl = document.getElementById('detail-sent-message');
+        msgEl.textContent = '';
+        const msgs = b.notification_messages;
+        if (msgs && Object.keys(msgs).length) {
+            const first = msgs.en !== undefined ? 'en' : Object.keys(msgs)[0];
+            const main = document.createElement('p');
+            main.textContent = msgs[first];
+            msgEl.appendChild(main);
+            const others = Object.keys(msgs).filter(k => k !== first);
+            if (others.length) {
+                const det = document.createElement('details');
+                det.className = 'mt-2';
+                const sum = document.createElement('summary');
+                sum.className = 'cursor-pointer text-xs text-gray-500';
+                sum.textContent = `Other languages (${others.length})`;
+                det.appendChild(sum);
+                others.forEach(k => {
+                    const p = document.createElement('p');
+                    p.className = 'mt-1';
+                    p.textContent = `${k}: ${msgs[k]}`;
+                    det.appendChild(p);
+                });
+                msgEl.appendChild(det);
+            }
+        } else {
+            msgEl.textContent = 'Not recorded (this breach was reported before the notification log was added, or no message was configured for its type).';
+        }
+
+        const read = currentNotified.filter(p => p.read_at).length;
+        const logged = currentNotified.filter(p => p.notification_logged).length;
+        document.getElementById('detail-notified-summary').textContent = currentNotified.length === 0
+            ? 'No principals were notified.'
+            : `${currentNotified.length} notified` + (logged ? ` \u00b7 ${read} read \u00b7 ${logged - read} unread` : ' (read status not recorded for this breach)')
+              + (currentNotified.length > NOTIFIED_ROWS_SHOWN ? ` \u00b7 showing the first ${NOTIFIED_ROWS_SHOWN}, download the CSV for the full list` : '');
+        document.getElementById('download-notified-btn').classList.toggle('hidden', currentNotified.length === 0);
+
+        const body = document.getElementById('detail-notified-body');
+        body.textContent = '';
+        currentNotified.slice(0, NOTIFIED_ROWS_SHOWN).forEach(p => {
+            const tr = document.createElement('tr');
+            [p.user_id, new Date(p.notified_at).toLocaleString(), readLabel(p)].forEach(v => {
+                const td = document.createElement('td');
+                td.className = 'px-3 py-2';
+                td.textContent = v;
+                tr.appendChild(td);
+            });
+            body.appendChild(tr);
+        });
+    }
+
+    function csvCell(v) {
+        let t = v == null ? '' : String(v);
+        if (/^[=+\-@]/.test(t)) t = "'" + t; // stop spreadsheets treating a value as a formula
+        return '"' + t.replace(/"/g, '""') + '"';
+    }
+
+    function downloadNotifiedCsv() {
+        const rows = [['principal', 'notified_at', 'read_at']].concat(
+            currentNotified.map(p => [p.user_id, p.notified_at, p.notification_logged ? (p.read_at || 'UNREAD') : '']));
+        const blob = new Blob([rows.map(r => r.map(csvCell).join(',')).join('\n')], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'breach-notified-' + currentBreachTitle.replace(/[^A-Za-z0-9]+/g, '_').slice(0, 40) + '.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
     async function viewBreach(id) {
         try {
             const response = await fetch(API_URL_BREACH, {
@@ -488,10 +623,16 @@
             document.getElementById('detail-status').innerHTML = createStatusBadge(b.status);
             document.getElementById('detail-detected').textContent = new Date(b.detected_at).toLocaleString();
             document.getElementById('detail-reported').textContent = new Date(b.reported_at).toLocaleString();
+            const deadlineEl = document.getElementById('detail-deadline');
+            deadlineEl.textContent = b.notification_deadline
+                ? `${new Date(b.notification_deadline).toLocaleString()} \u2014 ${deadlineText(b)}`
+                : 'Not tracked (reported before deadlines were introduced)';
+            deadlineEl.className = deadlineClass(b);
             document.getElementById('detail-description').textContent = b.description;
             document.getElementById('detail-actionable-steps').textContent = b.actionable_steps;
             document.getElementById('new-status').value = b.status;
             document.getElementById('resolution-notes').value = b.resolution_notes || '';
+            renderNotified(b);
 
             const reportAvailable = b.status === 'CONTAINED' || b.status === 'RESOLVED';
             document.getElementById('download-report-btn').classList.toggle('hidden', !reportAvailable);
@@ -654,6 +795,7 @@
     window.openReportModal = openReportModal;
     window.closeModal = closeModal;
     window.viewBreach = viewBreach;
+    window.downloadNotifiedCsv = downloadNotifiedCsv;
     window.downloadReport = downloadReport;
     window.handleLogout = () => { localStorage.clear(); window.location.href = "../index.html"; };
 </script>

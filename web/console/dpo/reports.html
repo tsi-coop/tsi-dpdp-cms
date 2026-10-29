@@ -32,6 +32,8 @@
             padding-top: 20px; position: fixed; height: 100vh; overflow-y: auto; z-index: 50;
         }
 
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
         .nav-link {
             display: flex; align-items: center; padding: 10px 20px; margin: 5px 0;
             border-radius: 6px; color: #4a5568; transition: all 0.2s ease;
@@ -60,15 +62,19 @@
         </div>
         <nav class="flex flex-col space-y-1 mt-4 px-3">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
             <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link">Audit</a>
             <a href="legal.html" class="nav-link">Legal</a>
             <a href="reports.html" class="nav-link active">Reports</a>
+            <div class="nav-divider" role="separator"></div>
             <a href="team.html" class="nav-link">Team</a>
             <a href="settings.html" class="nav-link">Settings</a>
         </nav>
@@ -106,7 +112,10 @@
                         <option value="AUDIT">Audit Log</option>
                         <option value="PARENT_CONSENT">Parent Consent Log</option>
                         <option value="ROPA_REPORT">ROPA Report</option>
+                        <option value="MINOR_GUARDIAN_AUDIT">Minor Guardian Audit</option>
+                        <option value="NOTIFICATION_LOG">Notification Log</option>
                     </select>
+                    <p id="one-day-hint" class="hidden text-[11px] text-amber-700 mt-1">The Notification Log is exported one day at a time.</p>
                 </div>
                 <div class="md:col-span-1">
                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Start Date</label>
@@ -236,6 +245,19 @@
             }
         }
 
+        // --- One-day limit for the Notification Log ---
+        function applyOneDayRule() {
+            const oneDay = document.getElementById('export-subtype').value === 'NOTIFICATION_LOG';
+            const start = document.getElementById('start-date');
+            const end = document.getElementById('end-date');
+            document.getElementById('one-day-hint').classList.toggle('hidden', !oneDay);
+            end.readOnly = oneDay;
+            end.classList.toggle('bg-slate-100', oneDay);
+            if (oneDay) end.value = start.value;
+        }
+        document.getElementById('export-subtype').addEventListener('change', applyOneDayRule);
+        document.getElementById('start-date').addEventListener('change', applyOneDayRule);
+
         // --- Action Handlers ---
 
         document.getElementById('job-form').onsubmit = async (e) => {
@@ -264,7 +286,9 @@
                     alert("Export Job successfully added to the queue. Artifact will be ready for review once completed.");
                     loadJobs();
                 } else {
-                    alert("Failed to initiate export. Check system logs.");
+                    let msg = "Failed to initiate export. Check system logs.";
+                    try { const err = await response.json(); if (response.status === 400 && err.message) msg = err.message; } catch (_) {}
+                    alert(msg);
                 }
             } catch (err) {
                 alert("Network error: Backend registry not responding.");
@@ -286,6 +310,11 @@
 
         // --- Init ---
         window.onload = () => {
+            // Deep link from the Principals page: reports.html?subtype=MINOR_GUARDIAN_AUDIT
+            const wanted = new URLSearchParams(window.location.search).get('subtype');
+            const subtypeSelect = document.getElementById('export-subtype');
+            if (wanted && Array.from(subtypeSelect.options).some(o => o.value === wanted)) subtypeSelect.value = wanted;
+            applyOneDayRule();
             loadJobs();
             // Poll for status updates every 30 seconds
             setInterval(loadJobs, 30000);

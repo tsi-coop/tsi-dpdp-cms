@@ -2,6 +2,8 @@ package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.framework.*;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.AppVersion;
+import org.tsicoop.dpdpcms.util.PolicyVersion;
 import org.tsicoop.dpdpcms.util.RopaDeriver;
 import org.tsicoop.dpdpcms.util.RopaValidator;
 import jakarta.servlet.http.HttpServletRequest;
@@ -269,6 +271,7 @@ public class Ropa implements Action {
 
         res.setContentType("text/csv; charset=UTF-8");
         res.setHeader("Content-Disposition", "attachment; filename=\"ropa_export.csv\"");
+        res.setHeader("X-TSI-Generated-By", AppVersion.display());
 
         StringWriter sw = new StringWriter();
         CsvWriter csv = new CsvWriter(sw, ',');
@@ -308,7 +311,15 @@ public class Ropa implements Action {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "policy_id is required.", req.getRequestURI());
             return;
         }
-        String version = input.get("version") != null ? (String) input.get("version") : "";
+        String version = input.get("version") != null ? ((String) input.get("version")).trim() : "";
+        if (version.isEmpty()) {
+            version = PolicyVersion.soleOpenVersion(policyId);
+            if (version == null) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
+                        "'version' is required: policy '" + policyId + "' does not have exactly one open version.", req.getRequestURI());
+                return;
+            }
+        }
 
         UUID entryId = RopaDeriver.deriveFromPolicy(policyId, version, fiduciaryId);
         if (entryId == null) {
