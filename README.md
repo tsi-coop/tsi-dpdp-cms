@@ -9,6 +9,11 @@ TSI DPDP CMS serves two categories of adopters:
 
 See Section 1.2 (Configure Consent Manager) of the System Design document, linked below, for details on both deployment modes.
 
+## What's New
+
+- **Python port now available.** [Intelehealth](https://intelehealth.org/), a tech nonprofit delivering quality healthcare where there is no doctor, now maintains a Python (FastAPI) port of TSI DPDP CMS for organisations that prefer a leaner Python stack. [Read more](#partners--community-ports)
+- **Latest release:** [v0.5.4](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.4). See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
+
 ## Introduction
 
 [Launch Note](https://techadvisory.substack.com/p/tsi-dpdp-cms-an-open-source-consent)
@@ -148,6 +153,21 @@ BRAND_NAME=Acme Privacy
 
 `BRAND_NAME` is capped at **12 characters**, the exact length of the default brand "TSI DPDP CMS". The cap is intentional: it guarantees any compliant partner name is a drop-in replacement that fits every layout (sidebar widths, title bars, report footers) without redesign or risk of overflow. If `BRAND_NAME` is set but exceeds the limit, the application refuses to start with a clear error - the same fail-fast behavior as `JWT_SECRET` and `DB_ENCRYPTION_KEY`. Leave it unset to keep the default branding; nothing else changes.
 
+## Partners & Community Ports
+
+TSI DPDP CMS is deliberately a small, reliable, open-source baseline: the minimum an organisation needs for DPDP compliance, nothing more.
+
+### Python port: Intelehealth
+
+[**Intelehealth**](https://intelehealth.org/) is a tech nonprofit building an open-source telemedicine platform that delivers quality healthcare where there is no doctor, connecting last-mile populations with primary care. It works with governments, NGOs and hospitals.
+
+Intelehealth maintains [**intelehealth-cmp-tsi**](https://github.com/Intelehealth/intelehealth-cmp-tsi), a standalone Python (FastAPI + PostgreSQL) port of TSI DPDP CMS. It suits organisations that prefer a leaner Python stack.
+
+- **Maintained by Intelehealth**, independently of this repository.
+- **Kept in sync** with core releases through a shared roadmap and tracking document.
+- **Same philosophy:** reliable, minimal, open.
+
+Choose the Java core or the Python port based on your stack. Issues specific to the port belong in its repository.
 
 ## License & Contributions
 

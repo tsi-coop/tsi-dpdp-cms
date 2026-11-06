@@ -157,10 +157,10 @@
         "legal_basis": "ಒಪ್ಪಿಗೆ (DPDP ಕಾಯ್ದೆ, ಸೆಕ್ಷನ್ 6(1)(a))",
         "data_categories_involved": ["email_address", "mobile_number"],
         "recipients_or_third_parties": [],
-        "retention_policy": "ಒಪ್ಪಿಗೆಯನ್ನು ಹಿಂತೆಗೆದುಕೊಳ್ಳುವವರೆಗೆ.",
-        "retention_duration_value": 0,
-        "retention_duration_unit": "MINUTES",
-        "retention_start_event": "CESSATION",
+        "retention_policy": "ಒಪ್ಪಿಗೆಯನ್ನು ಹಿಂತೆಗೆದುಕೊಳ್ಳುವವರೆಗೆ ಅಥವಾ ಕೊನೆಯ ಸಂವಹನದಿಂದ 1 ವರ್ಷದವರೆಗೆ.",
+        "retention_duration_value": 1,
+        "retention_duration_unit": "YEARS",
+        "retention_start_event": "COLLECTION",
         "is_mandatory_for_service": false,
         "is_sensitive": false
       }
