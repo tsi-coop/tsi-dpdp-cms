@@ -1,4 +1,4 @@
-# Integration examples
+# Website Integration examples
 
 | Folder | What it is |
 |---|---|
