@@ -11,7 +11,7 @@ See Section 1.2 (Configure Consent Manager) of the System Design document, linke
 
 ## What's New
 
-- **Intelehealth Python port** [Intelehealth](https://intelehealth.org/), a tech nonprofit delivering quality healthcare where there is no doctor, now maintains a Python (FastAPI) port of TSI DPDP CMS for organisations that prefer a leaner Python stack. [Read more](#partners--community-ports)
+- **Python port:** [Intelehealth](https://intelehealth.org/), a tech nonprofit delivering quality healthcare where there is no doctor, now maintains a Python (FastAPI) port of TSI DPDP CMS for organisations that prefer a leaner Python stack. [Read more](#partners--community-ports)
 - **Latest release:** [v0.5.4](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.4). See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 
 ## Introduction
