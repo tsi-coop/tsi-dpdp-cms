@@ -484,13 +484,13 @@ The scripts in `db/` run automatically only when the database is first created. 
 
 ### Upgrading to v0.6
 
-Apply `db/18` to `db/26`, in this order. Each is safe to run again; run them as the database owner or a superuser.
+Apply `db/18` to `db/27`, in this order. Each is safe to run again; run them as the database owner or a superuser.
 
 ```bash
 set -a; source .env; set +a
 for f in db/18_audit_ledger_integrity.sql db/19_operator_access.sql db/20_roles.sql db/21_consent_capture.sql \
          db/22_grievance_enhancements.sql db/23_rights_requests.sql db/24_nominations_and_purposes.sql \
-         db/25_purge_and_legal_holds.sql db/26_breach_board_intimation.sql; do
+         db/25_purge_and_legal_holds.sql db/26_breach_board_intimation.sql db/27_purge_processor_obligation.sql; do
   docker compose exec -T postgres_db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 < "$f"
 done
 ```

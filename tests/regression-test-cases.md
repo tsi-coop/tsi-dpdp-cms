@@ -297,7 +297,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 
 ### TC-DPO-07: Notify affected principals and generate the PDF record
 **Type:** UI · **Priority:** High
-**Steps:** From a reported breach, trigger notification + generate PDF.
+**Steps:** From a reported breach, trigger notification + generate PDF. From v0.6 the PDF can be generated at any status; while the breach is OPEN it is marked "INTERIM REPORT" (`BreachBoardDbTest#theBoardReportCanBeDownloadedWhileTheBreachIsStillOpen`).
 **Expected Result:** `BREACH_NOTIFICATION` created per affected principal; PDF download succeeds and contains the breach details.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - BREACH_NOTIFICATION rows=6; PDF downloads (1489 bytes); footer carries 'TSI DPDP CMS v0.5.4'; deadline line present=True | "Download PDF" is offered for the CONTAINED breach and hidden for the OPEN one (PDF content verified in TC-DPO-07)
 
@@ -766,8 +766,8 @@ Full contract: [Webhook Integration Guide](../docs/guides/webhook-integration-gu
 ### TC-PRG-02: Legal hold on a purge request
 **Type:** API · **Priority:** Medium
 **Steps:** Call `update_purge_status` with `status: LEGAL_HOLD_APPLIED`.
-**Expected Result:** **Changed in v0.6.** An API key (or an operator) gets `403`: cancelling a purge and placing it on legal hold are the DPO's decisions. A DPO or ADMIN can set it from the console; `PURGE_ONHOLD_NOTIFICATION` fires. For holds with an end date see TC-V06-35.
-**Automated:** `PurgeAndHoldsDbTest#cancellingAndLegalHoldAreTheDposDecisionAndInputIsValidated`
+**Expected Result:** **Changed in v0.6.** From an API key (or an operator) `LEGAL_HOLD_APPLIED` is a **report** that the processor must keep the data: it needs `details` (10+ characters), is recorded with the time and the reporter, notifies the DPO, and leaves the purge's status unchanged (the purge is not suspended). Cancelling a purge (`PURGE_CANCELLED`) from a key or operator gets `403`. A DPO or ADMIN setting `LEGAL_HOLD_APPLIED` still puts the purge on hold; `PURGE_ONHOLD_NOTIFICATION` fires. For time-bound holds see TC-V06-18.
+**Automated:** `PurgeAndHoldsDbTest#aProcessorThatMustKeepTheDataReportsItAndThePurgeIsNotSuspended`, `PurgeAndHoldsDbTest#cancellingAndLegalHoldAreTheDposDecisionAndInputIsValidated`
 **Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit). v0.5.4 result (accepted from an app key) is superseded.
 
 ### TC-PRG-03: Cancel a purge request
@@ -1010,10 +1010,17 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 
 ### TC-V06-16: Purge confirmation rules
 **Type:** API · **Priority:** Critical
-**Steps:** Confirm a purge with: the assigned app's key; another app's key; another fiduciary's key; an operator; with `records_affected`; with an unknown status; to `PURGE_CANCELLED` or `LEGAL_HOLD_APPLIED` from a key; change a completed purge.
-**Expected Result:** Only the assigned app (or an operator of the fiduciary) may confirm (403 otherwise). `confirmed_by`, type and time come from the credential. `records_affected` is stored as `claimed_record_count`, a claim. Unknown status is `400`; cancel and hold are DPO-only (`403`); completed and cancelled are final (`409`).
+**Steps:** Confirm a purge with: the assigned app's key; another app's key; another fiduciary's key; an operator; with `records_affected`; with an unknown status; to `PURGE_CANCELLED` from a key; `LEGAL_HOLD_APPLIED` from a key with and without `details` (a legal-obligation report, TC-PRG-02); change a completed purge.
+**Expected Result:** Only the assigned app (or an operator of the fiduciary) may confirm (403 otherwise). `confirmed_by`, type and time come from the credential. `records_affected` is stored as `claimed_record_count`, a claim. Unknown status is `400`; cancelling is DPO-only (`403`); `LEGAL_HOLD_APPLIED` from a key is a report that does not change the status; completed and cancelled are final (`409`).
 **Automated:** `PurgeAndHoldsDbTest`, `PurgeRulesTest`
 **Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-16a: Erasure reminder covers RoPA-driven retention
+**Type:** API · **Priority:** Medium
+**Steps:** With an active RoPA entry whose retention period starts at COLLECTION, record consent and age the record so it is due to be erased in 5 days; run the retention engine twice. Repeat with no RoPA period and a consent expiry in 5 days.
+**Expected Result:** In both cases the principal gets one `EXPIRY_NOTIFICATION` before the erasure (5 days ahead, so well over the 48 hours some platforms must give), and the erasure later happens on the same date. The reminder and the erasure use one due-date rule.
+**Automated:** `ExpiryDatesTest#theReminderAndTheErasureUseTheSameDueDate` (the rule only; the engine run is manual)
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (rule, JUnit). The engine run was not exercised.
 
 ### TC-V06-17: `erasure_request` through an API key needs a consent record
 **Type:** API · **Priority:** High
@@ -1078,6 +1085,6 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 
 ### TC-V06-26: Upgrade from v0.5.4
 **Type:** Ops · **Priority:** Critical
-**Steps:** Restore a v0.5.4 database, apply `db/18` to `db/26` twice, deploy the v0.6.0 WAR.
+**Steps:** Restore a v0.5.4 database, apply `db/18` to `db/27` twice, deploy the v0.6.0 WAR.
 **Expected Result:** Every script runs cleanly twice; the audit chain verifies; existing consents, policies and grievances are intact; users are signed in again; the post-upgrade checks in the Production Deployment Guide pass.
-**Last Verified:** not run (migrations 01-26 were applied from scratch and 18-26 re-run on a throwaway database on 2026-11-14; an upgrade from a populated v0.5.4 database was not tried)
+**Last Verified:** not run (migrations 01-27 were applied from scratch and 25-27 re-run on a throwaway database on 2026-11-14; an upgrade from a populated v0.5.4 database was not tried)

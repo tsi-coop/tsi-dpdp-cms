@@ -85,4 +85,23 @@ class PurgeRulesTest {
         assertFalse(PurgeRules.isPastSla("LEGAL_HOLD_APPLIED", old, NOW, 30), "a purge under hold is not late");
         assertFalse(PurgeRules.isPastSla("PURGE_INITIATED", old, NOW, null), "no SLA configured");
     }
+
+    @Test
+    void aProcessorOrOperatorSayingLegalHoldIsReportingNotHolding() {
+        assertTrue(PurgeRules.isProcessorObligationReport("API_KEY", "LEGAL_HOLD_APPLIED"));
+        assertTrue(PurgeRules.isProcessorObligationReport("OPERATOR", "legal_hold_applied"));
+        assertFalse(PurgeRules.isProcessorObligationReport("DPO", "LEGAL_HOLD_APPLIED"), "the DPO's own hold is a real hold");
+        assertFalse(PurgeRules.isProcessorObligationReport("ADMIN", "LEGAL_HOLD_APPLIED"));
+        assertFalse(PurgeRules.isProcessorObligationReport("API_KEY", "PURGE_COMPLETED"));
+        assertFalse(PurgeRules.isProcessorObligationReport("API_KEY", "PURGE_CANCELLED"));
+        assertFalse(PurgeRules.isProcessorObligationReport(null, null));
+    }
+
+    @Test
+    void theObligationNeedsAnExplanation() {
+        assertNotNull(PurgeRules.obligationNoteProblem(null));
+        assertNotNull(PurgeRules.obligationNoteProblem("   short  "));
+        assertNull(PurgeRules.obligationNoteProblem("Tax records: 8 years under s.44AA."));
+        assertNotNull(PurgeRules.obligationNoteProblem("x".repeat(1001)));
+    }
 }

@@ -337,7 +337,7 @@
                 <textarea id="resolution-notes" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
             </div>
             <div class="modal-footer">
-                <span id="download-report-hint" class="text-xs text-gray-400 self-center hidden">PDF report available once CONTAINED or RESOLVED</span>
+                <span id="download-report-hint" class="text-xs text-gray-400 self-center hidden">An open incident is reported as an interim report</span>
                 <button type="button" id="download-report-btn" onclick="downloadReport(document.getElementById('status-update-form').getAttribute('data-id'))" class="bg-slate-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-700 hidden">Download PDF Report</button>
                 <button type="submit" id="status-update-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Status</button>
             </div>
@@ -701,9 +701,11 @@
             document.getElementById('resolution-notes').value = b.resolution_notes || '';
             renderNotified(b);
 
-            const reportAvailable = b.status === 'CONTAINED' || b.status === 'RESOLVED';
-            document.getElementById('download-report-btn').classList.toggle('hidden', !reportAvailable);
-            document.getElementById('download-report-hint').classList.toggle('hidden', reportAvailable);
+            // The report can be downloaded at any status (the Board's detailed report is due within 72 hours);
+            // an incident that is still open is marked "interim" in the PDF.
+            const reportFinal = b.status === 'CONTAINED' || b.status === 'RESOLVED';
+            document.getElementById('download-report-btn').classList.remove('hidden');
+            document.getElementById('download-report-hint').classList.toggle('hidden', reportFinal);
 
             statusUpdateForm.setAttribute('data-id', id);
             document.getElementById('manage-modal-overlay').style.display = 'flex';

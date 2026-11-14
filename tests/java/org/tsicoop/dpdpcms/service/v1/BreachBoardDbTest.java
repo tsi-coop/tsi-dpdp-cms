@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-/** Breach intimation to the Data Protection Board: tracking, recording, alerts. Needs db/01..26. */
+/** Breach intimation to the Data Protection Board: tracking, recording, alerts. Needs db/01..27. */
 class BreachBoardDbTest {
     private static UUID fid, fidOther;
     private static String dpoEmail, opEmail, otherDpoEmail;
@@ -54,12 +54,12 @@ class BreachBoardDbTest {
         return email;
     }
 
-    static final class Call { int status = 200; final StringWriter out = new StringWriter(); final Map<String, Object> attrs = new HashMap<>(); HttpServletRequest req; HttpServletResponse res; JSONObject json() throws Exception { return (JSONObject) new JSONParser().parse(out.toString()); } JSONArray array() throws Exception { return (JSONArray) new JSONParser().parse(out.toString()); } }
+    static final class Call { int status = 200; String contentType; final java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream(); final StringWriter out = new StringWriter(); final Map<String, Object> attrs = new HashMap<>(); HttpServletRequest req; HttpServletResponse res; JSONObject json() throws Exception { return (JSONObject) new JSONParser().parse(out.toString()); } JSONArray array() throws Exception { return (JSONArray) new JSONParser().parse(out.toString()); } }
     private static Call breach(JSONObject body, String staffEmail) {
         Call k = new Call(); k.attrs.put(InputProcessor.REQUEST_DATA, body.toJSONString());
         JSONObject t = new JSONObject(); t.put("email", staffEmail); t.put("mfa", true); k.attrs.put(InputProcessor.AUTH_TOKEN, t);
         k.req = (HttpServletRequest) Proxy.newProxyInstance(BreachBoardDbTest.class.getClassLoader(), new Class[]{HttpServletRequest.class}, (p, m, a) -> { switch (m.getName()) { case "getAttribute": return k.attrs.get((String) a[0]); case "setAttribute": k.attrs.put((String) a[0], a[1]); return null; case "getRemoteAddr": return "10.0.0.1"; case "getRequestURI": return "/api/v1/breach"; default: return m.getReturnType() == boolean.class ? false : m.getReturnType() == int.class ? 0 : null; } });
-        k.res = (HttpServletResponse) Proxy.newProxyInstance(BreachBoardDbTest.class.getClassLoader(), new Class[]{HttpServletResponse.class}, (p, m, a) -> { switch (m.getName()) { case "setStatus": k.status = (Integer) a[0]; return null; case "getWriter": return new PrintWriter(k.out, true); default: return m.getReturnType() == boolean.class ? false : m.getReturnType() == int.class ? 0 : null; } });
+        k.res = (HttpServletResponse) Proxy.newProxyInstance(BreachBoardDbTest.class.getClassLoader(), new Class[]{HttpServletResponse.class}, (p, m, a) -> { switch (m.getName()) { case "setStatus": k.status = (Integer) a[0]; return null; case "getWriter": return new PrintWriter(k.out, true); case "setContentType": k.contentType = (String) a[0]; return null; case "getOutputStream": return new jakarta.servlet.ServletOutputStream() { @Override public boolean isReady() { return true; } @Override public void setWriteListener(jakarta.servlet.WriteListener l) { } @Override public void write(int b) { k.bytes.write(b); } @Override public void write(byte[] b, int off, int len) { k.bytes.write(b, off, len); } }; default: return m.getReturnType() == boolean.class ? false : m.getReturnType() == int.class ? 0 : null; } });
         new Breach().post(k.req, k.res); return k;
     }
     private static JSONObject body(Object... kv) { JSONObject o = new JSONObject(); for (int i = 0; i < kv.length; i += 2) o.put(kv[i], kv[i + 1]); return o; }
@@ -141,5 +141,19 @@ class BreachBoardDbTest {
         new Audit().logEvents();
         assertNotNull(scalar("SELECT id::text FROM audit_logs WHERE audit_action = 'BREACH_BOARD_DEADLINE_MISSED' AND context_details LIKE ?", "%" + missed + "%"));
         assertNotNull(scalar("SELECT id::text FROM audit_logs WHERE audit_action = 'BREACH_BOARD_DEADLINE_DUE' AND context_details LIKE ?", "%" + soon + "%"));
+    }
+
+    @Test
+    void theBoardReportCanBeDownloadedWhileTheBreachIsStillOpen() throws Exception {
+        String id = report(Instant.now().minus(2, ChronoUnit.HOURS));
+        assertEquals("OPEN", get(id).get("status"));
+        Call k = breach(body("_func", "download_breach_report", "id", id), dpoEmail);
+        assertEquals(200, k.status, k.out.toString());
+        assertEquals("application/pdf", k.contentType);
+        assertTrue(k.bytes.size() > 500, "a PDF should have been written");
+        assertEquals("%PDF", new String(k.bytes.toByteArray(), 0, 4, java.nio.charset.StandardCharsets.ISO_8859_1));
+        // another fiduciary's DPO still cannot download it
+        Call other = breach(body("_func", "download_breach_report", "id", id), otherDpoEmail);
+        assertNotEquals(200, other.status);
     }
 }

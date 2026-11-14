@@ -46,4 +46,15 @@ class ExpiryDatesTest {
         assertFalse(ExpiryDates.isExpired(null, now), "no expiry set");
         assertTrue(ExpiryDates.isExpired("garbage", now), "an expiry that cannot be read is treated as expired, never as valid forever");
     }
+
+    @Test
+    void theReminderAndTheErasureUseTheSameDueDate() {
+        Instant created = Instant.parse("2026-01-01T00:00:00Z");
+        assertEquals(Instant.parse("2026-01-31T00:00:00Z"), ExpiryDates.effective(created, 30L, true, "2030-01-01"), "the RoPA period counted from collection wins");
+        assertEquals(Instant.parse("2030-01-02T00:00:00Z"), ExpiryDates.effective(created, 30L, false, "2030-01-01"), "a RoPA period counted from another event is not used");
+        assertEquals(Instant.parse("2030-01-02T00:00:00Z"), ExpiryDates.effective(created, null, true, "2030-01-01"), "no RoPA period: the consent's own expiry");
+        assertNull(ExpiryDates.effective(created, null, false, null), "nothing to expire");
+        assertNull(ExpiryDates.effective(created, null, false, "garbage"), "unreadable and not guessed");
+        assertEquals(Instant.parse("2030-01-02T00:00:00Z"), ExpiryDates.effective(null, 30L, true, "2030-01-01"), "no creation time: fall back rather than fail");
+    }
 }

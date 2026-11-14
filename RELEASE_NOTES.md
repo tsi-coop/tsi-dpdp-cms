@@ -2,7 +2,7 @@
 
 ### v0.6 (in development)
 
-**Upgrading.** Back up first (`./backup/backup.sh`), then apply `db/18` to `db/26` in order (each is safe to run again; see the
+**Upgrading.** Back up first (`./backup/backup.sh`), then apply `db/18` to `db/27` in order (each is safe to run again; see the
 [Production Deployment Guide](docs/guides/production-deployment-guide.md#upgrading-to-v06)). Read "What you will notice on day one"
 below before you deploy.
 
@@ -23,7 +23,7 @@ below before you deploy.
 - **Audit ledger:** the audit trail is now append-only (the database refuses updates, deletes and truncation), each row's hash covers every stored column, and a daily job verifies the chain and records the result. A failing audit entry can no longer block other entries, and failed logins are queued instead of written inline.
 - **Policy cache:** a published, withdrawn or archived policy is seen by every instance within 30 seconds (`POLICY_CACHE_TTL_SECONDS`).
 - **Client address:** `X-Forwarded-For` is believed only from `TRUSTED_PROXY` and read from the right, so a client cannot choose its own recorded address.
-- **Purge confirmation:** an API key can confirm only a purge assigned to its own app; who confirmed it is taken from the credential; completed and cancelled purges are final. `erasure_request` through an API key now needs an existing consent record (404 otherwise).
+- **Purge confirmation:** an API key can confirm only a purge assigned to its own app; who confirmed it is taken from the credential; completed and cancelled purges are final. Cancelling a purge and placing a legal hold are the DPO's decisions: a processor (or operator) that sends `LEGAL_HOLD_APPLIED` is now **reporting a legal obligation to keep the data**, which is recorded with its explanation, shown to the DPO and notified, but does not change or suspend the purge (v0.5 let a key set the status directly). `erasure_request` through an API key now needs an existing consent record (404 otherwise).
 - **Principal ID protection:** a documented approach, not a code change: send opaque IDs (not email or phone) and encrypt the database disk and backups. See [Key management](docs/security/KEY_MANAGEMENT.md) and [Log and record retention](docs/security/LOG_RETENTION.md).
 
 **Features**
@@ -32,8 +32,10 @@ below before you deploy.
 - **Access and correction requests (DPDP s.11, s.12):** new Rights Requests screen for the DPO and a My Rights section in the portal, with assignment, outcome notes and optional deadlines. The CMS tracks the request and holds no personal data values. [Details](docs/security/rights-requests.md)
 - **Nominations (s.14):** principals can nominate a person; stored encrypted, masked for the DPO, no access granted. [Details](docs/security/nominations-and-purpose-lifecycle.md)
 - **Purpose lifecycle:** the DPO can close a purpose (consents are withdrawn or de-identified, new grants refused) and reopen it. The portal shows the consequences of a withdrawal before it is made.
+- **Erasure reminder:** the reminder to the principal before a retention-driven erasure now also covers erasure driven by the RoPA retention period (it used to cover only a consent's own expiry), using the same due date as the erasure itself.
 - **Legal holds:** time-bound, with a written reason; purges for the principal are deferred and resume automatically when the hold ends. [Details](docs/security/erasure-retention-breach.md)
 - **Purge evidence:** the Compliance screen shows who confirmed a purge and when, the record count the processor claims (not verified), an "Overdue" tag when a deadline is set, and whether the processor should erase or de-identify.
+- **Breach report:** the PDF can now be downloaded while a breach is still open (marked as an interim report), since the Board's detailed report is due within 72 hours.
 - **Breach intimation to the Board:** the Board deadline is tracked from the moment a breach is reported, the DPO records when the Board was informed and its reference, and the DPO is alerted once when it is near and once when it is missed. The dashboard shows both clocks.
 - **Evaluation portal:** the Rights portal now says it is for implementers to evaluate the consent lifecycle, not for data principals, and its login accepts any principal ID in every OTP mode.
 

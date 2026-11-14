@@ -134,7 +134,6 @@ class PurgeAndHoldsDbTest {
     void cancellingAndLegalHoldAreTheDposDecisionAndInputIsValidated() throws Exception {
         String u = principal(); String id = purge(u, app1, "p1", "PURGE_INITIATED");
         assertEquals(403, update(id, "PURGE_CANCELLED", apiKeyCred(key1)).status);
-        assertEquals(403, update(id, "LEGAL_HOLD_APPLIED", apiKeyCred(key1)).status);
         sql("UPDATE purge_requests SET assigned_operator_id = ? WHERE id = ?::uuid", opId, id);
         assertEquals(403, update(id, "PURGE_CANCELLED", staff(opEmail)).status, "an operator cannot cancel either");
         assertEquals(400, update(id, "DONE", apiKeyCred(key1)).status);
@@ -268,5 +267,36 @@ class PurgeAndHoldsDbTest {
         assertEquals("1", scalar("SELECT COUNT(*)::text FROM notifications WHERE fiduciary_id = ? AND notification_type = 'PURGE_SLA_BREACH_NOTIFICATION'", f3), "the DPO is told");
         Call get = compliance(body("_func", "get_purge_request", "id", oldOpen.toString(), "fiduciary_id", f3.toString()), staff(dpo3));
         assertEquals(Boolean.TRUE, get.json().get("sla_overdue"));
+    }
+
+    // ---- a processor that must keep the data ----
+    @Test
+    void aProcessorThatMustKeepTheDataReportsItAndThePurgeIsNotSuspended() throws Exception {
+        String u = principal(); String id = purge(u, app1, "p1", "PURGE_INITIATED");
+        long dpoNoticesBefore = Long.parseLong(scalar("SELECT COUNT(*) FROM notifications WHERE recipient_type = 'OPERATOR' AND notification_type = ?", Constants.NOTIF_PURGE_OBLIGATION));
+
+        assertEquals(400, update(id, "LEGAL_HOLD_APPLIED", apiKeyCred(key1)).status, "no explanation");
+        assertEquals(400, update(id, "LEGAL_HOLD_APPLIED", apiKeyCred(key1), "details", "too short").status);
+        assertEquals(403, update(id, "LEGAL_HOLD_APPLIED", apiKeyCred(key2), "details", "Tax records must be kept for 8 years.").status, "not this key's purge");
+
+        Call ok = update(id, "LEGAL_HOLD_APPLIED", apiKeyCred(key1), "details", "Tax records must be kept for 8 years.");
+        assertEquals(200, ok.status, ok.out.toString());
+        assertEquals("PURGE_INITIATED", scalar("SELECT status FROM purge_requests WHERE id = ?::uuid", id), "the purge is NOT suspended");
+        assertNull(scalar("SELECT legal_hold_id::text FROM purge_requests WHERE id = ?::uuid", id), "no hold was created");
+        assertEquals("Tax records must be kept for 8 years.", scalar("SELECT processor_obligation_note FROM purge_requests WHERE id = ?::uuid", id));
+        assertNotNull(scalar("SELECT processor_obligation_at::text FROM purge_requests WHERE id = ?::uuid", id));
+        assertEquals(app1.toString(), scalar("SELECT processor_obligation_by FROM purge_requests WHERE id = ?::uuid", id));
+        new Audit().logEventSync("flush", null, "TEST", null, "FLUSH_QUEUE", "x"); // writing the synchronous event also flushes the queued ones
+        assertEquals("1", scalar("SELECT COUNT(*)::text FROM audit_logs WHERE audit_action = 'PURGE_PROCESSOR_LEGAL_OBLIGATION' AND context_details LIKE ?", "%" + id + "%"));
+        assertTrue(Long.parseLong(scalar("SELECT COUNT(*) FROM notifications WHERE recipient_type = 'OPERATOR' AND notification_type = ?", Constants.NOTIF_PURGE_OBLIGATION)) > dpoNoticesBefore, "the DPO is told");
+
+        // the processor can still finish the purge afterwards, and a finished purge cannot be reported on
+        assertEquals(200, update(id, "PURGE_COMPLETED", apiKeyCred(key1)).status);
+        assertEquals(409, update(id, "LEGAL_HOLD_APPLIED", apiKeyCred(key1), "details", "Tax records must be kept for 8 years.").status);
+
+        // the DPO's own LEGAL_HOLD_APPLIED is still a real hold
+        String u2 = principal(); String id2 = purge(u2, app1, "p1", "PURGE_INITIATED");
+        assertEquals(200, update(id2, "LEGAL_HOLD_APPLIED", staff(dpoEmail), "details", "Court order.").status);
+        assertEquals("LEGAL_HOLD_APPLIED", scalar("SELECT status FROM purge_requests WHERE id = ?::uuid", id2));
     }
 }

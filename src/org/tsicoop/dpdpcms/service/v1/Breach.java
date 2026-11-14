@@ -763,11 +763,6 @@ public class Breach implements Action {
         if (breach.get("fiduciary_id") != null
                 && rejectIfNotOwnFiduciary(UUID.fromString((String) breach.get("fiduciary_id")), InputProcessor.getAuthenticatedUserId(req), req, res)) return;
         String status = (String) breach.get("status");
-        if (!"CONTAINED".equals(status) && !"RESOLVED".equals(status)) {
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request",
-                    "PDF report is only available once the breach is CONTAINED or RESOLVED (current status: " + status + ").", req.getRequestURI());
-            return;
-        }
         String fiduciaryName = getFiduciaryName(UUID.fromString((String) breach.get("fiduciary_id")));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -786,6 +781,10 @@ public class Breach implements Action {
         document.add(new Paragraph("Incident ID: " + breach.get("id"), bodyFont));
         document.add(new Paragraph("Severity: " + breach.get("severity"), bodyFont));
         document.add(new Paragraph("Status: " + breach.get("status"), bodyFont));
+        if (!"CONTAINED".equals(status) && !"RESOLVED".equals(status)) {
+            // The Board's detailed report is due within 72 hours, while the incident may still be open.
+            document.add(new Paragraph("INTERIM REPORT: the incident is still " + status + "; the details below may change.", bodyFont));
+        }
         document.add(new Paragraph("Detected At: " + breach.get("detected_at"), bodyFont));
         document.add(new Paragraph("Reported At: " + breach.get("reported_at"), bodyFont));
         if (breach.get("notification_deadline") != null) {

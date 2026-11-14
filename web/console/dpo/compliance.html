@@ -298,6 +298,11 @@
                 <p><strong>Processor should:</strong> <span id="detail-action"></span></p>
             </div>
         </div>
+        <div id="obligation-report" class="hidden p-3 rounded-md bg-amber-50 border border-amber-200 text-sm mb-3">
+            <p class="font-semibold">The processor reports a legal obligation to keep this data</p>
+            <p><span id="detail-obligation-note"></span></p>
+            <p class="text-xs text-gray-500">Reported <span id="detail-obligation-at"></span>. This is the processor's own statement; the CMS has not verified it and the purge is not suspended. If it is right, place a time-bound legal hold below (Legal holds); otherwise follow it up with the processor.</p>
+        </div>
         <div id="confirmation-evidence" class="hidden p-3 rounded-md bg-slate-50 border border-slate-200 text-sm mb-3">
             <p class="font-semibold">Confirmation</p>
             <p><strong>Confirmed by:</strong> <span id="detail-confirmed-by"></span> on <span id="detail-confirmed-at"></span></p>
@@ -499,7 +504,7 @@
             <td class="px-2 py-2 text-gray-600 truncate" title="${esc(req.trigger_event)}">${esc(req.trigger_event)}</td>
             <td class="px-2 py-2 text-gray-600 truncate" title="${esc(req.app_name)}">${esc(req.app_name)}</td>
             <td class="px-2 py-2 text-gray-600 truncate">${new Date(req.initiated_at).toLocaleDateString()}</td>
-            <td class="px-2 py-2">${createStatusBadge(req.status)}${notPickedUp}${req.sla_overdue ? '<div class="text-[10px] font-black uppercase text-red-700 whitespace-normal" title="Still not confirmed after the allowed time">Overdue</div>' : ''}${req.action === 'DE_IDENTIFY' ? '<div class="text-[10px] font-black uppercase text-indigo-700 whitespace-normal" title="Processors should de-identify the data, not erase it">De-identify</div>' : ''}</td>
+            <td class="px-2 py-2">${createStatusBadge(req.status)}${notPickedUp}${req.sla_overdue ? '<div class="text-[10px] font-black uppercase text-red-700 whitespace-normal" title="Still not confirmed after the allowed time">Overdue</div>' : ''}${req.processor_obligation_at ? '<div class="text-[10px] font-black uppercase text-amber-700 whitespace-normal" title="The processor says it must keep this data because of a legal obligation. The purge is still open.">Processor: legal obligation</div>' : ''}${req.action === 'DE_IDENTIFY' ? '<div class="text-[10px] font-black uppercase text-indigo-700 whitespace-normal" title="Processors should de-identify the data, not erase it">De-identify</div>' : ''}</td>
             <td class="px-2 py-2 text-gray-600 truncate">${OperatorMap[req.assigned_operator_id] || 'Unassigned'}</td>
             <td class="px-2 py-2">
                 <button class="text-indigo-600 hover:text-indigo-900 font-medium" onclick="viewPurgeRequest('${req.id}')">Manage</button>
@@ -564,6 +569,12 @@
             document.getElementById('detail-status').innerHTML = createStatusBadge(req.status);
             document.getElementById('detail-initiated').textContent = new Date(req.initiated_at).toLocaleString();
             document.getElementById('detail-action').textContent = req.action === 'DE_IDENTIFY' ? 'de-identify the data' : 'erase the data';
+            const ob = document.getElementById('obligation-report');
+            if (req.processor_obligation_at) {
+                ob.classList.remove('hidden');
+                document.getElementById('detail-obligation-note').textContent = req.processor_obligation_note || '';
+                document.getElementById('detail-obligation-at').textContent = new Date(req.processor_obligation_at).toLocaleString();
+            } else { ob.classList.add('hidden'); }
             const ev = document.getElementById('confirmation-evidence');
             if (req.confirmed_at) {
                 ev.classList.remove('hidden');

@@ -34,6 +34,26 @@ public final class PurgeRules {
         return REPORTABLE.contains(n(target));
     }
 
+    /**
+     * A processor (API key) or an operator who sends LEGAL_HOLD_APPLIED is REPORTING that it must keep the data because of a
+     * legal obligation. That is recorded for the DPO but does not change the purge's status or suspend it: only the DPO's own
+     * (time-bound) legal hold does that.
+     */
+    public static boolean isProcessorObligationReport(String callerKind, String status) {
+        String k = n(callerKind);
+        return n(status).equals("LEGAL_HOLD_APPLIED") && (k.equals("API_KEY") || k.equals("OPERATOR"));
+    }
+
+    public static final int MIN_OBLIGATION_NOTE_CHARS = 10;
+    public static final int MAX_OBLIGATION_NOTE_CHARS = 1000;
+
+    /** @return why the explanation is not acceptable, or null */
+    public static String obligationNoteProblem(String note) {
+        if (note == null || note.trim().length() < MIN_OBLIGATION_NOTE_CHARS) return "'details' must say which legal obligation applies (at least " + MIN_OBLIGATION_NOTE_CHARS + " characters)";
+        if (note.trim().length() > MAX_OBLIGATION_NOTE_CHARS) return "'details' is longer than " + MAX_OBLIGATION_NOTE_CHARS + " characters";
+        return null;
+    }
+
     /** The processor's own count is kept as claimed: the CMS cannot verify records held in the processor's systems. */
     public static String claimedCountProblem(Object v) {
         if (v == null) return null;

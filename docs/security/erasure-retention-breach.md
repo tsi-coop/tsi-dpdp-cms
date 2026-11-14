@@ -1,6 +1,6 @@
 # Erasure, retention and breach (v0.6, item 6)
 
-Migrations `db/25_purge_and_legal_holds.sql` and `db/26_breach_board_intimation.sql`.
+Migrations `db/25_purge_and_legal_holds.sql`, `db/26_breach_board_intimation.sql` and `db/27_purge_processor_obligation.sql`.
 
 ## Purge confirmation (`update_purge_status`)
 
@@ -13,6 +13,11 @@ Migrations `db/25_purge_and_legal_holds.sql` and `db/26_breach_board_intimation.
   honestly verify, so it was not invented.)
 * Status values are validated. `PURGE_COMPLETED` and `PURGE_CANCELLED` are **final**: nothing changes them afterwards (409).
   Processors and operators may report in progress, completed or failed; **cancelling and legal hold are the DPO's decision**.
+* **A processor that must keep the data** (a legal obligation of its own, for example tax records) can say so by sending `LEGAL_HOLD_APPLIED`
+  with `details` of at least 10 characters. This is a **report**: it is recorded (`processor_obligation_at`, `_note`, `_by`, audit
+  `PURGE_PROCESSOR_LEGAL_OBLIGATION`), the DPO is notified, and Compliance shows "Processor: legal obligation" with the text. It does **not**
+  change the purge's status or suspend it, and the CMS has not verified it. The DPO decides: place a time-bound legal hold (below) if it is
+  right, or follow it up with the processor. The principal is not notified automatically.
 * The plan's "only an operator may confirm a whole-account erasure (purpose `ALL`)" does not apply: this CMS raises one purge per purpose
   and app, there is no `ALL` purge.
 
@@ -42,6 +47,7 @@ purge under legal hold is not late.
   the fiduciary's breach window (default 72 h, tighten-only). Older breaches stay "not tracked".
 * `record_board_intimation` (DPO / ADMIN, once only): when the Board was informed (not in the future, not before detection) and the Board's
   reference. The breach page has a button; the PDF report shows it.
+* The breach PDF can be downloaded at any status (an open breach is marked "INTERIM REPORT"), so a report can go to the Board within 72 hours while the incident is still being handled.
 * A sweep alerts the DPO **once** when the deadline is within 12 hours and **once** when it has been missed
   (`BREACH_BOARD_DEADLINE_DUE` / `_MISSED` audit events and a notice). The DPO dashboard shows two clocks per breach: telling the principals
   and informing the Board.

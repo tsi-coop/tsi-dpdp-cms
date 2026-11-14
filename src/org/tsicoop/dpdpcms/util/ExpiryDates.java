@@ -14,6 +14,17 @@ import java.time.ZoneOffset;
 public final class ExpiryDates {
     private ExpiryDates() {}
 
+    /**
+     * When the data is due to go: the RoPA retention period counted from collection when the fiduciary has one, otherwise the
+     * consent's own expiry. Used by both the pre-erasure reminder and the erasure itself, so the two can never disagree.
+     */
+    public static Instant effective(Instant createdAt, Long ropaRetentionDays, boolean ropaCollection, String consentExpiry) {
+        if (ropaRetentionDays != null && ropaCollection && createdAt != null) {
+            return createdAt.plus(ropaRetentionDays, java.time.temporal.ChronoUnit.DAYS);
+        }
+        return parse(consentExpiry);
+    }
+
     /** @return the instant the consent ends, or null if blank or unreadable. A date alone ends at the start of the NEXT day (UTC). */
     public static Instant parse(String value) {
         if (value == null) return null;

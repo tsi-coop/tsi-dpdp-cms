@@ -202,6 +202,9 @@ public class DefaultNotificationMessages {
         RAW.put(Constants.NOTIF_PURGE_SLA, new String[]{
                 "A purge request has been open longer than the allowed time and is still not confirmed. Open Compliance to follow it up with the processor."
         });
+        RAW.put(Constants.NOTIF_PURGE_OBLIGATION, new String[]{
+                "A processor reports that it must keep data a purge request asks it to erase, because of a legal obligation. The purge is still open. Open Compliance to review it and, if it is right, place a legal hold."
+        });
         RAW.put(Constants.NOTIF_BREACH_BOARD, new String[]{
                 "A personal data breach is approaching, or has passed, its deadline for informing the Data Protection Board. Open Breach to record the intimation."
         });

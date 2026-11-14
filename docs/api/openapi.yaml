@@ -384,9 +384,12 @@ paths:
         and `404` for an unknown id. `status` must be a known value (`400`);
         a purge that is `PURGE_COMPLETED` or `PURGE_CANCELLED` is final
         (`409`). Through an API key you can report `PURGE_IN_PROGRESS`,
-        `PURGE_COMPLETED` and `PURGE_FAILED`; `PURGE_CANCELLED` and
-        `LEGAL_HOLD_APPLIED` are the DPO's decisions (`403`). Who confirmed
-        and when are recorded from your key, never from the body.
+        `PURGE_COMPLETED` and `PURGE_FAILED`; `PURGE_CANCELLED` is the DPO's
+        decision (`403`). Sending `LEGAL_HOLD_APPLIED` is a **report** that
+        you must keep the data because of a legal obligation: `details` is
+        then required (10+ characters), the DPO is notified, and the purge
+        request's status does **not** change. Who confirmed and when are
+        recorded from your key, never from the body.
       operationId: complianceOperation
       requestBody:
         required: true
@@ -416,8 +419,7 @@ paths:
         "403":
           description: >-
             `update_purge_status`: the purge is another fiduciary's, is not
-            assigned to your App, or you tried to cancel it or place it on
-            legal hold (the DPO's decisions).
+            assigned to your App, or you tried to cancel it (the DPO's decision).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -1546,8 +1548,10 @@ components:
           type: string
           description: >-
             Validated (400 if unknown). An API key may send PURGE_IN_PROGRESS,
-            PURGE_COMPLETED or PURGE_FAILED; PURGE_CANCELLED and
-            LEGAL_HOLD_APPLIED are the DPO's (403).
+            PURGE_COMPLETED or PURGE_FAILED; PURGE_CANCELLED is the DPO's
+            (403). LEGAL_HOLD_APPLIED from an API key reports a legal
+            obligation to keep the data (needs `details`; the status is
+            not changed).
           enum: [PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED, LEGAL_HOLD_APPLIED]
         details: { type: string, description: "Not server-enforced as required, but strongly recommended - see description above." }
         records_affected:
@@ -1588,3 +1592,5 @@ components:
         confirmed_at: { type: string, format: date-time, nullable: true }
         sla_overdue: { type: boolean, description: True when a completion deadline is configured and the purge is still unconfirmed past it. }
         legal_hold_id: { type: string, format: uuid, nullable: true }
+        processor_obligation_at: { type: string, format: date-time, nullable: true, description: When a processor reported that it must keep the data (its own statement, not verified). }
+        processor_obligation_note: { type: string, nullable: true }

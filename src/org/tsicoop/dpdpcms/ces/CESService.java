@@ -277,6 +277,15 @@ public class CESService {
         Instant notifInstant = null;
         Timestamp tsNotif = null;
         Instant expiryinstant = null;
+        Timestamp createdAtTs = (Timestamp) recent.get("created_at");
+        Instant createdAtInstant = createdAtTs == null ? null : createdAtTs.toInstant();
+        JSONObject ropaRetention = getRopaRetention(fiduciaryId);
+        Long ropaRetentionDays = null;
+        boolean ropaCollection = false;
+        if (ropaRetention != null) {
+            ropaRetentionDays = (Long) ropaRetention.get("retention_period_days");
+            ropaCollection = "COLLECTION".equals(ropaRetention.get("retention_start_event"));
+        }
         JSONArray consents = (JSONArray) recent.get("consents");
         Iterator<JSONObject> consentIt = consents.iterator();
         while(consentIt.hasNext()){
@@ -285,7 +294,8 @@ public class CESService {
             granted = (boolean) consent.get("consent_granted");
             expiry = (String) consent.get("consent_expiry");
             //System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
-            Instant parsedExpiry = org.tsicoop.dpdpcms.util.ExpiryDates.parse(expiry);
+            // The same expiry the erasure itself will use: the RoPA retention period when there is one, else the consent's own expiry.
+            Instant parsedExpiry = org.tsicoop.dpdpcms.util.ExpiryDates.effective(createdAtInstant, ropaRetentionDays, ropaCollection, expiry);
             if(expiry != null && parsedExpiry == null) {
                 System.err.println("[CES] unreadable consent_expiry '" + expiry + "' for principal " + principalId + " purpose " + purposeId + ": skipped");
             }
@@ -357,10 +367,9 @@ public class CESService {
             purposeId = (String) consent.get("data_point_id");
             granted = (boolean) consent.get("consent_granted");
             expiry = (String) consent.get("consent_expiry");
-            if (ropaRetentionDays != null && ropaCollection) {
-                tsExpiry = Timestamp.from(createdAt.toInstant().plus(ropaRetentionDays, ChronoUnit.DAYS));
-            } else if (org.tsicoop.dpdpcms.util.ExpiryDates.parse(expiry) != null) {
-                tsExpiry = Timestamp.from(org.tsicoop.dpdpcms.util.ExpiryDates.parse(expiry)); // accepts a date alone too
+            Instant dueInstant = org.tsicoop.dpdpcms.util.ExpiryDates.effective(createdAt == null ? null : createdAt.toInstant(), ropaRetentionDays, ropaCollection, expiry);
+            if (dueInstant != null) {
+                tsExpiry = Timestamp.from(dueInstant); // accepts a date alone too
             } else {
                 if (expiry != null) System.err.println("[CES] unreadable consent_expiry '" + expiry + "' for principal " + principalId + " purpose " + purposeId + ": skipped");
                 tsExpiry = null;

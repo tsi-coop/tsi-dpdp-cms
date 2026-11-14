@@ -160,6 +160,37 @@ public class Compliance implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown 'status'. Use PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED or LEGAL_HOLD_APPLIED.", req.getRequestURI());
                         return;
                     }
+                    if (PurgeRules.isProcessorObligationReport(callerKind, status)) {
+                        // A processor that must keep the data says so. Recorded for the DPO; the purge is not suspended.
+                        String obligationProblem = PurgeRules.obligationNoteProblem(details);
+                        if (obligationProblem != null) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", obligationProblem + ".", req.getRequestURI());
+                            return;
+                        }
+                        String reporter = callerRole == null ? (appId == null ? "API_KEY" : appId.toString()) : (loginUserId == null ? callerKind : loginUserId.toString());
+                        if (!reportProcessorObligation(purgeRequestId, details.trim(), reporter)) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_CONFLICT, "Conflict", "A purge request that is " + purgeToUpdate.get("status") + " cannot be changed.", req.getRequestURI());
+                            return;
+                        }
+                        String obligationFid = String.valueOf(purgeToUpdate.get("fiduciary_id"));
+                        new Audit().logEventAsync(String.valueOf(purgeToUpdate.get("user_id")), UUID.fromString(obligationFid), Constants.SERVICE_TYPE_APP, null,
+                                "PURGE_PROCESSOR_LEGAL_OBLIGATION", "purge=" + purgeRequestId + " purpose=" + purgeToUpdate.get("purpose_id") + " reported_by=" + reporter);
+                        try {
+                            PoolDB dpoPool = new PoolDB(); Connection dpoConn = null;
+                            try {
+                                dpoConn = dpoPool.getConnection();
+                                try (PreparedStatement d = dpoConn.prepareStatement("SELECT id FROM operators WHERE fiduciary_id = ? AND role = 'DPO' AND status = 'ACTIVE' ORDER BY created_at, id LIMIT 1")) {
+                                    d.setObject(1, UUID.fromString(obligationFid));
+                                    try (ResultSet dr = d.executeQuery()) {
+                                        if (dr.next()) new CESService().insertNotification("OPERATOR", dr.getString(1), obligationFid, Constants.NOTIF_PURGE_OBLIGATION);
+                                    }
+                                }
+                            } finally { dpoPool.cleanup(null, null, dpoConn); }
+                        } catch (Exception e) { e.printStackTrace(); }
+                        OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true);
+                            put("message", "Recorded for the DPO. The purge request is still open; only the DPO can place a legal hold."); }});
+                        break;
+                    }
                     if (!PurgeRules.mayChooseTarget(callerKind, status)) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only the DPO can cancel a purge or place it on legal hold.", req.getRequestURI());
                         return;
@@ -552,6 +583,31 @@ public class Compliance implements Action {
         o.put("sla_overdue", rs.getTimestamp("sla_flagged_at") != null);
         Object hold = rs.getObject("legal_hold_id");
         o.put("legal_hold_id", hold == null ? null : hold.toString());
+        Timestamp obligationAt = rs.getTimestamp("processor_obligation_at");
+        o.put("processor_obligation_at", obligationAt == null ? null : obligationAt.toInstant().toString());
+        o.put("processor_obligation_note", rs.getString("processor_obligation_note")); // what the processor said; not verified by the CMS
+    }
+
+    /**
+     * A processor reports that it must keep the data because of a legal obligation. Recorded for the DPO; the purge's status
+     * is NOT changed and the purge is not suspended (only the DPO's time-bound legal hold does that).
+     * @return false if the purge is already final
+     */
+    private boolean reportProcessorObligation(UUID purgeRequestId, String note, String reportedBy) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement("UPDATE purge_requests SET processor_obligation_at = NOW(), processor_obligation_note = ?, processor_obligation_by = ?, " +
+                    "last_updated_at = NOW() WHERE id = ? AND status NOT IN ('PURGE_COMPLETED', 'PURGE_CANCELLED')");
+            pstmt.setString(1, note);
+            pstmt.setString(2, reportedBy);
+            pstmt.setObject(3, purgeRequestId);
+            return pstmt.executeUpdate() > 0;
+        } finally {
+            pool.cleanup(null, pstmt, conn);
+        }
     }
 
     /**
@@ -715,7 +771,7 @@ public class Compliance implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT pr.id, pr.user_id, pr.purpose_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, pr.action, pr.claimed_record_count, pr.confirmed_by, pr.confirmed_by_type, pr.confirmed_at, pr.sla_flagged_at, pr.legal_hold_id, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.fiduciary_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT pr.id, pr.user_id, pr.purpose_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, pr.action, pr.claimed_record_count, pr.confirmed_by, pr.confirmed_by_type, pr.confirmed_at, pr.sla_flagged_at, pr.legal_hold_id, pr.processor_obligation_at, pr.processor_obligation_note, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
@@ -795,7 +851,7 @@ public class Compliance implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        String sql = "SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.purpose_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, pr.action, pr.claimed_record_count, pr.confirmed_by, pr.confirmed_by_type, pr.confirmed_at, pr.sla_flagged_at, pr.legal_hold_id, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.id=?";
+        String sql = "SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.purpose_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, pr.action, pr.claimed_record_count, pr.confirmed_by, pr.confirmed_by_type, pr.confirmed_at, pr.sla_flagged_at, pr.legal_hold_id, pr.processor_obligation_at, pr.processor_obligation_note, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.id=?";
 
         try {
             conn = pool.getConnection();
