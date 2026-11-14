@@ -57,6 +57,8 @@ public class Constants {
     public static final String NOTIF_RIGHTS_FULFILLED = "RIGHTS_REQUEST_FULFILLED_NOTIFICATION";
     public static final String NOTIF_RIGHTS_REJECTED = "RIGHTS_REQUEST_REJECTED_NOTIFICATION";
     public static final String NOTIF_PURPOSE_CLOSED = "PURPOSE_CLOSED_NOTIFICATION";
+    public static final String NOTIF_PURGE_SLA = "PURGE_SLA_BREACH_NOTIFICATION";
+    public static final String NOTIF_BREACH_BOARD = "BREACH_BOARD_DEADLINE_NOTIFICATION";
 
     // --- Age Categories (Section 9) ---
     public static final String AGE_ADULT = "ADULT";

@@ -173,6 +173,8 @@ public class Operator implements Action {
         }
 
         if (success && !"SESSION".equals(loginStage)) {
+            // The password was right, so this is not a failed attempt: reset the counter (the MFA step has its own).
+            LoginRateLimiter.recordSuccess(clientIp);
             // Password verified but no session yet (MFA step still to come). Not a "login success".
             try {
                 new Audit().logEventSync(identifier, fidUid, serviceType, userUid, "LOGIN_PASSWORD_VERIFIED", loginStage);
@@ -196,11 +198,9 @@ public class Operator implements Action {
             OutputProcessor.send(res, 200, out);
         }else{
             // fidUid is only resolved after a successful password check, so it is null here
-            try {
-                new Audit().logEventSync(identifier, fidUid != null ? fidUid : ADMIN_FID_UUID, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
-            } catch (SQLException e) {
-                System.err.println("[ERROR] LOGIN_FAILURE audit write failed (event stays queued): " + e.getMessage());
-            }
+            // Queued, not written inline: this path is open to anyone, and a synchronous write would take the audit
+            // lock for every guess. (A successful login is still written before the session is issued.)
+            new Audit().logEventAsync(identifier, fidUid != null ? fidUid : ADMIN_FID_UUID, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
             OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
         }
     }

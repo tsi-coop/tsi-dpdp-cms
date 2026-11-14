@@ -46,7 +46,8 @@ class ByIdOwnershipDbTest {
         sql("INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) " +
                 "VALUES (?, '1', ?, NOW(), 'DRAFT', 'IN', '{\"en\":{}}'::jsonb, NOW(), NOW())", policyIdB, fidB);
         purgeB = UUID.randomUUID();
-        sql("INSERT INTO purge_requests (id, user_id, fiduciary_id, purpose_id, trigger_event, status) VALUES (?, ?, ?, 'p1', 'ErasureRequest', 'PENDING')", purgeB, userB, fidB);
+        // assigned to key B's app: a processor can only confirm purges assigned to its own app
+        sql("INSERT INTO purge_requests (id, user_id, fiduciary_id, purpose_id, app_id, trigger_event, status) VALUES (?, ?, ?, 'p1', (SELECT app_id FROM api_keys WHERE id = ?), 'ErasureRequest', 'PURGE_INITIATED')", purgeB, userB, fidB, keyB);
         grievanceB = UUID.randomUUID();
         sql("INSERT INTO grievances (id, user_id, fiduciary_id, type, subject, description, due_date, status) VALUES (?, ?, ?, 'OTHER', 's', 'secret details', NOW() + interval '7 days', 'NEW')", grievanceB, userB, fidB);
         consentB = UUID.randomUUID();
@@ -143,7 +144,7 @@ class ByIdOwnershipDbTest {
         Call atk = call(body("_func", "update_purge_status", "id", purgeB.toString(), "fiduciary_id", fidB.toString(), "status", "PURGE_COMPLETED", "details", "forged"), key(keyA));
         new Compliance().post(atk.req, atk.res);
         assertEquals(403, atk.status, atk.out.toString());
-        assertEquals("PENDING", scalar("SELECT status FROM purge_requests WHERE id = ?", purgeB), "B's purge request must be untouched");
+        assertEquals("PURGE_INITIATED", scalar("SELECT status FROM purge_requests WHERE id = ?", purgeB), "B's purge request must be untouched");
 
         Call atk2 = call(body("_func", "get_purge_request", "id", purgeB.toString(), "fiduciary_id", fidB.toString()), key(keyA));
         new Compliance().post(atk2.req, atk2.res);

@@ -199,6 +199,12 @@ public class DefaultNotificationMessages {
         RAW.put(Constants.NOTIF_PURPOSE_CLOSED, new String[]{
                 "A purpose for which you had given consent has been closed. Your consent for it has ended and your data will be handled according to our retention rules. Your choices are in Manage Consent."
         });
+        RAW.put(Constants.NOTIF_PURGE_SLA, new String[]{
+                "A purge request has been open longer than the allowed time and is still not confirmed. Open Compliance to follow it up with the processor."
+        });
+        RAW.put(Constants.NOTIF_BREACH_BOARD, new String[]{
+                "A personal data breach is approaching, or has passed, its deadline for informing the Data Protection Board. Open Breach to record the intimation."
+        });
         RAW.put("BREACH_NOTIFICATION_LOST_DEVICE", new String[]{
                 "A device containing your personal data was lost or stolen. We are taking steps to secure your information and prevent misuse.",
                 "आपका व्यक्तिगत डेटा रखने वाला एक डिवाइस खो गया है या चोरी हो गया है। हम आपकी जानकारी सुरक्षित करने और दुरुपयोग रोकने के लिए कदम उठा रहे हैं।",

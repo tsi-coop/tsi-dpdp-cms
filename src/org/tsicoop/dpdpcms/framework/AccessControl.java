@@ -193,7 +193,8 @@ public final class AccessControl {
 
     private static void report(boolean enforce, String kind, String reason, String who, String role, UUID fid,
                                String service, String func) {
-        String key = kind + "|" + reason + "|" + role + "|" + service + "|" + func;
+        // Per person as well: a different user denied the same thing a moment later must leave their own trail.
+        String key = kind + "|" + reason + "|" + who + "|" + role + "|" + service + "|" + func;
         long now = System.currentTimeMillis();
         long window = enforce ? 60_000L : 3_600_000L;
         Long last = lastReported.get(key);

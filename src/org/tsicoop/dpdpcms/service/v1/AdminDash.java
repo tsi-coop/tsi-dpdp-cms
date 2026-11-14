@@ -245,9 +245,9 @@ public class AdminDash implements Action {
         JSONArray arr = new JSONArray();
         int limit = (input.get("limit") instanceof Long) ? ((Long) input.get("limit")).intValue() : 10;
         UUID fiduciaryId = UUID.fromString((String) input.get("fiduciary_id"));
-        String sql = "SELECT id, title, severity, status, detected_at, notification_deadline, responded_at FROM breach_incidents " +
-                "WHERE fiduciary_id = ? AND status = 'OPEN' AND notification_deadline IS NOT NULL " +
-                "ORDER BY notification_deadline ASC LIMIT ?";
+        String sql = "SELECT id, title, severity, status, detected_at, notification_deadline, responded_at, board_notification_deadline, board_notified_at, board_reference FROM breach_incidents " +
+                "WHERE fiduciary_id = ? AND ((status = 'OPEN' AND notification_deadline IS NOT NULL) OR (board_notified_at IS NULL AND board_notification_deadline IS NOT NULL)) " +
+                "ORDER BY LEAST(COALESCE(notification_deadline, 'infinity'::timestamptz), COALESCE(board_notification_deadline, 'infinity'::timestamptz)) ASC LIMIT ?";
         PoolDB pool = new PoolDB();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -265,6 +265,7 @@ public class AdminDash implements Action {
                 row.put("severity", rs.getString("severity"));
                 row.put("detected_at", rs.getTimestamp("detected_at").toInstant().toString());
                 BreachDeadline.describe(row, rs.getString("status"), rs.getTimestamp("notification_deadline"), rs.getTimestamp("responded_at"));
+                org.tsicoop.dpdpcms.util.BoardIntimation.describe(row, rs.getTimestamp("board_notification_deadline"), rs.getTimestamp("board_notified_at"), rs.getString("board_reference"), java.time.Instant.now());
                 arr.add(row);
             }
         } finally {

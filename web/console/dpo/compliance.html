@@ -258,6 +258,25 @@
             </table>
         </div>
     </div>
+
+    <div class="card mt-6" id="holds-card">
+        <h2 class="text-lg font-bold text-slate-700 mb-1 tracking-tight">Legal holds</h2>
+        <p class="text-sm text-gray-500 mb-4 max-w-3xl">A court order or investigation can require a principal's data to be kept. While a hold is active, purges for that principal (or one purpose) are put on hold instead of being sent to processors. A hold always has a reason and an end date; when it ends, the purges resume automatically.</p>
+        <form id="hold-form" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end mb-4">
+            <div><label class="block text-xs font-medium text-gray-600" for="hold-user">Principal ID</label><input id="hold-user" required class="p-2 border border-gray-300 rounded-md text-sm w-full"></div>
+            <div><label class="block text-xs font-medium text-gray-600" for="hold-purpose">Purpose (optional: all if empty)</label><input id="hold-purpose" class="p-2 border border-gray-300 rounded-md text-sm w-full"></div>
+            <div><label class="block text-xs font-medium text-gray-600" for="hold-until">Holds until</label><input id="hold-until" type="date" required class="p-2 border border-gray-300 rounded-md text-sm w-full"></div>
+            <div><label class="block text-xs font-medium text-gray-600" for="hold-ref">Order / case reference</label><input id="hold-ref" maxlength="100" class="p-2 border border-gray-300 rounded-md text-sm w-full"></div>
+            <div><button type="submit" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium w-full">Place hold</button></div>
+            <div class="md:col-span-5"><label class="block text-xs font-medium text-gray-600" for="hold-reason">Reason (at least 10 characters; recorded in the audit log)</label><input id="hold-reason" required class="p-2 border border-gray-300 rounded-md text-sm w-full"></div>
+        </form>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-xs">
+                <thead><tr class="table-header"><th class="px-2 py-2">Principal</th><th class="px-2 py-2">Purpose</th><th class="px-2 py-2">Reason</th><th class="px-2 py-2">Until</th><th class="px-2 py-2">Status</th><th class="px-2 py-2"></th></tr></thead>
+                <tbody id="hold-table-body" class="bg-white divide-y divide-gray-200"><tr><td colspan="6" class="p-3 text-center text-gray-500">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
 </main>
 
 <!-- Modal for Purge Request Detail and Fulfillment -->
@@ -276,7 +295,13 @@
                 <p><strong>Current Status:</strong> <span id="detail-status" class="font-bold"></span></p>
                 <p><strong>Initiated At:</strong> <span id="detail-initiated"></span></p>
                 <p><strong>Trigger Event:</strong> <span id="detail-trigger"></span></p>
+                <p><strong>Processor should:</strong> <span id="detail-action"></span></p>
             </div>
+        </div>
+        <div id="confirmation-evidence" class="hidden p-3 rounded-md bg-slate-50 border border-slate-200 text-sm mb-3">
+            <p class="font-semibold">Confirmation</p>
+            <p><strong>Confirmed by:</strong> <span id="detail-confirmed-by"></span> on <span id="detail-confirmed-at"></span></p>
+            <p><strong>Records the processor says it removed:</strong> <span id="detail-claimed"></span> <span class="text-xs text-gray-500">(the processor's own figure; the CMS cannot verify records held in their systems)</span></p>
         </div>
 
         <h3 class="font-semibold text-lg mt-4 border-b pb-1">Context & Details:</h3>
@@ -397,6 +422,7 @@
     const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
     const IS_OPERATOR = localStorage.getItem('role') === 'OPERATOR';
     if (IS_OPERATOR) {
+        document.querySelectorAll('#new-status option[value="PURGE_CANCELLED"], #new-status option[value="LEGAL_HOLD_APPLIED"]').forEach(o => o.remove());
         document.querySelectorAll('a[href="policies.html"], a[href="settings.html"], a[href="team.html"]').forEach(el => el.remove());
         document.getElementById('run-compliance-check-btn').remove();
         document.getElementById('webhook-deliveries-link').remove();
@@ -473,7 +499,7 @@
             <td class="px-2 py-2 text-gray-600 truncate" title="${esc(req.trigger_event)}">${esc(req.trigger_event)}</td>
             <td class="px-2 py-2 text-gray-600 truncate" title="${esc(req.app_name)}">${esc(req.app_name)}</td>
             <td class="px-2 py-2 text-gray-600 truncate">${new Date(req.initiated_at).toLocaleDateString()}</td>
-            <td class="px-2 py-2">${createStatusBadge(req.status)}${notPickedUp}</td>
+            <td class="px-2 py-2">${createStatusBadge(req.status)}${notPickedUp}${req.sla_overdue ? '<div class="text-[10px] font-black uppercase text-red-700 whitespace-normal" title="Still not confirmed after the allowed time">Overdue</div>' : ''}${req.action === 'DE_IDENTIFY' ? '<div class="text-[10px] font-black uppercase text-indigo-700 whitespace-normal" title="Processors should de-identify the data, not erase it">De-identify</div>' : ''}</td>
             <td class="px-2 py-2 text-gray-600 truncate">${OperatorMap[req.assigned_operator_id] || 'Unassigned'}</td>
             <td class="px-2 py-2">
                 <button class="text-indigo-600 hover:text-indigo-900 font-medium" onclick="viewPurgeRequest('${req.id}')">Manage</button>
@@ -537,6 +563,14 @@
             document.getElementById('detail-trigger').textContent = req.trigger_event;
             document.getElementById('detail-status').innerHTML = createStatusBadge(req.status);
             document.getElementById('detail-initiated').textContent = new Date(req.initiated_at).toLocaleString();
+            document.getElementById('detail-action').textContent = req.action === 'DE_IDENTIFY' ? 'de-identify the data' : 'erase the data';
+            const ev = document.getElementById('confirmation-evidence');
+            if (req.confirmed_at) {
+                ev.classList.remove('hidden');
+                document.getElementById('detail-confirmed-by').textContent = (req.confirmed_by_type === 'API_KEY' ? 'the processor\u2019s app' : 'an operator') + ' (' + req.confirmed_by + ')';
+                document.getElementById('detail-confirmed-at').textContent = new Date(req.confirmed_at).toLocaleString();
+                document.getElementById('detail-claimed').textContent = req.claimed_record_count == null ? 'not stated' : req.claimed_record_count;
+            } else { ev.classList.add('hidden'); }
             document.getElementById('detail-context').textContent = req.details || "No additional context provided.";
             // Prefill form
             document.getElementById('new-status').value = req.status === 'PENDING' ? 'IN_PROGRESS' : req.status;
@@ -683,6 +717,54 @@
     document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
     document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
     if (!IS_OPERATOR) loadWebhookFailedBadge();
+
+    // --- Legal holds (DPO / ADMIN only) ---
+    async function holdApi(func, extra) {
+        const response = await fetch(API_URL_PURGE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify(Object.assign({ "_func": func, "fiduciary_id": localStorage.getItem('fiduciary_id') }, extra || {}))
+        });
+        let data = null; try { data = await response.json(); } catch (e) { }
+        return { ok: response.ok, data: data };
+    }
+    async function loadHolds() {
+        const body = document.getElementById('hold-table-body');
+        const r = await holdApi('list_legal_holds');
+        if (!r.ok || !Array.isArray(r.data)) { body.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-red-600">Could not load legal holds.</td></tr>'; return; }
+        if (r.data.length === 0) { body.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500">No legal holds.</td></tr>'; return; }
+        body.innerHTML = r.data.map(h => `<tr>
+            <td class="px-2 py-2">${esc(h.user_id)}</td>
+            <td class="px-2 py-2">${esc(h.purpose_id || 'all purposes')}</td>
+            <td class="px-2 py-2">${esc(h.reason)}${h.reference ? '<div class="text-gray-500">' + esc(h.reference) + '</div>' : ''}</td>
+            <td class="px-2 py-2">${esc(new Date(h.valid_until).toLocaleDateString())}</td>
+            <td class="px-2 py-2">${esc(h.status)}</td>
+            <td class="px-2 py-2">${h.status === 'ACTIVE' ? `<button class="text-indigo-600 hover:text-indigo-900 font-medium" data-release="${esc(h.hold_id)}">Release</button>` : ''}</td>
+        </tr>`).join('');
+        body.querySelectorAll('[data-release]').forEach(b => b.addEventListener('click', async () => {
+            const reason = prompt('Why is this hold being released? (at least 10 characters)');
+            if (!reason || reason.trim().length < 10) { if (reason !== null) alert('A reason of at least 10 characters is required.'); return; }
+            const rr = await holdApi('release_legal_hold', { hold_id: b.dataset.release, reason: reason.trim() });
+            alert(rr.ok ? `Released. ${rr.data.purges_resumed} purge(s) resumed.` : 'Could not release: ' + ((rr.data && rr.data.message) || 'error'));
+            loadHolds(); loadPurgeRequests();
+        }));
+    }
+    if (IS_OPERATOR) {
+        document.getElementById('holds-card').remove();
+    } else {
+        document.getElementById('hold-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const until = document.getElementById('hold-until').value;
+            const extra = { user_id: document.getElementById('hold-user').value.trim(), reason: document.getElementById('hold-reason').value.trim(), valid_until: until };
+            if (document.getElementById('hold-purpose').value.trim()) extra.purpose_id = document.getElementById('hold-purpose').value.trim();
+            if (document.getElementById('hold-ref').value.trim()) extra.reference = document.getElementById('hold-ref').value.trim();
+            if (!confirm('Place this legal hold? Purges for this principal will be deferred until it ends or is released.')) return;
+            const r = await holdApi('place_legal_hold', extra);
+            if (r.ok) { alert(`Hold placed. ${r.data.purges_held} existing purge(s) put on hold.`); this.reset(); loadHolds(); loadPurgeRequests(); }
+            else alert('Could not place the hold: ' + ((r.data && r.data.message) || 'error'));
+        });
+        loadHolds();
+    }
     statusFilter.addEventListener('change', loadPurgeRequests);
     searchInput.addEventListener('input', () => { loadPurgeRequests(); });
 

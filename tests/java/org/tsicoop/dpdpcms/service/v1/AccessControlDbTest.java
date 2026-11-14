@@ -146,6 +146,17 @@ class AccessControlDbTest {
     }
 
     @Test
+    void shadow_aDifferentPersonDeniedTheSameThingIsReportedToo() throws Exception {
+        assumeTrue(!AccessControl.enforcing());
+        String first = operator("DPO", FID_A), second = operator("DPO", FID_A);
+        boolean[] ok = new boolean[1];
+        String a = checkCapturingStderr(request(first, body("_func", "x")), "apikey", "list_api_keys", ok)[0];
+        String b = checkCapturingStderr(request(second, body("_func", "x")), "apikey", "list_api_keys", ok)[0];
+        assertTrue(a.contains("DENY_NO_PERMISSION"));
+        assertTrue(b.contains("DENY_NO_PERMISSION"), "each person leaves their own trail");
+    }
+
+    @Test
     void shadow_allowedRequestsAreSilent() throws Exception {
         assumeTrue(!AccessControl.enforcing());
         String dpo = operator("DPO", FID_A);

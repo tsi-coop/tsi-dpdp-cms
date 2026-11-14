@@ -15,4 +15,13 @@ public final class SessionPolicy {
         if (cutoff == null || issuedAt == null) return false;
         return issuedAt.getEpochSecond() < cutoff.getEpochSecond();
     }
+
+    /**
+     * Tokens issued by the previous release carry no type. They are honoured only while they are as young as a new
+     * session may be, and never once MFA is enforced (then everyone logs in again and gets an MFA-marked session).
+     */
+    public static boolean legacyTokenAcceptable(Instant issuedAt, Instant now, boolean mfaEnforced, long maxAgeMillis) {
+        if (issuedAt == null || mfaEnforced) return false;
+        return now.toEpochMilli() - issuedAt.toEpochMilli() <= maxAgeMillis;
+    }
 }

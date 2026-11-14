@@ -334,6 +334,8 @@ mvn test
   the same database variables. Run `ConsentCaptureDbTest` normally and with `CONSENT_CAPTURE_MODE=strict`.
 - `NominationsDbTest` (s.14 nominations) and `PurposeLifecycleDbTest` (closing a purpose, the closed-grant refusal, purge action,
   withdrawal implications) need the same database variables.
+- `PurgeAndHoldsDbTest` (purge confirmation rules, API-key erasure, legal holds, sweeps, SLA flag) and `BreachBoardDbTest`
+  (Board intimation) need the same database variables. `ErasureTargetsTest` and the other unit tests need none.
 - `RightsDbTest` covers access and correction requests (submit, privacy, lifecycle, data map, assignment, overdue).
 - `OperatorMfaDbTest` covers MFA in both modes. Run it twice: normally (MFA optional), then with
   `MFA_ENFORCE=true mvn test -Dtest=OperatorMfaDbTest` (ADMIN and DPO forced to enrol).

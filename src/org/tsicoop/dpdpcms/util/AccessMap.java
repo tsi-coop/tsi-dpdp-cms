@@ -44,10 +44,14 @@ public final class AccessMap {
         m.put("breach.get_breach", "breaches:read");
         m.put("breach.get_breach_settings", "breaches:read");
         m.put("breach.list_breaches", "breaches:read");
+        m.put("breach.record_board_intimation", "breaches:write");
         m.put("breach.report_breach", "breaches:write");
         m.put("breach.set_breach_settings", "breaches:write");
         m.put("breach.update_breach_status", "breaches:write");
         m.put("compliance.assign_purge_request", "purges:manage");
+        m.put("compliance.place_legal_hold", "purges:manage");
+        m.put("compliance.list_legal_holds", "purges:read");
+        m.put("compliance.release_legal_hold", "purges:manage");
         m.put("compliance.get_purge_request", "purges:read");
         m.put("compliance.initiate_purge_request", "purges:write");
         m.put("compliance.list_purge_requests", "purges:read");

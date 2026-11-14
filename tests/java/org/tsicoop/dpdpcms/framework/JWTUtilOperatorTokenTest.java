@@ -38,11 +38,28 @@ class JWTUtilOperatorTokenTest {
     }
 
     @Test
-    void untypedTokenIssuedBeforeThisProcessStartedIsStillAccepted() {
+    void untypedTokenIssuedBeforeThisProcessStartedIsStillAcceptedWhenMfaIsNotEnforced() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(!org.tsicoop.dpdpcms.util.MfaPolicy.enforcing(), "legacy tokens are refused once MFA is enforced");
         // lets sessions issued by the previous release survive the upgrade
         String old = signRaw(new java.util.HashMap<>(java.util.Map.of("name", "a", "role", "ADMIN")), "a@b.com",
                 new Date(System.currentTimeMillis() - 3_600_000L));
         assertTrue(JWTUtil.isTokenValid(old));
+    }
+
+    @Test
+    void whenMfaIsEnforcedUntypedTokensAreRefusedSoEveryoneLogsInAgain() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(org.tsicoop.dpdpcms.util.MfaPolicy.enforcing(), "run with MFA_ENFORCE=true");
+        String old = signRaw(new java.util.HashMap<>(java.util.Map.of("name", "a", "role", "ADMIN")), "a@b.com",
+                new Date(System.currentTimeMillis() - 3_600_000L));
+        assertFalse(JWTUtil.isTokenValid(old));
+    }
+
+    @Test
+    void anOldUntypedTokenDoesNotSurviveRestartsForever() {
+        // issued 9 hours ago (longer than a new session may last) by the previous release, which allowed 10 days
+        String stale = signRaw(new java.util.HashMap<>(java.util.Map.of("name", "a", "role", "ADMIN")), "a@b.com",
+                new Date(System.currentTimeMillis() - 9L * 3_600_000L));
+        assertFalse(JWTUtil.isTokenValid(stale));
     }
 
     @Test

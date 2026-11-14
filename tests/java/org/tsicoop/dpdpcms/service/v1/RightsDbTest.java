@@ -100,6 +100,7 @@ class RightsDbTest {
         assertNull(j.get("due_date"), "no deadline until one is configured");
         assertEquals(dpoId, scalar("SELECT assigned_dpo_user_id::text FROM rights_requests WHERE id = ?::uuid", j.get("request_id")));
         assertEquals("PRINCIPAL_PORTAL", scalar("SELECT channel FROM rights_requests WHERE id = ?::uuid", j.get("request_id")));
+        assertEquals("0", scalar("SELECT COUNT(*)::text FROM notifications WHERE recipient_id = ? AND notification_type = 'RIGHTS_REQUEST_SUBMITTED_NOTIFICATION' AND fiduciary_id = ? AND message_snapshot IS NULL", U1, fid), "a fiduciary with no stored template still gets the built-in text, never a blank");
         assertEquals(notifiedBefore + 1, Long.parseLong(scalar("SELECT COUNT(*) FROM notifications WHERE recipient_id = ? AND notification_type = 'RIGHTS_REQUEST_SUBMITTED_NOTIFICATION' AND fiduciary_id = ?", U1, fid)), "the principal is told it was received");
     }
 

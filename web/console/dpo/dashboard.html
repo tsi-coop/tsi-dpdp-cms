@@ -397,26 +397,42 @@
         const tbody = document.getElementById('breach-deadline-body');
         const chip = document.getElementById('breach-overdue-chip');
         if (breachDeadlines.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400 italic">No open breach incidents.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400 italic">No breach incidents need attention.</td></tr>';
             chip.classList.add('hidden');
             return;
         }
         const elapsed = (Date.now() - breachDeadlinesFetchedAt) / 1000;
         let overdueCount = 0;
+        const clock = (label, remainingSeconds) => {
+            const overdue = remainingSeconds < 0;
+            return overdue
+                ? `<div><span class="text-xs text-slate-500">${label}</span> <span class="font-black text-red-600">OVERDUE by ${formatDuration(-remainingSeconds)}</span></div>`
+                : `<div><span class="text-xs text-slate-500">${label}</span> <span class="font-semibold ${remainingSeconds < 6 * 3600 ? 'text-amber-600' : 'text-slate-600'}">${formatDuration(remainingSeconds)} left</span></div>`;
+        };
         tbody.innerHTML = breachDeadlines.map(b => {
-            const remaining = b.seconds_remaining - elapsed;
-            const overdue = remaining < 0;
-            if (overdue) overdueCount++;
-            const timeCell = overdue
-                ? `<span class="font-black text-red-600">OVERDUE by ${formatDuration(-remaining)}</span>`
-                : `<span class="font-semibold ${remaining < 6 * 3600 ? 'text-amber-600' : 'text-slate-600'}">${formatDuration(remaining)} left</span>`;
+            // Two clocks: telling the affected principals (while the incident is OPEN) and informing the Data Protection Board
+            // (until the DPO records it). Either can be overdue.
+            const cells = [];
+            let rowOverdue = false;
+            if (b.seconds_remaining != null && b.status === 'OPEN') {
+                const r = b.seconds_remaining - elapsed;
+                cells.push(clock('Principals:', r));
+                if (r < 0) rowOverdue = true;
+            }
+            if (b.board_seconds_remaining != null && !b.board_notified_at) {
+                const r = b.board_seconds_remaining - elapsed;
+                cells.push(clock('Board:', r));
+                if (r < 0) rowOverdue = true;
+            }
+            if (rowOverdue) overdueCount++;
+            const shownDeadline = b.status === 'OPEN' && b.notification_deadline ? b.notification_deadline : b.board_notification_deadline;
             return `
-                <tr class="${overdue ? 'bg-red-50' : 'hover:bg-slate-50'} transition-colors">
+                <tr class="${rowOverdue ? 'bg-red-50' : 'hover:bg-slate-50'} transition-colors">
                     <td class="px-4 py-3 font-bold text-slate-700"><a href="breach.html" class="hover:underline">${escHtml(b.title)}</a></td>
                     <td class="px-4 py-3 text-xs font-black uppercase">${escHtml(b.severity)}</td>
                     <td class="px-4 py-3 text-slate-500">${new Date(b.detected_at).toLocaleString()}</td>
-                    <td class="px-4 py-3 text-slate-500">${new Date(b.notification_deadline).toLocaleString()}</td>
-                    <td class="px-4 py-3">${timeCell}</td>
+                    <td class="px-4 py-3 text-slate-500">${shownDeadline ? new Date(shownDeadline).toLocaleString() : '\u2014'}</td>
+                    <td class="px-4 py-3">${cells.join('') || '<span class="text-slate-400">\u2014</span>'}</td>
                 </tr>`;
         }).join('');
         chip.textContent = `${overdueCount} overdue`;

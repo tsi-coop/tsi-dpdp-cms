@@ -21,7 +21,8 @@ class OperatorAccessPolicyTest {
     @Test
     void mfaNotRequiredForOtherRolesOrWhenNotEnforcing() {
         assertFalse(MfaPolicy.required("OPERATOR", true));
-        assertFalse(MfaPolicy.required("AUDITOR", true));
+        assertTrue(MfaPolicy.required("AUDITOR", true));   // reads the audit trail, so it needs MFA too
+        assertTrue(MfaPolicy.required("auditor", true));
         assertFalse(MfaPolicy.required("ADMIN", false));
         assertFalse(MfaPolicy.required(null, true));
     }
@@ -67,6 +68,73 @@ class OperatorAccessPolicyTest {
         m.remove("TSI_LOOKUP_SALT");
         m.put("DB_ENCRYPTION_KEY", "local-dev-enc-key-do-not-use-in-production");
         assertEquals(3, SecretGuard.problems(m).size());
+    }
+
+    @Test
+    void placeholdersFromTheExampleEnvFileAreRefused() {
+        for (String v : new String[]{"<<generate-with-openssl-rand-hex-32>>", "change-me-change-me-change-me-change-me", "REPLACE_WITH_A_REAL_SECRET_VALUE_1234567"}) {
+            Map<String, String> m = goodEnv();
+            m.put("JWT_SECRET", v);
+            assertEquals(1, SecretGuard.problems(m).size(), v);
+        }
+    }
+
+    @Test
+    void shortKeysThatCannotBeRotatedAreAWarningNotARefusal() {
+        // DB_ENCRYPTION_KEY and TSI_LOOKUP_SALT cannot be changed without re-encrypting data, so an existing short one must still boot
+        Map<String, String> m = goodEnv();
+        m.put("DB_ENCRYPTION_KEY", "sixteen-chars-key");
+        m.put("TSI_LOOKUP_SALT", "short-salt-1234567");
+        assertTrue(SecretGuard.problems(m).isEmpty());
+        assertEquals(2, SecretGuard.warnings(m).size());
+        m.put("JWT_SECRET", "short"); // a rotatable secret must still be strong
+        assertEquals(1, SecretGuard.problems(m).size());
+    }
+
+    @Test
+    void aMissingNonRotatableKeyIsStillRefused() {
+        Map<String, String> m = goodEnv();
+        m.remove("DB_ENCRYPTION_KEY");
+        assertEquals(1, SecretGuard.problems(m).size());
+    }
+
+    // ---- legacy (untyped) tokens ----
+    @Test
+    void legacyTokensAreAcceptedOnlyWhileFreshAndOnlyWhenMfaIsNotEnforced() {
+        Instant iat = Instant.parse("2026-01-01T10:00:00Z");
+        long eightHours = 8L * 3600_000L;
+        assertTrue(SessionPolicy.legacyTokenAcceptable(iat, iat.plusSeconds(3600), false, eightHours));
+        assertFalse(SessionPolicy.legacyTokenAcceptable(iat, iat.plusSeconds(9 * 3600), false, eightHours), "older than a new session may be");
+        assertFalse(SessionPolicy.legacyTokenAcceptable(iat, iat.plusSeconds(60), true, eightHours), "MFA enforced: everyone logs in again");
+        assertFalse(SessionPolicy.legacyTokenAcceptable(null, iat, false, eightHours));
+    }
+
+    // ---- audit field limits and verification throttle ----
+    @Test
+    void auditFieldsAreClippedToTheirColumns() {
+        assertEquals(255, AuditLimits.userId("x".repeat(400)).length());
+        assertEquals(100, AuditLimits.serviceType("y".repeat(400)).length());
+        assertEquals(100, AuditLimits.action("z".repeat(400)).length());
+        assertEquals("short", AuditLimits.userId("short"));
+        assertEquals("UNKNOWN", AuditLimits.userId(null));
+        assertEquals("a b", AuditLimits.action("a\u0000b".replace("\u0000", " ")));
+    }
+
+    @Test
+    void onlyDataErrorsAreTreatedAsPoison() {
+        assertTrue(AuditLimits.isPoison("22001"));   // value too long
+        assertTrue(AuditLimits.isPoison("23502"));   // not null violation
+        assertFalse(AuditLimits.isPoison("08006"));  // connection failure: keep the events, retry
+        assertFalse(AuditLimits.isPoison("57P01"));
+        assertFalse(AuditLimits.isPoison(null));
+    }
+
+    @Test
+    void aRecentVerdictIsReusedInsteadOfWalkingTheChainAgain() {
+        long now = 1_000_000_000L, window = 300_000L;
+        assertTrue(AuditLimits.reuseVerdict(now - 10_000, now, window));
+        assertFalse(AuditLimits.reuseVerdict(now - 400_000, now, window));
+        assertFalse(AuditLimits.reuseVerdict(null, now, window));
     }
 
     @Test

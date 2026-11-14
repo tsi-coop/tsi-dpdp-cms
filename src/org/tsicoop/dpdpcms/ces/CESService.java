@@ -196,7 +196,8 @@ public class CESService {
             }
             // Notify the Data Principal that purge has been initiated for this purpose,
             // once per purpose, regardless of whether a linked App was found.
-            insertNotification("PRINCIPAL", principalId, fiduciaryId, Constants.NOTIF_PURGE_INIT);
+            insertNotification("PRINCIPAL", principalId, fiduciaryId,
+                    isHeld(fiduciaryId, principalId, purposeId) ? Constants.NOTIF_LEGAL_ONHOLD : Constants.NOTIF_PURGE_INIT);
             Iterator<JSONObject> appidIt = appids.iterator();
             while(appidIt.hasNext()){
                 JSONObject appidJSON = (JSONObject) appidIt.next();
@@ -211,8 +212,8 @@ public class CESService {
                                     Constants.EVENT_PURGE_INITIATED);
                 System.out.println("[CES DEBUG] handleErasure: insertPurgeRequest result=" + purgeResult
                         + " principal=" + principalId + " app=" + appid + " purpose=" + purposeId);
-                // Send purge notification to data processor
-                insertNotification( "APP",
+                // Send purge notification to data processor (not while a legal hold defers the purge)
+                if (!Boolean.TRUE.equals(purgeResult.get("held"))) insertNotification( "APP",
                                     appid,
                                     fiduciaryId,
                                     Constants.NOTIF_PURGE_INIT);
@@ -284,8 +285,12 @@ public class CESService {
             granted = (boolean) consent.get("consent_granted");
             expiry = (String) consent.get("consent_expiry");
             //System.out.println("Printing: " + principalId + " | Purpose: " + purposeId + " | Granted: " + granted+ " | Expiry: " + expiry);
-            if(expiry != null){
-                tsExpiry = Timestamp.from((Instant) Instant.parse(expiry));
+            Instant parsedExpiry = org.tsicoop.dpdpcms.util.ExpiryDates.parse(expiry);
+            if(expiry != null && parsedExpiry == null) {
+                System.err.println("[CES] unreadable consent_expiry '" + expiry + "' for principal " + principalId + " purpose " + purposeId + ": skipped");
+            }
+            if(parsedExpiry != null){
+                tsExpiry = Timestamp.from(parsedExpiry);
                 expiryinstant = tsExpiry.toInstant();
                 notifInstant = expiryinstant.minus(5, ChronoUnit.DAYS);
                 tsNotif = Timestamp.from(notifInstant);
@@ -354,9 +359,10 @@ public class CESService {
             expiry = (String) consent.get("consent_expiry");
             if (ropaRetentionDays != null && ropaCollection) {
                 tsExpiry = Timestamp.from(createdAt.toInstant().plus(ropaRetentionDays, ChronoUnit.DAYS));
-            } else if (expiry != null) {
-                tsExpiry = Timestamp.from(Instant.parse(expiry));
+            } else if (org.tsicoop.dpdpcms.util.ExpiryDates.parse(expiry) != null) {
+                tsExpiry = Timestamp.from(org.tsicoop.dpdpcms.util.ExpiryDates.parse(expiry)); // accepts a date alone too
             } else {
+                if (expiry != null) System.err.println("[CES] unreadable consent_expiry '" + expiry + "' for principal " + principalId + " purpose " + purposeId + ": skipped");
                 tsExpiry = null;
             }
             if(tsExpiry != null){
@@ -372,21 +378,22 @@ public class CESService {
                     }
                     // Notify the Data Principal that purge has been initiated for this purpose,
                     // once per purpose, regardless of whether a linked App was found.
-                    insertNotification("PRINCIPAL", principalId, fiduciaryId, Constants.NOTIF_PURGE_INIT);
+                    insertNotification("PRINCIPAL", principalId, fiduciaryId,
+                            isHeld(fiduciaryId, principalId, purposeId) ? Constants.NOTIF_LEGAL_ONHOLD : Constants.NOTIF_PURGE_INIT);
                     Iterator<JSONObject> appidIt = appids.iterator();
                     while(appidIt.hasNext()){
                         JSONObject appidJSON = (JSONObject) appidIt.next();
                         String appid = (String) appidJSON.get("app_id");
                         System.out.println("Enforcing Purge for Principal: " + principalId + " | App: "+ appid+" | Purpose: " + purposeId);
                         // Create Purge Request
-                        insertPurgeRequest( principalId,
+                        JSONObject retentionPurge = insertPurgeRequest( principalId,
                                 fiduciaryId,
                                 purposeId,
                                 appid,
                                 Constants.PURGE_TRIGGER_EXPIRY,
                                 Constants.EVENT_PURGE_INITIATED);
-                        // Send purge notification to data processor
-                        insertNotification( "APP",
+                        // Send purge notification to data processor (not while a legal hold defers the purge)
+                        if (!Boolean.TRUE.equals(retentionPurge.get("held"))) insertNotification( "APP",
                                 appid,
                                 fiduciaryId,
                                 Constants.NOTIF_PURGE_INIT);
@@ -405,6 +412,32 @@ public class CESService {
 
     }
 
+    /** The id of an active legal hold covering this principal and purpose (a hold naming no purpose covers all), or null. */
+    public static UUID findActiveHold(Connection conn, String fiduciaryId, String userId, String purposeId) throws SQLException {
+        try (PreparedStatement p = conn.prepareStatement(
+                "SELECT id FROM legal_holds WHERE fiduciary_id = ? AND user_id = ? AND released_at IS NULL AND valid_until > NOW() " +
+                "AND (purpose_id IS NULL OR purpose_id = ?) ORDER BY valid_until DESC LIMIT 1")) {
+            p.setObject(1, UUID.fromString(fiduciaryId));
+            p.setString(2, userId);
+            p.setString(3, purposeId);
+            try (ResultSet r = p.executeQuery()) { return r.next() ? (UUID) r.getObject(1) : null; }
+        }
+    }
+
+    /** True if a legal hold currently covers this principal and purpose. */
+    private boolean isHeld(String fiduciaryId, String userId, String purposeId) {
+        PoolDB pool = null; Connection conn = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            return findActiveHold(conn, fiduciaryId, userId, purposeId) != null;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (pool != null) pool.cleanup(null, null, conn);
+        }
+    }
+
     /**
      * Inserts a new purge request record into the database based on the altered schema.
      * Uses your specific style with local PoolDB and try-finally cleanup.
@@ -416,9 +449,10 @@ public class CESService {
                                          String triggerEvent,
                                          String status) throws SQLException {
         JSONObject response = new JSONObject();
-        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, purpose_id, app_id, trigger_event, status, action) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, purpose_id, app_id, trigger_event, status, action, legal_hold_id, details) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
         String action = "ERASE";
+        UUID holdId = null;
 
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -437,7 +471,13 @@ public class CESService {
             stmt.setString(3, purposeId);
             stmt.setObject(4, UUID.fromString(appId));
             stmt.setString(5, triggerEvent);
-            stmt.setString(6, status);
+            // While a legal hold covers this principal (and purpose) the purge is recorded but put on hold: the processor
+            // is not told to purge, and the daily sweep resumes it when the hold ends.
+            holdId = findActiveHold(conn, fiduciaryId, userId, purposeId);
+            String effectiveStatus = holdId != null ? Constants.EVENT_LEGAL_HOLD_APPLIED : status;
+            stmt.setString(6, effectiveStatus);
+            status = effectiveStatus;
+            if (holdId != null) response.put("held", true);
             // When the purpose has been CLOSED by the DPO, a purge that falls due because the retention period ran
             // out carries the action the DPO chose (ERASE or DE_IDENTIFY). A principal's own erasure request is
             // always ERASE whatever the purpose says.
@@ -449,6 +489,8 @@ public class CESService {
                 }
             }
             stmt.setString(7, action);
+            stmt.setObject(8, holdId);
+            stmt.setString(9, holdId != null ? "On legal hold: purge deferred until the hold ends." : null);
 
             rs = stmt.executeQuery();
             if (rs.next()) {
@@ -648,6 +690,14 @@ public class CESService {
             e.printStackTrace();
         } finally {
             if (pool != null) pool.cleanup(rs, pstmt, conn);
+        }
+        // No template stored for this fiduciary (it was created before this notification type existed): use the
+        // built-in text, so a new type is never sent blank.
+        java.util.Map<String, String> defaults = org.tsicoop.dpdpcms.util.DefaultNotificationMessages.getAll().get(notificationType);
+        if (defaults != null) {
+            JSONObject o = new JSONObject();
+            o.putAll(defaults);
+            return o;
         }
         return null;
     }

@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.tsicoop.dpdpcms.util.MfaPolicy;
 import org.tsicoop.dpdpcms.util.SessionPolicy;
 
 import java.nio.charset.StandardCharsets;
@@ -207,6 +208,10 @@ public class JWTUtil {
             Instant iat = claims.getIssuedAt() == null ? null : claims.getIssuedAt().toInstant();
             if (typ == null) {
                 if (iat == null || !iat.isBefore(TYPING_START)) return false;
+                // Previous-release tokens lived 10 days and carry no MFA proof: honour them only while as young as a
+                // new session may be, and never when MFA is enforced. (TYPING_START moves on every restart, so
+                // without this an old token would survive restarts for its whole 10-day life.)
+                if (!SessionPolicy.legacyTokenAcceptable(iat, Instant.now(), MfaPolicy.enforcing(), OPERATOR_TTL_MS)) return false;
             } else if (!TYP_OPERATOR.equals(typ)) {
                 return false;
             }

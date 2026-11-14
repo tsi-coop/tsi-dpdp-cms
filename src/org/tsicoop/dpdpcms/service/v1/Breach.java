@@ -1,6 +1,7 @@
 package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.util.AppVersion;
+import org.tsicoop.dpdpcms.util.BoardIntimation;
 import org.tsicoop.dpdpcms.util.BreachDeadline;
 import org.tsicoop.dpdpcms.framework.*;
 import org.tsicoop.dpdpcms.util.Constants;
@@ -211,6 +212,23 @@ public class Breach implements Action {
                     break;
                 }
 
+                case "record_board_intimation": {
+                    if (InputProcessor.rejectIfOperator(req, res)) return; // DPO / ADMIN
+                    String bid = (String) input.get("id");
+                    if (bid == null || bid.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'id' is required for 'record_board_intimation'.", req.getRequestURI());
+                        return;
+                    }
+                    JSONObject target = getBreachFromDb(UUID.fromString(bid));
+                    if (target == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Breach incident not found.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfNotOwnFiduciary(UUID.fromString((String) target.get("fiduciary_id")), loginUserId, req, res)) return;
+                    recordBoardIntimation(input, target, loginUserId, res, req);
+                    break;
+                }
+
                 case "download_breach_report": {
                     String id = (String) input.get("id");
                     if (id == null || id.isEmpty()) {
@@ -280,8 +298,8 @@ public class Breach implements Action {
         UUID breachId = null;
 
         String sqlInsert = "INSERT INTO breach_incidents (fiduciary_id, title, description, detected_at, affected_purpose_id, affected_policy_id, " +
-                "affected_data_categories, actionable_steps, severity, affected_principal_count, created_by_user_id, notification_type, notification_deadline) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?) RETURNING id";
+                "affected_data_categories, actionable_steps, severity, affected_principal_count, created_by_user_id, notification_type, notification_deadline, board_notification_deadline) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
         Timestamp notificationDeadline = BreachDeadline.deadlineFor(detectedAt, getDeadlineHours(fiduciaryId));
 
         try {
@@ -300,6 +318,7 @@ public class Breach implements Action {
             pstmt.setObject(11, loginUserId);
             pstmt.setString(12, notificationType);
             pstmt.setTimestamp(13, notificationDeadline);
+            pstmt.setTimestamp(14, notificationDeadline); // the Board has its own record, tracked from the moment of the report
 
             rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -351,6 +370,7 @@ public class Breach implements Action {
         output.put("success", true);
         output.put("id", breachId.toString());
         output.put("notification_deadline", notificationDeadline.toInstant().toString());
+        output.put("board_notification_deadline", notificationDeadline.toInstant().toString());
         output.put("affected_principal_count", affectedUserIds.size());
         output.put("csv_job_queued", csvJobQueued);
         return output;
@@ -457,10 +477,88 @@ public class Breach implements Action {
         }
     }
 
+    /** The DPO records that the Data Protection Board has been informed. Once only: it is a statement of fact, not a draft. */
+    private void recordBoardIntimation(JSONObject input, JSONObject breach, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        if (breach.get("board_notified_at") != null) {
+            OutputProcessor.errorResponse(res, 409, "Conflict", "The Board intimation for this breach has already been recorded.", req.getRequestURI());
+            return;
+        }
+        java.time.Instant now = java.time.Instant.now();
+        java.time.Instant when = now;
+        Object raw = input.get("notified_at");
+        if (raw != null && !raw.toString().isBlank()) {
+            when = org.tsicoop.dpdpcms.util.ExpiryDates.parse(raw.toString());
+            if (when == null) { OutputProcessor.errorResponse(res, 400, "Bad Request", "'notified_at' must be an ISO-8601 date or date-time.", req.getRequestURI()); return; }
+            // a date alone means the START of that day here (ExpiryDates reads it as the end of the day)
+            if (raw.toString().trim().length() == 10) when = when.minus(java.time.Duration.ofDays(1));
+        }
+        String reference = input.get("board_reference") == null ? null : input.get("board_reference").toString().trim();
+        if (reference != null && reference.isEmpty()) reference = null;
+        java.time.Instant detected = java.time.Instant.parse((String) breach.get("detected_at"));
+        String problem = BoardIntimation.problem(when, detected, now, reference);
+        if (problem != null) { OutputProcessor.errorResponse(res, 400, "Bad Request", "Invalid intimation: " + problem + ".", req.getRequestURI()); return; }
+
+        PoolDB pool = new PoolDB(); Connection conn = null; int updated;
+        try {
+            conn = pool.getConnection();
+            try (PreparedStatement u = conn.prepareStatement("UPDATE breach_incidents SET board_notified_at = ?, board_reference = ?, last_updated_at = NOW() WHERE id = ? AND board_notified_at IS NULL")) {
+                u.setTimestamp(1, Timestamp.from(when)); u.setString(2, reference); u.setObject(3, UUID.fromString((String) breach.get("id")));
+                updated = u.executeUpdate();
+            }
+        } finally { pool.cleanup(null, null, conn); }
+        if (updated == 0) { OutputProcessor.errorResponse(res, 409, "Conflict", "The Board intimation for this breach has already been recorded.", req.getRequestURI()); return; }
+
+        JSONObject out = new JSONObject();
+        out.put("success", true);
+        out.put("board_notified_at", when.toString());
+        Object deadline = breach.get("board_notification_deadline");
+        if (deadline != null) out.put("on_time", !when.isAfter(java.time.Instant.parse((String) deadline)));
+        OutputProcessor.send(res, 200, out);
+        new Audit().logEventAsync(loginUserId != null ? getOperatorEmail(loginUserId) : "SYSTEM", UUID.fromString((String) breach.get("fiduciary_id")),
+                Constants.SERVICE_TYPE_DPO_CONSOLE, loginUserId, "BREACH_BOARD_NOTIFIED",
+                "breach=" + breach.get("id") + " at=" + when + (reference != null ? " reference=" + reference : ""));
+    }
+
+    /**
+     * Raises the Board-deadline alerts: once when a breach's deadline is within 12 hours, and once when it has passed, if
+     * the Board has not been recorded as informed. Each alert is an audit event plus a notice to the fiduciary's DPO.
+     * Returns {due soon, missed}.
+     */
+    public static int[] sweepBoardDeadlines() throws SQLException {
+        PoolDB pool = new PoolDB(); Connection conn = null;
+        List<String[]> due = new ArrayList<>(), missed = new ArrayList<>();
+        try {
+            conn = pool.getConnection();
+            try (PreparedStatement u = conn.prepareStatement(
+                    "UPDATE breach_incidents SET board_due_alert_at = NOW() WHERE board_notified_at IS NULL AND board_notification_deadline IS NOT NULL AND board_due_alert_at IS NULL " +
+                    "AND board_notification_deadline > NOW() AND board_notification_deadline <= NOW() + interval '12 hours' RETURNING id, fiduciary_id, title")) {
+                try (ResultSet r = u.executeQuery()) { while (r.next()) due.add(new String[]{r.getString(1), r.getString(2), r.getString(3)}); }
+            }
+            try (PreparedStatement u = conn.prepareStatement(
+                    "UPDATE breach_incidents SET board_missed_alert_at = NOW() WHERE board_notified_at IS NULL AND board_notification_deadline IS NOT NULL AND board_missed_alert_at IS NULL " +
+                    "AND board_notification_deadline <= NOW() RETURNING id, fiduciary_id, title")) {
+                try (ResultSet r = u.executeQuery()) { while (r.next()) missed.add(new String[]{r.getString(1), r.getString(2), r.getString(3)}); }
+            }
+            for (String[] b : due) alertDpo(conn, b, "BREACH_BOARD_DEADLINE_DUE");
+            for (String[] b : missed) alertDpo(conn, b, "BREACH_BOARD_DEADLINE_MISSED");
+        } finally { pool.cleanup(null, null, conn); }
+        return new int[]{due.size(), missed.size()};
+    }
+
+    private static void alertDpo(Connection conn, String[] breach, String action) throws SQLException {
+        new Audit().logEventAsync("SYSTEM", UUID.fromString(breach[1]), "SYSTEM", null, action, "breach=" + breach[0] + " title=" + breach[2]);
+        try (PreparedStatement d = conn.prepareStatement("SELECT id FROM operators WHERE fiduciary_id = ? AND role = 'DPO' AND status = 'ACTIVE' ORDER BY created_at, id LIMIT 1")) {
+            d.setObject(1, UUID.fromString(breach[1]));
+            try (ResultSet dr = d.executeQuery()) {
+                if (dr.next()) new org.tsicoop.dpdpcms.ces.CESService().insertNotification("OPERATOR", dr.getString(1), breach[1], Constants.NOTIF_BREACH_BOARD);
+            }
+        }
+    }
+
     private JSONArray listBreachesFromDb(UUID fiduciaryId, String statusFilter, int page, int limit) throws SQLException {
         JSONArray result = new JSONArray();
         StringBuilder sqlBuilder = new StringBuilder(
-                "SELECT id, title, severity, status, affected_principal_count, detected_at, reported_at, notification_type, notification_deadline, responded_at FROM breach_incidents WHERE fiduciary_id = ?");
+                "SELECT id, title, severity, status, affected_principal_count, detected_at, reported_at, notification_type, notification_deadline, responded_at, board_notification_deadline, board_notified_at, board_reference FROM breach_incidents WHERE fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
@@ -494,6 +592,7 @@ public class Breach implements Action {
                 row.put("reported_at", rs.getTimestamp("reported_at").toInstant().toString());
                 row.put("notification_type", rs.getString("notification_type"));
                 BreachDeadline.describe(row, rs.getString("status"), rs.getTimestamp("notification_deadline"), rs.getTimestamp("responded_at"));
+                BoardIntimation.describe(row, rs.getTimestamp("board_notification_deadline"), rs.getTimestamp("board_notified_at"), rs.getString("board_reference"), java.time.Instant.now());
                 result.add(row);
             }
         } finally {
@@ -506,7 +605,7 @@ public class Breach implements Action {
         JSONObject breach = null;
         String sql = "SELECT id, fiduciary_id, title, description, detected_at, reported_at, affected_purpose_id, affected_policy_id, " +
                 "affected_data_categories, actionable_steps, severity, status, resolution_notes, affected_principal_count, notification_type, " +
-                "notification_deadline, responded_at " +
+                "notification_deadline, responded_at, board_notification_deadline, board_notified_at, board_reference " +
                 "FROM breach_incidents WHERE id = ?";
 
         PoolDB pool = new PoolDB();
@@ -549,6 +648,7 @@ public class Breach implements Action {
         breach.put("affected_principal_count", rs.getInt("affected_principal_count"));
         breach.put("notification_type", rs.getString("notification_type"));
         BreachDeadline.describe(breach, rs.getString("status"), rs.getTimestamp("notification_deadline"), rs.getTimestamp("responded_at"));
+        BoardIntimation.describe(breach, rs.getTimestamp("board_notification_deadline"), rs.getTimestamp("board_notified_at"), rs.getString("board_reference"), java.time.Instant.now());
         return breach;
     }
 
@@ -690,6 +790,10 @@ public class Breach implements Action {
         document.add(new Paragraph("Reported At: " + breach.get("reported_at"), bodyFont));
         if (breach.get("notification_deadline") != null) {
             document.add(new Paragraph("Notification Deadline: " + breach.get("notification_deadline") + " (" + breach.get("deadline_state") + ")", bodyFont));
+        }
+        if (breach.get("board_notification_deadline") != null) {
+            document.add(new Paragraph("Data Protection Board intimation: deadline " + breach.get("board_notification_deadline") + " (" + breach.get("board_state") + ")"
+                    + (breach.get("board_notified_at") != null ? "; informed on " + breach.get("board_notified_at") + (breach.get("board_reference") != null ? ", reference " + breach.get("board_reference") : "") : "; not yet recorded"), bodyFont));
         }
         document.add(new Paragraph(" "));
 

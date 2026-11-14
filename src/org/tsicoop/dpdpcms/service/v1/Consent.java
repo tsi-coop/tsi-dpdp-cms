@@ -4,6 +4,7 @@ import org.tsicoop.dpdpcms.ces.CESUtil;
 import org.tsicoop.dpdpcms.ces.CESService;
 import org.tsicoop.dpdpcms.util.Constants;
 import org.tsicoop.dpdpcms.util.CaptureMechanism;
+import org.tsicoop.dpdpcms.util.ExpiryDates;
 import org.tsicoop.dpdpcms.util.ConsentCaptureMode;
 import org.tsicoop.dpdpcms.util.ConsentPurposes;
 import org.tsicoop.dpdpcms.util.MinorConsentAudit;
@@ -388,6 +389,13 @@ public class Consent implements Action {
                         return;
                     }
                     if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
+                    // An integration can only ask for erasure of someone this fiduciary actually holds consent for;
+                    // otherwise it could create erasure records (and purge requests) for anyone it can name.
+                    boolean erasureViaApiKey = req.getAttribute("auth_via_principal_jwt") == null && InputProcessor.getVerifiedRole(req) == null;
+                    if (erasureViaApiKey && !hasConsentRecord(userId, fiduciaryId)) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "No consent record exists for that principal.", req.getRequestURI());
+                        return;
+                    }
 
                     result = withdrawConsent(userId, fiduciaryId, erasurePolicyId, serviceType, serviceId, true, null,
                             LoginRateLimiter.getClientIp(req), req.getHeader("User-Agent"),
@@ -415,6 +423,17 @@ public class Consent implements Action {
             System.err.println("[ERROR] Consent.service: " + e);
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error", "An internal error occurred.", req.getRequestURI());
         }
+    }
+
+    private boolean hasConsentRecord(String userId, UUID fiduciaryId) throws SQLException {
+        PoolDB pool = new PoolDB(); Connection conn = null; PreparedStatement ps = null; ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement("SELECT 1 FROM consent_records WHERE user_id = ? AND fiduciary_id = ? LIMIT 1");
+            ps.setString(1, userId); ps.setObject(2, fiduciaryId);
+            rs = ps.executeQuery();
+            return rs.next();
+        } finally { pool.cleanup(rs, ps, conn); }
     }
 
     /** Purposes the DPO has closed for this fiduciary. */
@@ -612,16 +631,11 @@ public class Consent implements Action {
                             consent = (JSONObject) it.next();
                             // Check if the specific required purpose ID is present and set to TRUE
                             purposeId = (String)consent.get("data_point_id");
-                            expiryStr = (String)consent.get("consent_expiry");
-                            if(expiryStr!=null) {
-                                expiryinstant = Instant.parse(expiryStr);
-                                expiry = Timestamp.from(expiryinstant);
-                            }
-                            now = Timestamp.from(Instant.now());
                             if(purposeId.equalsIgnoreCase(requiredPurposeId)) {
                                 granted = (Boolean) consent.get("consent_granted");
-                                if(expiry!=null && now.after(expiry)){
-                                    //System.out.println("Consent Expired");
+                                // This purpose's own expiry only (it used to carry over from the previous data point). A
+                                // date alone is accepted, and an expiry that cannot be read counts as expired.
+                                if (ExpiryDates.isExpired((String) consent.get("consent_expiry"), Instant.now())) {
                                     granted = false;
                                 }
                                 if (granted != null && granted) break;

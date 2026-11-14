@@ -15,6 +15,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import org.tsicoop.dpdpcms.util.AuditChain;
+import org.tsicoop.dpdpcms.util.AuditLimits;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -69,8 +70,10 @@ public class Audit implements Action {
                 return;
             }
 
-            // Audit data needs a session that passed MFA whenever MFA is enforced (production / MFA_ENFORCE).
-            if (org.tsicoop.dpdpcms.util.MfaPolicy.enforcing() && !InputProcessor.hasMfa(req)) {
+            // Audit data needs a session that passed MFA for every role whose MFA is mandatory (ADMIN, DPO, AUDITOR) once MFA is
+            // enforced (production / MFA_ENFORCE). An OPERATOR is never prompted to enrol, so it is not held to this.
+            if (org.tsicoop.dpdpcms.util.MfaPolicy.required(InputProcessor.getVerifiedRole(req), org.tsicoop.dpdpcms.util.MfaPolicy.enforcing())
+                    && !InputProcessor.hasMfa(req)) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Audit access requires a session verified with MFA.", req.getRequestURI());
                 return;
             }
@@ -160,8 +163,10 @@ public class Audit implements Action {
         // A null fiduciary or user would make the whole batch fail in flush() (the hash step and the
         // NOT NULL user_id column), and the failed batch is re-queued, blocking every later audit event.
         if (fiduciaryId == null) fiduciaryId = SYSTEM_FIDUCIARY_ID;
-        if (userId == null) userId = "UNKNOWN";
-        auditCache.add(new AuditEntry(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails, LocalDateTime.now()));
+        // Some fields are chosen by unauthenticated callers (the login name of a failed login): clean and clip them to
+        // their columns here, so one oversized value cannot make the table reject a batch and block everything behind it.
+        auditCache.add(new AuditEntry(AuditLimits.userId(userId), fiduciaryId, AuditLimits.serviceType(serviceType), serviceId,
+                AuditLimits.action(auditAction), AuditLimits.context(contextDetails), LocalDateTime.now()));
     }
 
     /**
@@ -209,8 +214,31 @@ public class Audit implements Action {
                     } catch (SQLException | RuntimeException e) {
                         try { conn.rollback(); } catch (SQLException ignored) { }
                         System.err.println("CRITICAL: Failed to write audit batch: " + e.getMessage());
-                        auditCache.addAll(batch); // retry on the next flush
-                        throw e instanceof SQLException ? (SQLException) e : new SQLException(e);
+                        // A batch can fail because ONE entry can never be stored. Find it by writing the entries one at a
+                        // time: store what can be stored, set aside only the entry the database refuses for its content
+                        // (a data or constraint error), and keep for retry anything that failed for another reason
+                        // (connection down, lock timeout), so a bad entry never blocks the entries behind it.
+                        List<AuditEntry> retry = new ArrayList<>();
+                        SQLException lastTransient = null;
+                        for (AuditEntry single : batch) {
+                            try {
+                                writeBatch(conn, List.of(single));
+                            } catch (SQLException | RuntimeException one) {
+                                try { conn.rollback(); } catch (SQLException ignored) { }
+                                String state = one instanceof SQLException ? ((SQLException) one).getSQLState() : null;
+                                if (AuditLimits.isPoison(state)) {
+                                    System.err.println("CRITICAL: audit entry refused by the database and set aside (" + state + "): action="
+                                            + single.auditAction + " service_type=" + single.serviceType + " user_id_length=" + single.userId.length());
+                                } else {
+                                    retry.add(single);
+                                    lastTransient = one instanceof SQLException ? (SQLException) one : new SQLException(one);
+                                }
+                            }
+                        }
+                        if (!retry.isEmpty()) {
+                            auditCache.addAll(retry);
+                            throw lastTransient;
+                        }
                     }
                 }
             } finally {
@@ -274,6 +302,7 @@ public class Audit implements Action {
     // --- Chain verification ---------------------------------------------------------------
 
     private static final int VERIFY_PAGE = 5000;
+    private static final long VERIFY_REUSE_MS = 5 * 60_000L;
 
     /**
      * Walks the whole chain in seq order, recomputing hashes (v2 rows) and checking linkage.
@@ -358,6 +387,31 @@ public class Audit implements Action {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "No fiduciary is bound to this account.", req.getRequestURI());
                 return;
             }
+        }
+
+        // The walk reads every audit row and is the same for everyone, so a recent verdict is reused instead of letting
+        // repeated calls load the database for all tenants.
+        PoolDB lastPool = new PoolDB();
+        Connection lastConn = null;
+        PreparedStatement lastPs = null;
+        ResultSet lastRs = null;
+        Long lastRunMillis = null;
+        String lastVerdict = null;
+        try {
+            lastConn = lastPool.getConnection();
+            lastPs = lastConn.prepareStatement("SELECT run_at, verdict FROM audit_chain_verifications ORDER BY run_at DESC LIMIT 1");
+            lastRs = lastPs.executeQuery();
+            if (lastRs.next()) { lastRunMillis = lastRs.getTimestamp(1).getTime(); lastVerdict = lastRs.getString(2); }
+        } finally { lastPool.cleanup(lastRs, lastPs, lastConn); }
+        if (AuditLimits.reuseVerdict(lastRunMillis, System.currentTimeMillis(), VERIFY_REUSE_MS)) {
+            JSONObject cached = new JSONObject();
+            cached.put("verdict", lastVerdict);
+            cached.put("cached", true);
+            cached.put("message", "Verified less than " + (VERIFY_REUSE_MS / 60000) + " minutes ago; showing that result."
+                    + ("BROKEN".equals(lastVerdict) ? " Ask an administrator for the details of the break." : ""));
+            cached.put("broken_entries", new JSONArray());
+            OutputProcessor.send(res, 200, cached);
+            return;
         }
 
         logEvents(); // include anything still buffered

@@ -137,4 +137,20 @@ class AuditLedgerDbTest {
         Audit a = new Audit();
         a.recordVerification(a.verifyChain(), "MANUAL");
     }
+
+    /** A field chosen by an unauthenticated caller must not make the table reject a batch and block everyone behind it. */
+    @Test
+    void anOversizedOrNulLadenEntryDoesNotBlockTheQueue() throws Exception {
+        Audit a = new Audit();
+        long before;
+        { PoolDB p0 = new PoolDB(); Connection c0 = p0.getConnection();
+          try (Statement st = c0.createStatement(); ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM audit_logs WHERE audit_action = 'AFTER_BAD_ENTRY'")) { rs.next(); before = rs.getLong(1); } finally { p0.cleanup(null, null, c0); } }
+        a.logEventAsync("x".repeat(600) + "\u0000", null, "S".repeat(300), null, "A".repeat(300), "context\u0000with nul");
+        a.logEventSync("after", null, "TEST", null, "AFTER_BAD_ENTRY", "ok");
+        PoolDB pool = new PoolDB(); Connection c = pool.getConnection();
+        try (Statement st = c.createStatement(); ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM audit_logs WHERE audit_action = 'AFTER_BAD_ENTRY'")) {
+            rs.next(); assertEquals(before + 1, rs.getLong(1));
+        } finally { pool.cleanup(null, null, c); }
+        assertTrue(a.verifyChain().intact(), "the clipped entry still chains correctly");
+    }
 }

@@ -51,4 +51,14 @@ class PolicyCacheTest {
         PolicyCache.removeAll("p1");
         assertNull(PolicyCache.get("p1", "1"));
     }
+
+    /** Another app instance may have changed the policy, so a cached entry is only trusted for a short time. */
+    @Test
+    void entriesExpireSoAnotherInstancesChangeIsSeenWithinTheTtl() {
+        PolicyCache.put("p1", "1", policy("ACTIVE"));
+        long now = System.currentTimeMillis();
+        assertNotNull(PolicyCache.get("p1", "1", now + 1_000, 30_000));
+        assertNull(PolicyCache.get("p1", "1", now + 31_000, 30_000));
+        assertNull(PolicyCache.get("p1", "1"), "an expired entry is dropped");
+    }
 }

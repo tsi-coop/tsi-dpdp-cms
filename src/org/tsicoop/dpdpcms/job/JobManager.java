@@ -39,6 +39,7 @@ public class JobManager implements ServletContextListener {
     private static final String NIGHTLY_CES_JOB_NAME = "CES_NIGHTLY_FULL";
     private static final String AUDIT_VERIFY_JOB_NAME = "AUDIT_CHAIN_VERIFY";
     private static final String NOMINATION_SWEEP_JOB_NAME = "NOMINATION_SWEEP";
+    private static final String PURGE_SLA_JOB_NAME = "PURGE_SLA_SWEEP";
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
@@ -63,6 +64,9 @@ public class JobManager implements ServletContextListener {
             scheduleNightlyFullRun();
             runDailyAuditVerification();
             runDailyNominationSweep();
+            runLegalHoldSweep();
+            runBoardDeadlineSweep();
+            runDailyPurgeSlaSweep();
             processNextPendingJob();
             new Audit().logEvents();
         } catch (Exception e) {
@@ -93,6 +97,49 @@ public class JobManager implements ServletContextListener {
             try (ResultSet rs = pstmt.executeQuery()) {
                 return rs.next();
             }
+        }
+    }
+
+    /** Every cycle: raise the "Board deadline due soon" and "missed" alerts (each only once per breach). */
+    private void runBoardDeadlineSweep() {
+        try {
+            int[] r = org.tsicoop.dpdpcms.service.v1.Breach.sweepBoardDeadlines();
+            if (r[0] + r[1] > 0) System.out.println("[JobManager] Board deadline sweep: " + r[0] + " due soon, " + r[1] + " missed.");
+        } catch (Exception e) {
+            System.err.println("[JobManager] Board deadline sweep failed: " + e.getMessage());
+        }
+    }
+
+    /** Every cycle (cheap and safe to repeat): end legal holds whose period has run out and resume the purges they deferred. */
+    private void runLegalHoldSweep() {
+        try {
+            int[] r = org.tsicoop.dpdpcms.service.v1.Compliance.sweepLegalHolds();
+            if (r[0] + r[1] > 0) System.out.println("[JobManager] Legal hold sweep: " + r[0] + " hold(s) ended, " + r[1] + " purge(s) resumed.");
+        } catch (Exception e) {
+            System.err.println("[JobManager] Legal hold sweep failed: " + e.getMessage());
+        }
+    }
+
+    /** Once a day, only when PURGE_COMPLETION_SLA_DAYS is configured: flag purges that are still unconfirmed past the limit. */
+    private void runDailyPurgeSlaSweep() {
+        if (org.tsicoop.dpdpcms.util.PurgeRules.slaDays(System.getenv("PURGE_COMPLETION_SLA_DAYS")) == null) return;
+        PoolDB pool = null;
+        Connection conn = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            if (!claimDailyRun(conn, PURGE_SLA_JOB_NAME, LocalDate.now())) return;
+        } catch (Exception e) {
+            System.err.println("[JobManager] Purge SLA sweep claim failed: " + e.getMessage());
+            return;
+        } finally {
+            if (pool != null && conn != null) pool.cleanup(null, null, conn);
+        }
+        try {
+            int n = org.tsicoop.dpdpcms.service.v1.Compliance.sweepPurgeSla();
+            System.out.println("[JobManager] Purge SLA sweep: " + n + " purge(s) newly flagged.");
+        } catch (Exception e) {
+            System.err.println("[JobManager] Purge SLA sweep failed: " + e.getMessage());
         }
     }
 
@@ -136,20 +183,30 @@ public class JobManager implements ServletContextListener {
         } finally {
             if (pool != null && conn != null) pool.cleanup(null, null, conn);
         }
-        try {
-            Audit audit = new Audit();
-            audit.logEvents();
-            org.tsicoop.dpdpcms.util.AuditChain.Result r = audit.verifyChain();
-            audit.recordVerification(r, "JOB");
-            if (r.intact()) {
-                System.out.println("[JobManager] Audit chain INTACT (" + r.rowsChecked + " rows).");
-            } else {
-                System.err.println("[JobManager] ALERT: AUDIT CHAIN BROKEN. First bad row id=" + r.firstBreakId + " seq=" + r.firstBreakSeq);
+        // The walk reads every audit row, so it runs on its own thread: on a large chain it must not hold up
+        // the export and CES jobs that share the scheduler thread.
+        AUDIT_VERIFIER.execute(() -> {
+            try {
+                Audit audit = new Audit();
+                audit.logEvents();
+                org.tsicoop.dpdpcms.util.AuditChain.Result r = audit.verifyChain();
+                audit.recordVerification(r, "JOB");
+                if (r.intact()) {
+                    System.out.println("[JobManager] Audit chain INTACT (" + r.rowsChecked + " rows).");
+                } else {
+                    System.err.println("[JobManager] ALERT: AUDIT CHAIN BROKEN. First bad row id=" + r.firstBreakId + " seq=" + r.firstBreakSeq);
+                }
+            } catch (Exception e) {
+                System.err.println("[JobManager] Audit verification failed: " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.err.println("[JobManager] Audit verification failed: " + e.getMessage());
-        }
+        });
     }
+
+    private static final java.util.concurrent.ExecutorService AUDIT_VERIFIER = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "audit-chain-verifier");
+        t.setDaemon(true);
+        return t;
+    });
 
     /**
      * Checks if today's nightly run hasn't been claimed yet, and if so,

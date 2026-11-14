@@ -231,7 +231,7 @@ class OperatorMfaDbTest {
     @Test
     void whenEnforcedAdminAndDpoGetEnrolOnlyTokenUntilEnrolled() throws Exception {
         assumeTrue(MfaPolicy.enforcing(), "run with MFA_ENFORCE=true");
-        for (String role : new String[]{"DPO", "ADMIN"}) {
+        for (String role : new String[]{"DPO", "ADMIN", "AUDITOR"}) {
             String em = createOperator(role, email(), "Passw0rd!Passw0rd!");
             String ip = newIp();
             Resp login = call(ip, null, j("_func", "login", "identifier", em, "password", "Passw0rd!Passw0rd!"));
