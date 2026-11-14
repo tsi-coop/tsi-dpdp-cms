@@ -54,16 +54,14 @@ public class LoginRateLimiter {
         buckets.remove(key);
     }
 
-    /** Extracts the client IP. Only trusts X-Forwarded-For when the request comes from a known proxy. */
+    /**
+     * The client's address. X-Forwarded-For is believed only when the TCP peer is in TRUSTED_PROXY
+     * (comma-separated addresses), and is read from the right (see {@link org.tsicoop.dpdpcms.util.ClientIp}).
+     */
     public static String getClientIp(HttpServletRequest req) {
-        String trustedProxy = System.getenv("TRUSTED_PROXY");
-        if (trustedProxy != null && !trustedProxy.isBlank()
-                && trustedProxy.equals(req.getRemoteAddr())) {
-            String xff = req.getHeader("X-Forwarded-For");
-            if (xff != null && !xff.isBlank()) {
-                return xff.split(",")[0].trim();
-            }
-        }
-        return req.getRemoteAddr();
+        return org.tsicoop.dpdpcms.util.ClientIp.resolve(
+                req.getRemoteAddr(),
+                req.getHeader("X-Forwarded-For"),
+                org.tsicoop.dpdpcms.util.ClientIp.parseTrusted(System.getenv("TRUSTED_PROXY")));
     }
 }

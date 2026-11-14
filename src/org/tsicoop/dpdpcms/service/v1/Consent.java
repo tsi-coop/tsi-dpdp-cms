@@ -3,7 +3,13 @@ package org.tsicoop.dpdpcms.service.v1; // Package changed as requested
 import org.tsicoop.dpdpcms.ces.CESUtil;
 import org.tsicoop.dpdpcms.ces.CESService;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.CaptureMechanism;
+import org.tsicoop.dpdpcms.util.ConsentCaptureMode;
+import org.tsicoop.dpdpcms.util.ConsentPurposes;
 import org.tsicoop.dpdpcms.util.MinorConsentAudit;
+import org.tsicoop.dpdpcms.util.MinorGuard;
+import org.tsicoop.dpdpcms.util.PurposeLifecycleRules;
+import org.tsicoop.dpdpcms.util.WithdrawalImplications;
 import org.tsicoop.dpdpcms.util.PolicyVersion;
 import org.tsicoop.dpdpcms.framework.*; // Assuming these framework classes are available
 import jakarta.servlet.http.HttpServletRequest;
@@ -127,8 +133,17 @@ public class Consent implements Action {
                     String languageSelected = input.get("language_selected")!=null?(String) input.get("language_selected"):"en";
                     String consentStatusGeneral = "CONSENT_GIVEN";
                     String consentMechanism = "CONSENT_GIVEN";
-                    String ipAddressStr = (String) req.getRemoteAddr();
-                    String userAgent = (String) input.get("user_agent");
+                    // What the CMS itself observed: the client address (behind a trusted proxy if configured) and the
+                    // User-Agent header. Whatever the calling system CLAIMS goes to client_metadata, kept separate.
+                    String ipAddressStr = LoginRateLimiter.getClientIp(req);
+                    String userAgent = req.getHeader("User-Agent");
+                    JSONObject claimedClient = new JSONObject();
+                    if (input.get("user_agent") != null) claimedClient.put("user_agent", input.get("user_agent"));
+                    if (input.get("ip_address") != null) claimedClient.put("ip_address", input.get("ip_address"));
+                    if (input.get("session_id") != null) claimedClient.put("session_id", input.get("session_id"));
+                    String clientMetadataJson = claimedClient.isEmpty() ? null : claimedClient.toJSONString();
+                    String captureMechanism = CaptureMechanism.of(
+                            Boolean.TRUE.equals(req.getAttribute("auth_via_principal_jwt")), req.getHeader("X-API-Key") != null);
                     JSONArray dataPointConsents = (JSONArray) input.get("data_point_consents");
                     String verificationLogIdStr = (String) input.get("verification_log_id");
                     UUID verificationLogId = (verificationLogIdStr != null && !verificationLogIdStr.isEmpty()) ? UUID.fromString(verificationLogIdStr) : null;
@@ -140,6 +155,23 @@ public class Consent implements Action {
                             || policyId == null || policyId.isEmpty()
                             || dataPointConsents == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required fields for 'record_consent'.", req.getRequestURI());
+                        return;
+                    }
+
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
+
+                    // Every entry must be an object with a data_point_id and a real true/false (this used to fail
+                    // later with a 500 when consent_granted was missing).
+                    String shapeProblem = consentShapeProblem(dataPointConsents);
+                    if (shapeProblem != null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Invalid data_point_consents: " + shapeProblem, req.getRequestURI());
+                        return;
+                    }
+
+                    // A closed purpose cannot be granted (declining it is always allowed).
+                    List<String> closedGrants = PurposeLifecycleRules.closedGrants(getClosedPurposes(fiduciaryId), dataPointConsents);
+                    if (!closedGrants.isEmpty()) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "These purposes are closed and cannot be granted: " + String.join(", ", closedGrants) + ".", req.getRequestURI());
                         return;
                     }
 
@@ -165,17 +197,57 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Referenced policy (ID: " + policyId + ", Version: " + policyVersion + ") not found or does not belong to fiduciary.", req.getRequestURI());
                         return;
                     }else{
+                        // Capture rules: an explicit choice for every declared purpose, and a verified guardian log
+                        // for a principal recorded as a minor. "warn" (default) audits and accepts; "strict" rejects.
+                        List<String> captureProblems = new ArrayList<>(ConsentPurposes.problems(policy, languageSelected, dataPointConsents));
+                        String minorProblem = MinorGuard.problem(getStoredAgeCategory(fiduciaryId, userId), hasVerifiedGuardianLog(verificationLogId, userId, fiduciaryId));
+                        if (minorProblem != null) captureProblems.add(minorProblem);
+                        if (!captureProblems.isEmpty()) {
+                            if (ConsentCaptureMode.strict()) {
+                                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Consent not recorded: " + String.join("; ", captureProblems), req.getRequestURI());
+                                return;
+                            }
+                            JSONObject warn = new JSONObject(); warn.put("problems", new JSONArray() {{ addAll(captureProblems); }}); warn.put("policy_id", policyId);
+                            new Audit().logEventAsync(userId, fiduciaryId, Constants.SERVICE_TYPE_APP, appId, "CONSENT_CAPTURE_WARNING", warn.toJSONString());
+                        }
+
                         // Determine consent expiry
                         JSONArray revisedDataPoints =  CESUtil.appendConsentExpiry( policy,
                                                                                     dataPointConsents,
                                                                                     Constants.ACTION_CONSENT_GIVEN);
 
                         output = recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
-                                consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, appId, verificationLogId);
+                                consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, appId, verificationLogId,
+                                captureMechanism, clientMetadataJson);
                         OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     }
                     break;
+                case "get_withdrawal_implications": {
+                    // What withdrawing would mean, per purpose, from the policy the fiduciary published. Read-only.
+                    String implPolicyId = (String) input.get("policy_id");
+                    if (implPolicyId == null || implPolicyId.isEmpty() || fiduciaryId == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'policy_id' is required.", req.getRequestURI());
+                        return;
+                    }
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
+                    String implVersion = PolicyVersion.resolveActive(implPolicyId, fiduciaryId);
+                    JSONObject implPolicy = implVersion != null ? getPolicy(implPolicyId, implVersion, fiduciaryId) : null;
+                    if (implPolicy == null) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "No active policy with that id.", req.getRequestURI());
+                        return;
+                    }
+                    List<String> wanted = new ArrayList<>();
+                    Object ids = input.get("purpose_ids");
+                    if (ids instanceof JSONArray) for (Object o : (JSONArray) ids) if (o != null) wanted.add(o.toString());
+                    JSONObject implOut = new JSONObject();
+                    implOut.put("policy_id", implPolicyId);
+                    implOut.put("policy_version", implVersion);
+                    implOut.put("implications", WithdrawalImplications.build(implPolicy, (String) input.get("language"), wanted, getClosedPurposes(fiduciaryId)));
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, implOut);
+                    break;
+                }
                 case "record_parent_consent":
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
                     handleRecordParentalVerification(input, fiduciaryId, appId, res);
                     break;
                 case "get_active_consent":
@@ -200,6 +272,11 @@ public class Consent implements Action {
                         UUID recordFiduciaryId = consentOptional.get().get("fiduciary_id") != null
                                 ? UUID.fromString((String) consentOptional.get().get("fiduciary_id")) : null;
                         if (rejectIfOperatorNotOwnFiduciary(recordFiduciaryId, req, res)) return;
+                        String recordPrincipal = InputProcessor.getPrincipalSubject(req);
+                        if (recordPrincipal != null && !recordPrincipal.equals(consentOptional.get().get("user_id"))) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This consent record belongs to another data principal.", req.getRequestURI());
+                            return;
+                        }
                         output = consentOptional.get();
                         OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     } else {
@@ -244,9 +321,10 @@ public class Consent implements Action {
                 case "link_user": // Used to link anonymous ID to authenticated ID
                     String anonymousUserId = (String) input.get("anonymous_user_id");
                     String authenticatedUserId = (String) input.get("authenticated_user_id");
-                    String ageCategory = (String) input.get("age_category");
-                    String guardianId = (String) input.get("guardian_id");
-                    String vStatus = (String) input.get("verification_status");
+                    // age_category, guardian_id and verification_status used to be accepted here, which let any caller
+                    // mark a principal ADULT or MINOR. They are ignored now: a minor is recorded only through
+                    // record_parent_consent. The ignored fields are noted in the audit log.
+                    boolean ignoredDeclared = input.get("age_category") != null || input.get("guardian_id") != null || input.get("verification_status") != null;
 
                     if (anonymousUserId == null || anonymousUserId.isEmpty() || authenticatedUserId == null || authenticatedUserId.isEmpty()) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Both 'anonymous_user_id' and 'authenticated_user_id' are required for 'link_user'.", req.getRequestURI());
@@ -257,7 +335,12 @@ public class Consent implements Action {
                         return;
                     }
 
-                    linkUserConsentRecords(anonymousUserId, authenticatedUserId, fiduciaryId, appId, ageCategory, guardianId, vStatus);
+                    if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
+                    linkUserConsentRecords(anonymousUserId, authenticatedUserId, fiduciaryId, appId);
+                    if (ignoredDeclared) {
+                        new Audit().logEventAsync(authenticatedUserId, fiduciaryId, Constants.SERVICE_TYPE_APP, appId, "LINK_USER_DECLARED_FIELDS_IGNORED",
+                                "age_category/guardian_id/verification_status supplied to link_user were ignored");
+                    }
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "User consent records linked successfully."); }});
                     break;
 
@@ -289,7 +372,9 @@ public class Consent implements Action {
                     }
                     if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
 
-                    result = withdrawConsent(userId, fiduciaryId, withdrawPolicyId, serviceType, serviceId, false, withdrawPurposeIds);
+                    result = withdrawConsent(userId, fiduciaryId, withdrawPolicyId, serviceType, serviceId, false, withdrawPurposeIds,
+                            LoginRateLimiter.getClientIp(req), req.getHeader("User-Agent"),
+                            CaptureMechanism.of(Boolean.TRUE.equals(req.getAttribute("auth_via_principal_jwt")), req.getHeader("X-API-Key") != null));
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
                     break;
 
@@ -304,7 +389,9 @@ public class Consent implements Action {
                     }
                     if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
 
-                    result = withdrawConsent(userId, fiduciaryId, erasurePolicyId, serviceType, serviceId, true, null);
+                    result = withdrawConsent(userId, fiduciaryId, erasurePolicyId, serviceType, serviceId, true, null,
+                            LoginRateLimiter.getClientIp(req), req.getHeader("User-Agent"),
+                            CaptureMechanism.of(Boolean.TRUE.equals(req.getAttribute("auth_via_principal_jwt")), req.getHeader("X-API-Key") != null));
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, result);
                     break;
                 default:
@@ -330,6 +417,63 @@ public class Consent implements Action {
         }
     }
 
+    /** Purposes the DPO has closed for this fiduciary. */
+    Set<String> getClosedPurposes(UUID fiduciaryId) throws SQLException {
+        Set<String> closed = new HashSet<>();
+        if (fiduciaryId == null) return closed;
+        PoolDB pool = new PoolDB(); Connection conn = null; PreparedStatement ps = null; ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement("SELECT purpose_id FROM purpose_states WHERE fiduciary_id = ? AND state = 'CLOSED'");
+            ps.setObject(1, fiduciaryId);
+            rs = ps.executeQuery();
+            while (rs.next()) closed.add(rs.getString(1));
+        } finally { pool.cleanup(rs, ps, conn); }
+        return closed;
+    }
+
+    /** Null if every entry is an object with a string data_point_id and a boolean consent_granted. */
+    private static String consentShapeProblem(JSONArray consents) {
+        for (Object o : consents) {
+            if (!(o instanceof JSONObject)) return "each entry must be an object";
+            JSONObject c = (JSONObject) o;
+            if (!(c.get("data_point_id") instanceof String) || ((String) c.get("data_point_id")).isEmpty()) return "every entry needs a data_point_id";
+            if (!(c.get("consent_granted") instanceof Boolean)) return "'" + c.get("data_point_id") + "' needs consent_granted true or false";
+        }
+        return null;
+    }
+
+    /** The age category the CMS has stored for this principal (only a recorded guardian verification sets MINOR). */
+    private String getStoredAgeCategory(UUID fiduciaryId, String userId) throws SQLException {
+        PoolDB pool = new PoolDB(); Connection conn = null; PreparedStatement ps = null; ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement("SELECT age_category FROM data_principal WHERE fiduciary_id = ? AND user_id = ?");
+            ps.setObject(1, fiduciaryId); ps.setString(2, userId);
+            rs = ps.executeQuery();
+            return rs.next() ? rs.getString(1) : null;
+        } finally { pool.cleanup(rs, ps, conn); }
+    }
+
+    /** True if the log exists, is for this child at this fiduciary and carries a verification time. */
+    private boolean hasVerifiedGuardianLog(UUID logId, String userId, UUID fiduciaryId) throws SQLException {
+        if (logId == null) return false;
+        PoolDB pool = new PoolDB(); Connection conn = null; PreparedStatement ps = null; ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement("SELECT 1 FROM parental_verification_logs WHERE id = ? AND child_principal_id = ? AND fiduciary_id = ? AND verified_at IS NOT NULL");
+            ps.setObject(1, logId); ps.setString(2, userId); ps.setObject(3, fiduciaryId);
+            rs = ps.executeQuery();
+            return rs.next();
+        } finally { pool.cleanup(rs, ps, conn); }
+    }
+
+    /** Same pseudonymisation as consent records use for the observed client address. */
+    private static String hashIp(String ip) {
+        try { return new LookupHasher().hashData(ip != null ? ip : "0.0.0.0"); }
+        catch (Exception ignored) { return ip; } // TSI_LOOKUP_SALT not set or SHA-256 unavailable: store as observed
+    }
+
     private void handleRecordParentalVerification(JSONObject input, UUID fiduciaryId, UUID appId, HttpServletResponse res) throws SQLException {
         String childId = (String) input.get("child_principal_id");
         String guardianId = (String) input.get("guardian_principal_id");
@@ -338,6 +482,10 @@ public class Consent implements Action {
         String refId = (String) input.get("verification_ref_id");
         Object proofObj = input.get("proof_metadata");
         String proofMetadata = (proofObj instanceof JSONObject) ? ((JSONObject) proofObj).toJSONString() : (String) proofObj;
+        if (childId == null || childId.isEmpty() || guardianId == null || guardianId.isEmpty() || childId.equals(guardianId)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'child_principal_id' and a different 'guardian_principal_id' are required.", "");
+            return;
+        }
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -345,10 +493,15 @@ public class Consent implements Action {
 
         String sql = "INSERT INTO parental_verification_logs (id, child_principal_id, guardian_principal_id, verification_mechanism, provider_name, verification_ref_id, proof_metadata, fiduciary_id) " +
                 "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?::jsonb, ?) RETURNING id";
+        // A recorded guardian verification is the ONLY thing that marks a principal as a minor. It is stored
+        // server-side, so later consent for this child is judged on this record, not on what a caller declares.
+        String flagSql = "INSERT INTO data_principal (user_id, fiduciary_id, age_category, guardian_id, verification_status) VALUES (?, ?, ?, ?, 'VERIFIED') " +
+                "ON CONFLICT (user_id, fiduciary_id) DO UPDATE SET age_category = EXCLUDED.age_category, guardian_id = EXCLUDED.guardian_id, verification_status = 'VERIFIED'";
 
         PoolDB pool = new PoolDB();
         try {
             conn = pool.getConnection();
+            conn.setAutoCommit(false);
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, childId);
             pstmt.setString(2, guardianId);
@@ -361,8 +514,18 @@ public class Consent implements Action {
             if (rs.next()) {
                 logId = (UUID) rs.getObject(1);
             }
+            try (PreparedStatement flag = conn.prepareStatement(flagSql)) {
+                flag.setString(1, childId);
+                flag.setObject(2, fiduciaryId);
+                flag.setString(3, Constants.AGE_MINOR);
+                flag.setString(4, guardianId);
+                flag.executeUpdate();
+            }
+            conn.commit();
         } catch (Exception e) {
-            System.err.println("[ERROR] Consent.logEvent: " + e);
+            logId = null;
+            if (conn != null) { try { conn.rollback(); } catch (SQLException ignored) { } }
+            System.err.println("[ERROR] Consent.recordParentalVerification: " + e);
         } finally {
             pool.cleanup(rs,pstmt,conn);
         }
@@ -550,7 +713,28 @@ public class Consent implements Action {
      * @throws SQLException
      */
     private JSONObject withdrawConsent(String userId, UUID fiduciaryId, String scopedPolicyId,
-                                       String serviceType, UUID serviceId, boolean erasure, JSONArray purposeIds) throws SQLException {
+                                       String serviceType, UUID serviceId, boolean erasure, JSONArray purposeIds,
+                                       String clientIp, String userAgent, String captureMechanism) throws SQLException {
+        return withdrawConsent(userId, fiduciaryId, scopedPolicyId, serviceType, serviceId, erasure, purposeIds,
+                clientIp, userAgent, captureMechanism, null);
+    }
+
+    /**
+     * Withdraws ONE purpose for a principal on the system's initiative (the DPO closed the purpose). It goes through
+     * the same path as a principal's own partial withdrawal, so history is chained, the retention timer for the purpose
+     * starts and the purge machinery takes over; only the capture mechanism and the notification differ.
+     */
+    JSONObject withdrawPurposeBySystem(String userId, UUID fiduciaryId, String policyId, String purposeId,
+                                       String serviceType, UUID serviceId) throws SQLException {
+        JSONArray ids = new JSONArray();
+        ids.add(purposeId);
+        return withdrawConsent(userId, fiduciaryId, policyId, serviceType, serviceId, false, ids,
+                "0.0.0.0", "CMS purpose lifecycle", "PURPOSE_CLOSED", Constants.NOTIF_PURPOSE_CLOSED);
+    }
+
+    private JSONObject withdrawConsent(String userId, UUID fiduciaryId, String scopedPolicyId,
+                                       String serviceType, UUID serviceId, boolean erasure, JSONArray purposeIds,
+                                       String clientIp, String userAgent, String captureMechanism, String notificationType) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -652,8 +836,8 @@ public class Consent implements Action {
 
             // --- 4. Insert New WITHDRAWN Record (Immutability/Provenance) ---
             UUID ropaEntryId = resolveRopaEntryId(conn, fiduciaryId, policyId);
-            String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at,language_selected,ip_address,ropa_entry_id) " +
-                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', ?, ?, ?::jsonb, ?, NOW(), 'en', '[0:0:0:0:0:0:0:1]', ?) RETURNING id";
+            String sqlInsertNew = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at,language_selected,ip_address,ropa_entry_id,user_agent,capture_mechanism,supersedes_record_id) " +
+                    "VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', ?, ?, ?::jsonb, ?, NOW(), 'en', ?, ?, ?, ?, ?) RETURNING id";
 
             pstmt.close();
             pstmt = conn.prepareStatement(sqlInsertNew, Statement.RETURN_GENERATED_KEYS);
@@ -665,7 +849,11 @@ public class Consent implements Action {
             pstmt.setString(6, action);
             pstmt.setString(7, currentConsents.toJSONString());
             pstmt.setBoolean(8, newIsActive);
-            pstmt.setObject(9, ropaEntryId);
+            pstmt.setString(9, hashIp(clientIp));            // the address the CMS observed for this withdrawal
+            pstmt.setObject(10, ropaEntryId);
+            pstmt.setString(11, userAgent);
+            pstmt.setString(12, captureMechanism);
+            pstmt.setObject(13, oldRecordId);                // links the withdrawal to the consent it replaces
 
             if (pstmt.executeUpdate() == 0) {
                 throw new SQLException("Creating withdrawal record failed.");
@@ -696,7 +884,7 @@ public class Consent implements Action {
             result.put("action", action);
 
             try {
-                String notifType = erasure ? Constants.NOTIF_ERASURE_REQUESTED : Constants.NOTIF_WITHDRAWAL_ACK;
+                String notifType = notificationType != null ? notificationType : (erasure ? Constants.NOTIF_ERASURE_REQUESTED : Constants.NOTIF_WITHDRAWAL_ACK);
                 new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), notifType);
             } catch (SQLException e) {
                 e.printStackTrace(); // Notification failure must not fail the withdrawal/erasure operation
@@ -748,17 +936,13 @@ public class Consent implements Action {
      * Returns true (and sends a 403) if blocked; caller must return immediately.
      */
     private boolean rejectIfOperatorNotOwnFiduciary(UUID fiduciaryId, HttpServletRequest req, HttpServletResponse res) throws SQLException {
-        String callerRole = InputProcessor.getVerifiedRole(req);
-        if (callerRole == null || "ADMIN".equalsIgnoreCase(callerRole)) {
+        // Operators, API keys and principal tokens are all held to their own fiduciary
+        // (an API-key or principal caller has no role, which used to bypass this check).
+        if (InputProcessor.callerOwns(req, fiduciaryId)) {
             return false;
         }
-        UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
-        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
-        if (callerFid == null || !callerFid.equals(fiduciaryId)) {
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access consent data for your own fiduciary.", req.getRequestURI());
-            return true;
-        }
-        return false;
+        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access consent data for your own fiduciary.", req.getRequestURI());
+        return true;
     }
 
     /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */
@@ -821,6 +1005,17 @@ public class Consent implements Action {
                                          String consentStatusGeneral, String consentMechanism,
                                          String ipAddress, String userAgent, JSONArray dataPointConsents,
                                          UUID appId, UUID verificationLogId) throws SQLException {
+        return recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
+                consentStatusGeneral, consentMechanism, ipAddress, userAgent, dataPointConsents, appId, verificationLogId,
+                null, null);
+    }
+
+    JSONObject recordConsentToDb(String userId, UUID fiduciaryId, String policyId, String policyVersion,
+                                         Timestamp timestamp, String jurisdiction, String languageSelected,
+                                         String consentStatusGeneral, String consentMechanism,
+                                         String ipAddress, String userAgent, JSONArray dataPointConsents,
+                                         UUID appId, UUID verificationLogId,
+                                         String captureMechanism, String clientMetadataJson) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmtDeactivate = null;
@@ -829,8 +1024,8 @@ public class Consent implements Action {
         PoolDB pool = new PoolDB();
         boolean recorded = false;
 
-        String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
-        String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at, verification_log_id, ropa_entry_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, TRUE, NOW(), NOW(), ?, ?) RETURNING id";
+        String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE RETURNING id";
+        String insertSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, language_selected, consent_status_general, consent_mechanism, ip_address, user_agent, data_point_consents, is_active_consent, created_at, last_updated_at, verification_log_id, ropa_entry_id, capture_mechanism, client_metadata, supersedes_record_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, TRUE, NOW(), NOW(), ?, ?, ?, ?::jsonb, ?) RETURNING id";
 
         try {
             conn = pool.getConnection();
@@ -840,7 +1035,10 @@ public class Consent implements Action {
             pstmtDeactivate = conn.prepareStatement(deactivateSql);
             pstmtDeactivate.setString(1, userId);
             pstmtDeactivate.setObject(2, fiduciaryId);
-            pstmtDeactivate.executeUpdate();
+            UUID supersededId = null; // the record this one replaces (history is a chain, never overwritten)
+            try (ResultSet prev = pstmtDeactivate.executeQuery()) {
+                if (prev.next()) supersededId = (UUID) prev.getObject(1);
+            }
 
             // 2. Insert the NEW consent record — hash IP before storage
             String storedIp = ipAddress;
@@ -866,6 +1064,9 @@ public class Consent implements Action {
             pstmtInsert.setString(12, dataPointConsents.toJSONString());
             pstmtInsert.setObject(13, verificationLogId);
             pstmtInsert.setObject(14, ropaEntryId);
+            pstmtInsert.setString(15, captureMechanism);
+            pstmtInsert.setString(16, clientMetadataJson);
+            pstmtInsert.setObject(17, supersededId);
 
             int affectedRows = pstmtInsert.executeUpdate();
             if (affectedRows == 0) {
@@ -910,6 +1111,7 @@ public class Consent implements Action {
             auditContext.put("policy_id", policyId);
             auditContext.put("policy_version", policyVersion);
             auditContext.put("data_point_consents", dataPointConsents);
+            if (captureMechanism != null) auditContext.put("capture_mechanism", captureMechanism);
             new Audit().logEventAsync(userId, fiduciaryId, "APP", appId , "CONSENT_GIVEN", auditContext.toJSONString());
             try {
                 new CESService().insertNotification("PRINCIPAL", userId, fiduciaryId.toString(), Constants.NOTIF_CONSENT_GIVEN);
@@ -1199,15 +1401,12 @@ public class Consent implements Action {
      * This operation is transactional.
      * @throws SQLException if a database access error occurs.
      */
-    private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID fiduciaryId, UUID appId,
-                                        String ageCategory, String guardianId, String verificationStatus) throws SQLException {
+    private void linkUserConsentRecords(String anonymousUserId, String authenticatedUserId, UUID fiduciaryId, UUID appId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtUpdateConsent = null;
         PreparedStatement pstmtDeactivate = null;
         PoolDB pool = new PoolDB();
         String deactivateSql = "UPDATE consent_records SET is_active_consent = FALSE, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ? AND is_active_consent = TRUE";
-        String effectiveAge = (ageCategory != null) ? ageCategory : "ADULT";
-        String effectiveVStatus = (verificationStatus != null) ? verificationStatus : "NOT_VERIFIED";
 
         try {
             conn = pool.getConnection();
@@ -1220,24 +1419,21 @@ public class Consent implements Action {
             pstmtDeactivate.executeUpdate();
 
             // Update Consent Record
-            String updateConsentSql = "UPDATE consent_records SET user_id = ?, last_updated_at = NOW() WHERE user_id = ?";
+            // Scoped to this fiduciary: without it, naming another tenant's principal as the "anonymous" id
+            // would re-assign that person's consent records in every fiduciary.
+            String updateConsentSql = "UPDATE consent_records SET user_id = ?, last_updated_at = NOW() WHERE user_id = ? AND fiduciary_id = ?";
             pstmtUpdateConsent = conn.prepareStatement(updateConsentSql);
             pstmtUpdateConsent.setString(1, authenticatedUserId);
             pstmtUpdateConsent.setString(2, anonymousUserId);
+            pstmtUpdateConsent.setObject(3, fiduciaryId);
             pstmtUpdateConsent.executeUpdate();
 
-            // 3. Upsert Data Principal with Minor Metadata
-            String upsertSql = "INSERT INTO data_principal (user_id, fiduciary_id, age_category, guardian_id, verification_status) " +
-                    "VALUES (?, ?, ?, ?, ?) " +
-                    "ON CONFLICT (user_id, fiduciary_id) DO UPDATE SET " +
-                    "age_category = EXCLUDED.age_category, guardian_id = EXCLUDED.guardian_id, verification_status = EXCLUDED.verification_status";
-
-            try (PreparedStatement pstmt = conn.prepareStatement(upsertSql)) {
+            // 3. Make sure a data_principal row exists. Existing values (age_category, guardian, verification)
+            // are never touched: only a guardian verification sets those.
+            try (PreparedStatement pstmt = conn.prepareStatement(
+                    "INSERT INTO data_principal (user_id, fiduciary_id) VALUES (?, ?) ON CONFLICT (user_id, fiduciary_id) DO NOTHING")) {
                 pstmt.setString(1, authenticatedUserId);
                 pstmt.setObject(2, fiduciaryId);
-                pstmt.setString(3, effectiveAge);
-                pstmt.setString(4, guardianId);
-                pstmt.setString(5, effectiveVStatus);
                 pstmt.executeUpdate();
             }
 

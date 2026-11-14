@@ -19,3 +19,5 @@
 
 
 
+/api/v1/rights=org.tsicoop.dpdpcms.service.v1.Rights
+/api/v1/purpose=org.tsicoop.dpdpcms.service.v1.Purpose

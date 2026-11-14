@@ -3,6 +3,7 @@
 | Test | What it covers |
 |---|---|
 | [Load test (JMeter)](#load-test-consent-lifecycle) | Consent lifecycle against the client API. |
+| [Unit and DB tests (JUnit)](#unit-and-database-tests-junit) | Internal behaviour JMeter cannot reach: policy cache, audit hash chain, database triggers and locks. |
 | [Production setup rehearsal](#production-setup-rehearsal) | The Docker steps of the [Production Deployment Guide](../docs/guides/production-deployment-guide.md), run locally. |
 
 ## Load Test: Consent Lifecycle
@@ -308,3 +309,31 @@ Needs `docker compose`, `openssl`, `curl` and `tar`. The exit code is the number
 Checks per mode: `.env` has no placeholders; the app runs as the `jetty` user (uid 999); the log says `Service started in production environment`; database SSL is on; the database port is bound to `127.0.0.1` only (bundled) or not published at all (external); the console answers 200.
 
 Not covered: HTTPS and logins (there is no TLS proxy), `pg_hba.conf` address restrictions (everything is on local networks), and the Binary install.
+
+
+## Unit and Database Tests (JUnit)
+
+JUnit 5 tests in [`java/`](java/), run by Maven (`testSourceDirectory` in `pom.xml`):
+
+```bash
+mvn test
+```
+
+- Pure unit tests (`PolicyCacheTest`, `AuditChainTest`) need nothing else.
+- `AuditLedgerDbTest` and `OperatorMfaDbTest` need Postgres with `db/*.sql` applied and are **skipped**
+  unless these are set: `POSTGRES_HOST` (e.g. `jdbc:postgresql://localhost:5432`), `POSTGRES_DB`,
+  `POSTGRES_USER`, `POSTGRES_PASSWD`, `TSI_DPDP_CMS_ENV=local`, `TSI_LOOKUP_SALT`, and
+  `DB_ENCRYPTION_KEY` (must equal the database's `app.enc_key`). Use a **throwaway database**:
+  `audit_logs` is append-only, so the rows the tests write cannot be deleted.
+- `AccessControlDbTest` covers the access check; run it normally (shadow mode) and again with
+  `ACCESS_CONTROL_MODE=enforce mvn test -Dtest=AccessControlDbTest`.
+- `ByIdOwnershipDbTest` is a set of cross-tenant attack scenarios (fiduciary A's credentials against B's records).
+  It also needs the database variables above. Run it in both modes like `AccessControlDbTest`.
+- `ConsentCaptureDbTest` (consent evidence, explicit choices, history chain, minors, `link_user`) and
+  `GrievanceDbTest` (reference number, channel, auto-assignment, resolution summary, attachments, feedback) need
+  the same database variables. Run `ConsentCaptureDbTest` normally and with `CONSENT_CAPTURE_MODE=strict`.
+- `NominationsDbTest` (s.14 nominations) and `PurposeLifecycleDbTest` (closing a purpose, the closed-grant refusal, purge action,
+  withdrawal implications) need the same database variables.
+- `RightsDbTest` covers access and correction requests (submit, privacy, lifecycle, data map, assignment, overdue).
+- `OperatorMfaDbTest` covers MFA in both modes. Run it twice: normally (MFA optional), then with
+  `MFA_ENFORCE=true mvn test -Dtest=OperatorMfaDbTest` (ADMIN and DPO forced to enrol).

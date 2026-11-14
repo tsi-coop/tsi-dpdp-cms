@@ -195,11 +195,19 @@ public class Wallet implements Action {
             return res;
         }
 
+        java.util.List<String> closedGrants = org.tsicoop.dpdpcms.util.PurposeLifecycleRules.closedGrants(new Consent().getClosedPurposes(fiduciaryUuid), dataPointConsents);
+        if (!closedGrants.isEmpty()) {
+            res.put("success", false);
+            res.put("message", "These purposes are closed and cannot be granted: " + String.join(", ", closedGrants) + ".");
+            return res;
+        }
+
         JSONArray revisedConsents = CESUtil.appendConsentExpiry(policy, dataPointConsents, Constants.ACTION_CONSENT_GIVEN);
         Timestamp timestamp = Timestamp.from(Instant.now());
         JSONObject dbResult = new Consent().recordConsentToDb(ctx.userId, fiduciaryUuid, policyId, policyVersion,
                 timestamp, "IN", "en", "CONSENT_GIVEN", "WALLET_GRANT",
-                "0.0.0.0", null, revisedConsents, null, null);
+                "0.0.0.0", null, revisedConsents, null, null,
+                org.tsicoop.dpdpcms.util.CaptureMechanism.WALLET, null);
 
         res.put("success", true);
         res.put("message", "Consent recorded successfully.");
@@ -313,13 +321,14 @@ public class Wallet implements Action {
             // history tab does an exact string match on this value to decide whether to show
             // WITHDRAWN/PARTIALLY WITHDRAWN; a wallet-specific label like "WALLET_REVOKE" was
             // silently falling through to "ACTIVE" instead.
-            String iSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at, language_selected, ip_address) VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', '" + Constants.ACTION_CONSENT_WITHDRAWN + "', '" + Constants.ACTION_CONSENT_WITHDRAWN + "', ?::jsonb, TRUE, NOW(), 'en', '0.0.0.0')";
+            String iSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at, language_selected, ip_address, capture_mechanism, supersedes_record_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', '" + Constants.ACTION_CONSENT_WITHDRAWN + "', '" + Constants.ACTION_CONSENT_WITHDRAWN + "', ?::jsonb, TRUE, NOW(), 'en', '0.0.0.0', 'WALLET', ?)";
             try (PreparedStatement iStmt = conn.prepareStatement(iSql)) {
                 iStmt.setString(1, ctx.userId);
                 try { iStmt.setObject(2, UUID.fromString(ctx.fiduciaryId)); } catch (Exception ex) { iStmt.setString(2, ctx.fiduciaryId); }
                 iStmt.setString(3, pId);
                 iStmt.setString(4, pVer);
                 iStmt.setString(5, consents.toJSONString());
+                iStmt.setObject(6, UUID.fromString(oldId)); // the consent this withdrawal replaces
                 iStmt.executeUpdate();
             }
 
@@ -369,13 +378,14 @@ public class Wallet implements Action {
                     dStmt.executeUpdate();
                 }
 
-                String iSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at, language_selected, ip_address) VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', 'ERASURE_REQUEST', 'ERASURE_REQUEST', ?::jsonb, FALSE, NOW(), 'en', '0.0.0.0')";
+                String iSql = "INSERT INTO consent_records (id, user_id, fiduciary_id, policy_id, policy_version, timestamp, jurisdiction, consent_status_general, consent_mechanism, data_point_consents, is_active_consent, created_at, language_selected, ip_address, capture_mechanism, supersedes_record_id) VALUES (uuid_generate_v4(), ?, ?, ?, ?, NOW(), 'IN', 'ERASURE_REQUEST', 'ERASURE_REQUEST', ?::jsonb, FALSE, NOW(), 'en', '0.0.0.0', 'WALLET', ?)";
                 try (PreparedStatement iStmt = conn.prepareStatement(iSql)) {
                     iStmt.setString(1, ctx.userId);
                     try { iStmt.setObject(2, UUID.fromString(ctx.fiduciaryId)); } catch (Exception ex) { iStmt.setString(2, ctx.fiduciaryId); }
                     iStmt.setString(3, pId);
                     iStmt.setString(4, pVer);
                     iStmt.setString(5, consents.toJSONString());
+                    iStmt.setObject(6, UUID.fromString(oldId)); // the consent this erasure request replaces
                     iStmt.executeUpdate();
                 }
             }

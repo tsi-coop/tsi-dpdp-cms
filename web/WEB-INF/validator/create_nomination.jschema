@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
+    },
+    "nominee_name": {
+      "type": "string"
+    },
+    "nominee_contact": {
+      "type": "string"
+    },
+    "nominee_relationship": {
+      "type": "string"
+    },
+    "valid_from": {
+      "type": "string"
+    },
+    "valid_until": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "_func",
+    "nominee_name",
+    "nominee_contact"
+  ]
+}

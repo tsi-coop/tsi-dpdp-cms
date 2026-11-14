@@ -3,6 +3,7 @@ package org.tsicoop.dpdpcms.service.v1;
 import org.tsicoop.dpdpcms.framework.*;
 import org.tsicoop.dpdpcms.util.Constants;
 import org.tsicoop.dpdpcms.util.AppVersion;
+import org.tsicoop.dpdpcms.util.PolicyCache;
 import org.tsicoop.dpdpcms.util.PolicyVersion;
 import org.tsicoop.dpdpcms.util.RopaDeriver;
 import org.tsicoop.dpdpcms.util.RopaValidator;
@@ -812,7 +813,9 @@ public class Ropa implements Action {
                 rs = null; pstmt = null;
                 pstmt = conn.prepareStatement(activateSql);
                 pstmt.setString(1, policyId);
-                if (pstmt.executeUpdate() > 0) {
+                int activated = pstmt.executeUpdate();
+                PolicyCache.removeAll(policyId); // status changed by id only: evict every version
+                if (activated > 0) {
                     new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE,
                             fiduciaryId, "POLICY_ACTIVATED_BY_DPO", "policy:" + policyId);
                 }

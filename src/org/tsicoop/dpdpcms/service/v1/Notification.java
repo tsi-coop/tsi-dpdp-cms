@@ -258,7 +258,10 @@ public class Notification implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'instance_id' is required for 'mark_notification_read'.", req.getRequestURI());
                         return;
                     }
-                    markNotificationReadInDb(notifId);
+                    if (!markNotificationReadInDb(notifId, req)) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Notification not found.", req.getRequestURI());
+                        return;
+                    }
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); put("message", "Notification marked as read."); }});
                     break;
 
@@ -706,23 +709,34 @@ public class Notification implements Action {
     }
 
     /**
-     * Marks a notification instance as read.
+     * Marks a notification as read, but only one that belongs to the caller: an operator or API key may
+     * touch their own fiduciary's notifications, a data principal only their own (breach read-receipts
+     * are compliance evidence, so another tenant must not be able to set them). ADMIN may touch any.
+     * @return false if no such notification is visible to the caller.
      */
-    private void markNotificationReadInDb(UUID instanceId) throws SQLException {
+    private boolean markNotificationReadInDb(UUID instanceId, HttpServletRequest req) throws SQLException {
+        StringBuilder sql = new StringBuilder("UPDATE notifications SET read_at = NOW() WHERE id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(instanceId);
+        if (!InputProcessor.isAdminCaller(req)) {
+            UUID callerFid = InputProcessor.getCallerFiduciaryId(req);
+            if (callerFid == null) return false;
+            sql.append(" AND fiduciary_id = ?");
+            params.add(callerFid);
+            String principal = InputProcessor.getPrincipalSubject(req);
+            if (principal != null) {
+                sql.append(" AND recipient_type = 'PRINCIPAL' AND recipient_id = ?");
+                params.add(principal);
+            }
+        }
         Connection conn = null;
         PreparedStatement pstmt = null;
         PoolDB pool = new PoolDB();
-        String sql = "UPDATE notifications SET read_at = NOW() WHERE id = ?";
         try {
             conn = pool.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, instanceId);
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Marking notification as read failed, instance not found.");
-            }
-            // Audit Log: Log the notification read event
-            // auditLogService.logEvent(readByUserId, "NOTIFICATION_READ", "NotificationInstance", instanceId, null, null, "SUCCESS", "NotificationService");
+            pstmt = conn.prepareStatement(sql.toString());
+            for (int i = 0; i < params.size(); i++) pstmt.setObject(i + 1, params.get(i));
+            return pstmt.executeUpdate() > 0;
         } finally {
             pool.cleanup(null, pstmt, conn);
         }

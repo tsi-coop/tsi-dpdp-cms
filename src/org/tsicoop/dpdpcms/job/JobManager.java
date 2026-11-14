@@ -37,6 +37,8 @@ public class JobManager implements ServletContextListener {
             : "/var/lib/tsi/exports/";
     private static final int BATCH_SIZE = 10; // Fixed number of principals to fetch at a time
     private static final String NIGHTLY_CES_JOB_NAME = "CES_NIGHTLY_FULL";
+    private static final String AUDIT_VERIFY_JOB_NAME = "AUDIT_CHAIN_VERIFY";
+    private static final String NOMINATION_SWEEP_JOB_NAME = "NOMINATION_SWEEP";
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
@@ -59,6 +61,8 @@ public class JobManager implements ServletContextListener {
     private void checkAndExecuteJobs() {
         try {
             scheduleNightlyFullRun();
+            runDailyAuditVerification();
+            runDailyNominationSweep();
             processNextPendingJob();
             new Audit().logEvents();
         } catch (Exception e) {
@@ -75,16 +79,75 @@ public class JobManager implements ServletContextListener {
      * (no longer gated to the 00:00 hour).
      */
     private boolean claimNightlyRun(Connection conn, LocalDate today) throws SQLException {
+        return claimDailyRun(conn, NIGHTLY_CES_JOB_NAME, today);
+    }
+
+    private boolean claimDailyRun(Connection conn, String jobName, LocalDate today) throws SQLException {
         String claimSql = "INSERT INTO job_schedule_state (job_name, last_run_date) VALUES (?, ?) " +
                 "ON CONFLICT (job_name) DO UPDATE SET last_run_date = EXCLUDED.last_run_date " +
                 "WHERE job_schedule_state.last_run_date < EXCLUDED.last_run_date " +
                 "RETURNING last_run_date";
         try (PreparedStatement pstmt = conn.prepareStatement(claimSql)) {
-            pstmt.setString(1, NIGHTLY_CES_JOB_NAME);
+            pstmt.setString(1, jobName);
             pstmt.setObject(2, today);
             try (ResultSet rs = pstmt.executeQuery()) {
                 return rs.next();
             }
+        }
+    }
+
+    /** Once a day: expire nominations past their end date and activate those whose start date has arrived. */
+    private void runDailyNominationSweep() {
+        PoolDB pool = null;
+        Connection conn = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            if (!claimDailyRun(conn, NOMINATION_SWEEP_JOB_NAME, LocalDate.now())) return;
+        } catch (Exception e) {
+            System.err.println("[JobManager] Nomination sweep claim failed: " + e.getMessage());
+            return;
+        } finally {
+            if (pool != null && conn != null) pool.cleanup(null, null, conn);
+        }
+        try {
+            int[] r = org.tsicoop.dpdpcms.service.v1.Rights.sweepNominations();
+            System.out.println("[JobManager] Nomination sweep: " + r[0] + " expired, " + r[1] + " activated.");
+        } catch (Exception e) {
+            System.err.println("[JobManager] Nomination sweep failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Once a day (claimed across instances like the nightly CES run) walks the audit hash chain and
+     * stores the verdict in audit_chain_verifications. A BROKEN verdict is logged loudly and shown on
+     * the console audit page.
+     */
+    private void runDailyAuditVerification() {
+        PoolDB pool = null;
+        Connection conn = null;
+        try {
+            pool = new PoolDB();
+            conn = pool.getConnection();
+            if (!claimDailyRun(conn, AUDIT_VERIFY_JOB_NAME, LocalDate.now())) return;
+        } catch (Exception e) {
+            System.err.println("[JobManager] Audit verification claim failed: " + e.getMessage());
+            return;
+        } finally {
+            if (pool != null && conn != null) pool.cleanup(null, null, conn);
+        }
+        try {
+            Audit audit = new Audit();
+            audit.logEvents();
+            org.tsicoop.dpdpcms.util.AuditChain.Result r = audit.verifyChain();
+            audit.recordVerification(r, "JOB");
+            if (r.intact()) {
+                System.out.println("[JobManager] Audit chain INTACT (" + r.rowsChecked + " rows).");
+            } else {
+                System.err.println("[JobManager] ALERT: AUDIT CHAIN BROKEN. First bad row id=" + r.firstBreakId + " seq=" + r.firstBreakSeq);
+            }
+        } catch (Exception e) {
+            System.err.println("[JobManager] Audit verification failed: " + e.getMessage());
         }
     }
 

@@ -118,6 +118,26 @@
         </div>
     </form>
 
+    <!-- Second step: MFA (code entry, or first-time enrolment) -->
+    <div id="mfa-panel" class="hidden">
+        <div id="mfa-enrol-info" class="hidden mb-4 text-xs text-slate-600 space-y-2">
+            <p class="font-bold">Set up two-step verification</p>
+            <p>Your role requires it. In an authenticator app (Google Authenticator, Microsoft Authenticator, Authy) add an account using this key, then enter the 6-digit code it shows.</p>
+            <p class="font-mono text-sm break-all bg-slate-50 border border-slate-200 rounded p-2 select-all" id="mfa-secret"></p>
+            <p><a id="mfa-uri" href="#" class="primary-text underline">Open in authenticator app</a> (on the same device)</p>
+        </div>
+        <form onsubmit="handleMfaCode(event)">
+            <label for="mfa-code" class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Authenticator code</label>
+            <input type="text" id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\d{6}" required
+                   class="input-style w-full px-3 py-2 border border-slate-200 rounded-md text-sm tracking-widest"
+                   placeholder="123456">
+            <button type="submit"
+                    class="animated-button w-full h-11 mt-4 inline-flex items-center justify-center rounded-md font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-opacity-90 transition-all">
+                Verify
+            </button>
+        </form>
+    </div>
+
     <!-- Message/Error Area -->
     <div id="login-message" class="mt-6 text-center text-xs font-bold hidden">
         <!-- Dynamic messages -->
@@ -126,6 +146,54 @@
 </div>
 
 <script>
+let mfaState = null;
+const API_URL = 'api/v1/admin/operator';
+
+function setMessage(text, cls) {
+    const m = document.getElementById('login-message');
+    m.textContent = text;
+    m.classList.remove('hidden', 'text-red-500', 'text-teal-600', 'text-blue-500');
+    m.classList.add(cls);
+}
+
+function showMfaPanel(enrol) {
+    document.querySelector('form[onsubmit="handleLogin(event)"]').classList.add('hidden');
+    document.getElementById('mfa-panel').classList.remove('hidden');
+    document.getElementById('mfa-enrol-info').classList.toggle('hidden', !enrol);
+    setMessage(enrol ? 'Set up your authenticator, then enter the code.' : 'Enter the code from your authenticator app.', 'text-blue-500');
+    document.getElementById('mfa-code').focus();
+}
+
+function finishLogin(responseData) {
+    // Persist context for management console
+    localStorage.setItem('authToken', responseData.token);
+    localStorage.setItem('username', responseData.username);
+    localStorage.setItem('role', responseData.role);
+    localStorage.setItem('fiduciary_id', responseData.fiduciary_id);
+    localStorage.setItem('fiduciary_name', responseData.fiduciary_name);
+    setMessage('Login successful. Redirecting to vault...', 'text-teal-600');
+    setTimeout(() => {
+        window.location.href = responseData.role === 'ADMIN' ? 'console/admin/dashboard.html' : 'console/dpo/dashboard.html';
+    }, 800);
+}
+
+async function handleMfaCode(event) {
+    event.preventDefault();
+    const code = document.getElementById('mfa-code').value.trim();
+    const headers = { 'Content-Type': 'application/json' };
+    const body = { _func: 'verify_mfa', code: code };
+    if (mfaState.mode === 'login') body.mfa_token = mfaState.mfaToken;
+    else headers['Authorization'] = 'Bearer ' + mfaState.enrolToken;
+    try {
+        const r = await fetch(API_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (r.ok && d.success === true) finishLogin(d);
+        else setMessage(d.message || 'Invalid code.', 'text-red-500');
+    } catch (e) {
+        setMessage('Network Error: Cannot reach the Consent Management System.', 'text-red-500');
+    }
+}
+
 /**
  * Function to handle the admin login process via API authentication using the Fetch API.
  */
@@ -167,25 +235,25 @@ async function handleLogin(event) {
 
         const responseData = await response.json();
 
-        if (response.ok && responseData.success === true) {
-            // Persist context for management console
-            localStorage.setItem('authToken', responseData.token);
-            localStorage.setItem('username', responseData.username);
-            localStorage.setItem('role', responseData.role);
-            localStorage.setItem('fiduciary_id', responseData.fiduciary_id);
-            localStorage.setItem('fiduciary_name', responseData.fiduciary_name);
-
-            messageArea.textContent = "Login successful. Redirecting to vault...";
-            messageArea.classList.replace('text-blue-500', 'text-teal-600');
-
-            setTimeout(() => {
-                if(responseData.role === 'ADMIN'){
-                    window.location.href = ADMIN_DASHBOARD_URL;
-                } else {
-                    window.location.href = DPO_DASHBOARD_URL;
-                }
-            }, 800);
-
+        if (response.ok && responseData.success === true && responseData.mfa_required) {
+            // Password accepted; the account has MFA, so ask for the code before any session exists.
+            mfaState = { mode: 'login', mfaToken: responseData.mfa_token };
+            showMfaPanel(false);
+        } else if (response.ok && responseData.success === true && responseData.mfa_enrol_required) {
+            // MFA is mandatory and not set up yet: start enrolment with the enrol-only token.
+            mfaState = { mode: 'enrol', enrolToken: responseData.enrol_token };
+            const er = await fetch(API_LOGIN_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + mfaState.enrolToken },
+                body: JSON.stringify({ _func: 'enrol_mfa' })
+            });
+            const ed = await er.json();
+            if (!er.ok || !ed.secret) throw new Error(ed.message || 'Could not start MFA enrolment.');
+            document.getElementById('mfa-secret').textContent = ed.secret;
+            document.getElementById('mfa-uri').href = ed.otpauth_uri;
+            showMfaPanel(true);
+        } else if (response.ok && responseData.success === true) {
+            finishLogin(responseData);
         } else {
             const errorText = responseData.message || "Invalid credentials. Please verify your login ID and password.";
             messageArea.textContent = errorText;
@@ -193,7 +261,7 @@ async function handleLogin(event) {
         }
 
     } catch (error) {
-        messageArea.textContent = 'Network Error: Cannot reach the Consent Management System.';
+        messageArea.textContent = (error instanceof TypeError) ? 'Network Error: Cannot reach the Consent Management System.' : error.message;
         messageArea.classList.replace('text-blue-500', 'text-red-500');
         console.error('Connection error:', error);
     }

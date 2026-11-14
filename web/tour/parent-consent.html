@@ -324,10 +324,9 @@
                 body: JSON.stringify({
                     "_func": "link_user",
                     "anonymous_user_id": anonymousId,
-                    "authenticated_user_id": studentEmail,
-                    "age_category": "MINOR",
-                    "guardian_id": guardianMobile,
-                    "verification_status": "VERIFIED"
+                    "authenticated_user_id": studentEmail
+                    // age / guardian are no longer accepted here: the guardian verification recorded in step 1
+                    // is what marks the learner as a minor.
                 })
             });
 

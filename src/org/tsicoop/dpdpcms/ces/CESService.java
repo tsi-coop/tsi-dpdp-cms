@@ -416,8 +416,9 @@ public class CESService {
                                          String triggerEvent,
                                          String status) throws SQLException {
         JSONObject response = new JSONObject();
-        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, purpose_id, app_id, trigger_event, status) " +
-                "VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO purge_requests (user_id, fiduciary_id, purpose_id, app_id, trigger_event, status, action) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        String action = "ERASE";
 
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -437,10 +438,22 @@ public class CESService {
             stmt.setObject(4, UUID.fromString(appId));
             stmt.setString(5, triggerEvent);
             stmt.setString(6, status);
+            // When the purpose has been CLOSED by the DPO, a purge that falls due because the retention period ran
+            // out carries the action the DPO chose (ERASE or DE_IDENTIFY). A principal's own erasure request is
+            // always ERASE whatever the purpose says.
+            if (Constants.PURGE_TRIGGER_EXPIRY.equals(triggerEvent)) {
+                try (PreparedStatement a = conn.prepareStatement("SELECT retention_action FROM purpose_states WHERE fiduciary_id = ? AND purpose_id = ? AND state = 'CLOSED'")) {
+                    a.setObject(1, UUID.fromString(fiduciaryId));
+                    a.setString(2, purposeId);
+                    try (ResultSet ar = a.executeQuery()) { if (ar.next()) action = ar.getString(1); }
+                }
+            }
+            stmt.setString(7, action);
 
             rs = stmt.executeQuery();
             if (rs.next()) {
                 response.put("success", true);
+                response.put("action", action);
                 response.put("id", rs.getObject("id").toString());
                 System.out.println("[CES DEBUG] insertPurgeRequest: INSERTED purge_requests id=" + response.get("id")
                         + " user_id=" + userId + " fiduciary_id=" + fiduciaryId + " purpose_id=" + purposeId
@@ -472,6 +485,7 @@ public class CESService {
             payload.put("app_id", appId);
             payload.put("trigger_event", triggerEvent);
             payload.put("status", status);
+            payload.put("action", action);
             WebhookDispatcher.dispatch(fiduciaryId, "PURGE", "purge_request_created", payload);
         }
         return response;

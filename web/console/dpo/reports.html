@@ -65,10 +65,12 @@
             <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <a href="purposes.html" class="nav-link">Purposes</a>
             <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
+            <a href="rights-requests.html" class="nav-link">Rights Requests</a>
             <a href="breach.html" class="nav-link">Breach</a>
             <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link">Audit</a>
@@ -298,9 +300,24 @@
             }
         };
 
-        async function downloadFile(jobId) {
-            window.location.href = `${API_URL_JOBS}?_func=download_file&job_id=${jobId}&auth=${AUTH_TOKEN}`;
+
+        // Fetch with the Authorization header (a token in the URL would leak into logs and history), then save the bytes.
+        async function fetchJobFile(jobId) {
+            const r = await fetch(`${API_URL_JOBS}?_func=download_file&job_id=${encodeURIComponent(jobId)}`, {
+                headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+            });
+            if (!r.ok) { alert('Download failed (' + r.status + ').'); return; }
+            const cd = r.headers.get('Content-Disposition') || '';
+            const m = /filename="?([^";]+)"?/i.exec(cd);
+            const blob = await r.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = m ? m[1] : `export-${jobId}.csv`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
         }
+
+        async function downloadFile(jobId) { return fetchJobFile(jobId); }
 
         function handleLogout() {
           localStorage.removeItem('authToken');

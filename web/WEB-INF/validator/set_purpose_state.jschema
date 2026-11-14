@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "_func": {
+      "type": "string"
+    },
+    "fiduciary_id": {
+      "type": "string"
+    },
+    "purpose_id": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "_func",
+    "purpose_id",
+    "state",
+    "reason"
+  ]
+}

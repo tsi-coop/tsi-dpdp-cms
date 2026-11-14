@@ -132,6 +132,19 @@ public class Compliance implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'purge_request_id' is required for 'update_purge_status'.", req.getRequestURI());
                         return;
                     }
+                    if (callerRole == null) {
+                        // Processor API key: the purge request must belong to the key's own fiduciary.
+                        JSONObject purgeToUpdate = getPurgeRequestsFromDb(purgeRequestIdStr);
+                        if (purgeToUpdate == null) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Purge request not found.", req.getRequestURI());
+                            return;
+                        }
+                        Object purgeFid = purgeToUpdate.get("fiduciary_id");
+                        if (!InputProcessor.callerOwns(req, purgeFid == null ? null : UUID.fromString(purgeFid.toString()))) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "This purge request does not belong to your fiduciary.", req.getRequestURI());
+                            return;
+                        }
+                    }
                     String status = (String) input.get("status"); // PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED, LEGAL_HOLD_APPLIED
                     String details = (String) input.get("details");
                     if (!updatePurgeStatus(purgeRequestId, status, details, loginUserId, appId, callerRole)) {
@@ -202,6 +215,11 @@ public class Compliance implements Action {
                     }
                     if (targetPurgeRequest.get("fiduciary_id") != null
                             && rejectIfNotOwnFiduciary(UUID.fromString((String) targetPurgeRequest.get("fiduciary_id")), loginUserId, callerRole, req, res)) return;
+                    // The assignee must be an active operator of the purge request's fiduciary.
+                    if (!InputProcessor.isActiveOperatorOf(assignOperatorId, UUID.fromString((String) targetPurgeRequest.get("fiduciary_id")))) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'operator_id' must be an active operator of this fiduciary.", req.getRequestURI());
+                        return;
+                    }
                     assignPurgeRequest(assignPurgeId, assignOperatorId);
                     OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("success", true); }});
                     break;
@@ -375,7 +393,12 @@ public class Compliance implements Action {
             }
             JSONObject auditContext = new JSONObject();
             auditContext.put("details",details);
-            new Audit().logEventAsync(userId, fiduciaryId, serviceType, loginUserId, confirmationStatus, details);
+            try {
+                // Security event: the status row is already updated, so make the record durable now.
+                new Audit().logEventSync(userId, fiduciaryId, serviceType, loginUserId, confirmationStatus, details);
+            } catch (SQLException e) {
+                System.err.println("[ERROR] Purge confirmation audit write failed (event stays queued): " + e.getMessage());
+            }
 
             // Give the Data Principal full lifecycle visibility: notify them once the purge
             // they triggered (erasure/retention expiry) actually completes, or if it's put on
@@ -434,7 +457,7 @@ public class Compliance implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        StringBuilder sqlBuilder = new StringBuilder("SELECT pr.id, pr.user_id, pr.purpose_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.fiduciary_id = ?");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT pr.id, pr.user_id, pr.purpose_id, pr.fiduciary_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, pr.action, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.fiduciary_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(fiduciaryId);
 
@@ -492,6 +515,7 @@ public class Compliance implements Action {
                 request.put("details", rs.getString("details"));
                 Object assignedOperatorId = rs.getObject("assigned_operator_id");
                 request.put("assigned_operator_id", assignedOperatorId != null ? assignedOperatorId.toString() : null);
+                request.put("action", rs.getString("action")); // ERASE or DE_IDENTIFY
                 requestsArray.add(request);
             }
         } finally {
@@ -512,7 +536,7 @@ public class Compliance implements Action {
         ResultSet rs = null;
         PoolDB pool = new PoolDB();
 
-        String sql = "SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.purpose_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.id=?";
+        String sql = "SELECT pr.id, pr.user_id, pr.fiduciary_id, pr.purpose_id, pr.app_id, pr.trigger_event, pr.status, pr.initiated_at, pr.details, pr.assigned_operator_id, pr.action, a.name FROM purge_requests pr LEFT JOIN apps a ON pr.app_id = a.id WHERE pr.id=?";
 
         try {
             conn = pool.getConnection();
@@ -534,6 +558,7 @@ public class Compliance implements Action {
                 purgeob.put("details", rs.getString("details"));
                 Object assignedOperatorId = rs.getObject("assigned_operator_id");
                 purgeob.put("assigned_operator_id", assignedOperatorId != null ? assignedOperatorId.toString() : null);
+                purgeob.put("action", rs.getString("action")); // ERASE or DE_IDENTIFY
             }
         } finally {
             pool.cleanup(rs, pstmt, conn);
@@ -548,15 +573,13 @@ public class Compliance implements Action {
      * return immediately.
      */
     private boolean rejectIfNotOwnFiduciary(UUID targetFiduciaryId, UUID loginUserId, String callerRole, HttpServletRequest req, HttpServletResponse res) throws SQLException {
-        if (callerRole == null || "ADMIN".equalsIgnoreCase(callerRole)) {
+        // Operators, processor API keys and principal tokens are all held to their own fiduciary
+        // (an API-key caller has no role, which used to bypass this check).
+        if (InputProcessor.callerOwns(req, targetFiduciaryId)) {
             return false;
         }
-        UUID callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
-        if (callerFid == null || !callerFid.equals(targetFiduciaryId)) {
-            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access purge requests for your own fiduciary.", req.getRequestURI());
-            return true;
-        }
-        return false;
+        OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access purge requests for your own fiduciary.", req.getRequestURI());
+        return true;
     }
 
     /** Looks up the fiduciary_id an operator account is bound to (null for ADMIN accounts). */

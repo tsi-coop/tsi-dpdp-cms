@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.PolicyCache;
 import org.tsicoop.dpdpcms.util.PolicyVersion;
 import org.tsicoop.dpdpcms.util.RopaDeriver;
 
@@ -18,7 +19,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern; // Not strictly needed for PolicyService, but kept for consistency with template
 
 /**
@@ -33,7 +33,6 @@ public class Policy implements Action {
     private static final Pattern VERSION_PATTERN = Pattern.compile("^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"); // e.g., 1.0, 1.0.1
     private static final UUID ADMIN_FID_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
     // Thread-safe in-memory cache for Policy lookups to minimize database round-trips
-    private static final Map<String, JSONObject> policyCache = new ConcurrentHashMap<>();
 
     /**
      * Handles all Policy Management operations via a single POST endpoint.
@@ -118,6 +117,12 @@ public class Policy implements Action {
                     }
                     Optional<JSONObject> policyOptional = getPolicyFromDb(policyIdStr, versionStr);
                     if (policyOptional.isPresent()) {
+                        // A policy (including a DRAFT) belongs to one fiduciary: only its own callers may read it.
+                        Object ownerFid = policyOptional.get().get("fiduciary_id");
+                        if (!InputProcessor.callerOwns(req, ownerFid == null ? null : UUID.fromString(ownerFid.toString()))) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only read policies of your own fiduciary.", req.getRequestURI());
+                            return;
+                        }
                         output = policyOptional.get();
                         OutputProcessor.send(res, HttpServletResponse.SC_OK, output);
                     } else {
@@ -611,11 +616,10 @@ public class Policy implements Action {
      * Uses a ConcurrentHashMap to cache results and minimize latency.
      */
     protected Optional<JSONObject> getPolicyFromDb(String policyId, String version) throws SQLException {
-        String cacheKey = policyId;
-
-        // 1. Return from cache if present
-        if (policyCache.containsKey(cacheKey)) {
-            return Optional.of(policyCache.get(cacheKey));
+        // 1. Return from cache if present (keyed by policy_id + version)
+        JSONObject cached = PolicyCache.get(policyId, version);
+        if (cached != null) {
+            return Optional.of(cached);
         }
 
         Connection conn = null;
@@ -642,7 +646,7 @@ public class Policy implements Action {
                 policy.put("last_updated_at", rs.getTimestamp("last_updated_at").toInstant().toString());
 
                 // 2. Populate cache on successful lookup
-                policyCache.put(cacheKey, policy);
+                PolicyCache.put(policyId, version, policy);
                 return Optional.of(policy);
             }
         } catch (Exception e) {
@@ -753,6 +757,7 @@ public class Policy implements Action {
             }
             success = true;
         } finally {
+            PolicyCache.remove(policyId, version);
             pool.cleanup(null, pstmt, conn);
         }
 
@@ -823,6 +828,7 @@ public class Policy implements Action {
             if (conn != null) conn.rollback();
             throw e;
         } finally {
+            PolicyCache.remove(policyId, version);
             pool.cleanup(rs, pstmtCheck, null);
             pool.cleanup(null, pstmtActivate, conn);
         }
@@ -895,6 +901,7 @@ public class Policy implements Action {
 
             success = true;
         } finally {
+            PolicyCache.remove(policyId, version);
             pool.cleanup(null, pstmt, conn);
         }
 

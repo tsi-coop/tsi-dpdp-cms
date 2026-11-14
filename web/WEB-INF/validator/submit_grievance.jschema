@@ -27,6 +27,12 @@
     },
     "language": {
       "type": "string"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "consent_record_id": {
+      "type": "string"
     }
   },
   "required": [

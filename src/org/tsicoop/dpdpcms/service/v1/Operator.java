@@ -2,6 +2,8 @@ package org.tsicoop.dpdpcms.service.v1;
 
 import org.tsicoop.dpdpcms.framework.*;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.MfaPolicy;
+import org.tsicoop.dpdpcms.util.Totp;
 import org.tsicoop.dpdpcms.util.PassphraseGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -53,6 +55,12 @@ public class Operator implements Action {
                     break;
                 case "logout":
                     handleLogout(req, res);
+                    break;
+                case "enrol_mfa":
+                    handleEnrolMfa(req, res);
+                    break;
+                case "verify_mfa":
+                    handleVerifyMfa(input, res, req);
                     break;
                 case "generate_recovery_key":
                     handleGenerateRecoveryKey(input, loginUserId, res, req);
@@ -109,11 +117,12 @@ public class Operator implements Action {
         String role = null;
         String operatorName = null;
         JSONObject out = null;
+        String loginStage = "SESSION";
 
         try {
             conn = pool.getConnection();
             pstmt = conn.prepareStatement(
-                "SELECT o.id, o.name, " + DbEncryption.decryptCol("o.email_enc") + " AS email, o.password_hash, o.status, o.role, o.fiduciary_id, f.name AS fiduciary_name " +
+                "SELECT o.id, o.name, " + DbEncryption.decryptCol("o.email_enc") + " AS email, o.password_hash, o.status, o.role, o.fiduciary_id, o.mfa_enabled, f.name AS fiduciary_name " +
                 "FROM operators o LEFT JOIN fiduciaries f ON o.fiduciary_id = f.id " +
                 "WHERE o.name = ? OR o.email_hmac = " + DbEncryption.HMAC);
             int loginIdx = DbEncryption.bindKey(pstmt, 1);    // param 1: decrypt key
@@ -126,13 +135,24 @@ public class Operator implements Action {
                     principalEmail = rs.getString("email");
                     operatorName = rs.getString("name");
                     role = rs.getString("role");
-                    final String token = JWTUtil.generateToken(principalEmail, identifier, role);
                     userUid = (UUID) rs.getObject("id");
                     fidUid = rs.getObject("fiduciary_id") != null ? (UUID) rs.getObject("fiduciary_id") : ADMIN_FID_UUID;
 
                     out = new JSONObject();
                     out.put("success", true);
-                    out.put("token", token);
+                    if (rs.getBoolean("mfa_enabled")) {
+                        // Password is right; the session is only issued after verify_mfa.
+                        loginStage = "MFA_CHALLENGE";
+                        out.put("mfa_required", true);
+                        out.put("mfa_token", JWTUtil.generateMfaChallengeToken(principalEmail));
+                    } else if (MfaPolicy.requiredFor(role)) {
+                        // MFA is mandatory here but not enrolled yet: enrol-only token, no working session.
+                        loginStage = "MFA_ENROL";
+                        out.put("mfa_enrol_required", true);
+                        out.put("enrol_token", JWTUtil.generateMfaEnrolToken(principalEmail, identifier, role));
+                    } else {
+                        out.put("token", JWTUtil.generateToken(principalEmail, identifier, role, false));
+                    }
                     out.put("role", role);
                     out.put("username", operatorName);
                     out.put("fiduciary_id", fidUid.toString());
@@ -152,15 +172,241 @@ public class Operator implements Action {
             serviceType = Constants.SERVICE_TYPE_ADMIN_CONSOLE;
         }
 
-        if (success) {
+        if (success && !"SESSION".equals(loginStage)) {
+            // Password verified but no session yet (MFA step still to come). Not a "login success".
+            try {
+                new Audit().logEventSync(identifier, fidUid, serviceType, userUid, "LOGIN_PASSWORD_VERIFIED", loginStage);
+            } catch (SQLException e) {
+                System.err.println("[ERROR] Operator login refused: audit write failed: " + e.getMessage());
+                OutputProcessor.errorResponse(res, 503, "Service Unavailable", "Login could not be recorded. Try again shortly.", req.getRequestURI());
+                return;
+            }
+            OutputProcessor.send(res, 200, out);
+        } else if (success) {
             LoginRateLimiter.recordSuccess(clientIp);
-            new Audit().logEventAsync(identifier, fidUid, serviceType, userUid, "LOGIN_SUCCESS", "Operator Access Granted");
+            try {
+                // Security event: written before the session is issued, so a login can't happen unrecorded.
+                new Audit().logEventSync(identifier, fidUid, serviceType, userUid, "LOGIN_SUCCESS", "Operator Access Granted");
+            } catch (SQLException e) {
+                System.err.println("[ERROR] Operator login refused: audit write failed: " + e.getMessage());
+                OutputProcessor.errorResponse(res, 503, "Service Unavailable", "Login could not be recorded. Try again shortly.", req.getRequestURI());
+                return;
+            }
             InputProcessor.setConsoleSessionCookie(res, out.get("token").toString());
             OutputProcessor.send(res, 200, out);
         }else{
             // fidUid is only resolved after a successful password check, so it is null here
-            new Audit().logEventAsync(identifier, fidUid != null ? fidUid : ADMIN_FID_UUID, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
+            try {
+                new Audit().logEventSync(identifier, fidUid != null ? fidUid : ADMIN_FID_UUID, serviceType, userUid, "LOGIN_FAILURE", "Invalid credentials or account inactive.");
+            } catch (SQLException e) {
+                System.err.println("[ERROR] LOGIN_FAILURE audit write failed (event stays queued): " + e.getMessage());
+            }
             OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid credentials or account inactive.", req.getRequestURI());
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // TOTP MFA
+    //   login      -> password ok: mfa_token (account has MFA) / enrol_token (MFA mandatory, not enrolled) / token
+    //   enrol_mfa  -> new secret + otpauth URI. Session or enrol token. Refused once MFA is enabled.
+    //   verify_mfa -> {mfa_token, code}: finishes login.  {code} + session/enrol token: confirms enrolment.
+    // Each 30-second step is accepted once; 5 wrong codes lock MFA for 15 minutes.
+    // ------------------------------------------------------------------------------------------
+    private static final int MFA_MAX_FAILURES = 5;
+    private static final long MFA_LOCK_MINUTES = 15;
+    private static final String MFA_ISSUER = "TSI DPDP CMS";
+
+    private static final class OpRow {
+        UUID id, fid;
+        String name, role, status, secret, fidName;
+        boolean mfaEnabled;
+        Long lastStep;
+        Timestamp lockedUntil;
+    }
+
+    private OpRow loadOperatorByEmail(String email) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null; PreparedStatement ps = null; ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement(
+                "SELECT o.id, o.name, o.role, o.status, o.fiduciary_id, o.mfa_enabled, o.mfa_last_step, o.mfa_locked_until, f.name AS fiduciary_name, " +
+                "CASE WHEN o.mfa_secret_enc IS NULL THEN NULL ELSE " + DbEncryption.decryptCol("o.mfa_secret_enc") + " END AS mfa_secret " +
+                "FROM operators o LEFT JOIN fiduciaries f ON o.fiduciary_id = f.id WHERE o.email_hmac = " + DbEncryption.HMAC);
+            int i = DbEncryption.bindKey(ps, 1);
+            DbEncryption.bindHmac(ps, i, email);
+            rs = ps.executeQuery();
+            if (!rs.next()) return null;
+            OpRow o = new OpRow();
+            o.id = (UUID) rs.getObject("id");
+            o.name = rs.getString("name");
+            o.role = rs.getString("role");
+            o.status = rs.getString("status");
+            o.fid = rs.getObject("fiduciary_id") != null ? (UUID) rs.getObject("fiduciary_id") : ADMIN_FID_UUID;
+            o.fidName = rs.getString("fiduciary_name");
+            o.mfaEnabled = rs.getBoolean("mfa_enabled");
+            long step = rs.getLong("mfa_last_step");
+            o.lastStep = rs.wasNull() ? null : step;
+            o.lockedUntil = rs.getTimestamp("mfa_locked_until");
+            o.secret = rs.getString("mfa_secret");
+            return o;
+        } finally {
+            pool.cleanup(rs, ps, conn);
+        }
+    }
+
+    private static String bearer(HttpServletRequest req) {
+        String h = req.getHeader("Authorization");
+        return (h != null && h.startsWith("Bearer ")) ? h.substring(7).trim() : null;
+    }
+
+    /** Email of the caller of an MFA function: a normal session token or an enrol-only token. */
+    private String mfaCallerEmail(HttpServletRequest req) {
+        String t = bearer(req);
+        if (t == null) return null;
+        try {
+            if (JWTUtil.isTokenValid(t)) return JWTUtil.getEmailFromToken(t);
+            io.jsonwebtoken.Claims c = JWTUtil.getMfaEnrolClaims(t);
+            return c == null ? null : c.getSubject();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void handleEnrolMfa(HttpServletRequest req, HttpServletResponse res) throws SQLException {
+        String email = mfaCallerEmail(req);
+        OpRow op = email == null ? null : loadOperatorByEmail(email);
+        if (op == null || !"ACTIVE".equals(op.status)) {
+            OutputProcessor.errorResponse(res, 401, "Unauthorized", "Authentication required.", req.getRequestURI());
+            return;
+        }
+        if (op.mfaEnabled) {
+            OutputProcessor.errorResponse(res, 409, "Conflict", "MFA is already enabled for this account.", req.getRequestURI());
+            return;
+        }
+
+        String secret = Totp.generateSecret();
+        PoolDB pool = new PoolDB();
+        Connection conn = null; PreparedStatement ps = null;
+        int updated;
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement("UPDATE operators SET mfa_secret_enc = " + DbEncryption.ENCRYPT + ", mfa_last_step = NULL, last_updated_at = NOW() WHERE id = ? AND mfa_enabled = FALSE");
+            int i = DbEncryption.bindEncrypt(ps, 1, secret);
+            ps.setObject(i, op.id);
+            updated = ps.executeUpdate();
+        } finally {
+            pool.cleanup(null, ps, conn);
+        }
+        if (updated == 0) {
+            OutputProcessor.errorResponse(res, 409, "Conflict", "MFA is already enabled for this account.", req.getRequestURI());
+            return;
+        }
+        new Audit().logEventAsync(email, op.fid, Constants.SERVICE_TYPE_ADMIN_CONSOLE, op.id, "MFA_ENROLMENT_STARTED", "Secret issued; not active until a code is confirmed");
+
+        JSONObject out = new JSONObject();
+        out.put("success", true);
+        out.put("secret", secret);
+        out.put("otpauth_uri", Totp.otpauthUri(MFA_ISSUER, email, secret));
+        out.put("issuer", MFA_ISSUER);
+        OutputProcessor.send(res, 200, out);
+    }
+
+    private void handleVerifyMfa(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String clientIp = LoginRateLimiter.getClientIp(req);
+        if (!LoginRateLimiter.isAllowed("mfa:ip:" + clientIp, 20, 15 * 60 * 1000L)) {
+            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many attempts. Please try again later.", req.getRequestURI());
+            return;
+        }
+
+        String code = (String) input.get("code");
+        String mfaToken = (String) input.get("mfa_token");
+        boolean loginMode = mfaToken != null && !mfaToken.isEmpty();
+        String email = loginMode ? JWTUtil.getMfaChallengeSubject(mfaToken) : mfaCallerEmail(req);
+        OpRow op = email == null ? null : loadOperatorByEmail(email);
+        if (op == null || !"ACTIVE".equals(op.status)) {
+            OutputProcessor.errorResponse(res, 401, "Unauthorized", "Verification failed.", req.getRequestURI());
+            return;
+        }
+        // login mode needs MFA already on; confirm mode needs a pending (not yet enabled) secret
+        if (loginMode != op.mfaEnabled || op.secret == null) {
+            OutputProcessor.errorResponse(res, 409, "Conflict", loginMode ? "MFA is not enabled for this account." : "Start enrolment with enrol_mfa first, or MFA is already enabled.", req.getRequestURI());
+            return;
+        }
+        if (op.lockedUntil != null && op.lockedUntil.after(new Timestamp(System.currentTimeMillis()))) {
+            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many wrong codes. MFA is locked for a few minutes.", req.getRequestURI());
+            return;
+        }
+
+        long step = Totp.verify(op.secret, code, System.currentTimeMillis(), op.lastStep == null ? 0 : op.lastStep);
+        PoolDB pool = new PoolDB();
+        Connection conn = null; PreparedStatement ps = null; ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            if (step < 0) {
+                ps = conn.prepareStatement(
+                    "UPDATE operators SET mfa_failed_attempts = CASE WHEN mfa_failed_attempts + 1 >= ? THEN 0 ELSE mfa_failed_attempts + 1 END, " +
+                    "mfa_locked_until = CASE WHEN mfa_failed_attempts + 1 >= ? THEN ? ELSE mfa_locked_until END WHERE id = ? RETURNING mfa_locked_until");
+                ps.setInt(1, MFA_MAX_FAILURES);
+                ps.setInt(2, MFA_MAX_FAILURES);
+                ps.setTimestamp(3, new Timestamp(System.currentTimeMillis() + MFA_LOCK_MINUTES * 60_000L));
+                ps.setObject(4, op.id);
+                rs = ps.executeQuery();
+                boolean locked = rs.next() && rs.getTimestamp(1) != null && rs.getTimestamp(1).after(new Timestamp(System.currentTimeMillis()));
+                auditSecurity(email, op, locked ? "MFA_LOCKED" : "MFA_FAILED", loginMode ? "login" : "enrolment");
+                OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid or already used code.", req.getRequestURI());
+                return;
+            }
+
+            // Correct code. Accept the step only if it is still newer than the last one used.
+            String sql = "UPDATE operators SET mfa_last_step = ?, mfa_failed_attempts = 0, mfa_locked_until = NULL" +
+                    (loginMode ? "" : ", mfa_enabled = TRUE, tokens_valid_after = ?") +
+                    ", last_updated_at = NOW() WHERE id = ? AND (mfa_last_step IS NULL OR mfa_last_step < ?)";
+            ps = conn.prepareStatement(sql);
+            int i = 1;
+            ps.setLong(i++, step);
+            if (!loginMode) ps.setTimestamp(i++, new Timestamp(System.currentTimeMillis())); // first enrolment: older tokens stop working
+            ps.setObject(i++, op.id);
+            ps.setLong(i, step);
+            if (ps.executeUpdate() == 0) {
+                auditSecurity(email, op, "MFA_FAILED", "replayed code");
+                OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid or already used code.", req.getRequestURI());
+                return;
+            }
+        } finally {
+            pool.cleanup(rs, ps, conn);
+        }
+        if (!loginMode) OperatorSessions.forget(email);
+
+        String serviceType = "DPO".equalsIgnoreCase(op.role) ? Constants.SERVICE_TYPE_DPO_CONSOLE : Constants.SERVICE_TYPE_ADMIN_CONSOLE;
+        try {
+            if (!loginMode) new Audit().logEventSync(email, op.fid, serviceType, op.id, "MFA_ENABLED", "TOTP enrolment confirmed");
+            new Audit().logEventSync(email, op.fid, serviceType, op.id, "LOGIN_SUCCESS", "Operator Access Granted (MFA)");
+        } catch (SQLException e) {
+            System.err.println("[ERROR] MFA login refused: audit write failed: " + e.getMessage());
+            OutputProcessor.errorResponse(res, 503, "Service Unavailable", "Login could not be recorded. Try again shortly.", req.getRequestURI());
+            return;
+        }
+        LoginRateLimiter.recordSuccess("mfa:ip:" + clientIp);
+
+        String token = JWTUtil.generateToken(email, op.name, op.role, true);
+        JSONObject out = new JSONObject();
+        out.put("success", true);
+        out.put("token", token);
+        out.put("role", op.role);
+        out.put("username", op.name);
+        out.put("fiduciary_id", op.fid.toString());
+        if (op.fidName != null) out.put("fiduciary_name", op.fidName);
+        InputProcessor.setConsoleSessionCookie(res, token);
+        OutputProcessor.send(res, 200, out);
+    }
+
+    private void auditSecurity(String email, OpRow op, String action, String detail) {
+        String serviceType = "DPO".equalsIgnoreCase(op.role) ? Constants.SERVICE_TYPE_DPO_CONSOLE : Constants.SERVICE_TYPE_ADMIN_CONSOLE;
+        try {
+            new Audit().logEventSync(email, op.fid, serviceType, op.id, action, detail);
+        } catch (SQLException e) {
+            System.err.println("[ERROR] " + action + " audit write failed (event stays queued): " + e.getMessage());
         }
     }
 
@@ -192,6 +438,17 @@ public class Operator implements Action {
         String pass = (String) input.get("password");
         String role = (String) input.get("role");
         String callerRole = InputProcessor.getVerifiedRole(req);
+        if (!org.tsicoop.dpdpcms.util.RolePermissions.isKnownRole(role)) {
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "Unknown role. Use ADMIN, DPO, OPERATOR or AUDITOR.", req.getRequestURI());
+            return;
+        }
+        role = role.trim().toUpperCase();
+        if ("AUDITOR".equals(role) && !AccessControl.enforcing()) {
+            // The read-only guarantee comes from the central access check; until it is enforced a
+            // service that only blocks OPERATOR would treat an AUDITOR like a DPO.
+            OutputProcessor.errorResponse(res, 400, "Bad Request", "AUDITOR accounts can only be created when " + AccessControl.MODE_VAR + "=enforce.", req.getRequestURI());
+            return;
+        }
         if ("ADMIN".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(callerRole)) {
             OutputProcessor.errorResponse(res, 403, "Forbidden", "Only ADMIN users may assign the ADMIN role.", req.getRequestURI());
             return;
@@ -314,19 +571,22 @@ public class Operator implements Action {
             }
 
             String sql = "UPDATE operators SET name = ?, fiduciary_id = ?, last_updated_at = NOW() " +
-                    (pass != null && !pass.isEmpty() ? ", password_hash = ?" : "") +
+                    (pass != null && !pass.isEmpty() ? ", password_hash = ?, tokens_valid_after = ?" : "") +
                     " WHERE id = ? AND role != 'ADMIN'";
 
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, user);
             pstmt.setObject(2, fid.equals(ADMIN_FID_UUID) ? null : fid);
             int paramIdx = 3;
-            if (pass != null && !pass.isEmpty()) {
+            boolean passwordChanged = pass != null && !pass.isEmpty();
+            if (passwordChanged) {
                 pstmt.setString(paramIdx++, passwordHasher.hashPassword(pass));
+                pstmt.setTimestamp(paramIdx++, new Timestamp(System.currentTimeMillis())); // password change signs the user out everywhere
             }
             pstmt.setObject(paramIdx, uid);
 
             if (pstmt.executeUpdate() > 0) {
+                if (passwordChanged) OperatorSessions.forget(targetEmail);
                 OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
                 success = true;
             } else {
@@ -374,9 +634,11 @@ public class Operator implements Action {
                 }
             }
 
-            pstmt = conn.prepareStatement("UPDATE operators SET status = 'INACTIVE', last_updated_at = NOW() WHERE id = ? AND role != 'ADMIN'");
-            pstmt.setObject(1, uid);
+            pstmt = conn.prepareStatement("UPDATE operators SET status = 'INACTIVE', tokens_valid_after = ?, last_updated_at = NOW() WHERE id = ? AND role != 'ADMIN'");
+            pstmt.setTimestamp(1, new Timestamp(System.currentTimeMillis())); // deactivation ends live sessions
+            pstmt.setObject(2, uid);
             pstmt.executeUpdate();
+            OperatorSessions.forget(targetEmail);
             success = true;
         } catch(Exception e) {
             System.err.println("[ERROR] Operator.deactivateUser: " + e);
@@ -389,14 +651,32 @@ public class Operator implements Action {
         }
     }
 
+    /**
+     * Recovery-key paths are guessable by an online attacker, so each attempt is limited per IP and per
+     * account (5 per 15 minutes each) and audited. The account key is an HMAC of the normalised e-mail,
+     * so the raw address is never held in the limiter. Returns false (after sending 429) when blocked.
+     */
+    private boolean recoveryAttemptAllowed(String clientIp, String email, String func, HttpServletRequest req, HttpServletResponse res) {
+        String acct = "unknown";
+        try {
+            acct = new LookupHasher().hashData(email == null ? "" : email.trim().toLowerCase());
+        } catch (Exception ignored) { }
+        boolean ipOk = LoginRateLimiter.isAllowed("recovery:ip:" + clientIp);
+        boolean acctOk = LoginRateLimiter.isAllowed("recovery:email:" + acct);
+        new Audit().logEventAsync(acct, ADMIN_FID_UUID, Constants.SERVICE_TYPE_ADMIN_CONSOLE, null,
+                ipOk && acctOk ? "RECOVERY_ATTEMPT" : "RECOVERY_RATE_LIMITED", func + " ip=" + clientIp);
+        if (!ipOk || !acctOk) {
+            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many recovery attempts. Please try again later.", req.getRequestURI());
+            return false;
+        }
+        return true;
+    }
+
     private void handleResetViaRecovery(JSONObject input, UUID loginUserId, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         String clientIp = LoginRateLimiter.getClientIp(req);
-        if (!LoginRateLimiter.isAllowed(clientIp)) {
-            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many recovery attempts. Please try again later.", req.getRequestURI());
-            return;
-        }
-
         String email = (String) input.get("email");
+        if (!recoveryAttemptAllowed(clientIp, email, "reset_password_via_recovery", req, res)) return;
+
         String passphrase = (String) input.get("passphrase");
         String newPassword = (String) input.get("new_password");
 
@@ -427,15 +707,17 @@ public class Operator implements Action {
                 fidId = rs.getObject("fiduciary_id") != null ? (UUID) rs.getObject("fiduciary_id") : ADMIN_FID_UUID;
 
                 if (storedHash != null && passwordHasher.verifyPassword(passphrase, storedHash)) {
-                    try (PreparedStatement uPstmt = conn.prepareStatement("UPDATE operators SET password_hash = ?, recovery_key_hash = NULL, last_updated_at = NOW() WHERE id = ?")) {
+                    try (PreparedStatement uPstmt = conn.prepareStatement("UPDATE operators SET password_hash = ?, recovery_key_hash = NULL, tokens_valid_after = ?, last_updated_at = NOW() WHERE id = ?")) {
                         uPstmt.setString(1, passwordHasher.hashPassword(newPassword));
-                        uPstmt.setObject(2, userId);
+                        uPstmt.setTimestamp(2, new Timestamp(System.currentTimeMillis())); // password reset signs the user out everywhere
+                        uPstmt.setObject(3, userId);
                         uPstmt.executeUpdate();
                     }
                     conn.commit();
+                    OperatorSessions.forget(email);
                     OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
                     success = true;
-                    LoginRateLimiter.recordSuccess(clientIp);
+                    LoginRateLimiter.recordSuccess("recovery:ip:" + clientIp);
                 }
             }
             if (!success) {
@@ -507,12 +789,9 @@ public class Operator implements Action {
 
     private void handleVerifyRecoveryKey(JSONObject input, HttpServletResponse res, HttpServletRequest req) throws SQLException {
         String clientIp = LoginRateLimiter.getClientIp(req);
-        if (!LoginRateLimiter.isAllowed(clientIp)) {
-            OutputProcessor.errorResponse(res, 429, "Too Many Requests", "Too many recovery attempts. Please try again later.", req.getRequestURI());
-            return;
-        }
-
         String email = (String) input.get("email");
+        if (!recoveryAttemptAllowed(clientIp, email, "verify_recovery_key", req, res)) return;
+
         String passphrase = (String) input.get("passphrase");
 
         PoolDB pool = new PoolDB();
@@ -529,7 +808,7 @@ public class Operator implements Action {
             if (rs.next()) {
                 String storedHash = rs.getString("recovery_key_hash");
                 if (storedHash != null && passwordHasher.verifyPassword(passphrase, storedHash)) {
-                    LoginRateLimiter.recordSuccess(clientIp);
+                    LoginRateLimiter.recordSuccess("recovery:ip:" + clientIp);
                     OutputProcessor.send(res, 200, new JSONObject() {{ put("success", true); }});
                     return;
                 }

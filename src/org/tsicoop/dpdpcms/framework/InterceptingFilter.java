@@ -37,6 +37,17 @@ public class InterceptingFilter implements Filter {
             "get_active_policy", // For active policy retrieval
             "link_user",
             "submit_grievance", // Allowing grievance submission from client
+            "submit_grievance_feedback",
+            "submit_rights_request",
+            "get_withdrawal_implications",
+            "create_nomination",
+            "list_nominations",
+            "revoke_nomination",
+            "list_closed_purposes",
+            "get_rights_request",
+            "list_user_rights_requests",
+            "upload_grievance_attachment",
+            "get_grievance_attachment",
             "get_grievance",
             "validate_consent",
             "list_consent_history",
@@ -55,6 +66,9 @@ public class InterceptingFilter implements Filter {
     private static final Set<String> ADMIN_NOAUTH_FUNCS = new HashSet<>(Arrays.asList(
             "reset_password",
             "login",
+            // MFA steps authenticate themselves (challenge token, enrol-only token or session token)
+            "enrol_mfa",
+            "verify_mfa",
             "verify_recovery_key",
             "reset_password_via_recovery"
     ));
@@ -74,6 +88,11 @@ public class InterceptingFilter implements Filter {
         CLIENT_FUNC_SCOPES.put("link_user", SCOPE_WRITE);
         CLIENT_FUNC_SCOPES.put("withdraw_consent", SCOPE_WRITE);
         CLIENT_FUNC_SCOPES.put("submit_grievance", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("submit_grievance_feedback", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("submit_rights_request", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("create_nomination", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("revoke_nomination", SCOPE_WRITE);
+        CLIENT_FUNC_SCOPES.put("upload_grievance_attachment", SCOPE_WRITE);
         CLIENT_FUNC_SCOPES.put("mark_notification_read", SCOPE_WRITE);
         CLIENT_FUNC_SCOPES.put("erasure_request", SCOPE_WRITE);
 
@@ -83,6 +102,12 @@ public class InterceptingFilter implements Filter {
         CLIENT_FUNC_SCOPES.put("get_consent_record_details", SCOPE_READ);
         CLIENT_FUNC_SCOPES.put("validate_consent", SCOPE_READ);
         CLIENT_FUNC_SCOPES.put("get_grievance", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("get_grievance_attachment", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("get_rights_request", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("get_withdrawal_implications", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("list_nominations", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("list_closed_purposes", SCOPE_READ);
+        CLIENT_FUNC_SCOPES.put("list_user_rights_requests", SCOPE_READ);
         CLIENT_FUNC_SCOPES.put("list_user_grievances", SCOPE_READ);
         CLIENT_FUNC_SCOPES.put("get_policy", SCOPE_READ);
         CLIENT_FUNC_SCOPES.put("get_active_policy", SCOPE_READ);
@@ -163,6 +188,7 @@ public class InterceptingFilter implements Filter {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Authentication failed.", uri);
                 return;
             }
+            if (!AccessControl.check(req, res, "job", "download_file")) return;
             new Job().post(req, res);
             return;
         }
@@ -332,6 +358,20 @@ public class InterceptingFilter implements Filter {
                 return;
             }
 
+            // Client API: the credential's fiduciary overrides whatever the body names (shadow mode by default)
+            if (CLIENT_URI_PATH.equalsIgnoreCase(apiCategory)) {
+                if (!AccessControl.checkClient(req, res, func)) {
+                    return; // 403 already sent (enforce mode only)
+                }
+            }
+
+            // Operator API: role permissions and tenant binding (shadow mode by default: logs, never blocks)
+            if (ADMIN_URI_PATH.equalsIgnoreCase(apiCategory) && !ADMIN_NOAUTH_FUNCS.contains(func.toLowerCase())) {
+                if (!AccessControl.check(req, res, serviceName, func)) {
+                    return; // 403 already sent (enforce mode only)
+                }
+            }
+
             // Authenticated (or explicitly unauthenticated-by-design): now validate the payload
             if (!InputProcessor.validate(req, res)) { // Validates content-type and basic body parsing
                 return; // Error response already sent by InputProcessor
@@ -353,6 +393,7 @@ public class InterceptingFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
+        org.tsicoop.dpdpcms.util.SecretGuard.enforce(); // refuses weak/dev secrets unless TSI_DPDP_CMS_ENV=local
         SystemConfig.loadProcessorConfig(filterConfig.getServletContext()); // Assuming this method name
         System.out.println("Loaded TSI Processor Config");
         SystemConfig.loadAppConfig(filterConfig.getServletContext());
@@ -360,6 +401,9 @@ public class InterceptingFilter implements Filter {
         JSONSchemaValidator.createInstance(filterConfig.getServletContext());
         System.out.println("Loaded TSI Schema Validator");
         System.out.println(AppVersion.display() + " Service started in " + System.getenv("TSI_DPDP_CMS_ENV") + " environment");
+        System.out.println("Access control: " + AccessControl.describeMode());
+        System.out.println("MFA: enrolment available to all operators; " + (org.tsicoop.dpdpcms.util.MfaPolicy.enforcing()
+                ? "ENFORCED for ADMIN and DPO." : "not enforced (set MFA_ENFORCE=true or TSI_DPDP_CMS_ENV=production)."));
         if (!Env.isSet()) {
             System.err.println("[WARNING] " + Env.VAR + " is not set. Running as NON-PRODUCTION: DUMMY_OTP principal login is allowed and evidence certificates are signed with a transient key and are unverifiable. Set " + Env.VAR + "=production for a production deployment (or =local for development).");
         } else if (!Env.isRecognized()) {

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Purposes</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 800px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            max-height: 90vh; /* Allow scrolling */
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .log-entry {
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+    <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <span class="text-xl font-bold primary-text">Purposes</span>
+    <div class="text-sm text-gray-500">DPO User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="dashboard.html" class="nav-link">
+                Dashboard
+            </a>
+
+            <!-- Compliance Menus -->
+            <div class="nav-divider" role="separator"></div>
+            <a href="policies.html" class="nav-link">
+                Policies
+            </a>
+            <a href="ropa.html" class="nav-link">ROPA</a>
+            <a href="purposes.html" class="nav-link active">Purposes</a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="principals.html" class="nav-link">
+                Principals
+            </a>
+            <a href="compliance.html" class="nav-link">
+                Compliance
+            </a>
+            <a href="grievances.html" class="nav-link">
+                Grievances
+            </a>
+            <a href="rights-requests.html" class="nav-link">Rights Requests</a>
+            <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="audit.html" class="nav-link">Audit</a>
+            <a href="legal.html" class="nav-link">Legal</a>
+            <a href="reports.html" class="nav-link">
+                Reports
+            </a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="team.html" class="nav-link">Team</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username" class="font-bold text-slate-700">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        </div>
+    </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+    <h1 class="text-2xl font-black text-slate-800 tracking-tight mb-2">Purpose Lifecycle</h1>
+    <p class="text-sm text-gray-500 mb-6 max-w-3xl">When a processing purpose ends, close it. Nobody can then give new consent for it, and everyone who had consented to it has that consent withdrawn (and is told). The usual retention period for the purpose then runs, after which processors are asked to <strong>erase</strong> or <strong>de-identify</strong> the data, as you choose. Reopening a purpose allows new consent again; it does not bring old consent back.</p>
+
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-slate-700 tracking-tight">Purposes in your policies</h2>
+            <span id="purpose-count" class="text-sm text-gray-500">Loading...</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                <tr class="table-header">
+                    <th class="px-4 py-3 text-sm">Purpose</th>
+                    <th class="px-4 py-3 text-sm">Policy</th>
+                    <th class="px-4 py-3 text-sm">State</th>
+                    <th class="px-4 py-3 text-sm">Principals with consent</th>
+                    <th class="px-4 py-3 text-sm">After retention</th>
+                    <th class="px-4 py-3 text-sm">Last change</th>
+                    <th class="px-4 py-3 text-sm">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="purpose-table-body" class="bg-white divide-y divide-gray-200">
+                <tr><td colspan="7" class="p-4 text-center text-gray-500">Loading purposes...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p id="purpose-error" class="mt-4 text-sm text-red-600 hidden">Failed to load data. Please check the API connection and token.</p>
+    </div>
+</main>
+
+<!-- Modal: close / reopen -->
+<div id="purpose-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <h2 id="modal-title" class="text-2xl font-semibold primary-text mb-2"></h2>
+        <p id="modal-purpose" class="text-gray-600 mb-4"></p>
+        <p id="modal-warning" class="p-3 rounded-md bg-amber-50 text-amber-900 text-sm mb-4"></p>
+        <form id="purpose-form" class="space-y-3">
+            <div id="action-row">
+                <label for="retention-action" class="block text-sm font-medium text-gray-700">When the retention period has run, processors should</label>
+                <select id="retention-action" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <option value="ERASE">Erase the data</option>
+                    <option value="DE_IDENTIFY">De-identify the data (keep it without identifying the person)</option>
+                </select>
+            </div>
+            <div>
+                <label for="reason" class="block text-sm font-medium text-gray-700">Reason <span class="text-gray-400 font-normal">(required, recorded in the audit log)</span></label>
+                <textarea id="reason" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+            </div>
+            <div id="modal-result" class="hidden p-3 rounded-md bg-green-50 text-green-900 text-sm"></div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close window</button>
+                <button type="submit" id="confirm-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90"></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
+    const API_URL = '/api/v1/purpose';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
+    const IS_OPERATOR = localStorage.getItem('role') === 'OPERATOR';
+    if (IS_OPERATOR) {
+        document.querySelectorAll('a[href="policies.html"], a[href="settings.html"], a[href="team.html"]').forEach(el => el.remove());
+    }
+    document.getElementById('username').textContent = localStorage.getItem('username') || 'DPO User';
+
+    let purposes = [];
+    let pending = null; // { purposeId, mode: 'CLOSE' | 'REOPEN' }
+
+    function handleLogout() { localStorage.removeItem('authToken'); localStorage.removeItem('username'); window.location.href = "../index.html"; }
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-backdrop').classList.toggle('hidden'); }
+
+    async function api(func, extra) {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify(Object.assign({ "_func": func, "fiduciary_id": FIDUCIARY_ID }, extra || {}))
+        });
+        let data = null;
+        try { data = await response.json(); } catch (e) { /* not JSON */ }
+        return { ok: response.ok, status: response.status, data: data };
+    }
+
+    function stateBadge(state) {
+        const closed = state === 'CLOSED';
+        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${closed ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">${esc(state)}</span>`;
+    }
+
+    function render() {
+        const body = document.getElementById('purpose-table-body');
+        document.getElementById('purpose-count').textContent = `${purposes.length} purpose(s)`;
+        if (purposes.length === 0) { body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">No purposes found. Publish a policy first.</td></tr>'; return; }
+        body.innerHTML = purposes.map(p => {
+            const closed = p.state === 'CLOSED';
+            const last = p.changed_at ? `${esc(new Date(p.changed_at).toLocaleDateString())} by ${esc(p.changed_by || '')}<div class="text-xs text-gray-500">${esc(p.reason || '')}</div>` : '<span class="text-gray-400">\u2014</span>';
+            const action = IS_OPERATOR ? '' : (closed
+                ? `<button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" data-reopen="${esc(p.purpose_id)}">Reopen</button>`
+                : `<button class="text-red-600 hover:text-red-800 font-medium text-sm" data-close="${esc(p.purpose_id)}">Close purpose</button>`);
+            return `<tr>
+                <td class="px-4 py-3 text-sm"><div class="font-medium text-gray-900">${esc(p.name || p.purpose_id)}</div><div class="text-xs text-gray-500 font-mono">${esc(p.purpose_id)}${p.mandatory ? ' \u00b7 required for service' : ''}</div></td>
+                <td class="px-4 py-3 text-sm text-gray-600">${esc(p.policy_id || '')}${p.policy_version ? ' v' + esc(p.policy_version) : ''}<div class="text-xs text-gray-500">${esc((p.policy_status || '').replace(/_/g, ' '))}</div></td>
+                <td class="px-4 py-3 text-sm">${stateBadge(p.state)}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${esc(p.principals_with_consent)}${closed && p.principals_invalidated ? '<div class="text-xs text-gray-500">' + esc(p.principals_invalidated) + ' ended on closing</div>' : ''}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${closed ? esc((p.retention_action || '').replace(/_/g, ' ').toLowerCase()) : '<span class="text-gray-400">\u2014</span>'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${last}</td>
+                <td class="px-4 py-3 text-sm">${action}</td>
+            </tr>`;
+        }).join('');
+        body.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => openDialog(b.dataset.close, 'CLOSE')));
+        body.querySelectorAll('[data-reopen]').forEach(b => b.addEventListener('click', () => openDialog(b.dataset.reopen, 'REOPEN')));
+    }
+
+    async function load() {
+        const err = document.getElementById('purpose-error');
+        err.classList.add('hidden');
+        const r = await api('list_purpose_lifecycle');
+        if (!r.ok || !Array.isArray(r.data)) { err.classList.remove('hidden'); document.getElementById('purpose-table-body').innerHTML = ''; return; }
+        purposes = r.data;
+        render();
+    }
+
+    function openDialog(purposeId, mode) {
+        const p = purposes.find(x => x.purpose_id === purposeId);
+        pending = { purposeId: purposeId, mode: mode };
+        const closing = mode === 'CLOSE';
+        document.getElementById('modal-title').textContent = closing ? 'Close this purpose?' : 'Reopen this purpose?';
+        document.getElementById('modal-purpose').textContent = (p && p.name ? p.name + ' ' : '') + '(' + purposeId + ')';
+        document.getElementById('modal-warning').textContent = closing
+            ? `This ends consent for ${p ? p.principals_with_consent : 'all'} principal(s) who gave it and stops anyone giving it again. They will be notified. It cannot be undone by reopening: people would have to consent again.`
+            : 'People will be able to give consent for this purpose again. Consent that was ended when it was closed is not restored.';
+        document.getElementById('action-row').style.display = closing ? 'block' : 'none';
+        document.getElementById('reason').value = '';
+        document.getElementById('modal-result').classList.add('hidden');
+        const btn = document.getElementById('confirm-btn');
+        btn.textContent = closing ? 'Close purpose' : 'Reopen purpose';
+        btn.disabled = false;
+        document.getElementById('purpose-modal-overlay').style.display = 'flex';
+    }
+
+    function closeDialog() { document.getElementById('purpose-modal-overlay').style.display = 'none'; load(); }
+
+    document.getElementById('cancel-btn').addEventListener('click', closeDialog);
+    document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
+    document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
+    document.getElementById('purpose-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const reason = document.getElementById('reason').value.trim();
+        if (reason.length < 10) { alert('Please write a reason of at least 10 characters.'); return; }
+        const btn = document.getElementById('confirm-btn');
+        btn.disabled = true; btn.textContent = 'Working...';
+        const closing = pending.mode === 'CLOSE';
+        const extra = { purpose_id: pending.purposeId, reason: reason };
+        if (closing) extra.action = document.getElementById('retention-action').value;
+        const r = await api(closing ? 'close_purpose' : 'reopen_purpose', extra);
+        if (!r.ok) { alert('Could not update: ' + ((r.data && r.data.message) || r.status)); btn.disabled = false; btn.textContent = closing ? 'Close purpose' : 'Reopen purpose'; return; }
+        const out = document.getElementById('modal-result');
+        out.classList.remove('hidden');
+        out.textContent = closing
+            ? `Closed. Consent ended for ${r.data.principals_invalidated} principal(s).` + (r.data.more_to_process || r.data.failed ? ' Some were not processed: press the button again to finish (it is safe to repeat).' : '')
+            : 'Reopened.';
+        btn.textContent = (r.data && (r.data.more_to_process || r.data.failed)) ? 'Run again' : 'Done';
+        btn.disabled = false;
+        if (!(r.data && (r.data.more_to_process || r.data.failed))) btn.onclick = (ev) => { ev.preventDefault(); closeDialog(); };
+    });
+
+    window.toggleMenu = toggleMenu;
+    window.handleLogout = handleLogout;
+    load();
+</script>
+</body>
+
+</html>

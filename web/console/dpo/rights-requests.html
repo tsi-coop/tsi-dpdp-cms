@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI DPDP CMS - Rights Requests</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tsi-primary: #006A67; /* Primary Dark Teal Color */
+            --tsi-accent: #008D8A; /* Slightly lighter for accents */
+            --background: #f4fbf9; /* Light, clean background */
+            --card-bg: #FFFFFF;
+            --border: 20 5.9% 90%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .primary-bg { background-color: var(--tsi-primary); }
+        .primary-text { color: var(--tsi-primary); }
+        .accent-text { color: var(--tsi-accent); }
+        .border-primary { border-color: var(--tsi-primary); }
+
+        /* --- Sidebar Styling --- */
+        .sidebar {
+            width: 250px;
+            background-color: #f8fafc;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-250px);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-divider { height: 1px; background-color: #e2e8f0; margin: 10px 12px; }
+        .nav-divider:last-child, .nav-divider + .nav-divider { display: none; }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: #4a5568;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #e5f5f4;
+            color: var(--tsi-primary);
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: left;
+        }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .mobile-header {
+                display: none;
+            }
+            body {
+                padding-left: 250px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 800px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            max-height: 90vh; /* Allow scrolling */
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .log-entry {
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body class="flex lg:p-0">
+
+<!-- Mobile Header/Toggle -->
+<div class="mobile-header lg:hidden">
+    <button id="menu-toggle" class="p-2 rounded-md hover:bg-gray-100 primary-text">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <span class="text-xl font-bold primary-text">Rights Requests</span>
+    <div class="text-sm text-gray-500">DPO User</div>
+</div>
+
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar lg:relative flex flex-col justify-between">
+    <div>
+        <div class="px-5 pb-6 border-b border-gray-200 lg:block hidden">
+            <span class="text-xl font-bold primary-text">TSI DPDP CMS</span>
+        </div>
+        <nav class="flex flex-col space-y-1 mt-4 px-3">
+            <a href="dashboard.html" class="nav-link">
+                Dashboard
+            </a>
+
+            <!-- Compliance Menus -->
+            <div class="nav-divider" role="separator"></div>
+            <a href="policies.html" class="nav-link">
+                Policies
+            </a>
+            <a href="ropa.html" class="nav-link">ROPA</a>
+            <a href="purposes.html" class="nav-link">Purposes</a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="principals.html" class="nav-link">
+                Principals
+            </a>
+            <a href="compliance.html" class="nav-link">
+                Compliance
+            </a>
+            <a href="grievances.html" class="nav-link">
+                Grievances
+            </a>
+            <a href="rights-requests.html" class="nav-link active">Rights Requests</a>
+            <a href="breach.html" class="nav-link">Breach</a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="audit.html" class="nav-link">Audit</a>
+            <a href="legal.html" class="nav-link">Legal</a>
+            <a href="reports.html" class="nav-link">
+                Reports
+            </a>
+            <div class="nav-divider" role="separator"></div>
+            <a href="team.html" class="nav-link">Team</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </nav>
+    </div>
+    <div class="p-3 border-t border-gray-200">
+        <div class="mt-2 text-sm text-gray-500 p-2 rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+            <span id="username" class="font-bold text-slate-700">DPO User</span>
+            <a href="#" onclick="handleLogout()"><span class="text-xs font-semibold text-red-500">Logout</span></a>
+        </div>
+    </div>
+</div>
+
+<!-- Backdrop for mobile menu -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+<!-- Main Content Area -->
+<main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+    <div class="flex justify-between items-center mb-2">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Rights Requests</h1>
+    </div>
+    <p class="text-sm text-gray-500 mb-6 max-w-3xl">Requests from data principals for a copy of their data (access) or to correct it. The CMS tracks each request and its outcome; it does not hold the data. Deliver an access copy through your own secure channel and record how in the outcome note.</p>
+
+    <div class="card">
+        <h2 class="text-lg font-bold text-slate-700 mb-4 tracking-tight">Search &amp; Filter</h2>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+            <div class="flex flex-wrap gap-3 items-center">
+                <input type="text" id="search-input" placeholder="Search by reference or principal..." class="p-2 border border-gray-300 rounded-md text-sm w-full max-w-xs">
+                <select id="type-filter" class="p-2 border border-gray-300 rounded-md text-sm">
+                    <option value="">Type: ALL</option>
+                    <option value="ACCESS">Type: ACCESS (copy of data)</option>
+                    <option value="CORRECTION">Type: CORRECTION</option>
+                </select>
+                <select id="status-filter" class="p-2 border border-gray-300 rounded-md text-sm">
+                    <option value="OPEN">Status: OPEN</option>
+                    <option value="">Status: ALL</option>
+                    <option value="NEW">Status: NEW</option>
+                    <option value="IN_PROGRESS">Status: IN PROGRESS</option>
+                    <option value="FULFILLED">Status: FULFILLED</option>
+                    <option value="REJECTED">Status: REJECTED</option>
+                </select>
+                <label class="text-sm text-gray-600 flex items-center gap-1"><input type="checkbox" id="overdue-filter"> Overdue only</label>
+            </div>
+            <span id="request-count" class="text-sm text-gray-500">Loading...</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                <tr class="table-header">
+                    <th class="px-4 py-3 text-sm">Reference</th>
+                    <th class="px-4 py-3 text-sm">Type</th>
+                    <th class="px-4 py-3 text-sm">Principal</th>
+                    <th class="px-4 py-3 text-sm">Submitted</th>
+                    <th class="px-4 py-3 text-sm">Status</th>
+                    <th class="px-4 py-3 text-sm">Deadline</th>
+                    <th class="px-4 py-3 text-sm">Assigned To</th>
+                    <th class="px-4 py-3 text-sm">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="request-table-body" class="bg-white divide-y divide-gray-200">
+                <tr><td colspan="8" class="p-4 text-center text-gray-500">Loading requests...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p id="request-error-message" class="mt-4 text-sm text-red-600 hidden">Failed to load data. Please check the API connection and token.</p>
+    </div>
+</main>
+
+<!-- Modal: request detail, data map and outcome -->
+<div id="request-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <h2 class="text-2xl font-semibold primary-text mb-4">Request <span id="modal-reference" class="text-gray-600"></span></h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm mb-4">
+            <div class="space-y-1">
+                <p><strong>Type:</strong> <span id="detail-type"></span></p>
+                <p><strong>Principal:</strong> <span id="detail-user-id"></span></p>
+                <p><strong>Submitted:</strong> <span id="detail-date"></span> via <span id="detail-channel"></span></p>
+            </div>
+            <div class="space-y-1">
+                <p><strong>Status:</strong> <span id="detail-status"></span></p>
+                <p><strong>Deadline:</strong> <span id="detail-deadline" class="font-bold"></span></p>
+            </div>
+        </div>
+
+        <h3 class="font-semibold text-lg mt-4 border-b pb-1">What the principal wrote</h3>
+        <p id="detail-description" class="p-2 bg-gray-50 rounded-md text-gray-700 whitespace-pre-wrap"></p>
+
+        <h3 class="font-semibold text-lg mt-4 border-b pb-1">Where this principal's data lives</h3>
+        <p class="text-xs text-gray-500 mt-1">A checklist for you, read-only. For an access request, gather the data from these systems; for a correction, tell the apps below yourself. The CMS sends nothing to them.</p>
+        <div id="data-map" class="mt-2 text-sm space-y-3"></div>
+
+        <div id="assignment-section" class="mt-4">
+            <h3 class="font-semibold text-lg border-b pb-1">Delegate to Operator</h3>
+            <div class="flex items-end gap-3 mt-3">
+                <div class="flex-1">
+                    <label for="assign-operator-select" class="block text-sm font-medium text-gray-700">Assigned Operator</label>
+                    <select id="assign-operator-select" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"><option value="">Select an operator</option></select>
+                </div>
+                <button type="button" id="assign-operator-btn" class="bg-slate-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-800">Assign</button>
+            </div>
+        </div>
+
+        <h3 class="font-semibold text-lg mt-4 border-b pb-1">Outcome</h3>
+        <div id="outcome-recorded" class="hidden mt-2 p-2 bg-gray-50 rounded-md text-sm text-gray-700"></div>
+        <form id="status-form" class="mt-3 space-y-3">
+            <div>
+                <label for="new-status" class="block text-sm font-medium text-gray-700">Change status to</label>
+                <select id="new-status" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <option value="IN_PROGRESS">In progress</option>
+                    <option value="FULFILLED">Fulfilled (final)</option>
+                    <option value="REJECTED">Rejected (final)</option>
+                </select>
+            </div>
+            <div>
+                <label for="outcome-note" class="block text-sm font-medium text-gray-700">Outcome note <span id="note-hint" class="text-gray-400 font-normal"></span></label>
+                <textarea id="outcome-note" rows="3" placeholder="Access: how and when the copy was delivered. Correction: what was corrected and which apps you told. Rejection: the reason." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="close-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close</button>
+                <button type="submit" id="update-status-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Update request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
+    const API_URL_RIGHTS = '/api/v1/rights';
+    const API_URL_OPERATOR = '/api/v1/admin/operator';
+    const AUTH_TOKEN = localStorage.getItem('authToken');
+    const FIDUCIARY_ID = localStorage.getItem('fiduciary_id');
+    const IS_OPERATOR = localStorage.getItem('role') === 'OPERATOR';
+    if (IS_OPERATOR) {
+        document.querySelectorAll('a[href="policies.html"], a[href="settings.html"], a[href="team.html"]').forEach(el => el.remove());
+    }
+    document.getElementById('username').textContent = localStorage.getItem('username') || 'DPO User';
+
+    let OperatorMap = {};
+    let currentRequest = null;
+    let allRequests = [];
+
+    function handleLogout() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('username');
+        window.location.href = "../index.html";
+    }
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-backdrop').classList.toggle('hidden');
+    }
+
+    async function api(func, extra) {
+        const response = await fetch(API_URL_RIGHTS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify(Object.assign({ "_func": func, "fiduciary_id": FIDUCIARY_ID }, extra || {}))
+        });
+        let data = null;
+        try { data = await response.json(); } catch (e) { /* not JSON */ }
+        return { ok: response.ok, status: response.status, data: data };
+    }
+
+    async function fetchOperators() {
+        if (IS_OPERATOR) return;
+        try {
+            const response = await fetch(API_URL_OPERATOR, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_users" })
+            });
+            const users = await response.json();
+            if (Array.isArray(users)) users.filter(u => u.role === 'OPERATOR').forEach(u => { OperatorMap[u.user_id] = u.username; });
+        } catch (e) { console.error("Failed to load operators", e); }
+    }
+
+    function statusBadge(status, overdue) {
+        const label = overdue ? 'OVERDUE' : status;
+        const colors = { NEW: 'bg-blue-100 text-blue-800', IN_PROGRESS: 'bg-yellow-100 text-yellow-800', FULFILLED: 'bg-green-100 text-green-800', REJECTED: 'bg-gray-200 text-gray-800', OVERDUE: 'bg-red-100 text-red-800' };
+        return `<span class="px-3 py-1 text-xs font-medium rounded-full ${colors[label] || 'bg-gray-100 text-gray-800'}">${esc(label.replace(/_/g, ' '))}</span>`;
+    }
+
+    function deadlineText(r) {
+        // Deadlines exist only if the fiduciary has configured the timelines (ACCESS_SLA_DAYS / CORRECTION_SLA_DAYS).
+        if (!r.due_date) return '<span class="text-gray-400">Not set</span>';
+        const days = Math.ceil((new Date(r.due_date).getTime() - Date.now()) / 86400000);
+        const open = r.status === 'NEW' || r.status === 'IN_PROGRESS';
+        if (!open) return esc(new Date(r.due_date).toLocaleDateString());
+        if (days < 0) return `<span class="text-red-600 font-bold">${Math.abs(days)} days overdue</span>`;
+        if (days <= 5) return `<span class="text-orange-600 font-bold">${days} days left</span>`;
+        return `${days} days left`;
+    }
+
+    function typeLabel(t) { return t === 'ACCESS' ? 'Copy of data (access)' : t === 'CORRECTION' ? 'Correction' : String(t || ''); }
+
+    function renderRows() {
+        const term = document.getElementById('search-input').value.trim().toLowerCase();
+        const body = document.getElementById('request-table-body');
+        const list = allRequests.filter(r => !term || (r.reference_number || '').toLowerCase().includes(term) || (r.user_id || '').toLowerCase().includes(term));
+        document.getElementById('request-count').textContent = `${list.length} request(s)`;
+        if (list.length === 0) { body.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">No requests found.</td></tr>'; return; }
+        body.innerHTML = list.map(r => `<tr>
+            <td class="px-4 py-3 text-sm font-mono text-gray-600">${esc(r.reference_number)}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${esc(typeLabel(r.type))}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(r.user_id)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(new Date(r.submission_timestamp).toLocaleDateString())}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">${statusBadge(r.status, r.overdue)}</td>
+            <td class="px-4 py-3 text-sm font-semibold">${deadlineText(r)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(OperatorMap[r.assigned_dpo_user_id] || (r.assigned_dpo_user_id ? 'Assigned' : 'Unassigned'))}</td>
+            <td class="px-4 py-3 text-sm"><button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm" data-id="${esc(r.request_id)}">View / manage</button></td>
+        </tr>`).join('');
+        body.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () => openRequest(b.dataset.id)));
+    }
+
+    async function loadRequests() {
+        const body = document.getElementById('request-table-body');
+        const err = document.getElementById('request-error-message');
+        body.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">Loading requests...</td></tr>';
+        err.classList.add('hidden');
+        const statusSel = document.getElementById('status-filter').value;
+        const extra = {};
+        if (document.getElementById('type-filter').value) extra.type = document.getElementById('type-filter').value;
+        if (statusSel && statusSel !== 'OPEN') extra.status = statusSel;
+        if (document.getElementById('overdue-filter').checked) extra.overdue = true;
+        const r = await api('list_rights_requests', extra);
+        if (!r.ok || !Array.isArray(r.data)) { err.classList.remove('hidden'); body.innerHTML = ''; return; }
+        allRequests = statusSel === 'OPEN' ? r.data.filter(x => x.status === 'NEW' || x.status === 'IN_PROGRESS') : r.data;
+        renderRows();
+    }
+
+    function renderDataMap(map) {
+        const el = document.getElementById('data-map');
+        if (!map) { el.innerHTML = '<p class="text-gray-500">No data map available.</p>'; return; }
+        const apps = (map.apps || []).map(a => `<li><strong>${esc(a.name)}</strong> <span class="text-gray-500">for purposes: ${esc((a.purposes || []).join(', '))}</span></li>`).join('');
+        const consents = (map.consents || []).map(c => `<li>${esc(c.data_point_id)}: ${c.consent_granted ? '<span class="text-green-700">consent given</span>' : '<span class="text-red-700">not consented / withdrawn</span>'}</li>`).join('');
+        const ropa = (map.ropa || []).map(e => `<li><strong>${esc(e.activity_name)}</strong>: ${esc(e.purpose)} <span class="text-gray-500">(basis: ${esc(e.legal_basis)}${e.retention_period_days ? ', kept ' + esc(e.retention_period_days) + ' days' : ''}; data: ${esc((e.data_categories || []).join(', '))})</span></li>`).join('');
+        el.innerHTML =
+            `<div><p class="font-medium">Apps and processors that checked consent for this principal</p>${apps ? '<ul class="list-disc ml-5">' + apps + '</ul>' : '<p class="text-gray-500">None recorded. Ask your teams which systems hold this principal\'s data.</p>'}</div>` +
+            `<div><p class="font-medium">Purposes in their latest consent${map.policy_id ? ' (policy ' + esc(map.policy_id) + ' v' + esc(map.policy_version) + ')' : ''}</p>${consents ? '<ul class="list-disc ml-5">' + consents + '</ul>' : '<p class="text-gray-500">No consent record.</p>'}</div>` +
+            `<div><p class="font-medium">Processing activities (ROPA) for those purposes</p>${ropa ? '<ul class="list-disc ml-5">' + ropa + '</ul>' : '<p class="text-gray-500">No active ROPA entry is linked to these purposes.</p>'}</div>`;
+    }
+
+    function updateNoteHint() {
+        const s = document.getElementById('new-status').value;
+        document.getElementById('note-hint').textContent = (s === 'FULFILLED' || s === 'REJECTED') ? '(required, at least 10 characters)' : '(optional)';
+    }
+
+    async function openRequest(id) {
+        const r = await api('get_rights_request', { request_id: id });
+        if (!r.ok) { alert('Could not open the request: ' + ((r.data && r.data.message) || r.status)); return; }
+        const q = r.data; currentRequest = q;
+        document.getElementById('request-modal-overlay').style.display = 'flex';
+        document.getElementById('modal-reference').textContent = q.reference_number;
+        document.getElementById('detail-type').textContent = typeLabel(q.type);
+        document.getElementById('detail-user-id').textContent = q.user_id;
+        document.getElementById('detail-date').textContent = new Date(q.submission_timestamp).toLocaleString();
+        document.getElementById('detail-channel').textContent = (q.channel || '').replace(/_/g, ' ').toLowerCase();
+        document.getElementById('detail-status').innerHTML = statusBadge(q.status, q.overdue);
+        document.getElementById('detail-deadline').innerHTML = deadlineText(q);
+        document.getElementById('detail-description').textContent = q.description;
+        renderDataMap(q.data_map);
+
+        const closed = q.status === 'FULFILLED' || q.status === 'REJECTED';
+        const rec = document.getElementById('outcome-recorded');
+        if (q.outcome_note) { rec.textContent = 'Outcome recorded: ' + q.outcome_note; rec.classList.remove('hidden'); } else { rec.classList.add('hidden'); }
+        document.getElementById('status-form').style.display = closed ? 'none' : 'block';
+        const sel = document.getElementById('new-status');
+        sel.querySelector('option[value="IN_PROGRESS"]').disabled = q.status !== 'NEW';
+        sel.value = q.status === 'NEW' ? 'IN_PROGRESS' : 'FULFILLED';
+        document.getElementById('outcome-note').value = '';
+        updateNoteHint();
+
+        if (!IS_OPERATOR) {
+            const select = document.getElementById('assign-operator-select');
+            select.innerHTML = '<option value="">Select an operator</option>' + Object.keys(OperatorMap).map(k => `<option value="${esc(k)}">${esc(OperatorMap[k])}</option>`).join('');
+            if (q.assigned_dpo_user_id && OperatorMap[q.assigned_dpo_user_id]) select.value = q.assigned_dpo_user_id;
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('request-modal-overlay').style.display = 'none';
+        loadRequests();
+    }
+
+    document.getElementById('new-status').addEventListener('change', updateNoteHint);
+    document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+    document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
+    document.getElementById('sidebar-backdrop').addEventListener('click', toggleMenu);
+    ['type-filter', 'status-filter', 'overdue-filter'].forEach(id => document.getElementById(id).addEventListener('change', loadRequests));
+    document.getElementById('search-input').addEventListener('input', renderRows);
+
+    document.getElementById('status-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const status = document.getElementById('new-status').value;
+        const note = document.getElementById('outcome-note').value.trim();
+        if ((status === 'FULFILLED' || status === 'REJECTED') && note.length < 10) { alert('Please write an outcome note of at least 10 characters.'); return; }
+        const btn = document.getElementById('update-status-btn');
+        btn.disabled = true; btn.textContent = 'Updating...';
+        const r = await api('update_rights_request_status', { request_id: currentRequest.request_id, status: status, outcome_note: note || undefined });
+        btn.disabled = false; btn.textContent = 'Update request';
+        if (r.ok) { alert('Request updated.'); closeModal(); } else { alert('Could not update: ' + ((r.data && r.data.message) || r.status)); }
+    });
+
+    if (IS_OPERATOR) {
+        document.getElementById('assignment-section').remove();
+    } else {
+        document.getElementById('assign-operator-btn').addEventListener('click', async function () {
+            const operatorId = document.getElementById('assign-operator-select').value;
+            if (!operatorId) { alert('Select an operator to assign.'); return; }
+            this.disabled = true;
+            const r = await api('assign_rights_request', { request_id: currentRequest.request_id, operator_id: operatorId });
+            this.disabled = false;
+            alert(r.ok ? 'Request assigned.' : 'Could not assign: ' + ((r.data && r.data.message) || r.status));
+            if (r.ok) loadRequests();
+        });
+    }
+
+    window.toggleMenu = toggleMenu;
+    window.handleLogout = handleLogout;
+    fetchOperators().then(loadRequests);
+</script>
+</body>
+
+</html>

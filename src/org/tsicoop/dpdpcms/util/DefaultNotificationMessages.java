@@ -183,6 +183,22 @@ public class DefaultNotificationMessages {
                 "વ્યક્તિગત ડેટાનો અનિચ્છનીય સંપર્ક અમે શોધી કાઢ્યો છે, જેમાં તમારી માહિતી પણ સામેલ હોઈ શકે છે. તેને નિયંત્રિત કરવા અમે પગલાં લીધાં છે.",
                 "ವ್ಯಕ್ತಿಗತ ಡೇಟಾದ ಅನುದ್ದೇಶಿತ ಬಹಿರಂಗವನ್ನು ನಾವು ಕಂಡುಕೊಂಡಿದ್ದೇವೆ, ಅದರಲ್ಲಿ ನಿಮ್ಮ ಮಾಹಿತಿಯೂ ಇರಬಹುದು. ಇದನ್ನು ನಿಯಂತ್ರಿಸಲು ನಾವು ಕ್ರಮಗಳನ್ನು ತೆಗೆದುಕೊಂಡಿದ್ದೇವೆ."
         });
+        // --- Access (s.11) and correction (s.12) requests. English only for now: other languages fall back to it. ---
+        RAW.put(Constants.NOTIF_RIGHTS_SUBMITTED, new String[]{
+                "We have received your request. Your reference number is in My Rights, where you can follow its progress."
+        });
+        RAW.put(Constants.NOTIF_RIGHTS_ASSIGNED, new String[]{
+                "A request from a data principal has been assigned to you. Open it in the console to review it."
+        });
+        RAW.put(Constants.NOTIF_RIGHTS_FULFILLED, new String[]{
+                "Your request has been completed. See My Rights for the outcome."
+        });
+        RAW.put(Constants.NOTIF_RIGHTS_REJECTED, new String[]{
+                "Your request could not be completed. See My Rights for the reason. You can raise a complaint if you disagree."
+        });
+        RAW.put(Constants.NOTIF_PURPOSE_CLOSED, new String[]{
+                "A purpose for which you had given consent has been closed. Your consent for it has ended and your data will be handled according to our retention rules. Your choices are in Manage Consent."
+        });
         RAW.put("BREACH_NOTIFICATION_LOST_DEVICE", new String[]{
                 "A device containing your personal data was lost or stolen. We are taking steps to secure your information and prevent misuse.",
                 "आपका व्यक्तिगत डेटा रखने वाला एक डिवाइस खो गया है या चोरी हो गया है। हम आपकी जानकारी सुरक्षित करने और दुरुपयोग रोकने के लिए कदम उठा रहे हैं।",

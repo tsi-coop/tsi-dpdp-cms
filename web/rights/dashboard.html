@@ -136,7 +136,8 @@
         <div class="tab-bar" role="tablist">
             <button class="tab-btn active" id="tab-btn-consent"   role="tab" aria-selected="true"  aria-controls="tab-content" onclick="setTab('consent')">Manage Consent</button>
             <button class="tab-btn"        id="tab-btn-history"   role="tab" aria-selected="false" aria-controls="tab-content" onclick="setTab('history')">Consent History</button>
-            <button class="tab-btn"        id="tab-btn-grievance" role="tab" aria-selected="false" aria-controls="tab-content" onclick="setTab('grievance')">Requests & Grievances</button>
+            <button class="tab-btn"        id="tab-btn-rights"    role="tab" aria-selected="false" aria-controls="tab-content" onclick="setTab('rights')">My Rights</button>
+            <button class="tab-btn"        id="tab-btn-grievance" role="tab" aria-selected="false" aria-controls="tab-content" onclick="setTab('grievance')">Grievances</button>
         </div>
         <div id="tab-content" role="tabpanel" aria-labelledby="tab-btn-consent" style="padding: 28px; min-height: 400px;">
             <div class="spinner" role="status" aria-live="polite"><div class="spin-ring"></div><p>Loading...</p></div>
@@ -244,7 +245,7 @@
     });
 
     // ── Tab management ──────────────────────────────────────────────────
-    const tabs = ['consent', 'history', 'grievance'];
+    const tabs = ['consent', 'history', 'rights', 'grievance'];
     let activeTab = 'consent';
 
     function setTab(tab) {
@@ -263,6 +264,7 @@
         area.innerHTML = '<div class="spinner" role="status" aria-live="polite"><div class="spin-ring"></div><p>Loading...</p></div>';
         if (tab === 'consent')   await renderConsentTab(area);
         if (tab === 'history')   await renderHistoryTab(area);
+        if (tab === 'rights')    await renderRightsTab(area);
         if (tab === 'grievance') await renderGrievanceTab(area);
     }
 
@@ -271,6 +273,7 @@
     let currentLangContent = null;
     let currentLang = 'en';
     let activePolicyEntry = null; // the { policy_id, title, ... } currently shown
+    let closedPurposes = new Set(); // purposes the organisation has closed: they cannot be granted any more
 
     async function renderConsentTab(area) {
         const policies = SESSION.policies || [];
@@ -326,14 +329,16 @@
         const centerArea = document.getElementById('preference-center-body');
         if (!centerArea) return;
 
-        const [policy, activeConsent] = await Promise.all([
+        const [policy, activeConsent, closedList] = await Promise.all([
             apiCall('/api/v1/client/policy', 'get_policy', { policy_id: policyId }),
             apiCall('/api/v1/client/consent', 'get_active_consent', {
                 user_id: SESSION.userId,
                 fiduciary_id: SESSION.fiduciaryId,
                 policy_id: policyId
-            })
+            }),
+            apiCall('/api/v1/client/purpose', 'list_closed_purposes', { fiduciary_id: SESSION.fiduciaryId })
         ]);
+        closedPurposes = new Set(Array.isArray(closedList) ? closedList : []);
 
         if (!policy || !policy.policy_content) {
             centerArea.innerHTML = '<p style="color:#64748b;text-align:center;padding:40px;">Policy content unavailable. Please contact the organisation.</p>';
@@ -365,14 +370,17 @@
         if (!lc) { area.innerHTML = '<p style="color:#64748b;text-align:center;padding:40px;">Policy content unavailable.</p>'; return; }
 
         let purposeHtml = (lc.data_processing_purposes || []).map(p => {
-            const checked = existingPrefs[p.id] !== undefined ? existingPrefs[p.id] : p.is_mandatory_for_service;
-            const disabled = p.is_mandatory_for_service ? 'disabled' : '';
+            const isClosed = closedPurposes.has(p.id);
+            // A closed purpose is shown as closed and cannot be turned on; declining it is the only state left.
+            const checked = isClosed ? false : (existingPrefs[p.id] !== undefined ? existingPrefs[p.id] : p.is_mandatory_for_service);
+            const disabled = (p.is_mandatory_for_service || isClosed) ? 'disabled' : '';
             return `
-            <div class="toggle-row ${p.is_mandatory_for_service ? 'mandatory' : ''}">
+            <div class="toggle-row ${p.is_mandatory_for_service ? 'mandatory' : ''}" style="${isClosed ? 'opacity:0.7;' : ''}">
                 <div style="flex:1;padding-right:16px;">
                     <div style="font-weight:700;font-size:0.875rem;color:#1e293b;">${esc(p.name)}</div>
                     <div class="purpose-desc">${esc(p.description || '')}</div>
-                    ${p.is_mandatory_for_service ? '<span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;color:#0e7490;">Required for service</span>' : ''}
+                    ${isClosed ? '<span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;color:#b45309;">Closed: no longer offered, your consent for it has ended</span>'
+                               : (p.is_mandatory_for_service ? '<span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;color:#0e7490;">Required for service</span>' : '')}
                 </div>
                 <label class="toggle-switch">
                     <input type="checkbox" id="toggle-${esc(p.id)}" aria-label="${esc(p.name)}" ${checked ? 'checked' : ''} ${disabled}>
@@ -431,7 +439,7 @@
         const purposes = currentLangContent.data_processing_purposes || [];
         const dataPointConsents = purposes.map(p => ({
             data_point_id: p.id,
-            consent_granted: prefs[p.id] !== undefined ? prefs[p.id] : p.is_mandatory_for_service,
+            consent_granted: closedPurposes.has(p.id) ? false : (prefs[p.id] !== undefined ? prefs[p.id] : p.is_mandatory_for_service),
             purpose_agreed_to: p.name,
             timestamp_updated: new Date().toISOString()
         }));
@@ -751,7 +759,26 @@
         openModal(modal);
     }
 
+    // Before withdrawing, tell the person what it means for each purpose (from the policy the organisation published).
+    // Withdrawing is a right, so if the information cannot be loaded the withdrawal still goes ahead.
+    async function confirmWithdrawal(policyId, purposeIds) {
+        if (!policyId) return true;
+        const info = await apiCall('/api/v1/client/consent', 'get_withdrawal_implications', {
+            user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId, policy_id: policyId,
+            purpose_ids: purposeIds || [], language: currentLang || 'en'
+        });
+        const list = info && Array.isArray(info.implications) ? info.implications : [];
+        if (list.length === 0) return true;
+        const lines = list.map(i => {
+            let t = '\u2022 ' + (i.name || i.purpose_id) + (i.mandatory ? ' (needed for the service)' : '') + '\n   ' + (i.consequence || '');
+            if (i.data_kept_after_withdrawal) t += '\n   Data we may keep: ' + i.data_kept_after_withdrawal;
+            return t;
+        });
+        return confirm('Before you withdraw, please note:\n\n' + lines.join('\n\n') + '\n\nDo you want to withdraw your consent?');
+    }
+
     async function withdrawConsent(policyId, purposeIds) {
+        if (!(await confirmWithdrawal(policyId, purposeIds))) return;
         const body = { user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId, language_selected: currentLang || 'en', reason: 'Withdrawn via My Privacy Dashboard.' };
         if (policyId) body.policy_id = policyId;
         if (purposeIds && purposeIds.length > 0) body.purpose_ids = purposeIds;
@@ -776,7 +803,214 @@
         }
     }
 
-    // ── Tab 3: Requests & Grievances ────────────────────────────────────
+    // ── Tab 3: My Rights (access s.11 and correction s.12 requests) ─────
+    const RIGHTS_LABELS = { ACCESS: 'Copy of my data', CORRECTION: 'Correction' };
+    let rightsFormType = null;      // 'ACCESS' | 'CORRECTION' | null
+    let rightsList = [];
+    let pendingComplaint = null;    // set by "Raise a complaint about this request"
+
+    let nominationsList = [];
+
+    async function renderRightsTab(area) {
+        const [result, noms] = await Promise.all([
+            apiCall('/api/v1/client/rights', 'list_user_rights_requests', { user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId }),
+            apiCall('/api/v1/client/rights', 'list_nominations', { user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId })
+        ]);
+        rightsList = Array.isArray(result) ? result : [];
+        nominationsList = Array.isArray(noms) ? noms : [];
+        rightsFormType = null;
+        renderRightsView(area);
+    }
+
+    // ── Nominations (s.14): someone to exercise my rights if I die or cannot ──
+    function nominationRows() {
+        if (nominationsList.length === 0) return `<tr><td colspan="5" style="text-align:center;padding:24px;color:#64748b;font-style:italic;">You have not nominated anyone.</td></tr>`;
+        return nominationsList.map(n => {
+            const current = n.status === 'ACTIVE' || n.status === 'PENDING';
+            const until = n.valid_until ? esc(formatTimestamp(n.valid_until).split(',')[0]) : 'Until I revoke it';
+            return `<tr>
+                <td style="font-weight:700;font-size:0.8rem;color:#1e293b;">${esc(n.nominee_name)}<div style="font-weight:400;color:#64748b;font-size:0.75rem;">${esc(n.nominee_relationship || '')}</div></td>
+                <td style="color:#64748b;">${esc(n.nominee_contact)}</td>
+                <td style="color:#64748b;">${esc(formatTimestamp(n.valid_from).split(',')[0])} \u2013 ${until}</td>
+                <td>${getStatusBadge(n.status)}</td>
+                <td>${current ? `<button style="background:none;border:none;color:#b91c1c;font-weight:600;cursor:pointer;font-size:0.75rem;" onclick="revokeNomination('${esc(n.nomination_id)}')">Revoke</button>` : ''}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function toggleNominationForm() {
+        const f = document.getElementById('nomination-form-container');
+        f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function submitNomination() {
+        const errEl = document.getElementById('nom-error');
+        errEl.style.display = 'none';
+        const name = document.getElementById('nom-name').value.trim();
+        const contact = document.getElementById('nom-contact').value.trim();
+        if (name.length < 2 || !contact) { errEl.textContent = 'Please give the nominee\u2019s name and an e-mail address or phone number.'; errEl.style.display = 'block'; return; }
+        const body = { user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId, nominee_name: name, nominee_contact: contact };
+        const rel = document.getElementById('nom-relationship').value.trim();
+        const until = document.getElementById('nom-until').value;
+        if (rel) body.nominee_relationship = rel;
+        if (until) body.valid_until = until;
+        const btn = document.getElementById('submit-nomination-btn');
+        btn.disabled = true;
+        const result = await apiCall('/api/v1/client/rights', 'create_nomination', body);
+        if (result && result.success) { await renderRightsTab(document.getElementById('tab-content')); }
+        else { btn.disabled = false; errEl.textContent = (result && result.message) || 'Could not save the nomination.'; errEl.style.display = 'block'; }
+    }
+
+    async function revokeNomination(id) {
+        if (!confirm('Revoke this nomination? The nominee will no longer be recorded as your nominee.')) return;
+        const result = await apiCall('/api/v1/client/rights', 'revoke_nomination', { nomination_id: id, user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId });
+        if (result && result.success) await renderRightsTab(document.getElementById('tab-content'));
+        else alert((result && result.message) || 'Could not revoke the nomination.');
+    }
+
+    function renderRightsView(area) {
+        const rows = rightsList.length === 0
+            ? `<tr><td colspan="6" style="text-align:center;padding:40px;color:#64748b;font-style:italic;">You have not made any requests yet.</td></tr>`
+            : rightsList.map(r => {
+                const open = r.status === 'NEW' || r.status === 'IN_PROGRESS';
+                const deadline = r.due_date
+                    ? esc(formatTimestamp(r.due_date).split(',')[0]) + (r.overdue ? ' <span style="color:#b91c1c;font-weight:700;">(overdue)</span>' : '')
+                    : '<span style="color:#94a3b8;">Not set</span>';
+                const complain = (r.status === 'REJECTED' || r.overdue)
+                    ? `<button class="btn-link" style="background:none;border:none;color:#0f766e;font-weight:600;cursor:pointer;padding:0;font-size:0.75rem;" onclick="complainAboutRequest('${esc(r.request_id)}')">Raise a complaint about this request</button>`
+                    : '';
+                return `<tr>
+                    <td style="font-family:monospace;font-size:0.75rem;color:#64748b;">${esc(r.reference_number)}</td>
+                    <td style="font-weight:700;font-size:0.8rem;color:#1e293b;">${esc(RIGHTS_LABELS[r.type] || r.type)}</td>
+                    <td style="color:#64748b;">${esc(formatTimestamp(r.submission_timestamp).split(',')[0])}</td>
+                    <td style="color:#64748b;">${deadline}</td>
+                    <td>${getStatusBadge(r.status)}</td>
+                    <td style="color:#475569;font-size:0.8rem;">${r.outcome_note ? esc(r.outcome_note) : (open ? '<span style="color:#94a3b8;">In progress</span>' : '')}${complain ? '<div style="margin-top:6px;">' + complain + '</div>' : ''}</td>
+                </tr>`;
+            }).join('');
+
+        area.innerHTML = `
+            <div style="margin-bottom:20px;">
+                <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">My Rights</h2>
+                <p style="margin:4px 0 0;font-size:0.8rem;color:#64748b;">Ask for a copy of the personal data this organisation holds about you, or ask for it to be corrected.
+                To withdraw consent or ask for erasure, use <strong>Consent History</strong>.</p>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+                <button class="btn-primary" onclick="openRightsForm('ACCESS')">Request a copy of my data</button>
+                <button class="btn-primary" onclick="openRightsForm('CORRECTION')">Request a correction</button>
+            </div>
+            <div id="rights-form-container" style="display:none;">
+                <div class="grievance-form">
+                    <h3 id="rights-form-title" style="margin:0 0 6px;font-size:0.875rem;font-weight:700;color:#1e293b;"></h3>
+                    <p id="rights-form-help" style="margin:0 0 14px;font-size:0.78rem;color:#64748b;"></p>
+                    <label for="rights-description">Details</label>
+                    <textarea id="rights-description" rows="4" maxlength="2000"></textarea>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;">
+                        <button onclick="closeRightsForm()" style="background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:10px 16px;">Cancel</button>
+                        <button class="btn-primary" id="submit-rights-btn" onclick="submitRightsRequest()">Submit request</button>
+                    </div>
+                    <div id="rights-error" role="alert" aria-live="assertive" style="display:none;color:#b91c1c;font-size:0.8rem;margin-top:10px;"></div>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="dash-table">
+                    <thead><tr><th>Reference</th><th>Request</th><th>Submitted</th><th>Deadline</th><th>Status</th><th>Outcome</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:36px;padding-top:24px;border-top:1px solid #e2e8f0;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+                    <div style="max-width:560px;">
+                        <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">Nominee</h2>
+                        <p style="margin:4px 0 0;font-size:0.8rem;color:#64748b;">You can nominate someone to exercise your rights for you if you die or become unable to. We record your choice; the organisation checks any later claim before acting on it.</p>
+                    </div>
+                    <button class="btn-primary" onclick="toggleNominationForm()">+ Add a nominee</button>
+                </div>
+                <div id="nomination-form-container" style="display:none;">
+                    <div class="grievance-form">
+                        <label for="nom-name">Nominee\u2019s name</label>
+                        <input type="text" id="nom-name" maxlength="100">
+                        <label for="nom-contact">E-mail address or phone number</label>
+                        <input type="text" id="nom-contact" maxlength="255">
+                        <label for="nom-relationship">Relationship (optional)</label>
+                        <input type="text" id="nom-relationship" maxlength="50" placeholder="for example: sister">
+                        <label for="nom-until">Valid until (optional; leave empty until you revoke it)</label>
+                        <input type="date" id="nom-until">
+                        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
+                            <button onclick="toggleNominationForm()" style="background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:10px 16px;">Cancel</button>
+                            <button class="btn-primary" id="submit-nomination-btn" onclick="submitNomination()">Save nominee</button>
+                        </div>
+                        <div id="nom-error" role="alert" aria-live="assertive" style="display:none;color:#b91c1c;font-size:0.8rem;margin-top:10px;"></div>
+                    </div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="dash-table">
+                        <thead><tr><th>Nominee</th><th>Contact</th><th>Valid</th><th>Status</th><th></th></tr></thead>
+                        <tbody>${nominationRows()}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    function openRightsForm(type) {
+        rightsFormType = type;
+        document.getElementById('rights-form-container').style.display = 'block';
+        document.getElementById('rights-form-title').textContent = type === 'ACCESS' ? 'Request a copy of my data' : 'Request a correction';
+        document.getElementById('rights-form-help').textContent = type === 'ACCESS'
+            ? 'Say what you would like to receive (for example: all the data you hold about me, or only my order history). Your copy is sent to you through the organisation’s own secure channel, not shown here.'
+            : 'Describe what is wrong and what it should say. Please do not include sensitive details such as passwords; the organisation may contact you to confirm.';
+        document.getElementById('rights-description').value = '';
+        document.getElementById('rights-error').style.display = 'none';
+        document.getElementById('rights-description').focus();
+    }
+
+    function closeRightsForm() {
+        rightsFormType = null;
+        const fc = document.getElementById('rights-form-container');
+        if (fc) fc.style.display = 'none';
+    }
+
+    async function submitRightsRequest() {
+        const desc = document.getElementById('rights-description').value.trim();
+        const errEl = document.getElementById('rights-error');
+        const btn = document.getElementById('submit-rights-btn');
+        errEl.style.display = 'none';
+        if (desc.length < 10) {
+            errEl.textContent = 'Please describe your request in at least 10 characters.';
+            errEl.style.display = 'block';
+            return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+        const result = await apiCall('/api/v1/client/rights', 'submit_rights_request', {
+            user_id: SESSION.userId,
+            fiduciary_id: SESSION.fiduciaryId,
+            type: rightsFormType,
+            description: desc
+        });
+        if (result && result.success) {
+            await renderRightsTab(document.getElementById('tab-content'));
+        } else {
+            errEl.textContent = (result && result.message) || 'Submission failed. Please try again.';
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Submit request';
+        }
+    }
+
+    function complainAboutRequest(requestId) {
+        const r = rightsList.find(x => x.request_id === requestId);
+        if (!r) return;
+        pendingComplaint = {
+            type: r.type === 'ACCESS' ? 'ACCESS_COMPLAINT' : 'CORRECTION_COMPLAINT',
+            subject: 'About request ' + r.reference_number
+        };
+        setTab('grievance');
+    }
+
+    // ── Tab 4: Grievances (complaints about any right) ─────────────────
     let showGrievanceForm = false;
 
     async function renderGrievanceTab(area) {
@@ -787,15 +1021,42 @@
         const list = Array.isArray(result) ? result : (result && result.data ? result.data : []);
         showGrievanceForm = false;
         renderGrievanceView(area, list);
+        if (pendingComplaint) {
+            toggleGrievanceForm();
+            document.getElementById('g-type').value = pendingComplaint.type;
+            document.getElementById('g-subject').value = pendingComplaint.subject;
+            pendingComplaint = null;
+            document.getElementById('g-description').focus();
+        }
+    }
+
+    function feedbackControl(r) {
+        const closed = r.status === 'RESOLVED' || r.status === 'CLOSED';
+        if (!closed) return '';
+        if (r.feedback_given) return '<span style="color:#64748b;font-size:0.75rem;">Thanks for your feedback</span>';
+        return `<span style="font-size:0.75rem;color:#475569;">How was the outcome?
+            <select id="fb-${esc(r.grievance_id)}" style="font-size:0.75rem;padding:2px;">
+                <option value="5">5 – very good</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1 – poor</option>
+            </select>
+            <button style="background:none;border:none;color:#0f766e;font-weight:600;cursor:pointer;font-size:0.75rem;" onclick="sendFeedback('${esc(r.grievance_id)}')">Send</button></span>`;
+    }
+
+    async function sendFeedback(grievanceId) {
+        const rating = parseInt(document.getElementById('fb-' + grievanceId).value, 10);
+        const result = await apiCall('/api/v1/client/grievance', 'submit_grievance_feedback', {
+            grievance_id: grievanceId, user_id: SESSION.userId, fiduciary_id: SESSION.fiduciaryId, rating: rating
+        });
+        if (result && result.success) await renderGrievanceTab(document.getElementById('tab-content'));
+        else alert((result && result.message) || 'Could not send feedback.');
     }
 
     function renderGrievanceView(area, list) {
         let rows = list.length === 0
-            ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;font-style:italic;">No requests or grievances submitted yet.</td></tr>`
+            ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;font-style:italic;">No grievances submitted yet.</td></tr>`
             : list.map(r => `<tr>
-                <td style="font-family:monospace;font-size:0.75rem;color:#64748b;">${esc(r.grievance_id)}</td>
+                <td style="font-family:monospace;font-size:0.75rem;color:#64748b;">${esc(r.reference_number || (r.grievance_id || '').slice(0, 8))}</td>
                 <td style="font-weight:700;font-size:0.8rem;color:#1e293b;">${esc((r.type||'').replace(/_/g,' '))}</td>
-                <td style="color:#64748b;">${esc(r.subject)}</td>
+                <td style="color:#64748b;">${esc(r.subject)}<div style="margin-top:6px;">${feedbackControl(r)}</div></td>
                 <td style="color:#64748b;">${esc(r.due_date ? formatTimestamp(r.due_date).split(',')[0] : 'N/A')}</td>
                 <td>${getStatusBadge(r.status)}</td>
             </tr>`).join('');
@@ -803,35 +1064,40 @@
         area.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <div>
-                    <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">Requests & Grievances</h2>
-                    <p style="margin:4px 0 0;font-size:0.8rem;color:#64748b;">Your formal data rights requests and compliance inquiries.</p>
+                    <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">Grievances</h2>
+                    <p style="margin:4px 0 0;font-size:0.8rem;color:#64748b;">Complaints about how your personal data or your rights have been handled.</p>
                 </div>
-                <button class="btn-primary" onclick="toggleGrievanceForm()" id="new-grievance-btn">+ New Request</button>
+                <button class="btn-primary" onclick="toggleGrievanceForm()" id="new-grievance-btn">+ New Complaint</button>
             </div>
             <div id="grievance-form-container" style="display:none;">
                 <div class="grievance-form">
-                    <h3 style="margin:0 0 20px;font-size:0.875rem;font-weight:700;color:#1e293b;">Submit a New Request</h3>
-                    <label for="g-type">Request Category</label>
+                    <h3 style="margin:0 0 8px;font-size:0.875rem;font-weight:700;color:#1e293b;">Raise a Complaint</h3>
+                    <p style="margin:0 0 16px;font-size:0.78rem;color:#64748b;">Use this form to raise a complaint. To withdraw consent or request erasure, use your Consent History. To request a copy of your data or a correction, use My Rights.</p>
+                    <label for="g-type">What is your complaint about?</label>
                     <select id="g-type">
-                        <option value="GENERAL_COMPLAINT">General Inquiry</option>
-                        <option value="ERASURE_REQUEST">Right to Erasure (Deletion)</option>
-                        <option value="DATA_ACCESS_REQUEST">Data Portability Request</option>
-                        <option value="CORRECTION_REQUEST">Correction Request</option>
+                        <option value="CONSENT_COMPLAINT">My consent or withdrawal was not honoured</option>
+                        <option value="ERASURE_COMPLAINT">My erasure request was not completed</option>
+                        <option value="ACCESS_COMPLAINT">My request for a copy of my data was not fulfilled</option>
+                        <option value="CORRECTION_COMPLAINT">My correction request was not fulfilled</option>
+                        <option value="DATA_MISUSE_COMPLAINT">Misuse of my personal data</option>
+                        <option value="GENERAL_COMPLAINT">Other complaint</option>
                     </select>
                     <label for="g-subject">Subject</label>
-                    <input type="text" id="g-subject" placeholder="Brief summary of your request">
+                    <input type="text" id="g-subject" placeholder="Brief summary of your complaint">
                     <label for="g-description">Detailed Description</label>
-                    <textarea id="g-description" rows="4" placeholder="Explain your request in detail..."></textarea>
-                    <div style="display:flex;gap:10px;justify-content:flex-end;">
+                    <textarea id="g-description" rows="4" placeholder="Explain what happened..."></textarea>
+                    <label for="g-file">Attach a document (optional: PDF, PNG, JPEG or text, up to 5 MB)</label>
+                    <input type="file" id="g-file" accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain">
+                    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
                         <button onclick="toggleGrievanceForm()" style="background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:10px 16px;">Cancel</button>
-                        <button class="btn-primary" id="submit-grievance-btn" onclick="submitGrievance()">Submit Request</button>
+                        <button class="btn-primary" id="submit-grievance-btn" onclick="submitGrievance()">Submit Complaint</button>
                     </div>
                     <div id="g-error" role="alert" aria-live="assertive" style="display:none;color:#b91c1c;font-size:0.8rem;margin-top:10px;"></div>
                 </div>
             </div>
             <div style="overflow-x:auto;">
                 <table class="dash-table">
-                    <thead><tr><th>ID</th><th>Type</th><th>Subject</th><th>Deadline</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Reference</th><th>Type</th><th>Subject</th><th>Deadline</th><th>Status</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
@@ -843,19 +1109,34 @@
         const fc = document.getElementById('grievance-form-container');
         const btn = document.getElementById('new-grievance-btn');
         if (fc) fc.style.display = showGrievanceForm ? 'block' : 'none';
-        if (btn) btn.textContent = showGrievanceForm ? '✕ Cancel' : '+ New Request';
+        if (btn) btn.textContent = showGrievanceForm ? '✕ Cancel' : '+ New Complaint';
+    }
+
+    function readFileBase64(file) {
+        return new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(String(fr.result).split(',')[1]);
+            fr.onerror = reject;
+            fr.readAsDataURL(file);
+        });
     }
 
     async function submitGrievance() {
         const type    = document.getElementById('g-type').value;
         const subject = document.getElementById('g-subject').value.trim();
         const desc    = document.getElementById('g-description').value.trim();
+        const file    = document.getElementById('g-file').files[0];
         const errEl   = document.getElementById('g-error');
         const btn     = document.getElementById('submit-grievance-btn');
 
         errEl.style.display = 'none';
         if (!subject || !desc) {
             errEl.textContent = 'Subject and description are required.';
+            errEl.style.display = 'block';
+            return;
+        }
+        if (file && file.size > 5 * 1024 * 1024) {
+            errEl.textContent = 'The attachment is larger than 5 MB.';
             errEl.style.display = 'block';
             return;
         }
@@ -870,12 +1151,27 @@
         });
 
         if (result && result.success) {
+            let attachNote = '';
+            if (file) {
+                try {
+                    const up = await apiCall('/api/v1/client/grievance', 'upload_grievance_attachment', {
+                        grievance_id: result.grievance_id,
+                        user_id: SESSION.userId,
+                        fiduciary_id: SESSION.fiduciaryId,
+                        file_name: file.name,
+                        content_type: file.type,
+                        content_base64: await readFileBase64(file)
+                    });
+                    if (!(up && up.success)) attachNote = 'Your complaint was submitted, but the attachment was not accepted: ' + ((up && up.message) || 'unknown error');
+                } catch (e) { attachNote = 'Your complaint was submitted, but the attachment could not be read.'; }
+            }
             await renderGrievanceTab(document.getElementById('tab-content'));
+            if (attachNote) alert(attachNote);
         } else {
             errEl.textContent = (result && result.message) || 'Submission failed. Please try again.';
             errEl.style.display = 'block';
             btn.disabled = false;
-            btn.textContent = 'Submit Request';
+            btn.textContent = 'Submit Complaint';
         }
     }
 

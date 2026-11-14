@@ -78,8 +78,9 @@ public class WebhookDispatcher {
     /** How long a claimed/in-flight attempt is protected from being picked up again. */
     private static final int LEASE_SECONDS = 120;
     private static final int CLAIM_BATCH = 50;
-    private static final int KEEP_DELIVERED_DAYS = 7;
-    private static final int KEEP_FAILED_DAYS = 90;
+    // db/18 refuses to delete webhook_deliveries rows younger than 365 days, so cleanup can't go below that.
+    private static final int KEEP_DELIVERED_DAYS = 365;
+    private static final int KEEP_FAILED_DAYS = 365;
     /** Categories that are sent once and never stored (see class comment). */
     private static final Set<String> UNTRACKED_CATEGORIES = Set.of("OTP");
 

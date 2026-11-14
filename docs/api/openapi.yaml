@@ -214,10 +214,14 @@ paths:
 
         **Undocumented in the guide:** `type` is accepted as free text and
         stored verbatim - the server does not validate it against any
-        enum. The rights-portal UI itself only ever sends one of
-        `GENERAL_COMPLAINT`, `ERASURE_REQUEST`, `DATA_ACCESS_REQUEST`,
-        `CORRECTION_REQUEST`; only `ERASURE_REQUEST` changes behavior
-        (7-day SLA instead of the 30-day default).
+        enum. The rights-portal UI sends one of `CONSENT_COMPLAINT`,
+        `ERASURE_COMPLAINT`, `ACCESS_COMPLAINT`, `CORRECTION_COMPLAINT`,
+        `DATA_MISUSE_COMPLAINT`, `GENERAL_COMPLAINT`. No value changes the
+        deadline: every complaint has the default 30-day period. A
+        grievance is a complaint, not a request: to ask for access to or
+        correction of data use the rights-request functions
+        (`submit_rights_request`), and for erasure or withdrawal use the
+        consent functions.
       operationId: grievanceOperation
       requestBody:
         required: true
@@ -968,11 +972,10 @@ components:
           type: string
           description: >-
             Not server-validated against any list - any string is stored
-            verbatim. The rights-portal UI only ever sends
-            GENERAL_COMPLAINT, ERASURE_REQUEST, DATA_ACCESS_REQUEST, or
-            CORRECTION_REQUEST. Only the literal value ERASURE_REQUEST
-            (case-insensitive) changes behavior: a 7-day SLA instead of
-            the 30-day default.
+            verbatim. The rights-portal UI sends CONSENT_COMPLAINT,
+            ERASURE_COMPLAINT, ACCESS_COMPLAINT, CORRECTION_COMPLAINT,
+            DATA_MISUSE_COMPLAINT or GENERAL_COMPLAINT. No value changes
+            the deadline (30 days for every complaint).
         subject: { type: string }
         description: { type: string }
         attachments:

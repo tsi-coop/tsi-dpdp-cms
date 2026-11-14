@@ -159,10 +159,12 @@
             <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
+            <a href="purposes.html" class="nav-link">Purposes</a>
             <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
             <a href="grievances.html" class="nav-link">Grievances</a>
+            <a href="rights-requests.html" class="nav-link">Rights Requests</a>
             <a href="breach.html" class="nav-link">Breach</a>
             <div class="nav-divider" role="separator"></div>
             <a href="audit.html" class="nav-link active">Audit</a>
@@ -187,6 +189,10 @@
 <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-black text-slate-800 tracking-tight">Audit Explorer</h1>
+        <div class="flex items-center gap-3">
+            <span id="chain-status" class="text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-500" title="Result of the last audit hash-chain verification">Chain: checking...</span>
+            <button id="verify-chain-btn" class="text-xs font-bold px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50">Verify now</button>
+        </div>
     </div>
 
     <!-- Audit List Card -->
@@ -455,6 +461,36 @@
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(loadLogs, 300);
     });
+
+    // --- Audit hash-chain status -------------------------------------------------------
+    const chainStatus = document.getElementById('chain-status');
+    const verifyBtn = document.getElementById('verify-chain-btn');
+    function showChain(verdict, when) {
+        const styles = { INTACT: 'bg-green-100 text-green-700', BROKEN: 'bg-red-100 text-red-700', NOT_RUN: 'bg-gray-100 text-gray-500' };
+        const text = verdict === 'INTACT' ? 'Chain: INTACT' : verdict === 'BROKEN' ? 'Chain: BROKEN - contact your administrator' : 'Chain: not verified yet';
+        chainStatus.className = 'text-xs font-bold px-3 py-1 rounded-full ' + (styles[verdict] || styles.NOT_RUN);
+        chainStatus.textContent = text;
+        chainStatus.title = when ? 'Last verified ' + new Date(when).toLocaleString() : '';
+    }
+    async function callChain(func) {
+        const r = await fetch(API_URL_AUDIT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify({ "_func": func })
+        });
+        return r.json();
+    }
+    async function loadChainStatus() {
+        try { const d = await callChain('get_audit_chain_status'); showChain(d.verdict, d.run_at); }
+        catch (e) { chainStatus.textContent = 'Chain: unavailable'; }
+    }
+    verifyBtn.addEventListener('click', async () => {
+        verifyBtn.disabled = true; verifyBtn.textContent = 'Verifying...';
+        try { const d = await callChain('verify_audit_chain'); showChain(d.verdict, new Date().toISOString()); }
+        catch (e) { chainStatus.textContent = 'Chain: verification failed'; }
+        verifyBtn.disabled = false; verifyBtn.textContent = 'Verify now';
+    });
+    loadChainStatus();
 
     loadLogs();
 

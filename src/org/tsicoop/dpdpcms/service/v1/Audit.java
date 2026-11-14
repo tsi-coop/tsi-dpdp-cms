@@ -7,18 +7,15 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import org.tsicoop.dpdpcms.util.AuditChain;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
@@ -34,8 +31,8 @@ public class Audit implements Action {
     // Thread-safe in-memory cache for incoming audit events
     private static final Queue<AuditEntry> auditCache = new ConcurrentLinkedQueue<>();
     
-    // Tracks the hash of the previous successfully persisted record
-    private static String lastKnownHash = null;
+    // Serialises flushes inside this JVM; the Postgres advisory lock serialises across instances.
+    private static final Object FLUSH_LOCK = new Object();
 
     /**
      * DTO to hold audit data in memory before batch writing.
@@ -47,9 +44,9 @@ public class Audit implements Action {
         UUID serviceId;
         String auditAction;
         String contextDetails;
-        Timestamp eventtime;
+        LocalDateTime eventtime;
 
-        AuditEntry(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails, Timestamp eventtime) {
+        AuditEntry(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails, LocalDateTime eventtime) {
             this.userId = userId;
             this.fiduciaryId = fiduciaryId;
             this.serviceType = serviceType;
@@ -72,6 +69,12 @@ public class Audit implements Action {
                 return;
             }
 
+            // Audit data needs a session that passed MFA whenever MFA is enforced (production / MFA_ENFORCE).
+            if (org.tsicoop.dpdpcms.util.MfaPolicy.enforcing() && !InputProcessor.hasMfa(req)) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Audit access requires a session verified with MFA.", req.getRequestURI());
+                return;
+            }
+
             switch (func.toLowerCase()) {
                 case "log_event":
                     // Not called by any console UI - internal audit writes go through
@@ -89,6 +92,12 @@ public class Audit implements Action {
                     break;
                 case "get_audit_log":
                     handleGetLog(input, res, req);
+                    break;
+                case "verify_audit_chain":
+                    handleVerifyChain(res, req);
+                    break;
+                case "get_audit_chain_status":
+                    handleChainStatus(res, req);
                     break;
                 default:
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unknown function: " + func, req.getRequestURI());
@@ -148,113 +157,267 @@ public class Audit implements Action {
     private static final UUID SYSTEM_FIDUCIARY_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     public void logEventAsync(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) {
-        // A null fiduciary or user would make the whole batch fail in logEvents() (the hash step and the
+        // A null fiduciary or user would make the whole batch fail in flush() (the hash step and the
         // NOT NULL user_id column), and the failed batch is re-queued, blocking every later audit event.
         if (fiduciaryId == null) fiduciaryId = SYSTEM_FIDUCIARY_ID;
         if (userId == null) userId = "UNKNOWN";
-        auditCache.add(new AuditEntry(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails, Timestamp.from(Instant.now())));
+        auditCache.add(new AuditEntry(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails, LocalDateTime.now()));
     }
 
     /**
-     * Batch writes all buffered logs and maintains the Hash Chain.
+     * Writes the event (and anything already buffered) to the chain before returning. Use for
+     * security events (logins, purge confirmations, PII reveals) that must not be lost if the
+     * process dies before the next periodic flush. Throws if the write fails, so the caller can
+     * fail closed; the event stays queued and is retried by the periodic flush.
      */
-    public synchronized void logEvents() {
-        if (auditCache.isEmpty()) return;
+    public void logEventSync(String userId, UUID fiduciaryId, String serviceType, UUID serviceId, String auditAction, String contextDetails) throws SQLException {
+        logEventAsync(userId, fiduciaryId, serviceType, serviceId, auditAction, contextDetails);
+        flush();
+    }
 
-        PoolDB pool = null;
-        Connection conn = null;
-
+    /** Periodic flush of buffered events. Never throws; failures stay queued for the next run. */
+    public void logEvents() {
         try {
-            pool = new PoolDB();
-            conn = pool.getConnection();
-
-            // Ensure we have the last known hash from the DB if memory is empty (e.g. after restart)
-            if (lastKnownHash == null) {
-                initLastKnownHash(conn);
-            }
-
-            while (!auditCache.isEmpty()) {
-                List<AuditEntry> batch = new ArrayList<>();
-                AuditEntry entry;
-                while ((entry = auditCache.poll()) != null) {
-                    batch.add(entry);
-                    if (batch.size() >= 500) break;
-                }
-
-                if (batch.isEmpty()) break;
-
-                String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details, prev_log_hash, current_log_hash) " +
-                        "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                    conn.setAutoCommit(false);
-
-                    for (AuditEntry log : batch) {
-                        String storedUserId = log.userId;
-
-                        String prevHash = lastKnownHash;
-                        String currentHash = calculateHash(log, storedUserId, prevHash);
-
-                        pstmt.setObject(1, log.fiduciaryId);
-                        pstmt.setTimestamp(2, log.eventtime);
-                        pstmt.setString(3, storedUserId);
-                        pstmt.setString(4, log.serviceType);
-                        pstmt.setObject(5, log.serviceId);
-                        pstmt.setString(6, log.auditAction);
-                        pstmt.setString(7, log.contextDetails);
-                        pstmt.setString(8, prevHash);
-                        pstmt.setString(9, currentHash);
-                        pstmt.addBatch();
-
-                        lastKnownHash = currentHash;
-                    }
-
-                    pstmt.executeBatch();
-                    conn.commit();
-                } catch (Exception e) {
-                    conn.rollback();
-                    System.err.println("CRITICAL: Failed to write audit batch: " + e.getMessage());
-                    // Re-queue on failure for retry
-                    for (AuditEntry failed : batch) auditCache.add(failed);
-                    lastKnownHash = null; // Force re-init from DB on next attempt
-                    break; // Exit the loop on failure
-                }
-            }
+            flush();
         } catch (Exception e) {
             System.err.println("Audit Flush Error: " + e.getMessage());
-        } finally {
-            if (pool != null && conn != null) pool.cleanup(null, null, conn);
         }
     }
 
     /**
-     * Initializes the hash chain state by fetching the most recent record from the database.
+     * Drains the buffer into the hash chain. Each batch runs in one transaction that first takes a
+     * Postgres advisory lock and then reads the chain head, so concurrent writers (threads or app
+     * instances) queue up behind each other and the chain stays linear. Nothing about the head is
+     * cached in memory, so a failed or re-queued batch cannot fork it.
      */
-    private void initLastKnownHash(Connection conn) throws SQLException {
-        String sql = "SELECT current_log_hash FROM audit_logs ORDER BY timestamp DESC LIMIT 1";
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                lastKnownHash = rs.getString(1);
-            } else {
-                lastKnownHash = "GENESIS_BLOCK"; // Default starting point for empty table
+    private void flush() throws SQLException {
+        synchronized (FLUSH_LOCK) {
+            if (auditCache.isEmpty()) return;
+
+            PoolDB pool = new PoolDB();
+            Connection conn = null;
+            try {
+                conn = pool.getConnection();
+                while (!auditCache.isEmpty()) {
+                    List<AuditEntry> batch = new ArrayList<>();
+                    AuditEntry entry;
+                    while (batch.size() < 500 && (entry = auditCache.poll()) != null) batch.add(entry);
+                    if (batch.isEmpty()) break;
+
+                    try {
+                        writeBatch(conn, batch);
+                    } catch (SQLException | RuntimeException e) {
+                        try { conn.rollback(); } catch (SQLException ignored) { }
+                        System.err.println("CRITICAL: Failed to write audit batch: " + e.getMessage());
+                        auditCache.addAll(batch); // retry on the next flush
+                        throw e instanceof SQLException ? (SQLException) e : new SQLException(e);
+                    }
+                }
+            } finally {
+                if (conn != null) {
+                    try { conn.setAutoCommit(true); } catch (SQLException ignored) { }
+                    pool.cleanup(null, null, conn);
+                }
             }
         }
     }
 
+    private void writeBatch(Connection conn, List<AuditEntry> batch) throws SQLException {
+        conn.setAutoCommit(false);
+
+        try (PreparedStatement lock = conn.prepareStatement("SELECT pg_advisory_xact_lock(?)")) {
+            lock.setLong(1, AuditChain.ADVISORY_LOCK_KEY);
+            lock.execute();
+        }
+
+        // Chain head, read inside the lock.
+        String prevHash = AuditChain.GENESIS;
+        LocalDateTime lastTime = null;
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT current_log_hash, \"timestamp\" FROM audit_logs ORDER BY seq DESC LIMIT 1")) {
+            if (rs.next()) {
+                if (rs.getString(1) != null) prevHash = rs.getString(1);
+                lastTime = rs.getObject(2, LocalDateTime.class);
+            }
+        }
+
+        String sql = "INSERT INTO audit_logs (id, fiduciary_id, timestamp, user_id, service_type, service_id, audit_action, context_details, prev_log_hash, current_log_hash, hash_version) " +
+                "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?, ?, ?, " + AuditChain.HASH_VERSION + ")";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (AuditEntry log : batch) {
+                // Millisecond precision (what the hash covers) and strictly increasing along the chain.
+                LocalDateTime t = log.eventtime.truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
+                if (lastTime != null && !t.isAfter(lastTime)) t = lastTime.plusNanos(1_000_000);
+                lastTime = t;
+
+                String currentHash = AuditChain.hashV2(prevHash, log.fiduciaryId, log.userId, log.serviceType,
+                        log.serviceId, log.auditAction, AuditChain.formatTime(t), log.contextDetails);
+
+                pstmt.setObject(1, log.fiduciaryId);
+                pstmt.setObject(2, t);
+                pstmt.setString(3, log.userId);
+                pstmt.setString(4, log.serviceType);
+                pstmt.setObject(5, log.serviceId);
+                pstmt.setString(6, log.auditAction);
+                pstmt.setString(7, log.contextDetails);
+                pstmt.setString(8, prevHash);
+                pstmt.setString(9, currentHash);
+                pstmt.addBatch();
+
+                prevHash = currentHash;
+            }
+            pstmt.executeBatch();
+        }
+        conn.commit();
+    }
+
+    // --- Chain verification ---------------------------------------------------------------
+
+    private static final int VERIFY_PAGE = 5000;
+
     /**
-     * Calculates SHA-256 hash of (Current Record Data + Previous Record Hash).
+     * Walks the whole chain in seq order, recomputing hashes (v2 rows) and checking linkage.
+     * Always walks the UNFILTERED chain: filtering by fiduciary first would report false breaks.
      */
-    private String calculateHash(AuditEntry entry, String storedUserId, String prevHash) throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        String dataToHash = prevHash + 
-                            entry.fiduciaryId.toString() + 
-                            storedUserId + 
-                            entry.auditAction + 
-                            entry.eventtime.getTime() + 
-                            (entry.contextDetails != null ? entry.contextDetails : "");
-        
-        byte[] hashBytes = digest.digest(dataToHash.getBytes(StandardCharsets.UTF_8));
-        return Base64.getEncoder().encodeToString(hashBytes);
+    public AuditChain.Result verifyChain() throws SQLException {
+        AuditChain.Walker walker = new AuditChain.Walker();
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        try {
+            conn = pool.getConnection();
+            long afterSeq = 0;
+            String sql = "SELECT seq, id, fiduciary_id, \"timestamp\", user_id, service_type, service_id, audit_action, context_details, " +
+                    "prev_log_hash, current_log_hash, hash_version FROM audit_logs WHERE seq > ? ORDER BY seq LIMIT " + VERIFY_PAGE;
+            while (true) {
+                int n = 0;
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setLong(1, afterSeq);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            AuditChain.Row r = new AuditChain.Row();
+                            r.seq = rs.getLong("seq");
+                            r.id = (UUID) rs.getObject("id");
+                            r.fiduciaryId = (UUID) rs.getObject("fiduciary_id");
+                            r.eventTime = AuditChain.formatTime(rs.getObject("timestamp", LocalDateTime.class));
+                            r.userId = rs.getString("user_id");
+                            r.serviceType = rs.getString("service_type");
+                            r.serviceId = (UUID) rs.getObject("service_id");
+                            r.action = rs.getString("audit_action");
+                            r.context = rs.getString("context_details");
+                            r.prevHash = rs.getString("prev_log_hash");
+                            r.currentHash = rs.getString("current_log_hash");
+                            r.hashVersion = rs.getInt("hash_version");
+                            walker.accept(r);
+                            afterSeq = r.seq;
+                            n++;
+                        }
+                    }
+                }
+                if (n < VERIFY_PAGE) break;
+            }
+        } finally {
+            pool.cleanup(null, null, conn);
+        }
+        return walker.result();
+    }
+
+    /** Stores a verdict in the append-only audit_chain_verifications table. */
+    public void recordVerification(AuditChain.Result r, String source) throws SQLException {
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement("INSERT INTO audit_chain_verifications (trigger_source, verdict, rows_checked, rows_verified, legacy_linkage_only, first_break_id, first_break_seq) VALUES (?,?,?,?,?,?,?)");
+            ps.setString(1, source);
+            ps.setString(2, r.intact() ? "INTACT" : "BROKEN");
+            ps.setLong(3, r.rowsChecked);
+            ps.setLong(4, r.rowsVerified);
+            ps.setLong(5, r.legacyLinkageOnly);
+            ps.setObject(6, r.firstBreakId);
+            ps.setObject(7, r.firstBreakSeq);
+            ps.executeUpdate();
+        } finally {
+            pool.cleanup(null, ps, conn);
+        }
+    }
+
+    private void handleVerifyChain(HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String role = InputProcessor.getVerifiedRole(req);
+        boolean admin = "ADMIN".equalsIgnoreCase(role);
+        boolean dpo = "DPO".equalsIgnoreCase(role);
+        if (!admin && !dpo) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN or DPO users may verify the audit chain.", req.getRequestURI());
+            return;
+        }
+        UUID callerFid = null;
+        if (dpo) {
+            UUID loginUserId = InputProcessor.getAuthenticatedUserId(req);
+            callerFid = loginUserId != null ? getCallerFiduciaryId(loginUserId) : null;
+            if (callerFid == null) {
+                OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "No fiduciary is bound to this account.", req.getRequestURI());
+                return;
+            }
+        }
+
+        logEvents(); // include anything still buffered
+        AuditChain.Result r = verifyChain();
+        recordVerification(r, "MANUAL");
+
+        JSONObject out = new JSONObject();
+        out.put("verdict", r.intact() ? "INTACT" : "BROKEN");
+        JSONArray broken = new JSONArray();
+        long ownBroken = 0;
+        for (AuditChain.Break b : r.breaks) {
+            if (admin || callerFid.equals(b.fiduciaryId)) {
+                JSONObject bj = new JSONObject();
+                bj.put("id", b.id.toString());
+                bj.put("seq", b.seq);
+                bj.put("reason", b.reason);
+                broken.add(bj);
+                ownBroken++;
+            }
+        }
+        if (admin) {
+            // Whole-chain figures are system-wide; a tenant DPO only learns about their own rows.
+            out.put("rows_checked", r.rowsChecked);
+            out.put("rows_verified", r.rowsVerified);
+            out.put("legacy_linkage_only", r.legacyLinkageOnly);
+            out.put("first_break_id", r.firstBreakId == null ? null : r.firstBreakId.toString());
+        } else {
+            out.put("verdict", ownBroken == 0 ? "INTACT" : "BROKEN");
+            out.put("chain_wide_verdict", r.intact() ? "INTACT" : "BROKEN");
+        }
+        out.put("broken_entries", broken);
+        OutputProcessor.send(res, 200, out);
+    }
+
+    private void handleChainStatus(HttpServletResponse res, HttpServletRequest req) throws SQLException {
+        String role = InputProcessor.getVerifiedRole(req);
+        if (!"ADMIN".equalsIgnoreCase(role) && !"DPO".equalsIgnoreCase(role)) {
+            OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Only ADMIN or DPO users may view the audit chain status.", req.getRequestURI());
+            return;
+        }
+        PoolDB pool = new PoolDB();
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        JSONObject out = new JSONObject();
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement("SELECT run_at, trigger_source, verdict FROM audit_chain_verifications ORDER BY run_at DESC LIMIT 1");
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                out.put("verdict", rs.getString("verdict"));
+                out.put("run_at", rs.getTimestamp("run_at").toInstant().toString());
+                out.put("trigger_source", rs.getString("trigger_source"));
+            } else {
+                out.put("verdict", "NOT_RUN");
+            }
+        } finally {
+            pool.cleanup(rs, ps, conn);
+        }
+        OutputProcessor.send(res, 200, out);
     }
 
     // --- List and Detail Methods (Unchanged Logic, added hash retrieval) ---
@@ -311,7 +474,13 @@ public class Audit implements Action {
         Optional<JSONObject> logEntry = getAuditLogEntryFromDb(UUID.fromString(logIdStr));
         if (logEntry.isPresent()) {
             String logFidStr = (String) logEntry.get().get("fiduciary_id");
-            if (logFidStr != null && rejectIfNotOwnFiduciary(UUID.fromString(logFidStr), req, res)) return;
+            if (logFidStr == null) {
+                // A row with no fiduciary is platform-level: only ADMIN may read it.
+                if (!InputProcessor.isAdminCaller(req)) {
+                    OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "You may only access audit logs for your own fiduciary.", req.getRequestURI());
+                    return;
+                }
+            } else if (rejectIfNotOwnFiduciary(UUID.fromString(logFidStr), req, res)) return;
             OutputProcessor.send(res, 200, logEntry.get());
         }
         else OutputProcessor.errorResponse(res, 404, "Not Found", "Audit log not found.", req.getRequestURI());
