@@ -1,5 +1,61 @@
 # Release Notes
 
+### v0.6 (in development)
+
+**Upgrading.** Back up first (`./backup/backup.sh`), then apply `db/18` to `db/26` in order (each is safe to run again; see the
+[Production Deployment Guide](docs/guides/production-deployment-guide.md#upgrading-to-v06)). Read "What you will notice on day one"
+below before you deploy.
+
+**What you will notice on day one**
+- **MFA:** with `TSI_DPDP_CMS_ENV=production`, every ADMIN, DPO and AUDITOR must enrol an authenticator app (TOTP) at their next login. In other environments, enrolment is available and `MFA_ENFORCE=true` applies the production rule.
+- **Sessions:** operator sessions now last 8 hours by default (`TOKEN_TTL_MINUTES`), tokens can be revoked, and everyone signs in again after the upgrade. Tokens issued by v0.5 are accepted for at most that lifetime, and not at all once MFA is enforced.
+- **Startup checks:** production refuses to start on a placeholder secret (`<<...>>`, `change-me`) or a `JWT_SECRET` shorter than 32 characters. A short `DB_ENCRYPTION_KEY` or `TSI_LOOKUP_SALT` is a warning (they cannot be changed without re-encrypting data).
+- **Roles and tenants:** role permissions and own-fiduciary checks run in **shadow mode** by default (`ACCESS_CONTROL_MODE=shadow`): they log what they would refuse and block nothing. Review the findings, then set `enforce` ([guide](docs/security/access-control-rollout.md)).
+- **Consent capture:** rules about unanswered purposes and minors are **warn-only** by default (`CONSENT_CAPTURE_MODE=warn`); `strict` rejects them.
+- **Deadlines:** none are assumed. `ACCESS_SLA_DAYS`, `CORRECTION_SLA_DAYS` and `PURGE_COMPLETION_SLA_DAYS` are unset, so nothing is shown as overdue until you set them.
+- **Client addresses:** behind a reverse proxy, set `TRUSTED_PROXY` to its address so the recorded client address is the real one.
+- **Docker:** `docker-compose.yml` now passes all of these settings into the container; leave them blank for the defaults.
+
+**Security**
+- **Operator MFA (TOTP):** enrolment with a QR code in every mode, mandatory in production for ADMIN, DPO and AUDITOR, replay-proof codes, lock-out after repeated failures, and revocation of existing sessions on enrolment, password change and deactivation. [Details](docs/security/access-control-rollout.md)
+- **Roles and permissions:** a `roles` table and a permission check on every operator function, plus a new read-only AUDITOR role. Tenant binding: a DPO, OPERATOR or AUDITOR acts only on their own fiduciary.
+- **Cross-tenant access closed:** an audit of every request that takes a record id found nine places where a caller could read or change another fiduciary's records (for example purge requests, grievances, consent records). All are fixed and tested, for operators, API keys and principals alike. [Audit](docs/security/by-id-audit.md)
+- **Audit ledger:** the audit trail is now append-only (the database refuses updates, deletes and truncation), each row's hash covers every stored column, and a daily job verifies the chain and records the result. A failing audit entry can no longer block other entries, and failed logins are queued instead of written inline.
+- **Policy cache:** a published, withdrawn or archived policy is seen by every instance within 30 seconds (`POLICY_CACHE_TTL_SECONDS`).
+- **Client address:** `X-Forwarded-For` is believed only from `TRUSTED_PROXY` and read from the right, so a client cannot choose its own recorded address.
+- **Purge confirmation:** an API key can confirm only a purge assigned to its own app; who confirmed it is taken from the credential; completed and cancelled purges are final. `erasure_request` through an API key now needs an existing consent record (404 otherwise).
+- **Principal ID protection:** a documented approach, not a code change: send opaque IDs (not email or phone) and encrypt the database disk and backups. See [Key management](docs/security/KEY_MANAGEMENT.md) and [Log and record retention](docs/security/LOG_RETENTION.md).
+
+**Features**
+- **Consent evidence:** each consent records how it was captured (portal, API integration or wallet), the observed user agent and address, what the calling system claimed, and which earlier record it replaced. Explicit-choice and minor rules are checked per `CONSENT_CAPTURE_MODE`. [Details](docs/security/consent-capture.md)
+- **Grievances:** channel, reference number (`GRV-year-nnnnnn`), link to a consent record, principal feedback and validated attachments.
+- **Access and correction requests (DPDP s.11, s.12):** new Rights Requests screen for the DPO and a My Rights section in the portal, with assignment, outcome notes and optional deadlines. The CMS tracks the request and holds no personal data values. [Details](docs/security/rights-requests.md)
+- **Nominations (s.14):** principals can nominate a person; stored encrypted, masked for the DPO, no access granted. [Details](docs/security/nominations-and-purpose-lifecycle.md)
+- **Purpose lifecycle:** the DPO can close a purpose (consents are withdrawn or de-identified, new grants refused) and reopen it. The portal shows the consequences of a withdrawal before it is made.
+- **Legal holds:** time-bound, with a written reason; purges for the principal are deferred and resume automatically when the hold ends. [Details](docs/security/erasure-retention-breach.md)
+- **Purge evidence:** the Compliance screen shows who confirmed a purge and when, the record count the processor claims (not verified), an "Overdue" tag when a deadline is set, and whether the processor should erase or de-identify.
+- **Breach intimation to the Board:** the Board deadline is tracked from the moment a breach is reported, the DPO records when the Board was informed and its reference, and the DPO is alerted once when it is near and once when it is missed. The dashboard shows both clocks.
+- **Evaluation portal:** the Rights portal now says it is for implementers to evaluate the consent lifecycle, not for data principals, and its login accepts any principal ID in every OTP mode.
+
+**Documentation**
+- The OpenAPI spec (API 1.1.0) now lists the rights, nomination, closed-purpose, grievance-attachment and withdrawal-implication functions and the new purge rules. The pre-rendered viewer `docs/api/index.html` must be rebuilt (see the release checklist).
+- The regression suite has 26 new v0.6 cases (section 10), each mapped to the JUnit class that runs it.
+- New: [Key management](docs/security/KEY_MANAGEMENT.md), [Log and record retention](docs/security/LOG_RETENTION.md), and one guide per area under `docs/security/`.
+- The integration guides now recommend **opaque principal IDs** and show them in every example ([Choosing the principal ID](docs/guides/system-integration-guide.md#choosing-the-principal-id)).
+- `tests/README.md` explains the database tests (they skip without a database) and how to run them in each mode.
+
+**Bug Fixes**
+- A date-only `consent_expiry` (for example `2027-01-31`) no longer causes an error in consent validation or the retention engine; a purpose with no expiry no longer inherits the previous purpose's expiry.
+- A correct password followed by the MFA step no longer counts as a failed login attempt.
+- A fiduciary with no stored notification template now receives the built-in text instead of a blank notice.
+- `link_user` can no longer overwrite a stored MINOR with a declared ADULT.
+
+**Not in this release**
+- Re-consent when a policy changes, a retention-policy editor, custom role management, and erasure or pseudonymisation of the CMS's own consent and audit records (a legal decision). Principal IDs are not encrypted or hashed in the database; see the [evaluation](docs/plan/principal-data-protection-evaluation.md) for the opt-in hardening design.
+- Notification texts for the new alerts are English only.
+
+---
+
 ### v0.5.4
 **Standards**
 - The application version now lives in one place, `pom.xml`, and is stamped into the evidence certificate (software name and version in its signed system metadata, shown on the Legal page), breach report PDFs, ROPA and job CSV exports (`X-TSI-Generated-By` header), and the startup log; where `BRAND_NAME` is set, those artifacts carry the brand name.
@@ -38,7 +94,7 @@
 ### v0.5.2
 **Testing**
 - Added a runnable [Apache JMeter](https://jmeter.apache.org/) load test (`tests/`) covering the full consent lifecycle against the client API: notice/policy retrieval, consent capture, processing validation (`validate_consent`), rights/dashboard reads, withdrawal/erasure, grievances, purge polling, and the full guardian OTP login round trip. Concurrency defaults are sized against the real `HikariCP` connection-pool ceiling (`maximumPoolSize=15`) rather than round numbers, and the OTP-login stage doubles as the direct verification tool for this release's rate-limiting fix (see below) - see [`tests/load-testing-plan.md`](tests/load-testing-plan.md) for methodology and [`tests/README.md`](tests/README.md) for a quick-start.
-- Added [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md), a living regression suite covering the console, rights portal, client/public API, webhooks, and the purge lifecycle - intended to be run (and extended) before every release, not just this one. 40 of its 84 cases are already verified against this release; the rest are documented as open, each tagged with exactly what it still needs (a browser walkthrough, a different instance state, or a live webhook endpoint).
+- Added [`tests/regression-test-cases.md`](tests/regression-test-cases.md), a living regression suite covering the console, rights portal, client/public API, webhooks, and the purge lifecycle - intended to be run (and extended) before every release, not just this one. 40 of its 84 cases are already verified against this release; the rest are documented as open, each tagged with exactly what it still needs (a browser walkthrough, a different instance state, or a live webhook endpoint).
 
 **Standards**
 

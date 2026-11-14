@@ -6,7 +6,7 @@
 
     <groupId>org.tsicoop.dpdpcms</groupId>
     <artifactId>tsi_dpdp_cms</artifactId>
-    <version>0.5.4</version>
+    <version>0.6.0</version>
     <packaging>war</packaging>
 
     <name>TSI_DPDP_CMS</name>

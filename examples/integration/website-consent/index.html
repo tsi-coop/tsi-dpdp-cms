@@ -23,8 +23,8 @@ footer{margin-top:60px;border-top:1px solid #ddd;padding-top:12px;font-size:14px
 <dialog id="signin" style="border:1px solid #ccc;border-radius:10px;padding:20px;max-width:340px">
   <form method="dialog" id="signin-form">
     <h3 style="margin-top:0">Sign in (mock)</h3>
-    <p style="font-size:13px;margin-top:0">Any email works. No password; this is a fake session for the demo.</p>
-    <input id="u" type="email" required placeholder="alice@example.com" style="width:100%;padding:8px;box-sizing:border-box">
+    <p style="font-size:13px;margin-top:0">Any ID works. No password; this is a fake session for the demo. Use an opaque ID (not an email address or phone number), as a real integration should.</p>
+    <input id="u" type="text" required placeholder="c-98a7b6c5" style="width:100%;padding:8px;box-sizing:border-box">
     <p id="signin-err" style="color:#b91c1c;font-size:13px;margin:6px 0 0"></p>
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
       <button type="button" id="signin-cancel">Cancel</button><button value="ok">Sign in</button>

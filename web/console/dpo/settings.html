@@ -567,10 +567,11 @@
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">OTP Delivery Mode</label>
                 <select id="rights-otp-mode" class="w-full p-2 border border-gray-300 rounded-md text-sm" onchange="onRightsOtpModeChange()">
                     <option value="DUMMY_OTP" ${mode === 'DUMMY_OTP' ? 'selected' : ''}>Dummy OTP (always 1234 -- demo/evaluation)</option>
-                    <option value="EMAIL_OTP" ${mode === 'EMAIL_OTP' ? 'selected' : ''}>Email OTP</option>
-                    <option value="MOBILE_OTP" ${mode === 'MOBILE_OTP' ? 'selected' : ''}>Mobile OTP</option>
+                    <option value="EMAIL_OTP" ${mode === 'EMAIL_OTP' ? 'selected' : ''}>OTP delivered by your webhook (email)</option>
+                    <option value="MOBILE_OTP" ${mode === 'MOBILE_OTP' ? 'selected' : ''}>OTP delivered by your webhook (SMS)</option>
                 </select>
             </div>
+            <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 mb-4">The Rights portal is an <strong>evaluation tool for implementers</strong>, not for data principals. The ID typed at login is stored as the principal ID and sent to your OTP webhook. In production, do not use email addresses or phone numbers as principal IDs: send opaque IDs from your own system, prefixed with the kind of principal (for example <code>c-1234</code> for a customer, <code>e-2345</code> for an employee), and map them to a contact address inside your OTP endpoint.</p>
             <div id="rights-otp-webhook-fields" class="${mode === 'DUMMY_OTP' ? 'hidden' : ''} space-y-3 mb-4 pl-3 border-l-2 border-slate-100">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">OTP Delivery Webhook URL</label>

@@ -12,6 +12,7 @@ See Section 1.2 (Configure Consent Manager) of the System Design document, linke
 ## What's New
 
 - **Python port:** [Intelehealth](https://intelehealth.org/), a tech nonprofit delivering quality healthcare where there is no doctor, now maintains a Python (FastAPI) port of TSI DPDP CMS for organisations that prefer a leaner Python stack. [Read more](#partners--community-ports)
+- **v0.6 (in development):** operator MFA, roles and tenant isolation, a tamper-evident audit ledger, consent capture evidence, access/correction requests and nominations, purpose lifecycle, legal holds and Board breach intimation, and guidance on opaque principal IDs. See [what's new and how to upgrade](RELEASE_NOTES.md).
 - **Latest release:** [v0.5.4](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.4). See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 
 ## Introduction
@@ -102,6 +103,8 @@ Pick the guide for your role:
 | Compliance officers, DPOs, and the engineers configuring policy with them | [Implementation Guide](docs/guides/implementation-guide.md) | Data discovery, RoPA authoring, JSON policy compilation, DPIA, and the policy publishing/lifecycle workflow. |
 | Developers at Data Fiduciaries/Processors integrating the client API | [System Integration Guide](docs/guides/system-integration-guide.md) | Authentication, permission scopes, and the policy/consent/grievance/purge endpoints for capturing consent and validating processing in real time. |
 | Developers consuming notification and purge events after the fact | [Webhook Integration Guide](docs/guides/webhook-integration-guide.md)<br><br>[Client Polling Integration Guide](docs/guides/polling-integration-guide.md) | Push delivery (HMAC-SHA256-signed webhooks for Notification/Purge/OTP, v0.4.8+) and its reliable pull-based counterpart - the reconciliation path for anything a missed webhook delivery would drop. |
+| DPOs, security reviewers and DevOps turning on the v0.6 safeguards | [Access control rollout](docs/security/access-control-rollout.md)<br><br>[Consent capture](docs/security/consent-capture.md)<br><br>[Access and correction requests](docs/security/rights-requests.md)<br><br>[Nominations and purpose lifecycle](docs/security/nominations-and-purpose-lifecycle.md)<br><br>[Erasure, retention and breach](docs/security/erasure-retention-breach.md) | Shadow-mode rollout of roles and tenant checks, what consent evidence is recorded, the rights workflows, legal holds and the Board deadline, and the settings that control each. |
+| DevOps and security owners | [Key management](docs/security/KEY_MANAGEMENT.md)<br><br>[Log and record retention](docs/security/LOG_RETENTION.md) | Which secret protects what, what is lost if one goes missing, the required infrastructure controls (disk encryption, TLS, backups) and how long each record is kept. |
 | Developers building from source | [Local Development Guide](docs/guides/local-development-guide.md) | Prerequisites (JDK, Maven, Docker, Jetty) and step-by-step build/run instructions, for both Docker and non-Docker setups. |
 | DevOps / system administrators going to production | [Production Deployment Guide](docs/guides/production-deployment-guide.md) | Secrets management, running as a non-root user, disk encryption, data-tier isolation, and offsite backups, for both Docker and Binary installs. |
 | DevOps / system administrators protecting the data | [Backup and Restore Guide](docs/guides/backup-and-restore-guide.md) | What to back up (database, reports, encrypted `.env` and signing keystore), scheduling, proving a backup restores, and disaster recovery, using the scripts in [`backup/`](backup/). |
@@ -128,18 +131,21 @@ The TSI DPDP CMS lets administrators export system-generated configurations, aud
 ## Privacy, Security, & Compliance
 
 * **Regulatory Compliance:** Built in accordance with India's Digital Personal Data Protection (DPDP) Act, 2023, with signed, immutable audit and compliance log entries and verifiable consent withdrawal and erasure workflows.
+* **Principal IDs:** send opaque IDs (a customer number or UUID), not email addresses or phone numbers, as the principal ID. The CMS stores IDs as plain text in its database and audit log, so the deployment must encrypt the disk and backups and use TLS. See [Key management](docs/security/KEY_MANAGEMENT.md).
+* **Rights portal:** the portal in `web/rights` is an evaluation tool for implementers. Real data principals use your own application, which calls the CMS API.
 * **Security Patching:** This repository actively patches and mitigates vulnerabilities. Standard deployments should use version 0.5.3 or later. Version 0.5.1 fixed missing server-side authentication on the admin and DPO console pages and on the first-run setup endpoint (CVE-2026-84840 / CVE-2026-84841); version 0.5.3 fixed the API dispatcher validating request payloads before authentication, which let unauthenticated callers enumerate parameter names (CVE-2026-108810, Low). See the [release notes](RELEASE_NOTES.md) for details and [`SECURITY.md`](SECURITY.md) for how to report vulnerabilities.
 * **Community Conduct:** Participation in the project is governed by the [Code of Conduct](CODE_OF_CONDUCT.md), which sets expected behavior and explains how to report harassment or abuse.
 
 ## Testing
 
-- **Regression tests:** [`docs/test-cases/regression-test-cases.md`](docs/test-cases/regression-test-cases.md) is a living, versioned suite of test cases covering the admin/DPO consoles, the data principal rights portal, the client and public APIs, webhooks, and the full purge lifecycle.
+- **Regression tests:** [`tests/regression-test-cases.md`](tests/regression-test-cases.md) is a living, versioned suite of test cases covering the admin/DPO consoles, the data principal rights portal, the client and public APIs, webhooks, and the full purge lifecycle.
+- **Unit and database tests:** `mvn clean test` runs the JUnit suite in [`tests/java`](tests/java). Tests that need PostgreSQL skip themselves unless `POSTGRES_HOST`, `POSTGRES_DB` and `DB_ENCRYPTION_KEY` are set; [`tests/README.md`](tests/README.md) explains how to run them against a throwaway database, including in enforce mode.
 - **Load testing:** a runnable [Apache JMeter](https://jmeter.apache.org/) load test lives in [`tests/`](tests/), covering the full consent lifecycle against the client API: notice/policy retrieval, consent capture, processing validation (`validate_consent`), rights/dashboard reads, withdrawal/erasure, grievances, purge polling, and the full guardian OTP login round trip. See [`tests/README.md`](tests/README.md) for a quick-start and [`tests/load-testing-plan.md`](tests/load-testing-plan.md) for methodology and sizing guidance.
 - **Production setup rehearsal:** [`tests/prod-setup-test.sh`](tests/prod-setup-test.sh) follows the Docker steps of the [Production Deployment Guide](docs/guides/production-deployment-guide.md) in a throwaway copy of the repo, for both a database in Docker and a database on a different server, and checks the result (non-root user, production mode, database SSL, database not exposed). Run `mvn package`, then `tests/prod-setup-test.sh`. See [`tests/README.md`](tests/README.md#production-setup-rehearsal).
 
 ## Release Notes
 
-Check out [v0.5.4 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.4)
+Check out [v0.5.4 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.4). The v0.6 changes are described under "v0.6 (in development)" in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 

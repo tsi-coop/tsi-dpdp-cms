@@ -23,6 +23,9 @@ exhaustive combinatorial suite - add edge cases as they matter.
   or the JMeter suite in `tests/`), no browser needed. `UI`: requires a
   console/portal walkthrough; no browser-automation tooling exists in this
   repo yet, so these are manual today.
+- **Automated** (v0.6 cases) - names the JUnit class in `tests/java` that runs the case. `mvn clean test` runs it; the database
+  classes need PostgreSQL (see `tests/README.md`) and skip themselves without it. Run them in default mode **and** with
+  `ACCESS_CONTROL_MODE=enforce MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict`. A case with no `Automated` line is manual.
 - **Priority** - `Critical` (release-blocking if broken), `High`, `Medium`.
 - **Last Verified** - `version · date · pass/fail`. Update this field, not
   the test case itself, each time you run it. A blank field means never
@@ -46,6 +49,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 7. [Webhooks](#7-webhooks)
 8. [Purge Lifecycle (End-to-End)](#8-purge-lifecycle-end-to-end)
 9. [Cross-Cutting / Non-Functional](#9-cross-cutting--non-functional)
+10. [v0.6 additions](#10-v06-additions)
 
 ---
 
@@ -106,7 +110,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 ### TC-ADM-03: Console pages require a server-side session, not just client JS
 **Type:** API · **Priority:** Critical
 **Steps:** `curl` any `/console/admin/*.html` or `/console/dpo/*.html` page directly, no session cookie.
-**Expected Result:** `302` redirect to login, not `200` with page content. (Regression check for the v0.5.1 fix - [`docs/security-fixes/1.md`](../security-fixes/1.md), [`3.md`](../security-fixes/3.md).)
+**Expected Result:** `302` redirect to login, not `200` with page content. (Regression check for the v0.5.1 fix - [`docs/security-fixes/1.md`](../docs/security-fixes/1.md), [`3.md`](../docs/security-fixes/3.md).)
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - all console pages 302 without a session: {302}
 
 ### TC-ADM-04: Logout clears the session
@@ -158,7 +162,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 ### TC-ADM-11: API key scope enforcement
 **Type:** API · **Priority:** Critical
 **Steps:** Using a `READ`-only key, call a `WRITE`-scoped function (e.g. `record_consent`).
-**Expected Result:** `401 Unauthorized` - insufficient scope. Cross-reference [`docs/api/openapi.yaml`](../api/openapi.yaml)'s `x-tsi-scope` per function.
+**Expected Result:** `401 Unauthorized` - insufficient scope. Cross-reference [`docs/api/openapi.yaml`](../docs/api/openapi.yaml)'s `x-tsi-scope` per function.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - READ-only key: READ -> 200, WRITE (record_consent) -> 401, PURGE -> 401
 
 ### TC-ADM-12: Revoke an API Key
@@ -375,7 +379,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 ### TC-DPO-16: Configure and activate a Notification webhook
 **Type:** UI · **Priority:** High
 **Steps:** Settings → Webhooks → Notification card, set an HTTPS URL + secret, Save, Activate.
-**Expected Result:** Saved; a subsequent `notification_created` event delivers to the URL, signed per [Webhook Integration Guide](../guides/webhook-integration-guide.md) §4.
+**Expected Result:** Saved; a subsequent `notification_created` event delivers to the URL, signed per [Webhook Integration Guide](../docs/guides/webhook-integration-guide.md) §4.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - NOTIFICATION webhook saved and active; notification_created delivered over TLS, signed | https URL + secret saved through the Webhooks card ("NOTIFICATION webhook saved."); stored https://hooks.test/hook:true
 
 ### TC-DPO-06d: Breach lists who was notified and what they were sent
@@ -437,7 +441,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 ### TC-RTS-01: Login with Dummy OTP
 **Type:** UI · **Priority:** Critical
 **Preconditions:** Server **not** running with `TSI_DPDP_CMS_ENV=production` (see TC-RTS-01a for production).
-**Steps:** `/rights/index.html`, select org, enter any ID, OTP `1234`.
+**Steps:** `/rights/index.html`, select org, enter any ID (v0.6: the field is "Data Principal ID" for every OTP mode, with an opaque placeholder), OTP `1234`.
 **Expected Result:** Redirected to dashboard; session token stored in `sessionStorage`.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - org selected, ID + OTP 1234 -> /rights/dashboard.html; sessionStorage keys: pp_policies,pp_sync_token,pp_token,pp_persona,pp_user_id,pp_pca_qr_enabled,pp_fiduciary_id,pp_fiduciary_name; evaluation-mode hint shown
 
@@ -511,7 +515,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 
 ### TC-RTS-12: Verifiable parental consent (Section 9)
 **Type:** UI · **Priority:** High
-**Steps:** Trigger the minor/guardian flow (age category `MINOR`) with guardian OTP identification (see the [Parental Consent Guide](../guides/parental-consent-guide.md)).
+**Steps:** Trigger the minor/guardian flow (age category `MINOR`) with guardian OTP identification (see the [Parental Consent Guide](../docs/guides/parental-consent-guide.md)).
 **Expected Result:** `record_parent_consent` logs the verification; consent then recorded against the child's principal ID with `verification_log_id` linked.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - tour parental-consent flow end to end (API calls: get_policy:200, record_parent_consent:201, link_user:200, record_consent:201): guardian OTP step -> 5 purposes -> record_parent_consent logged (02bf850d…), principal flagged MINOR|9990001111|VERIFIED, consent stored with verification_log_id linked and policy version 1.0
 
@@ -519,7 +523,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 
 ## 5. Client API
 
-Full request/response contract: [`docs/api/openapi.yaml`](../api/openapi.yaml)
+Full request/response contract: [`docs/api/openapi.yaml`](../docs/api/openapi.yaml)
 (viewer: `docs/api/index.html`). These cases check behavior, not schema
 shape - the OpenAPI spec is the source of truth for the latter.
 
@@ -633,8 +637,9 @@ shape - the OpenAPI spec is the source of truth for the latter.
 ### TC-CLI-13: `update_purge_status` doesn't check request ownership
 **Type:** API · **Priority:** High
 **Steps:** Using Fiduciary A's API key (PURGE scope), call `update_purge_status` with an `id` belonging to Fiduciary B.
-**Expected Result:** **Known, accepted gap** (documented in the System Integration Guide) - the update succeeds regardless of fiduciary ownership. This case exists to confirm it's still true, not to flag it as new.
-**Last Verified:** v0.5.4 · 2026-10-27 · pass - known/accepted gap still true: Alpha's PURGE-scope key updated Beta's purge request (200); status now PURGE_IN_PROGRESS
+**Expected Result:** **Changed in v0.6.** The update is refused with `403` ("does not belong to your fiduciary"), and nothing changes. (In v0.5.x this was a known gap and the update succeeded.) See TC-V06-30.
+**Automated:** `ByIdOwnershipDbTest#purge_apiKeyOfAnotherFiduciaryCannotChangeIt`, `PurgeAndHoldsDbTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit, default and enforce modes). v0.5.4 result (gap still present) is superseded.
 
 ### TC-CLI-14: `list_purge_requests` includes orphaned requests
 **Type:** API · **Priority:** Medium
@@ -674,7 +679,7 @@ shape - the OpenAPI spec is the source of truth for the latter.
 
 ## 7. Webhooks
 
-Full contract: [Webhook Integration Guide](../guides/webhook-integration-guide.md).
+Full contract: [Webhook Integration Guide](../docs/guides/webhook-integration-guide.md).
 
 ### TC-WHK-01: Signature verification (HMAC-SHA256 over raw body)
 **Type:** API · **Priority:** High
@@ -761,8 +766,9 @@ Full contract: [Webhook Integration Guide](../guides/webhook-integration-guide.m
 ### TC-PRG-02: Legal hold on a purge request
 **Type:** API · **Priority:** Medium
 **Steps:** Call `update_purge_status` with `status: LEGAL_HOLD_APPLIED`.
-**Expected Result:** Accepted (not server-restricted to DPO-only today - by design, per the guide's caveat); `PURGE_ONHOLD_NOTIFICATION` fires.
-**Last Verified:** v0.5.4 · 2026-10-27 · pass - app key accepted LEGAL_HOLD_APPLIED (not DPO-only); PURGE_ONHOLD notification created
+**Expected Result:** **Changed in v0.6.** An API key (or an operator) gets `403`: cancelling a purge and placing it on legal hold are the DPO's decisions. A DPO or ADMIN can set it from the console; `PURGE_ONHOLD_NOTIFICATION` fires. For holds with an end date see TC-V06-35.
+**Automated:** `PurgeAndHoldsDbTest#cancellingAndLegalHoldAreTheDposDecisionAndInputIsValidated`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit). v0.5.4 result (accepted from an app key) is superseded.
 
 ### TC-PRG-03: Cancel a purge request
 **Type:** UI + API · **Priority:** Medium
@@ -835,7 +841,7 @@ Full contract: [Webhook Integration Guide](../guides/webhook-integration-guide.m
 ### TC-XCUT-09: Unauthenticated admin/DPO requests get 401, not schema errors
 **Type:** API · **Priority:** Critical
 **Steps:** With **no** `Authorization` header, `POST` `{"_func": "<func>"}` (no other fields) to each of: `/api/v1/admin/job` (`list_jobs`, `create_job`), `/api/v1/admin/apikey` (`list_api_keys`, `generate_api_key`), `/api/v1/admin/operator` (`list_users`, `create_user`), `/api/v1/admin/ropa` (`list_entries`, `create_entry`). Repeat each with `Authorization: Bearer invalid`.
-**Expected Result:** Every request returns `401` with `Unauthorized`. The body never contains `required property` or any field name. (Regression for [security fix 4](../security-fixes/4.md).)
+**Expected Result:** Every request returns `401` with `Unauthorized`. The body never contains `required property` or any field name. (Regression for [security fix 4](../docs/security-fixes/4.md).)
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - all unauthenticated admin calls -> 401 with no schema field names
 
 ### TC-XCUT-10: Authenticated requests still get schema validation errors
@@ -875,3 +881,203 @@ Full contract: [Webhook Integration Guide](../guides/webhook-integration-guide.m
 **Steps:** Build the WAR and run it. Compare the `<version>` in `pom.xml` with: `WEB-INF/classes/version.properties` in the WAR, the startup log line, a generated evidence certificate's `system_metadata.software_version`, the footer of a breach report PDF, and the `X-TSI-Generated-By` header on a ROPA / job CSV download.
 **Expected Result:** All show the same version. Nothing hardcodes a version elsewhere. With `BRAND_NAME` set, the artifacts show the brand name with that version (see TC-ADM-17).
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - single source pom.xml=0.5.4 -> WAR version.properties, startup log, certificate system_metadata.software_version=0.5.4, breach PDF footer, export header all agree | export download header: [('X-TSI-Generated-By', 'TSI DPDP CMS v0.5.4')]
+
+---
+
+## 10. v0.6 additions
+
+Added for v0.6.0. Cases with an **Automated** line were run on 2026-11-14 as JUnit tests against PostgreSQL 17, in default mode and
+with `ACCESS_CONTROL_MODE=enforce MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict` (247 tests, 0 failures, 12 skipped for the other mode),
+and the unit tests also without a database (158, 0 failures). Manual (UI and Ops) cases have **not** been run.
+
+### Operator access
+
+### TC-V06-01: MFA enrolment, replay and lockout
+**Type:** API · **Priority:** Critical
+**Steps:** An operator starts enrolment, confirms with a valid TOTP code, then logs in and answers the MFA challenge. Re-send the same code. Send 5 wrong codes.
+**Expected Result:** Enrolment needs a valid code; a code is accepted only once (replay refused); 5 wrong codes lock MFA for 15 minutes; enrolling revokes the operator's earlier sessions.
+**Automated:** `OperatorMfaDbTest`, `TotpTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-02: MFA is mandatory in production for ADMIN, DPO and AUDITOR
+**Type:** API · **Priority:** Critical
+**Preconditions:** `TSI_DPDP_CMS_ENV=production` or `MFA_ENFORCE=true`.
+**Steps:** Log in as an ADMIN or DPO with no MFA enrolled. Call any function other than enrolment.
+**Expected Result:** The login returns an enrol-only token; every other call is refused until enrolment completes. An OPERATOR is never prompted. A correct password followed by the MFA step does not count as a failed login.
+**Automated:** `OperatorMfaDbTest#whenEnforcedAdminAndDpoGetEnrolOnlyTokenUntilEnrolled`, `OperatorAccessPolicyTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-03: Sessions end when they should
+**Type:** API · **Priority:** High
+**Steps:** Log out; change a password; deactivate an operator; restart the server; present a token issued by v0.5 (no session id).
+**Expected Result:** The old token is refused in each case, including after a restart (revocation is stored in the database). A v0.5 token is accepted for at most the session lifetime (`TOKEN_TTL_MINUTES`, default 480) and not at all once MFA is enforced.
+**Automated:** `OperatorMfaDbTest`, `JWTUtilOperatorTokenTest`, `OperatorAccessPolicyTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-04: Roles and tenant binding: shadow mode only reports
+**Type:** API · **Priority:** Critical
+**Preconditions:** `ACCESS_CONTROL_MODE` unset or `shadow`.
+**Steps:** As a DPO, call an ADMIN-only function, and send another fiduciary's `fiduciary_id`.
+**Expected Result:** Nothing is blocked or rewritten. `ACCESS_SHADOW_DENY` / `ACCESS_SHADOW_TENANT` audit events appear, once per person and case per hour.
+**Automated:** `AccessControlDbTest#shadow_*`, `AccessControlTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-05: Roles and tenant binding: enforce mode blocks
+**Type:** API · **Priority:** Critical
+**Preconditions:** `ACCESS_CONTROL_MODE=enforce`.
+**Steps:** As in TC-V06-04; also as an AUDITOR (read and write); also with an unmapped function; also as ADMIN.
+**Expected Result:** The DPO gets `403` for admin-only functions and a foreign `fiduciary_id` is replaced with their own. AUDITOR reads but cannot write. An unmapped function is denied. ADMIN is never restricted. An AUDITOR account can be created only in enforce mode.
+**Automated:** `AccessControlDbTest#enforce_*`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-06: By-id requests cannot cross fiduciaries
+**Type:** API · **Priority:** Critical
+**Steps:** From fiduciary B (operator, API key and principal token), request fiduciary A's policy draft, purge request, grievance, consent record, notification receipt, audit row; try `link_user` and `record_consent` against A's principals.
+**Expected Result:** Every one is refused (403/404) and nothing of A's changes. Assignments must name an operator of the same fiduciary. A client API key's body `fiduciary_id` is ignored in favour of its own (reported in shadow, overwritten in enforce).
+**Automated:** `ByIdOwnershipDbTest`, `RecordOwnershipTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### Audit and policy
+
+### TC-V06-07: The audit trail is append-only and tamper-evident
+**Type:** API · **Priority:** Critical
+**Steps:** Try `UPDATE`, `DELETE` and `TRUNCATE` on `audit_logs`; write entries concurrently; alter a stored context; run `verify_audit_chain`; queue an oversized entry.
+**Expected Result:** All three statements are refused by the database. Concurrent writers produce one linear chain. A change is detected and the verdict recorded. One unstorable entry does not block the rest.
+**Automated:** `AuditLedgerDbTest`, `AuditChainTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-08: A policy change is seen by every instance within the cache lifetime
+**Type:** API · **Priority:** High
+**Steps:** Publish, withdraw or archive a policy; read it again within `POLICY_CACHE_TTL_SECONDS` (default 30).
+**Expected Result:** The change is visible no later than the cache lifetime, and the cache never keeps an entry past it.
+**Automated:** `PolicyCacheTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### Consent capture
+
+### TC-V06-09: Consent evidence records what the CMS observed and what the caller claimed
+**Type:** API · **Priority:** Critical
+**Steps:** `record_consent` via an API key (with a body `user_agent`/`ip_address`), via a principal token, and via the wallet; then change the consent.
+**Expected Result:** User agent comes from the header and the address from the connection (`X-Forwarded-For` only from `TRUSTED_PROXY`); claims go to `client_metadata`; `capture_mechanism` is API_INTEGRATION / PRINCIPAL_PORTAL / WALLET; each record links to the one it replaced (`supersedes_record_id`). A missing `consent_granted` is a `400`, not a `500`.
+**Automated:** `ConsentCaptureDbTest`, `ClientIpTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-10: Explicit choices and minors, warn versus strict
+**Type:** API · **Priority:** Critical
+**Steps:** Record consent that leaves a declared purpose unanswered; record a MINOR's consent with and without a verified guardian log; call `link_user` declaring an age category.
+**Expected Result:** `warn` (default): accepted and a `CONSENT_CAPTURE_WARNING` event is logged. `strict`: rejected with `400`. Only `record_parent_consent` marks a MINOR; `link_user` ignores declared age fields and never downgrades a MINOR; child and guardian must differ.
+**Automated:** `ConsentCaptureDbTest`, `ConsentCaptureTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-11: Date-only consent expiry
+**Type:** API · **Priority:** High
+**Steps:** Record consent for a purpose with `consent_expiry` of `2027-01-31`; run validation and the retention engine; use a purpose with no expiry after one that has one.
+**Expected Result:** No error. A date ends the consent at the start of the next day (UTC); an unreadable value counts as expired; a purpose with no expiry does not inherit the previous purpose's.
+**Automated:** `ExpiryDatesTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### Grievances, rights requests, nominations
+
+### TC-V06-12: Grievances carry a reference, channel and validated attachments
+**Type:** API · **Priority:** High
+**Steps:** Submit a grievance (API key and principal token); link a consent record of another principal; upload a PDF, an oversized file, a wrong type, a sixth file, and a file to a closed grievance; submit feedback before and after resolution, and twice.
+**Expected Result:** A `GRV-year-nnnnnn` reference, the channel from the authenticated path, and the fiduciary's DPO assigned. A foreign consent record is refused; bad, oversized or surplus attachments are refused (400/409/413); feedback is the owner's, only after resolution, only once. A key cannot file against another fiduciary.
+**Automated:** `GrievanceDbTest`, `GrievanceRulesTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-13: Access and correction requests
+**Type:** API · **Priority:** Critical
+**Steps:** Submit ACCESS and CORRECTION requests as a principal, as an API key and as a DPO; submit another type; read and list as another principal, another fiduciary's staff and an unassigned operator; move the status; close without a note; with `ACCESS_SLA_DAYS` set and not set, age a request.
+**Expected Result:** `RR-year-nnnnnn` reference, no invented deadline (`due_date` null unless configured), the fiduciary's DPO assigned. Only ACCESS and CORRECTION are accepted. A principal sees only their own; other tenants are refused; an operator works only assigned requests; the DPO's view carries the data map. Status moves forward only and closing needs a note of 10+ characters. "Overdue" appears only when a deadline exists.
+**Automated:** `RightsDbTest`, `RightsRulesTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-14: Nominations (s.14)
+**Type:** API · **Priority:** High
+**Steps:** Create a nomination; read it as the principal and as staff; check the database and the audit trail; create invalid ones, a sixth, a future-start one; revoke twice; run the daily sweep after the end date.
+**Expected Result:** Name and contact are encrypted in the database; the principal sees them in full, a DPO sees a masked contact, an operator sees nothing; the audit trail holds the nomination id only. Invalid input is refused; at most 5 current nominations (409); a future start is PENDING; revoking is final; the sweep expires and activates by date.
+**Automated:** `NominationsDbTest`, `PurposeAndNominationRulesTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### Purposes, purges, legal holds
+
+### TC-V06-15: Closing a purpose, and withdrawal implications
+**Type:** API · **Priority:** High
+**Steps:** As a DPO, close a purpose (erase, then de-identify); try to grant it with `record_consent`; reopen; call `get_withdrawal_implications`; send an erasure request.
+**Expected Result:** Everyone who granted it has it withdrawn through the normal chained path and is notified; a new grant is `403`; the later purge carries the DPO's `action` (ERASE or DE_IDENTIFY), but a principal's own erasure request is always ERASE. Withdrawal implications come from the published policy (consequence, mandatory flag, legal basis, retention).
+**Automated:** `PurposeLifecycleDbTest`, `PurposeAndNominationRulesTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-16: Purge confirmation rules
+**Type:** API · **Priority:** Critical
+**Steps:** Confirm a purge with: the assigned app's key; another app's key; another fiduciary's key; an operator; with `records_affected`; with an unknown status; to `PURGE_CANCELLED` or `LEGAL_HOLD_APPLIED` from a key; change a completed purge.
+**Expected Result:** Only the assigned app (or an operator of the fiduciary) may confirm (403 otherwise). `confirmed_by`, type and time come from the credential. `records_affected` is stored as `claimed_record_count`, a claim. Unknown status is `400`; cancel and hold are DPO-only (`403`); completed and cancelled are final (`409`).
+**Automated:** `PurgeAndHoldsDbTest`, `PurgeRulesTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-17: `erasure_request` through an API key needs a consent record
+**Type:** API · **Priority:** High
+**Steps:** Call `erasure_request` with an API key for a `user_id` that has no consent record with the fiduciary, then for one that does.
+**Expected Result:** `404` for the first, normal handling for the second; no erasure or purge rows are created for the first.
+**Automated:** `PurgeAndHoldsDbTest#anIntegrationCanOnlyEraseSomeoneItHoldsConsentFor`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-18: Legal holds
+**Type:** API · **Priority:** High
+**Steps:** Place holds with and without a reason, with a past and a 3-year end date, as an operator and as a DPO; place one for the principal, one for a single purpose; let a purge fall due; release or let the end date pass; add a second hold.
+**Expected Result:** A hold needs a reason (10+ characters) and an end date of at most 730 days, and only a DPO or ADMIN may place it. Existing and later purges for the principal (or the one purpose) become `LEGAL_HOLD_APPLIED` and are not released to the processor. Releasing, or the daily sweep after the end date, resumes them. A purge put on hold by hand (no hold record) is never resumed automatically. Another active hold keeps a purge held.
+**Automated:** `PurgeAndHoldsDbTest`, `LegalHoldRulesTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-19: Purge completion deadline
+**Type:** API · **Priority:** Medium
+**Steps:** With `PURGE_COMPLETION_SLA_DAYS` unset, age an unconfirmed purge; set it, age again; run the daily job twice; put a purge on hold.
+**Expected Result:** Unset: nothing is flagged. Set: the purge is flagged once (`PURGE_SLA_BREACHED`, one notice per fiduciary to the DPO) and shows "Overdue" in Compliance. A purge on legal hold is not late.
+**Automated:** `PurgeAndHoldsDbTest#purgesStillUnconfirmedPastTheLimitAreFlaggedOnceAndTheDpoIsTold`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-20: Breach intimation to the Data Protection Board
+**Type:** API · **Priority:** High
+**Steps:** Report a breach; record the intimation as the breach's DPO, again, as another fiduciary's DPO, with a time in the future and one before detection; age the breach to near and past the deadline and run the sweep twice.
+**Expected Result:** The Board deadline (detection plus the fiduciary's window, default 72 h) is set at report time. The DPO can record the intimation once and only for their own breach; a late intimation is marked late; a future time or one before detection is refused. The DPO is alerted once when under 12 hours remain and once when the deadline is missed. Breaches reported before v0.6 show "not tracked" and are never flagged.
+**Automated:** `BreachBoardDbTest`, `BoardIntimationTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### TC-V06-21: Every column holding a principal's identity is in the erasure inventory
+**Type:** API · **Priority:** Medium
+**Steps:** Run the build after adding a table or column that holds a principal id.
+**Expected Result:** `ErasureTargetsTest` fails until the column is listed in `ErasureTargets` (it records what is intended on erasure; it executes nothing).
+**Automated:** `ErasureTargetsTest`
+**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
+
+### Manual cases (UI and operations): not yet run
+
+### TC-V06-22: Rights portal is labelled as an evaluation tool and accepts any principal ID
+**Type:** UI · **Priority:** High
+**Steps:** Open `/rights/index.html` and, after login, `/rights/dashboard.html`. Select an organisation in each OTP mode (Dummy, Email, Mobile). Enter an opaque ID such as `c-98a7b6c5`.
+**Expected Result:** An "Evaluation portal" banner shows on both pages. The field is "Data Principal ID" (text, opaque placeholder, a note against email or phone IDs) in every mode; the hint after "Send OTP" does not mention email or mobile. Login works with the opaque ID.
+**Last Verified:** not run
+
+### TC-V06-23: DPO console: Rights Requests, Purposes, Legal holds, Compliance evidence
+**Type:** UI · **Priority:** High
+**Steps:** As a DPO: work a rights request end to end; close and reopen a purpose; in Compliance place and release a legal hold; open a confirmed purge. As an OPERATOR open Compliance.
+**Expected Result:** Each screen works as in TC-V06-13/15/16/18. A confirmed purge shows who confirmed it, when, and the processor's count labelled as its own figure; "Overdue" and "De-identify" tags show when relevant. The operator is not offered Cancel or Legal hold, and has no Legal holds section.
+**Last Verified:** not run
+
+### TC-V06-24: DPO dashboard shows both breach clocks, and MFA enrolment works in the console
+**Type:** UI · **Priority:** High
+**Steps:** Report a breach; open the dashboard and the breach page; record the Board intimation. Log in as an ADMIN or DPO with `MFA_ENFORCE=true`.
+**Expected Result:** Two clocks per breach (principals and Board); the intimation form works once. The login flow shows the QR code, accepts the first code, and later logins ask for a code.
+**Last Verified:** not run
+
+### TC-V06-25: Docker passes the v0.6 settings through
+**Type:** Ops · **Priority:** Medium
+**Steps:** Set `MFA_ENFORCE=true` and `ACCESS_CONTROL_MODE=enforce` in `.env`, run `docker compose up`, and check the startup log and a login.
+**Expected Result:** The startup line reports enforcement and MFA is required. With all of them blank the defaults apply (shadow, warn, no deadlines).
+**Last Verified:** not run
+
+### TC-V06-26: Upgrade from v0.5.4
+**Type:** Ops · **Priority:** Critical
+**Steps:** Restore a v0.5.4 database, apply `db/18` to `db/26` twice, deploy the v0.6.0 WAR.
+**Expected Result:** Every script runs cleanly twice; the audit chain verifies; existing consents, policies and grievances are intact; users are signed in again; the post-upgrade checks in the Production Deployment Guide pass.
+**Last Verified:** not run (migrations 01-26 were applied from scratch and 18-26 re-run on a throwaway database on 2026-11-14; an upgrade from a populated v0.5.4 database was not tried)

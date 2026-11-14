@@ -113,7 +113,7 @@ Wait about 30 seconds.
 docker compose logs jetty_app | grep "Service started"
 ```
 
-> You should see something like `TSI DPDP CMS v0.5.4 Service started in local environment`.
+> You should see something like `TSI DPDP CMS v0.6.0 Service started in local environment`.
 
 If it does not appear, look at the end of the log with `docker compose logs --tail 40 jetty_app`. The error is usually a missing `.env` value from Step 2.
 

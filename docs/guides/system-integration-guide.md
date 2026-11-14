@@ -41,8 +41,8 @@ Every `_func` below requires one of three scopes, enforced on every call against
 
 | Scope | Functions |
 |---|---|
-| `WRITE` | `record_consent`, `record_parent_consent`, `link_user`, `withdraw_consent`, `submit_grievance`, `mark_notification_read`, `erasure_request` |
-| `READ` | `get_active_consent`, `list_consent_history`, `get_consent_record_details`, `validate_consent`, `get_grievance`, `list_user_grievances`, `get_policy`, `get_active_policy`, `list_notifications`, `list_active_policies` |
+| `WRITE` | `record_consent`, `record_parent_consent`, `link_user`, `withdraw_consent`, `submit_grievance`, `mark_notification_read`, `erasure_request`, `submit_grievance_feedback`, `upload_grievance_attachment`, `submit_rights_request`, `create_nomination`, `revoke_nomination` |
+| `READ` | `get_active_consent`, `list_consent_history`, `get_consent_record_details`, `validate_consent`, `get_grievance`, `list_user_grievances`, `get_policy`, `get_active_policy`, `list_notifications`, `list_active_policies`, `get_grievance_attachment`, `get_rights_request`, `list_user_rights_requests`, `list_nominations`, `get_withdrawal_implications`, `list_closed_purposes` |
 | `PURGE` | `list_purge_requests`, `update_purge_status` |
 
 This is enforced today, not aspirational - request only the scopes your integration actually needs when your fiduciary's admin issues your App's key. A processor that only validates consent, for instance, needs `READ` alone.
@@ -62,6 +62,26 @@ Each resource is one endpoint; which operation runs is chosen by the `_func` fie
 Always call the base path shown above. Anything appended after it (e.g. `/api/v1/client/consent/validate`) is parsed but discarded by the router - it has no effect on which function runs, and only `_func` in the body decides that. Don't rely on a trailing path segment to route your request.
 
 ## 5. Consent Collection
+
+### Choosing the principal ID
+
+`user_id` is whatever your application sends. **Do not use email addresses or phone numbers as the principal ID.** Send an opaque ID from your own system, such as a customer number or a UUID, and keep the link to the person in your own database.
+
+**Prefix the ID with the kind of principal.** The CMS identifies a principal by the ID together with the fiduciary, so two systems that both have a "1234" would silently share one consent record. A short, fixed prefix per kind keeps them apart:
+
+| Kind of principal | Example |
+|---|---|
+| Customer | `c-1234` |
+| Employee | `e-2345` |
+| Patient | `p-3455` |
+
+- **One person, two kinds, two principals.** Someone who is both a customer and an employee is treated as two principals (`c-1234` and `e-2345`), each with their own consent history. That is deliberate: what a person agreed to as a customer says nothing about their employment.
+- **Keep the prefix neutral.** The ID appears in plain text in the database, the audit trail and webhook payloads, so it must not reveal anything sensitive. A prefix such as `p-` for "patient" tells anyone who sees a log line that the person is a patient. Where the kind itself is sensitive, use an arbitrary code that only you can read (for example `x7-3455`).
+- **Decide the format once.** Use the same case and delimiter every time (matching is exact), and never change it later: it cannot be changed without breaking the consent history.
+- **Nothing identifying in it.** No names, email addresses, phone numbers or national ID numbers, in the prefix or the rest.
+- The ID is stored in the consent records, the audit trail, webhook payloads and exports. An opaque ID does not identify anyone by itself, so a leaked copy of the CMS data reveals far less. It is still personal data, because you can link it to a person, which is why the database disk and its backups must be encrypted (see the [Production Deployment Guide](production-deployment-guide.md)).
+- Anywhere this guide shows `user_id`, `child_principal_id`, `guardian_principal_id` or `authenticated_user_id`, the value is this opaque ID.
+- The CMS does not check the format, so existing integrations keep working. This is a recommendation to follow for new ones.
 
 ### Get Active Policy
 
@@ -121,7 +141,7 @@ If the principal is a child, **your application is responsible** for collecting 
 {
   "_func": "link_user",
   "anonymous_user_id": "data_principal_xyz123",
-  "authenticated_user_id": "sat@sat.com"
+  "authenticated_user_id": "c-98a7b6c5"
 }
 ```
 
@@ -132,7 +152,7 @@ Consolidates an anonymous pre-login session's consent history onto the authentic
 ### Validate Consent
 
 ```json
-{ "_func": "validate_consent", "user_id": "sat@sat.com", "required_purpose_id": "purpose_marketing_offers" }
+{ "_func": "validate_consent", "user_id": "c-98a7b6c5", "required_purpose_id": "purpose_marketing_offers" }
 ```
 
 Lightweight boolean-style check for whether a specific purpose is currently granted - call this from your processor before acting on the data, not just once at collection time. Every successful validation is recorded (`consent_validations` table); this record is what later determines which Apps get notified when that principal's data needs to be purged (see section 8).
@@ -142,7 +162,7 @@ Lightweight boolean-style check for whether a specific purpose is currently gran
 ### Get Active Consent State
 
 ```json
-{ "_func": "get_active_consent", "user_id": "sat@sat.com" }
+{ "_func": "get_active_consent", "user_id": "c-98a7b6c5" }
 ```
 
 Full current consent state for a principal - drives a rights/preference dashboard.
@@ -150,7 +170,7 @@ Full current consent state for a principal - drives a rights/preference dashboar
 ### Withdraw Consent
 
 ```json
-{ "_func": "withdraw_consent", "user_id": "sat@sat.com", "reason": "" }
+{ "_func": "withdraw_consent", "user_id": "c-98a7b6c5", "reason": "" }
 ```
 
 `reason` is optional. You do not pass `fiduciary_id` - it's resolved from your API key.
@@ -158,10 +178,18 @@ Full current consent state for a principal - drives a rights/preference dashboar
 ### Erasure Request
 
 ```json
-{ "_func": "erasure_request", "user_id": "sat@sat.com", "reason": "" }
+{ "_func": "erasure_request", "user_id": "c-98a7b6c5", "reason": "" }
 ```
 
 Same shape as `withdraw_consent`; only the `_func` value differs, and the server-side handling is what diverges (see section 8 - this is not an immediate purge).
+
+### Access and correction requests, nominations, and closed purposes
+
+`submit_rights_request` (`type` `ACCESS` or `CORRECTION`, `description`), `get_rights_request`, `list_user_rights_requests`, `create_nomination`, `list_nominations`, `revoke_nomination`, `get_withdrawal_implications` (`policy_id`, optional `purpose_ids`) and `list_closed_purposes` are available to your App's key. The first six go to `/api/v1/client/rights`; `get_withdrawal_implications` goes to `/api/v1/client/consent`. The fiduciary always comes from your key. What each does, and what the CMS deliberately does not do (for example it holds no personal data values for an access request, and a nomination grants the nominee no access) is in [Access and correction requests](../security/rights-requests.md) and [Nominations and purpose lifecycle](../security/nominations-and-purpose-lifecycle.md).
+
+A granted purpose that the DPO has closed is refused by `record_consent` with `403`. With `CONSENT_CAPTURE_MODE=strict`, a consent that leaves a declared purpose unanswered, or a minor without a guardian verification log, is rejected (in the default `warn` mode it is accepted and logged); see [Consent capture](../security/consent-capture.md).
+
+`erasure_request` now needs an existing consent record for the principal (`404` if there is none).
 
 ### Grievances
 
@@ -169,7 +197,7 @@ Same shape as `withdraw_consent`; only the `_func` value differs, and the server
 // Submit
 {
   "_func": "submit_grievance",
-  "user_id": "sat@sat.com",
+  "user_id": "c-98a7b6c5",
   "type": "ERASURE_REQUEST",
   "subject": "Request to delete my account data",
   "description": "I would like all my personal data associated with my account to be permanently deleted from your systems as per my right to erasure.",
@@ -178,7 +206,7 @@ Same shape as `withdraw_consent`; only the `_func` value differs, and the server
 }
 
 // List a user's grievances
-{ "_func": "list_user_grievances", "user_id": "sat@sat.com" }
+{ "_func": "list_user_grievances", "user_id": "c-98a7b6c5" }
 
 // Get one
 { "_func": "get_grievance", "grievance_id": "fac73135-ab28-43e0-9cf4-5d20053e61f6" }
@@ -212,7 +240,9 @@ Design accordingly: don't build an integration that expects `erasure_request` to
 
 `PURGE_CANCELLED` means the erasure request was withdrawn before the purge ran (for example the Data Principal changed their mind). It is normally set by the DPO from the console, not by an integration. If your App receives a `purge_request_status_updated` event (or sees the status when polling) with `PURGE_CANCELLED` for a request it has not yet purged, it must not purge. A cancelled request no longer matches the `PURGE_INITIATED` filter, so apps polling `list_purge_requests` for `PURGE_INITIATED` simply stop seeing it. Do not set `PURGE_CANCELLED` on a request that is already `PURGE_COMPLETED`: the data is gone, and the record should show that.
 
-**Caveat:** the API does not validate `status` against that list, and does not check that a request belongs to your fiduciary before applying the update. Only ever call this with an `id` your App itself received from `list_purge_requests` or a `purge_request_created` event - never construct or guess an `id`. Reserve `LEGAL_HOLD_APPLIED` for genuine Section 8(1) legal-hold cases; it's not restricted to DPO-only use at the API layer today, so treat it as a status your integration should set deliberately and rarely, not a default.
+**Rules (v0.6):** the purge must belong to your App (otherwise `403`), `status` must be a known value, and a purge that is `PURGE_COMPLETED` or `PURGE_CANCELLED` is final (`409` on any later change). Through an API key you can report `PURGE_IN_PROGRESS`, `PURGE_COMPLETED` and `PURGE_FAILED`; cancelling and legal hold are the DPO's decisions. Who confirmed it and when are recorded from your key, never from the request. You may add `records_affected` (a whole number): it is stored and shown to the DPO as **your claim**, since the CMS cannot count records in your systems.
+
+Each purge request now has an `action`: `ERASE` (the default) or `DE_IDENTIFY`. When it is `DE_IDENTIFY`, de-identify the data instead of deleting it, then confirm as usual. A purge for a principal under a legal hold is not released to you until the hold ends.
 
 ## 10. Notification & Purge Polling/Webhooks
 

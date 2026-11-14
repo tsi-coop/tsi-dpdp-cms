@@ -128,7 +128,7 @@ An array of notification objects:
   {
     "id": "ntf_9f8e7d6c",
     "recipient_type": "PRINCIPAL",
-    "recipient_id": "usr_555",
+    "recipient_id": "c-555",
     "fiduciary_id": "8f2c1a90-1234-4a11-9e00-abcdef123456",
     "notification_type": "PURGE_CONFIRM_NOTIFICATION",
     "created_at": "2026-08-15T09:12:03.400Z",
@@ -198,7 +198,7 @@ informational and acknowledge rather than assume you must act.
 [
   {
     "id": "prg_1a2b3c4d",
-    "user_id": "usr_555",
+    "user_id": "c-555",
     "purpose_id": "prp_marketing_01",
     "app_id": "app_crm",
     "fiduciary_id": "8f2c1a90-1234-4a11-9e00-abcdef123456",

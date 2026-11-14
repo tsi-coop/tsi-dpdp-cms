@@ -488,6 +488,10 @@ What it cannot tell you: it only covers principals an application has flagged as
 
 Every breach reported from v0.5.4 onward carries a deadline of **detection time + 72 hours**. The DPO can shorten the window in **Settings -> Breach Notification Deadline** (1 to 72 hours; it cannot be lengthened past the statutory 72). The deadline is fixed when the breach is reported, so changing the setting later only affects new breaches. The clock runs while the incident is `OPEN` and stops the first time the DPO moves it to `CONTAINED` or `RESOLVED` - which is also when the PDF report for the Data Protection Board becomes available. The DPO Dashboard lists open incidents with a countdown and flags any past their deadline as overdue; the Breach page shows the state for every incident (counting, overdue, met, met late). It is a dashboard view only - no emails or push notifications are sent, so the DPO needs to check the Dashboard. Breaches reported before the upgrade are shown as "not tracked" rather than being given a guessed deadline.
 
+### Informing the Data Protection Board
+
+Telling the affected principals and informing the Board are two separate duties with two clocks. For every breach reported in v0.6 or later, the Board deadline is also fixed at report time (detection time plus the same window, 72 hours by default). On the breach page, **Board intimation** records when the Board was informed and the Board's reference (once only; the time cannot be in the future or before detection). The DPO is alerted once when the deadline is within 12 hours and once if it passes without a record, and the DPO Dashboard shows both clocks for each breach. Breaches reported before v0.6 are shown as "not tracked". Details: [Erasure, retention and breach](../security/erasure-retention-breach.md).
+
 ### Bulk CSV Import (Breach Notification)
 
 The reverse direction also exists: the Breach module (`_func` handlers in `Breach.java`) accepts a CSV upload of affected-principal identifiers, queued as a `BREACH_NOTIFY` background job for larger lists than the inline textarea path can handle.
@@ -497,6 +501,8 @@ The reverse direction also exists: the Breach module (`_func` handlers in `Breac
 ## 7. Production Infrastructure
 
 Once a policy is published, the runtime itself needs to be hardened before it holds real personal data in production - secrets management, non-root execution, disk encryption, network isolation, and backups. That is DevOps/system administrator territory, covered in the separate [Production Deployment Guide](production-deployment-guide.md).
+
+**Principal IDs.** Decide early which ID your application sends as the data principal's `user_id`: an opaque ID from your own system (a customer number or UUID), **not** an email address or phone number, prefixed with the kind of principal (`c-1234` customer, `e-2345` employee) so that systems with overlapping numbers never share a record; a person who is both is two principals. See [Choosing the principal ID](system-integration-guide.md#choosing-the-principal-id). The Rights Portal is an evaluation tool for implementers; real data principals use your own application.
 
 ---
 
@@ -510,3 +516,7 @@ Once a policy is published, the runtime itself needs to be hardened before it ho
 | Policy Upload | Format and validate the JSON policy file; create and publish via the DPO Console. |
 | Source Validation | Inject `X-API-Key` and `X-API-Secret` into request headers for API calls (consent verification, erasure, etc.). |
 | Data Retention | Periodically review the RoPA master list; run scripted erasure APIs. |
+| Rights Requests | Handle access and correction requests in **Rights Requests**: assign, act, record the outcome. Set `ACCESS_SLA_DAYS` / `CORRECTION_SLA_DAYS` only once counsel confirms the timelines. See [Access and correction requests](../security/rights-requests.md). |
+| Purposes and Withdrawal | Close a purpose that is no longer needed (**Purposes**), choosing erase or de-identify; write the consequence text of withdrawing each purpose. See [Nominations and purpose lifecycle](../security/nominations-and-purpose-lifecycle.md). |
+| Legal Holds | Place and release holds in **Compliance** when a court order or investigation requires data to be kept; every hold has a reason and an end date. |
+| Access and Security | Enrol every ADMIN, DPO and AUDITOR in MFA; roll out role and tenant checks in shadow mode before enforcing. See [Access control rollout](../security/access-control-rollout.md) and [Key management](../security/KEY_MANAGEMENT.md). |

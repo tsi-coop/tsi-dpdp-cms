@@ -1,7 +1,14 @@
 # Tests
 
+**How testing is organised.** [`regression-test-cases.md`](regression-test-cases.md) is the coverage
+specification: every capability, including UI and operations cases, with its last verified result. JUnit (`mvn clean test`) is the
+automated coverage: a regression case that can be automated names its JUnit class in an `Automated:` line, so the two stay linked.
+There is no hosted CI; run the suite yourself before a release (default mode, then
+`ACCESS_CONTROL_MODE=enforce MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict`, then without a database) and update the "Last Verified" lines.
+
 | Test | What it covers |
 |---|---|
+| [Regression test cases](regression-test-cases.md) | The coverage specification: every capability (consoles, rights portal, client and public API, webhooks, purge lifecycle, v0.6 additions) with its last verified result. |
 | [Load test (JMeter)](#load-test-consent-lifecycle) | Consent lifecycle against the client API. |
 | [Unit and DB tests (JUnit)](#unit-and-database-tests-junit) | Internal behaviour JMeter cannot reach: policy cache, audit hash chain, database triggers and locks. |
 | [Production setup rehearsal](#production-setup-rehearsal) | The Docker steps of the [Production Deployment Guide](../docs/guides/production-deployment-guide.md), run locally. |

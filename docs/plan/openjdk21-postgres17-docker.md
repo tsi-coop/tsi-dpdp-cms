@@ -91,7 +91,7 @@ The app image (JDK 21) has no data impact and can be updated on its own at any t
 Run on the new default stack (JDK 21 + PG 17), and repeat the essentials on JDK 21 + PG 15 (the pinned-existing case):
 
 1. **Fresh install:** empty volume, all `db/*.sql` run without errors, `app.enc_key` is set, the setup page completes.
-2. **Full regression:** the existing regression suite (`docs/test-cases/regression-test-cases.md`).
+2. **Full regression:** the existing regression suite (`tests/regression-test-cases.md`).
 3. **Java-sensitive paths:**
    - PDF generation (legal evidence certificate, ROPA PDF), including fonts, in the container.
    - Keystore load and certificate signing in `Legal.java`, with a keystore created by the older and by the JDK 21 `keytool`.

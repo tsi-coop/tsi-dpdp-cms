@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: TSI DPDP CMS Client API
-  version: "1.0.0"
+  version: "1.1.0"
   description: |
     The client API for Data Fiduciaries and Data Processors integrating consent
     capture, processing validation, the rights/dashboard, grievances,
@@ -18,7 +18,7 @@ info:
     ## Routing model (read before using this spec)
 
     This is an RPC-style API, not resource-per-URL REST: every call is
-    `POST` to one of five fixed base paths, and the JSON body's `_func`
+    `POST` to one of seven fixed base paths, and the JSON body's `_func`
     field - not the URL - selects the operation. Anything appended to a
     base path (e.g. `/api/v1/client/consent/validate`) is parsed but
     discarded by the router.
@@ -36,8 +36,18 @@ info:
 
     Every request/response field and error condition below was verified
     directly against the service source
-    (`src/org/tsicoop/dpdpcms/service/v1/{Policy,Consent,Grievance,Notification,Compliance}.java`)
-    and `InterceptingFilter.java`, not just the guides. Several real
+    (`src/org/tsicoop/dpdpcms/service/v1/{Policy,Consent,Grievance,Notification,Compliance,Rights,Purpose}.java`)
+    and `InterceptingFilter.java`, not just the guides.
+
+    **v0.6 additions (API 1.1.0):** `/rights` (access and correction
+    requests, nominations), `/purpose` (closed purposes),
+    `get_withdrawal_implications` on `/consent`, grievance feedback and
+    attachments, grievance `channel`/`reference_number`/`consent_record_id`,
+    and the purge-confirmation rules (own-app check, final states,
+    `records_affected`, `action`). Everything is additive: existing calls
+    keep working, except where an operation notes a new refusal (`403`
+    for a closed purpose, `404` for `erasure_request` with no consent
+    record, `403`/`409` on `update_purge_status`). Several real
     discrepancies between the guides' examples and actual server behavior
     surfaced during that verification and are called out explicitly below
     (e.g. `record_consent` silently ignoring `ip_address`/`timestamp`/
@@ -71,6 +81,10 @@ tags:
     description: Polling for notification events (see the Webhook guide for the push equivalent).
   - name: Compliance
     description: Purge-request polling and confirmation (PURGE scope; API key only).
+  - name: Rights
+    description: Access and correction requests (DPDP s.11, s.12) and nominations (s.14).
+  - name: Purpose
+    description: Purposes the DPO has closed (no new consent can be granted for them).
 
 paths:
   /policy:
@@ -127,7 +141,7 @@ paths:
         Consent operations (record_consent / record_parent_consent /
         get_active_consent / get_consent_record_details /
         list_consent_history / link_user / validate_consent /
-        withdraw_consent / erasure_request)
+        withdraw_consent / erasure_request / get_withdrawal_implications)
       description: |
         Unlike `/policy`, every function here resolves `fiduciary_id`
         automatically when omitted from the body: body value, else the
@@ -139,6 +153,16 @@ paths:
         **Principal-JWT guard:** if authenticated via Bearer JWT, the
         `user_id` in the body must match the token's subject, or the call
         is rejected with 403 regardless of which function was requested.
+
+        **v0.6 behaviour:** `record_consent` returns `403` if it grants a
+        purpose the DPO has closed (declining it, or granting other
+        purposes, is fine). With the deployment setting
+        `CONSENT_CAPTURE_MODE=strict` it also returns `400` when a purpose
+        the policy declares is left unanswered or repeated, or when a
+        principal recorded as a MINOR has no `verification_log_id`; in the
+        default `warn` mode the consent is accepted and the problem is
+        logged for the DPO. `erasure_request` returns `404` if the principal
+        has no consent record with this fiduciary.
       operationId: consentOperation
       requestBody:
         required: true
@@ -155,6 +179,7 @@ paths:
                 - $ref: "#/components/schemas/ValidateConsentRequest"
                 - $ref: "#/components/schemas/WithdrawConsentRequest"
                 - $ref: "#/components/schemas/ErasureRequestRequest"
+                - $ref: "#/components/schemas/GetWithdrawalImplicationsRequest"
               discriminator:
                 propertyName: _func
                 mapping:
@@ -167,6 +192,7 @@ paths:
                   validate_consent: "#/components/schemas/ValidateConsentRequest"
                   withdraw_consent: "#/components/schemas/WithdrawConsentRequest"
                   erasure_request: "#/components/schemas/ErasureRequestRequest"
+                  get_withdrawal_implications: "#/components/schemas/GetWithdrawalImplicationsRequest"
       responses:
         "200":
           description: >-
@@ -186,6 +212,7 @@ paths:
                   - $ref: "#/components/schemas/LinkUserResponse"
                   - $ref: "#/components/schemas/ValidateConsentResponse"
                   - $ref: "#/components/schemas/WithdrawOrErasureResponse"
+                  - $ref: "#/components/schemas/WithdrawalImplicationsResponse"
         "201":
           description: Success for `record_consent` or `record_parent_consent`.
           content:
@@ -207,7 +234,10 @@ paths:
   /grievance:
     post:
       tags: [Grievance]
-      summary: Grievance operations (submit_grievance / get_grievance / list_user_grievances)
+      summary: >-
+        Grievance operations (submit_grievance / get_grievance /
+        list_user_grievances / submit_grievance_feedback /
+        upload_grievance_attachment / get_grievance_attachment)
       description: |
         Same Principal-JWT `user_id`-match guard as `/consent` applies
         here.
@@ -232,15 +262,24 @@ paths:
                 - $ref: "#/components/schemas/SubmitGrievanceRequest"
                 - $ref: "#/components/schemas/GetGrievanceRequest"
                 - $ref: "#/components/schemas/ListUserGrievancesRequest"
+                - $ref: "#/components/schemas/SubmitGrievanceFeedbackRequest"
+                - $ref: "#/components/schemas/UploadGrievanceAttachmentRequest"
+                - $ref: "#/components/schemas/GetGrievanceAttachmentRequest"
               discriminator:
                 propertyName: _func
                 mapping:
                   submit_grievance: "#/components/schemas/SubmitGrievanceRequest"
                   get_grievance: "#/components/schemas/GetGrievanceRequest"
                   list_user_grievances: "#/components/schemas/ListUserGrievancesRequest"
+                  submit_grievance_feedback: "#/components/schemas/SubmitGrievanceFeedbackRequest"
+                  upload_grievance_attachment: "#/components/schemas/UploadGrievanceAttachmentRequest"
+                  get_grievance_attachment: "#/components/schemas/GetGrievanceAttachmentRequest"
       responses:
         "200":
-          description: Success for `get_grievance` or `list_user_grievances`.
+          description: >-
+            Success for `get_grievance`, `list_user_grievances`,
+            `get_grievance_attachment` or `submit_grievance_feedback`
+            (`{"success": true}`).
           content:
             application/json:
               schema:
@@ -248,11 +287,25 @@ paths:
                   - $ref: "#/components/schemas/Grievance"
                   - type: array
                     items: { $ref: "#/components/schemas/GrievanceSummary" }
+                  - $ref: "#/components/schemas/GrievanceAttachment"
         "201":
-          description: Success for `submit_grievance`.
+          description: Success for `submit_grievance` or `upload_grievance_attachment`.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/SubmitGrievanceResponse" }
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/SubmitGrievanceResponse"
+                  - $ref: "#/components/schemas/UploadGrievanceAttachmentResponse"
+        "409":
+          description: >-
+            `submit_grievance_feedback` before the grievance is resolved or
+            closed, or twice; `upload_grievance_attachment` on a closed
+            grievance or beyond 5 attachments.
+        "413":
+          description: "`upload_grievance_attachment`: the file is larger than 5 MB."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -326,13 +379,14 @@ paths:
         reachable with `X-API-Key`/`X-API-Secret`, hence the operation-level
         security override above.
 
-        **Authorization gap, already known and documented in the guide:**
-        `update_purge_status` does not check that the request being
-        updated belongs to your fiduciary. Any valid `PURGE`-scoped API key
-        can update *any* fiduciary's purge request by `id`. Only ever call
-        this with an `id` your own App actually received from
-        `list_purge_requests` or a `purge_request_created` webhook - never
-        construct or guess one.
+        **Ownership (v0.6):** `update_purge_status` refuses (`403`) a purge
+        that belongs to another fiduciary or is not assigned to your App,
+        and `404` for an unknown id. `status` must be a known value (`400`);
+        a purge that is `PURGE_COMPLETED` or `PURGE_CANCELLED` is final
+        (`409`). Through an API key you can report `PURGE_IN_PROGRESS`,
+        `PURGE_COMPLETED` and `PURGE_FAILED`; `PURGE_CANCELLED` and
+        `LEGAL_HOLD_APPLIED` are the DPO's decisions (`403`). Who confirmed
+        and when are recorded from your key, never from the body.
       operationId: complianceOperation
       requestBody:
         required: true
@@ -361,22 +415,130 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403":
           description: >-
-            Only reachable for a Bearer-JWT-authenticated console
-            Operator/DPO hitting `update_purge_status` on a request not
-            assigned to them - not applicable to a typical client API-key
-            or Principal-JWT call, which this path otherwise excludes (see
-            above).
+            `update_purge_status`: the purge is another fiduciary's, is not
+            assigned to your App, or you tried to cancel it or place it on
+            legal hold (the DPO's decisions).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`update_purge_status`: the purge is already PURGE_COMPLETED or PURGE_CANCELLED (final), or the change is not allowed."
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
         "500":
-          description: >-
-            Database error, including `update_purge_status` being called
-            with an `id` that doesn't match any row - the server raises a
-            generic SQL exception for that case rather than a clean 404.
+          description: Database error.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+
+  /rights:
+    post:
+      tags: [Rights]
+      summary: >-
+        Access and correction requests and nominations (submit_rights_request /
+        get_rights_request / list_user_rights_requests / create_nomination /
+        list_nominations / revoke_nomination)
+      description: |
+        The fiduciary always comes from your credential (API key, or the
+        principal's token), never from the body. With a principal token,
+        `user_id` must match the token's subject (`403` otherwise).
+
+        **Access (s.11) and correction (s.12)** are rights to be fulfilled,
+        not complaints, so they are tracked here, not as grievances. The CMS
+        tracks the request, deadline, handler and outcome. It holds **no
+        personal data values**: the DPO delivers an access copy through the
+        fiduciary's own secure channel, and describes a correction in words.
+        The deadline (`due_date`) is set only when the deployment configures
+        `ACCESS_SLA_DAYS` / `CORRECTION_SLA_DAYS`; otherwise it is `null` and
+        the request is never shown as overdue.
+
+        **Nominations (s.14)** record whom the principal wants to exercise
+        their rights if they die or become unable to. The CMS grants the
+        nominee no access: the DPO verifies any later claim. A principal (or
+        an API key naming them) creates and revokes; the nominee's name and
+        contact are stored encrypted.
+      operationId: rightsOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/SubmitRightsRequestRequest"
+                - $ref: "#/components/schemas/GetRightsRequestRequest"
+                - $ref: "#/components/schemas/ListUserRightsRequestsRequest"
+                - $ref: "#/components/schemas/CreateNominationRequest"
+                - $ref: "#/components/schemas/ListNominationsRequest"
+                - $ref: "#/components/schemas/RevokeNominationRequest"
+              discriminator:
+                propertyName: _func
+                mapping:
+                  submit_rights_request: "#/components/schemas/SubmitRightsRequestRequest"
+                  get_rights_request: "#/components/schemas/GetRightsRequestRequest"
+                  list_user_rights_requests: "#/components/schemas/ListUserRightsRequestsRequest"
+                  create_nomination: "#/components/schemas/CreateNominationRequest"
+                  list_nominations: "#/components/schemas/ListNominationsRequest"
+                  revoke_nomination: "#/components/schemas/RevokeNominationRequest"
+      responses:
+        "200":
+          description: >-
+            Success for `get_rights_request`, `list_user_rights_requests`,
+            `list_nominations` and `revoke_nomination`.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/RightsRequest"
+                  - type: array
+                    items: { $ref: "#/components/schemas/RightsRequest" }
+                  - type: array
+                    items: { $ref: "#/components/schemas/Nomination" }
+                  - $ref: "#/components/schemas/SuccessResponse"
+        "201":
+          description: Success for `submit_rights_request` or `create_nomination`.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/SubmitRightsRequestResponse"
+                  - $ref: "#/components/schemas/CreateNominationResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`create_nomination`: the principal already has 5 current nominations."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /purpose:
+    post:
+      tags: [Purpose]
+      summary: Closed purposes (list_closed_purposes)
+      description: |
+        Returns the ids of purposes the DPO has closed for your fiduciary. A
+        closed purpose can no longer be granted: `record_consent` returns
+        `403` if it is. Use this to hide or disable those purposes in your
+        own consent screens.
+      operationId: purposeOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListClosedPurposesRequest" }
+      responses:
+        "200":
+          description: Array of closed purpose ids (possibly empty).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
 components:
   securitySchemes:
@@ -983,6 +1145,17 @@ components:
           items: { type: string }
           default: []
         language: { type: string, deprecated: true, description: Accepted but never read by the server. }
+        channel:
+          type: string
+          enum: [API_INTEGRATION, OPERATOR_CONSOLE, EMAIL, PHONE, IN_PERSON, POSTAL, OTHER]
+          description: >-
+            How the grievance reached you. Defaults to API_INTEGRATION for an
+            API key. A principal token is always recorded as PRINCIPAL_PORTAL
+            and cannot choose.
+        consent_record_id:
+          type: string
+          format: uuid
+          description: Optional consent record the grievance is about; it must belong to the same principal (otherwise 400).
       required: [_func, user_id, fiduciary_id, type, subject, description]
 
     SubmitGrievanceResponse:
@@ -990,6 +1163,63 @@ components:
       properties:
         success: { type: boolean, enum: [true] }
         grievance_id: { type: string, format: uuid }
+        reference_number: { type: string, example: "GRV-2026-000123", description: Quote this to the principal. }
+        channel: { type: string }
+
+    SubmitGrievanceFeedbackRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: Allowed once, after the grievance is RESOLVED or CLOSED (otherwise 409).
+      properties:
+        _func: { type: string, enum: [submit_grievance_feedback] }
+        grievance_id: { type: string, format: uuid }
+        user_id: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, maxLength: 1000 }
+      required: [_func, grievance_id, user_id, rating]
+
+    UploadGrievanceAttachmentRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        PDF, PNG, JPEG or plain text, at most 5 MB, at most 5 per grievance;
+        the content is checked (not just the declared type).
+      properties:
+        _func: { type: string, enum: [upload_grievance_attachment] }
+        grievance_id: { type: string, format: uuid }
+        user_id: { type: string }
+        file_name: { type: string }
+        content_type: { type: string, enum: [application/pdf, image/png, image/jpeg, text/plain] }
+        content_base64: { type: string, format: byte }
+      required: [_func, grievance_id, user_id, content_type, content_base64]
+
+    UploadGrievanceAttachmentResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        attachment_id: { type: string, format: uuid }
+        file_name: { type: string }
+        size_bytes: { type: integer }
+
+    GetGrievanceAttachmentRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [get_grievance_attachment] }
+        attachment_id: { type: string, format: uuid }
+        user_id: { type: string }
+      required: [_func, attachment_id]
+
+    GrievanceAttachment:
+      type: object
+      properties:
+        attachment_id: { type: string, format: uuid }
+        grievance_id: { type: string, format: uuid }
+        file_name: { type: string }
+        content_type: { type: string }
+        size_bytes: { type: integer }
+        sha256: { type: string }
+        content_base64: { type: string, format: byte }
 
     GetGrievanceRequest:
       type: object
@@ -1033,6 +1263,13 @@ components:
         assigned_dpo_user_id: { type: string, format: uuid, nullable: true }
         communication_log: { type: array, items: { type: object }, nullable: true }
         attachments: { type: array, items: { type: string } }
+        reference_number: { type: string, example: "GRV-2026-000123" }
+        channel: { type: string }
+        consent_record_id: { type: string, format: uuid, nullable: true }
+        files: { type: array, items: { type: object }, description: Metadata of uploaded attachments (see get_grievance_attachment for the content). }
+        feedback_rating: { type: integer, nullable: true }
+        feedback_comment: { type: string, nullable: true }
+        feedback_at: { type: string, format: date-time, nullable: true }
 
     GrievanceSummary:
       type: object
@@ -1043,6 +1280,168 @@ components:
         subject: { type: string }
         status: { type: string, enum: [NEW, IN_PROGRESS, RESOLVED, CLOSED, ESCALATED] }
         due_date: { type: string, nullable: true, description: "Non-ISO format; see the Grievance schema." }
+
+    # ── v0.6: withdrawal implications, rights, nominations, purposes ─────
+    GetWithdrawalImplicationsRequest:
+      type: object
+      x-tsi-scope: READ
+      description: >-
+        Read-only. What withdrawing each purpose would mean, built from the
+        fiduciary's active policy. Show it **before** asking the principal
+        to withdraw. A policy can add its own `withdrawal_consequence` text
+        per purpose; otherwise a plain default is used.
+      properties:
+        _func: { type: string, enum: [get_withdrawal_implications] }
+        policy_id: { type: string }
+        purpose_ids: { type: array, items: { type: string }, description: Optional. All purposes if omitted. }
+        language: { type: string, description: Optional language code for the texts. }
+      required: [_func, policy_id]
+
+    WithdrawalImplicationsResponse:
+      type: object
+      properties:
+        policy_id: { type: string }
+        policy_version: { type: string }
+        implications:
+          type: array
+          items:
+            type: object
+            properties:
+              purpose_id: { type: string }
+              name: { type: string }
+              mandatory: { type: boolean, description: True if the purpose is needed for the service. }
+              consequence: { type: string }
+              legal_basis: { type: string, nullable: true }
+              data_kept_after_withdrawal: { type: string, nullable: true }
+              retention_duration:
+                type: object
+                nullable: true
+                properties:
+                  value: { type: number }
+                  unit: { type: string }
+                  start_event: { type: string }
+              purpose_closed: { type: boolean }
+
+    SuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+
+    SubmitRightsRequestRequest:
+      type: object
+      x-tsi-scope: WRITE
+      properties:
+        _func: { type: string, enum: [submit_rights_request] }
+        user_id: { type: string }
+        type: { type: string, enum: [ACCESS, CORRECTION] }
+        description: { type: string, description: What the principal is asking for (the server enforces a minimum and maximum length). }
+        channel: { type: string, description: "Optional, for an API key (default API_INTEGRATION). A principal token is recorded as PRINCIPAL_PORTAL." }
+      required: [_func, user_id, type, description]
+
+    SubmitRightsRequestResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        request_id: { type: string, format: uuid }
+        reference_number: { type: string, example: "RR-2026-000042" }
+        type: { type: string }
+        status: { type: string, enum: [NEW] }
+        due_date: { type: string, format: date-time, nullable: true, description: Null unless the deployment configures a deadline. }
+
+    GetRightsRequestRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [get_rights_request] }
+        request_id: { type: string, format: uuid }
+        user_id: { type: string }
+      required: [_func, request_id]
+
+    ListUserRightsRequestsRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [list_user_rights_requests] }
+        user_id: { type: string }
+      required: [_func, user_id]
+
+    RightsRequest:
+      type: object
+      properties:
+        request_id: { type: string, format: uuid }
+        reference_number: { type: string }
+        user_id: { type: string }
+        type: { type: string, enum: [ACCESS, CORRECTION] }
+        description: { type: string }
+        status: { type: string, enum: [NEW, IN_PROGRESS, FULFILLED, REJECTED] }
+        due_date: { type: string, format: date-time, nullable: true }
+        overdue: { type: boolean }
+        assigned_dpo_user_id: { type: string, format: uuid, nullable: true }
+        outcome_note: { type: string, nullable: true }
+        channel: { type: string }
+        submission_timestamp: { type: string, format: date-time }
+        resolution_timestamp: { type: string, format: date-time, nullable: true }
+
+    CreateNominationRequest:
+      type: object
+      x-tsi-scope: WRITE
+      description: >-
+        Name 2-100 characters; contact is an email address or phone number;
+        optional relationship (50 characters); optional start and end dates
+        (ISO-8601, end at most 10 years ahead). A future start makes it
+        PENDING. At most 5 current nominations per principal (409).
+      properties:
+        _func: { type: string, enum: [create_nomination] }
+        user_id: { type: string }
+        nominee_name: { type: string }
+        nominee_contact: { type: string }
+        nominee_relationship: { type: string }
+        valid_from: { type: string, format: date-time }
+        valid_until: { type: string, format: date-time }
+      required: [_func, user_id, nominee_name, nominee_contact]
+
+    CreateNominationResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [true] }
+        nomination_id: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, ACTIVE] }
+
+    ListNominationsRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [list_nominations] }
+        user_id: { type: string }
+      required: [_func, user_id]
+
+    Nomination:
+      type: object
+      properties:
+        nomination_id: { type: string, format: uuid }
+        nominee_name: { type: string }
+        nominee_contact: { type: string, description: Shown in full to the principal and to an API key; masked for console staff. }
+        nominee_relationship: { type: string, nullable: true }
+        valid_from: { type: string, format: date-time }
+        valid_until: { type: string, format: date-time, nullable: true }
+        status: { type: string, enum: [PENDING, ACTIVE, EXPIRED, REVOKED] }
+        created_at: { type: string, format: date-time }
+
+    RevokeNominationRequest:
+      type: object
+      x-tsi-scope: WRITE
+      properties:
+        _func: { type: string, enum: [revoke_nomination] }
+        nomination_id: { type: string, format: uuid }
+        user_id: { type: string }
+      required: [_func, nomination_id, user_id]
+
+    ListClosedPurposesRequest:
+      type: object
+      x-tsi-scope: READ
+      properties:
+        _func: { type: string, enum: [list_closed_purposes] }
+      required: [_func]
 
     # ── Notification ────────────────────────────────────────────────────
     ListNotificationsRequest:
@@ -1135,22 +1534,28 @@ components:
       type: object
       x-tsi-scope: PURGE
       description: >-
-        The server's own 400 error message (if `id` is omitted) incorrectly
-        names the field "purge_request_id" - the field to actually send is
-        `id`, exactly as the guide's example already shows. `status` is
-        not validated against any enum - any string is accepted and stored
-        verbatim; reserve LEGAL_HOLD_APPLIED for genuine Section 8(1) cases
-        even though the API doesn't enforce that restriction. `details` is
-        not server-required despite the polling guide calling it required
-        as an integration best practice - send it anyway; it becomes part
-        of the compliance audit trail.
+        The server's own 400 message (if `id` is omitted) names the field
+        "purge_request_id", but the field to send is `id`. `details` is not
+        server-required but becomes part of the compliance audit trail: send
+        it. A purge whose `action` is DE_IDENTIFY should be de-identified, not
+        deleted, before you confirm it.
       properties:
         _func: { type: string, enum: [update_purge_status] }
         id: { type: string, format: uuid }
         status:
           type: string
-          description: Not server-validated; meaningful values are PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED, LEGAL_HOLD_APPLIED.
+          description: >-
+            Validated (400 if unknown). An API key may send PURGE_IN_PROGRESS,
+            PURGE_COMPLETED or PURGE_FAILED; PURGE_CANCELLED and
+            LEGAL_HOLD_APPLIED are the DPO's (403).
+          enum: [PURGE_IN_PROGRESS, PURGE_COMPLETED, PURGE_FAILED, PURGE_CANCELLED, LEGAL_HOLD_APPLIED]
         details: { type: string, description: "Not server-enforced as required, but strongly recommended - see description above." }
+        records_affected:
+          type: integer
+          minimum: 0
+          description: >-
+            Optional. How many records you removed. Stored and shown to the
+            DPO as your claim; the CMS cannot verify records in your systems.
       required: [_func, id, status]
 
     UpdatePurgeStatusResponse:
@@ -1173,3 +1578,13 @@ components:
         details: { type: string, nullable: true }
         initiated_at: { type: string, format: date-time }
         assigned_operator_id: { type: string, format: uuid, nullable: true }
+        action:
+          type: string
+          enum: [ERASE, DE_IDENTIFY]
+          description: "What the processor should do. DE_IDENTIFY means: remove the link to the person but keep the data."
+        claimed_record_count: { type: integer, nullable: true, description: What the processor said it removed (a claim, not verified). }
+        confirmed_by: { type: string, nullable: true, description: The app or operator that confirmed it, taken from the credential. }
+        confirmed_by_type: { type: string, nullable: true, enum: [API_KEY, OPERATOR] }
+        confirmed_at: { type: string, format: date-time, nullable: true }
+        sla_overdue: { type: boolean, description: True when a completion deadline is configured and the purge is still unconfirmed past it. }
+        legal_hold_id: { type: string, format: uuid, nullable: true }

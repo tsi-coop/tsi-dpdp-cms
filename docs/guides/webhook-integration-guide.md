@@ -161,7 +161,7 @@ Every event is wrapped in the same outer shape:
   "data": {
     "id": "ntf_9f8e7d6c",
     "recipient_type": "PRINCIPAL",
-    "recipient_id": "usr_555",
+    "recipient_id": "c-555",
     "notification_type": "PURGE_CONFIRM_NOTIFICATION",
     "created_at": "2026-08-15T09:12:03.400Z",
     "messages": {
@@ -184,7 +184,7 @@ notification type, and may be `null` if none is configured.
   "timestamp": "2026-08-15T09:12:03.512Z",
   "data": {
     "id": "prg_1a2b3c4d",
-    "user_id": "usr_555",
+    "user_id": "c-555",
     "purpose_id": "prp_marketing_01",
     "app_id": "app_crm",
     "trigger_event": "CONSENT_REVOKED",
@@ -204,7 +204,7 @@ notification type, and may be `null` if none is configured.
     "id": "prg_1a2b3c4d",
     "status": "PURGE_COMPLETED",
     "details": "Purged across 3 downstream systems.",
-    "user_id": "usr_555"
+    "user_id": "c-555"
   }
 }
 ```
@@ -217,12 +217,14 @@ notification type, and may be `null` if none is configured.
   "fiduciary_id": "8f2c1a90-1234-4a11-9e00-abcdef123456",
   "timestamp": "2026-08-15T09:25:44.221Z",
   "data": {
-    "user_id": "usr_555",
+    "user_id": "c-555",
     "otp_mode": "EMAIL_OTP",
     "message": "Your verification code is 483920"
   }
 }
 ```
+
+The payload carries only the `user_id` your application uses as the principal ID, with no email address or phone number. If you use opaque IDs (recommended), look up the person's email or mobile number in your own system inside your OTP endpoint, then send the code. The CMS never needs to know the contact address.
 
 Treat this payload as sensitive: it carries the OTP itself. Your endpoint
 must be HTTPS (enforced, see §5) and should not log the raw body.

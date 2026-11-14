@@ -38,8 +38,8 @@ Your application runs the DigiLocker flow itself. Once the guardian has been ver
 ```json
 {
   "_func": "record_parent_consent",
-  "child_principal_id": "learner@example.com",
-  "guardian_principal_id": "+919990001111",
+  "child_principal_id": "c-4d21e8b0",
+  "guardian_principal_id": "c-5b92c0de",
   "verification_mechanism": "DIGILOCKER_TOKEN",
   "provider_name": "DIGILOCKER",
   "verification_ref_id": "<the token reference DigiLocker returned>",
@@ -61,8 +61,8 @@ Three calls, in this order, for a child:
 ```json
 {
   "_func": "record_parent_consent",
-  "child_principal_id": "learner@example.com",
-  "guardian_principal_id": "+919990001111",
+  "child_principal_id": "c-4d21e8b0",
+  "guardian_principal_id": "c-5b92c0de",
   "verification_mechanism": "INTERNAL_OTP",
   "provider_name": "ACME_AUTH",
   "verification_ref_id": "otp_tx_8f3a21",
@@ -78,9 +78,9 @@ Three calls, in this order, for a child:
 {
   "_func": "link_user",
   "anonymous_user_id": "anon_12345",
-  "authenticated_user_id": "learner@example.com",
+  "authenticated_user_id": "c-4d21e8b0",
   "age_category": "MINOR",
-  "guardian_id": "+919990001111",
+  "guardian_id": "c-5b92c0de",
   "verification_status": "VERIFIED"
 }
 ```
@@ -92,7 +92,7 @@ This sets the principal's `age_category`, `guardian_id` and `verification_status
 ```json
 {
   "_func": "record_consent",
-  "user_id": "learner@example.com",
+  "user_id": "c-4d21e8b0",
   "policy_id": "learner_policy",
   "verification_log_id": "<the id from step 1>",
   "data_point_consents": [ ... ]
@@ -144,4 +144,4 @@ A finding is something to review with the application owner, not an automatic vi
 - [System Integration Guide](system-integration-guide.md) - the full consent-recording calls
 - [Implementation Guide](implementation-guide.md) - the audit view and exports for DPOs
 - [OpenAPI spec](../api/openapi.yaml) - `record_parent_consent`, `link_user`, `record_consent`
-- [Regression test cases](../test-cases/regression-test-cases.md) - TC-RTS-12 (the flow) and TC-DPO-16a (the audit)
+- [Regression test cases](../../tests/regression-test-cases.md) - TC-RTS-12 (the flow) and TC-DPO-16a (the audit)

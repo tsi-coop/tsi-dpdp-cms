@@ -27,6 +27,7 @@
 <body>
 
 <main class="login-card">
+    <div role="note" style="background:#fffbeb;border:1px solid #fcd34d;color:#92400e;border-radius:8px;padding:10px 12px;font-size:0.8rem;margin:0 0 22px;"><strong>Evaluation portal.</strong> This portal is for implementers to evaluate the consent lifecycle. It is not meant to be used by data principals. In a real deployment, principals use your own application, which calls the CMS API.</div>
     <div style="text-align:center; margin-bottom: 36px;">
         <span style="display:inline-block;font-size:1.3rem;font-weight:800;color:var(--tsi-primary);margin-bottom:18px;">TSI DPDP CMS</span>
         <h1 style="color:var(--tsi-dark);font-size:1.6rem;font-weight:800;margin:0 0 8px;">My Privacy Dashboard</h1>
@@ -52,7 +53,8 @@
         <div class="section-label">Your Credentials</div>
 
         <label for="user-id" id="user-id-label">Data Principal Id</label>
-        <input type="text" id="user-id" placeholder="e.g. you@example.com or +91 98765 43210" required autocomplete="username">
+        <input type="text" id="user-id" placeholder="e.g. c-98a7b6c5" required autocomplete="username">
+        <p style="font-size:0.75rem;color:#64748b;margin:-14px 0 20px;">Use the ID your application sends to the CMS (for example c-98a7b6c5, with a prefix for the kind of principal). Avoid email addresses and phone numbers as IDs.</p>
 
         <div id="send-otp-row" style="display:none;margin:10px 0 22px;">
             <button type="button" id="send-otp-btn" class="btn-primary" style="width:auto;padding:9px 16px;font-size:0.85rem;margin:0;">Send OTP</button>
@@ -97,25 +99,11 @@
         const otpLabel = document.getElementById('otp-label');
         otpRequested = false;
 
-        if (selectedOtpMode === 'EMAIL_OTP') {
-            userIdLabel.textContent = 'Email';
-            userIdInput.type = 'email';
-            userIdInput.placeholder = 'e.g. you@example.com';
-            userIdInput.autocomplete = 'email';
-            otpLabel.textContent = 'Email OTP';
-        } else if (selectedOtpMode === 'MOBILE_OTP') {
-            userIdLabel.textContent = 'Mobile Number';
-            userIdInput.type = 'tel';
-            userIdInput.placeholder = 'e.g. +91 98765 43210';
-            userIdInput.autocomplete = 'tel';
-            otpLabel.textContent = 'Mobile OTP';
-        } else {
-            userIdLabel.textContent = 'Data Principal Id';
-            userIdInput.type = 'text';
-            userIdInput.placeholder = 'e.g. you@example.com or +91 98765 43210';
-            userIdInput.autocomplete = 'username';
-            otpLabel.textContent = 'Dummy OTP';
-        }
+        userIdLabel.textContent = 'Data Principal ID';
+        userIdInput.type = 'text';
+        userIdInput.placeholder = 'e.g. c-98a7b6c5';
+        userIdInput.autocomplete = 'username';
+        otpLabel.textContent = selectedOtpMode === 'DUMMY_OTP' ? 'Dummy OTP' : 'One-time code (OTP)';
 
         if (!selectedLoginAvailable) {
             // DUMMY_OTP organisation on a production server: the server refuses the login anyway
@@ -128,8 +116,7 @@
             loginBtn.disabled = false;
         } else {
             sendOtpRow.style.display = 'block';
-            const channel = selectedOtpMode === 'EMAIL_OTP' ? 'email' : 'mobile number';
-            hint.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Click "Send OTP" to receive a one-time code on your ${channel}.`;
+            hint.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Click "Send OTP"; the code is sent through your organisation's OTP service.`;
             loginBtn.disabled = true;
         }
     }
@@ -137,7 +124,7 @@
     document.getElementById('send-otp-btn').addEventListener('click', async () => {
         const userId = document.getElementById('user-id').value.trim();
         if (!selectedFiduciaryId) return showError('Please select an organisation.');
-        if (!userId) return showError('Please enter your email or mobile number.');
+        if (!userId) return showError('Please enter your Data Principal ID.');
         hideError();
 
         const btn = document.getElementById('send-otp-btn');
@@ -150,8 +137,7 @@
             });
             otpRequested = true;
             document.getElementById('login-btn').disabled = false;
-            const channel = selectedOtpMode === 'EMAIL_OTP' ? 'email' : 'mobile number';
-            document.getElementById('otp-hint').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>OTP sent to your ${channel}. Enter it below.`;
+            document.getElementById('otp-hint').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>OTP requested. Enter the code you received below.`;
         } catch (e) {
             showError('Could not send OTP. Please try again.');
         } finally {

@@ -187,7 +187,7 @@ Steps 1 to 3 deliver tracking for both types and are the release; step 4 complet
 
 ## 12. Test cases to add
 
-Add to `docs/test-cases/regression-test-cases.md`:
+Add to `tests/regression-test-cases.md`:
 - Principal submits ACCESS and CORRECTION; due date set per SLA; cannot read another user's request.
 - DPO sees only own fiduciary's requests; operator sees only assigned ones; non-DPO cannot update status.
 - Status transitions: NEW to IN_PROGRESS to FULFILLED / REJECTED; invalid transitions refused; outcome note required on REJECTED.

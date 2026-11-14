@@ -304,7 +304,7 @@ This only works once, and only with the token you set in Step 1.
 1. Open `https://<your-address>/console/setup/init.html`.
 2. Enter the `TSI_BOOTSTRAP_TOKEN` value as the **Setup Token**, then create your Super-Admin account.
 3. Sign in to the console.
-4. Go to **Settings** and, for every organisation, set the OTP delivery mode to **Email OTP** or **Mobile OTP**. In production, an organisation still on `DUMMY_OTP` cannot log its principals in.
+4. Go to **Settings** and, for every organisation, set the OTP delivery mode to **Email OTP** or **Mobile OTP** (the code is delivered by your OTP webhook). In production, an organisation still on `DUMMY_OTP` cannot log its principals in. The Rights Portal is an evaluation tool for implementers, not something to give your data principals: they use your own application, which calls the CMS API with opaque principal IDs.
 
 You can now remove or change `TSI_BOOTSTRAP_TOKEN`. It is only checked until the first admin exists.
 
@@ -481,6 +481,34 @@ The scripts in `db/` run automatically only when the database is first created. 
    ```
 
 **Binary:** back up, deploy the new WAR, then run each script with `psql -h <host> -U <user> -d <db> -v ON_ERROR_STOP=1 -f db/<file>.sql` and restart Jetty.
+
+### Upgrading to v0.6
+
+Apply `db/18` to `db/26`, in this order. Each is safe to run again; run them as the database owner or a superuser.
+
+```bash
+set -a; source .env; set +a
+for f in db/18_audit_ledger_integrity.sql db/19_operator_access.sql db/20_roles.sql db/21_consent_capture.sql \
+         db/22_grievance_enhancements.sql db/23_rights_requests.sql db/24_nominations_and_purposes.sql \
+         db/25_purge_and_legal_holds.sql db/26_breach_board_intimation.sql; do
+  docker compose exec -T postgres_db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 < "$f"
+done
+```
+
+(Binary: `psql -h <host> -U <user> -d <db> -v ON_ERROR_STOP=1 -f db/<file>.sql` for each.)
+
+- `db/18` makes the audit trail append-only and numbers the existing rows; on a large audit table allow a few minutes. Take the backup first.
+- Before you deploy, make sure `.env` has real secrets: production now refuses to start on a placeholder, or a `JWT_SECRET` shorter than 32 characters.
+- Optional settings (all described in `production.env`; leave them unset for the defaults): `ACCESS_CONTROL_MODE`, `MFA_ENFORCE`, `CONSENT_CAPTURE_MODE`, `TOKEN_TTL_MINUTES`, `TRUSTED_PROXY`, `ACCESS_SLA_DAYS`, `CORRECTION_SLA_DAYS`, `PURGE_COMPLETION_SLA_DAYS`, `POLICY_CACHE_TTL_SECONDS`. If you run behind nginx or another proxy, set `TRUSTED_PROXY` to its address.
+
+**After upgrading to v0.6, check:**
+
+- **MFA:** every ADMIN, DPO and AUDITOR is asked to enrol an authenticator app at their next login (production). Tell them beforehand, and keep one ADMIN's phone details safe, since a lost authenticator needs another ADMIN to reset it.
+- **Everyone is signed in again**, because sessions use the new format.
+- **Shadow mode:** after a normal week of use, read the `ACCESS_SHADOW_DENY` and `ACCESS_SHADOW_TENANT` events in the audit page, then decide whether to set `ACCESS_CONTROL_MODE=enforce` ([rollout guide](../security/access-control-rollout.md)).
+- **Consent capture warnings:** read `CONSENT_CAPTURE_WARNING` events, fix the integrations, then consider `CONSENT_CAPTURE_MODE=strict`.
+- **Audit chain:** the daily check writes its result to the audit page; the first run should report the chain as intact.
+- **Security controls outside the CMS:** fill in the table in [Key management](../security/KEY_MANAGEMENT.md) (disk encryption, encrypted backups, TLS, restore rehearsal).
 
 **After upgrading, check:**
 

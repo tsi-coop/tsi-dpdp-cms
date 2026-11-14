@@ -71,6 +71,16 @@ services:
       # to start if BRAND_NAME exceeds this (matches the default brand's length,
       # so any compliant value is guaranteed to fit existing layouts).
       BRAND_NAME: "${BRAND_NAME:-TSI DPDP CMS}"
+      # v0.6 settings. All optional: a blank value means the built-in default. See production.env for what each does.
+      ACCESS_CONTROL_MODE: "${ACCESS_CONTROL_MODE:-}"
+      MFA_ENFORCE: "${MFA_ENFORCE:-}"
+      CONSENT_CAPTURE_MODE: "${CONSENT_CAPTURE_MODE:-}"
+      TOKEN_TTL_MINUTES: "${TOKEN_TTL_MINUTES:-}"
+      TRUSTED_PROXY: "${TRUSTED_PROXY:-}"
+      ACCESS_SLA_DAYS: "${ACCESS_SLA_DAYS:-}"
+      CORRECTION_SLA_DAYS: "${CORRECTION_SLA_DAYS:-}"
+      PURGE_COMPLETION_SLA_DAYS: "${PURGE_COMPLETION_SLA_DAYS:-}"
+      POLICY_CACHE_TTL_SECONDS: "${POLICY_CACHE_TTL_SECONDS:-}"
 
     volumes:
       - "tsi_reports_data:${TSI_EXPORT_PATH:-/var/lib/tsi/exports/}:rw"
