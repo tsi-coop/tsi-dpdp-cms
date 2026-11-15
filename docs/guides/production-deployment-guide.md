@@ -501,14 +501,14 @@ done
 - `db/28` allows only one live version per policy. It stops with a message if a policy already has two ACTIVE versions (archive the older one, then run it again).
 - `db/18` makes the audit trail append-only and numbers the existing rows; on a large audit table allow a few minutes. Take the backup first.
 - Before you deploy, make sure `.env` has real secrets: production now refuses to start on a placeholder, or a `JWT_SECRET` shorter than 32 characters.
-- Optional settings (all described in `production.env`; leave them unset for the defaults): `MFA_ENFORCE`, `CONSENT_CAPTURE_MODE`, `TOKEN_TTL_MINUTES`, `TRUSTED_PROXY`, `ACCESS_SLA_DAYS`, `CORRECTION_SLA_DAYS`, `PURGE_COMPLETION_SLA_DAYS`, `POLICY_CACHE_TTL_SECONDS`. If you run behind nginx or another proxy, set `TRUSTED_PROXY` to its address.
+- Optional settings (all described in `production.env`; leave them unset for the defaults): `MFA_ENFORCE`, `TOKEN_TTL_MINUTES`, `TRUSTED_PROXY`, `ACCESS_SLA_DAYS`, `CORRECTION_SLA_DAYS`, `PURGE_COMPLETION_SLA_DAYS`, `POLICY_CACHE_TTL_SECONDS`. If you run behind nginx or another proxy, set `TRUSTED_PROXY` to its address.
 
 **After upgrading to v0.6, check:**
 
 - **MFA:** every ADMIN, DPO and AUDITOR is asked to enrol an authenticator app at their next login (production). Tell them beforehand, and keep one ADMIN's phone details safe, since a lost authenticator needs another ADMIN to reset it.
 - **Everyone is signed in again**, because sessions use the new format.
 - **Access control:** role and tenant checks are enforced from the start. After a normal week of use, read the `ACCESS_DENIED` events in the audit page to catch any legitimate use that is being refused ([guide](../security/access-control-rollout.md)).
-- **Consent capture warnings:** read `CONSENT_CAPTURE_WARNING` events, fix the integrations, then consider `CONSENT_CAPTURE_MODE=strict`.
+- **Minors:** consent for a child is accepted before the guardian's verification arrives, but `validate_consent` refuses it until the guardian is verified. Follow up with the **Minor Consent Audit** on the Principals page and the `CONSENT_CAPTURE_WARNING` events until each has a verified guardian log.
 - **Audit chain:** the daily check writes its result to the audit page; the first run should report the chain as intact.
 - **Security controls outside the CMS:** fill in the table in [Key management](../security/KEY_MANAGEMENT.md) (disk encryption, encrypted backups, TLS, restore rehearsal).
 

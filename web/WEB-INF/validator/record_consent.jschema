@@ -39,6 +39,9 @@
     "user_agent": {
       "type": "string"
     },
+    "is_minor": {
+      "type": "boolean"
+    },
     "data_point_consents": {
       "type": "array",
       "items": {

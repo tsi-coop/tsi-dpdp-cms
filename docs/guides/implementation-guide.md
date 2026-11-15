@@ -470,7 +470,7 @@ Larger extracts run asynchronously through the `Job` service (`_func: create_job
 
 This section covers the DPO's view. For the full picture - what the application must do, what the CMS stores, and the limits - see the [Parental Consent Guide](parental-consent-guide.md).
 
-The CMS does not decide whether a principal is a minor, and it does not stop a consent being recorded without a guardian reference. That is the collecting application's responsibility: when it knows the principal is a minor, it must record the guardian verification (`record_parent_consent`), flag the principal as a minor (`link_user` with `age_category: MINOR` and the `guardian_id`), and send the resulting `verification_log_id` with every `record_consent`.
+The CMS does not decide whether a principal is a minor, and it does not stop a consent being recorded without a guardian reference, because the guardian's verification can take days. That is the collecting application's responsibility: when it knows the principal is a minor, it must record the guardian verification (`record_parent_consent`, which is what marks the principal as a minor), and send the resulting `verification_log_id` with `record_consent`, recording consent again with it if the verification arrives later. The application can send `is_minor: true` with the consent so that the CMS refuses it for processing (`validate_consent` returns `GUARDIAN_VERIFICATION_PENDING`) until the guardian is verified. Until the reference is recorded the consent shows as "Missing reference" below: follow it up with the application owner.
 
 What the CMS provides is a way to check afterwards. **DPO Console -> Principals -> Minor Consent Audit** summarises, for every principal flagged `MINOR`, whether each consent record carries a guardian verification reference that belongs to that child:
 
@@ -516,7 +516,7 @@ Once a policy is published, the runtime itself needs to be hardened before it ho
 | Policy Upload | Format and validate the JSON policy file; create and publish via the DPO Console. |
 | Source Validation | Inject `X-API-Key` and `X-API-Secret` into request headers for API calls (consent verification, erasure, etc.). |
 | Data Retention | Periodically review the RoPA master list; run scripted erasure APIs. |
-| Rights Requests | Handle access and correction requests in **Rights Requests**: assign, act, record the outcome. Set `ACCESS_SLA_DAYS` / `CORRECTION_SLA_DAYS` only once counsel confirms the timelines. See [Access and correction requests](../security/rights-requests.md). |
+| Rights Requests | Handle access and correction requests in **Rights**: assign, act, record the outcome. Set `ACCESS_SLA_DAYS` / `CORRECTION_SLA_DAYS` only once counsel confirms the timelines. See [Access and correction requests](../security/rights-requests.md). |
 | Purposes and Withdrawal | Close a purpose that is no longer needed (**ROPA**: Close purpose, then Revise policy to publish a new version without it); write the consequence text of withdrawing each purpose. See [Nominations and purpose lifecycle](../security/nominations-and-purpose-lifecycle.md). |
 | Legal Holds | Place and release holds in **Compliance** when a court order or investigation requires data to be kept; every hold has a reason and an end date. |
 | Access and Security | Enrol every ADMIN, DPO and AUDITOR in MFA; role and tenant checks are always enforced, so test each role in staging first. See [Access control rollout](../security/access-control-rollout.md) and [Key management](../security/KEY_MANAGEMENT.md). |

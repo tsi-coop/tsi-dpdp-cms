@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A consent submission must contain an explicit true/false choice for EVERY purpose the policy declares:
- * none missing, none repeated, none the policy does not know, each a real boolean. Silence is not consent
- * and a default is not a choice.
+ * What a consent submission may contain: at least one purpose, none repeated, none the policy does not know, each with a real
+ * boolean. A purpose the submission does not mention is not an error: it was not asked about, a missing choice is never a grant,
+ * and an earlier choice for it stands (see ConsentMerge).
  */
 public final class ConsentPurposes {
     private ConsentPurposes() {}
 
-    /** @return human-readable problems; empty if the submission is complete. */
+    /** @return human-readable problems; empty if the submission is acceptable. */
     public static List<String> problems(JSONObject policy, String language, JSONArray consents) {
         List<String> problems = new ArrayList<>();
         Set<String> declared = declaredPurposes(policy, language);
@@ -36,12 +36,13 @@ public final class ConsentPurposes {
                 if (!(c.get("consent_granted") instanceof Boolean)) problems.add("purpose '" + pid + "' needs consent_granted true or false");
             }
         }
-        for (String d : declared) if (!seen.contains(d)) problems.add("no choice given for purpose '" + d + "'");
+        if (consents == null || consents.isEmpty()) problems.add("no purposes given");
+        // A purpose the request does not mention is not an error: it means nothing was asked about it (see ConsentMerge).
         return problems;
     }
 
     /** Purpose ids declared in the language block (falling back to "en"); null if the policy has none to read. */
-    private static Set<String> declaredPurposes(JSONObject policy, String language) {
+    public static Set<String> declaredPurposes(JSONObject policy, String language) {
         if (policy == null) return null;
         Object block = language != null ? policy.get(language) : null;
         if (!(block instanceof JSONObject)) block = policy.get("en");

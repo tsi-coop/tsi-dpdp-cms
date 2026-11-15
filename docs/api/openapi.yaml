@@ -47,7 +47,13 @@ info:
     `records_affected`, `action`). Everything is additive: existing calls
     keep working, except where an operation notes a new refusal (`403`
     for a closed purpose, `404` for `erasure_request` with no consent
-    record, `403`/`409` on `update_purge_status`). Several real
+    record, `403`/`409` on `update_purge_status`). Later in v0.6:
+    `record_consent` accepts consent for some purposes only (the principal's
+    other choices stand), refuses unknown or repeated purposes with `400`
+    always, and takes `is_minor` for a child whose guardian is not verified
+    yet (`validate_consent` then returns `GUARDIAN_VERIFICATION_PENDING`);
+    `get_policy` without a `version` returns the live version; a purge's
+    `action` is `ERASE` for every new purge. Several real
     discrepancies between the guides' examples and actual server behavior
     surfaced during that verification and are called out explicitly below
     (e.g. `record_consent` silently ignoring `ip_address`/`timestamp`/
@@ -156,13 +162,31 @@ paths:
 
         **v0.6 behaviour:** `record_consent` returns `403` if it grants a
         purpose the DPO has closed (declining it, or granting other
-        purposes, is fine). With the deployment setting
-        `CONSENT_CAPTURE_MODE=strict` it also returns `400` when a purpose
-        the policy declares is left unanswered or repeated, or when a
-        principal recorded as a MINOR has no `verification_log_id`; in the
-        default `warn` mode the consent is accepted and the problem is
-        logged for the DPO. `erasure_request` returns `404` if the principal
-        has no consent record with this fiduciary.
+        purposes, is fine). It returns `400` for an unknown or repeated
+        purpose, a missing `consent_granted`, or an empty list.
+
+        **Single-purpose consent:** name only the purposes you are asking
+        about, for example `[{"data_point_id": "p2", "consent_granted":
+        true}]` with the `policy_id`. The call changes those and keeps the
+        principal's other choices from their active record for this policy
+        (each kept choice carries `carried_from_record_id` and
+        `given_under_policy_version`, and keeps its expiry). Choices for
+        purposes the policy no longer declares are dropped. A purpose that
+        was never answered is not consent. The response says how many
+        choices were carried over (`purposes_carried_over`).
+
+        **Minors:** the guardian's verification can follow days later
+        (`record_parent_consent`), so a child's consent is accepted without a
+        `verification_log_id`. Send `is_minor: true` when you know the
+        principal is a child: the principal is then recorded as a MINOR with
+        verification PENDING, and `validate_consent` returns
+        `consent_granted: false` with `reason: GUARDIAN_VERIFICATION_PENDING`
+        until `record_parent_consent` verifies the guardian (the consent need
+        not be recorded again). The consent is noted in the audit log for the
+        DPO to follow up.
+
+        `erasure_request` returns `404` if the principal has no consent
+        record with this fiduciary.
       operationId: consentOperation
       requestBody:
         required: true
@@ -855,6 +879,7 @@ components:
         user_id: { type: string }
         fiduciary_id: { type: string, format: uuid, description: Optional - resolved from the API key/Principal JWT if omitted. }
         policy_id: { type: string }
+        is_minor: { type: boolean, description: "Send true when the principal is a child whose guardian is not verified yet. The consent is accepted, the principal is recorded as a MINOR with verification PENDING, and `validate_consent` refuses it until the guardian is verified (`record_parent_consent`). This can only restrict: false or absence changes nothing, and a stored MINOR is never downgraded." }
         policy_version:
           type: string
           example: "1.0"
@@ -1027,6 +1052,14 @@ components:
         success: { type: boolean }
         consent_granted: { type: boolean }
         message: { type: string }
+        reason:
+          type: string
+          enum: [GUARDIAN_VERIFICATION_PENDING]
+          description: >-
+            Present when consent is recorded but must not be used yet: the
+            principal is a minor and the guardian's verification is pending
+            (DPDP s.9). Do not process. Such a refusal is not recorded as a
+            validation.
       required: [success, consent_granted]
 
     WithdrawConsentRequest:

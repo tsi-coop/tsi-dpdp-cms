@@ -73,7 +73,6 @@ services:
       BRAND_NAME: "${BRAND_NAME:-TSI DPDP CMS}"
       # v0.6 settings. All optional: a blank value means the built-in default. See production.env for what each does.
       MFA_ENFORCE: "${MFA_ENFORCE:-}"
-      CONSENT_CAPTURE_MODE: "${CONSENT_CAPTURE_MODE:-}"
       TOKEN_TTL_MINUTES: "${TOKEN_TTL_MINUTES:-}"
       TRUSTED_PROXY: "${TRUSTED_PROXY:-}"
       ACCESS_SLA_DAYS: "${ACCESS_SLA_DAYS:-}"

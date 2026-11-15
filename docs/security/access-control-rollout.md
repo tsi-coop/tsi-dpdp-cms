@@ -2,9 +2,9 @@
 
 Operator API calls (`/api/v1/admin/...`) pass through one check, `framework/AccessControl.java`:
 
-1. **Permission** — the function must be allowed for the operator's role (`util/AccessMap.java` lists what every
+1. **Permission** - the function must be allowed for the operator's role (`util/AccessMap.java` lists what every
    function needs; `roles` table / `util/RolePermissions.java` say what each role holds).
-2. **Tenant** — a DPO, OPERATOR or AUDITOR acts only on their own fiduciary. A different `fiduciary_id` in the
+2. **Tenant** - a DPO, OPERATOR or AUDITOR acts only on their own fiduciary. A different `fiduciary_id` in the
    request body is replaced with theirs; a missing one is filled in; an account with no fiduciary is refused.
    ADMIN is platform-wide and never bound.
 

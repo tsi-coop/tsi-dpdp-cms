@@ -4,7 +4,7 @@
 specification: every capability, including UI and operations cases, with its last verified result. JUnit (`mvn clean test`) is the
 automated coverage: a regression case that can be automated names its JUnit class in an `Automated:` line, so the two stay linked.
 There is no hosted CI; run the suite yourself before a release (default mode, then
-`MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict`, then without a database) and update the "Last Verified" lines.
+`MFA_ENFORCE=true`, then without a database) and update the "Last Verified" lines.
 
 | Test | What it covers |
 |---|---|
@@ -335,9 +335,9 @@ mvn test
 - `AccessControlDbTest` covers the access check; `mvn test -Dtest=AccessControlDbTest`.
 - `ByIdOwnershipDbTest` is a set of cross-tenant attack scenarios (fiduciary A's credentials against B's records).
   It also needs the database variables above. Run it in both modes like `AccessControlDbTest`.
-- `ConsentCaptureDbTest` (consent evidence, explicit choices, history chain, minors, `link_user`) and
+- `ConsentCaptureDbTest` (consent evidence, single-purpose consent, history chain, minors, `link_user`) and
   `GrievanceDbTest` (reference number, channel, auto-assignment, resolution summary, attachments, feedback) need
-  the same database variables. Run `ConsentCaptureDbTest` normally and with `CONSENT_CAPTURE_MODE=strict`.
+  the same database variables.
 - `NominationsDbTest` (s.14 nominations) and `PurposeLifecycleDbTest` (closing a purpose, the closed-grant refusal, purge action,
   withdrawal implications) need the same database variables.
 - `PurgeAndHoldsDbTest` (purge confirmation rules, API-key erasure, legal holds, sweeps, SLA flag) and `BreachBoardDbTest`

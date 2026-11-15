@@ -5,7 +5,7 @@ import org.tsicoop.dpdpcms.ces.CESService;
 import org.tsicoop.dpdpcms.util.Constants;
 import org.tsicoop.dpdpcms.util.CaptureMechanism;
 import org.tsicoop.dpdpcms.util.ExpiryDates;
-import org.tsicoop.dpdpcms.util.ConsentCaptureMode;
+import org.tsicoop.dpdpcms.util.ConsentMerge;
 import org.tsicoop.dpdpcms.util.ConsentPurposes;
 import org.tsicoop.dpdpcms.util.MinorConsentAudit;
 import org.tsicoop.dpdpcms.util.MinorGuard;
@@ -198,28 +198,45 @@ public class Consent implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Referenced policy (ID: " + policyId + ", Version: " + policyVersion + ") not found or does not belong to fiduciary.", req.getRequestURI());
                         return;
                     }else{
-                        // Capture rules: an explicit choice for every declared purpose, and a verified guardian log
-                        // for a principal recorded as a minor. "warn" (default) audits and accepts; "strict" rejects.
-                        List<String> captureProblems = new ArrayList<>(ConsentPurposes.problems(policy, languageSelected, dataPointConsents));
+                        // Real data errors are refused: an unknown or repeated purpose, a missing true/false, nothing at all.
+                        // A purpose the request does not mention is fine: it was not asked about (and, below, an earlier choice stands).
+                        List<String> dataProblems = ConsentPurposes.problems(policy, languageSelected, dataPointConsents);
+                        if (!dataProblems.isEmpty()) {
+                            OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Consent not recorded: " + String.join("; ", dataProblems), req.getRequestURI());
+                            return;
+                        }
+                        // A minor's consent is accepted now; the guardian's verification may follow a few days later
+                        // (record_parent_consent). Until it does the consent is noted in the audit log, and the Minor Consent Audit lists it.
                         String minorProblem = MinorGuard.problem(getStoredAgeCategory(fiduciaryId, userId), hasVerifiedGuardianLog(verificationLogId, userId, fiduciaryId));
-                        if (minorProblem != null) captureProblems.add(minorProblem);
-                        if (!captureProblems.isEmpty()) {
-                            if (ConsentCaptureMode.strict()) {
-                                OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Consent not recorded: " + String.join("; ", captureProblems), req.getRequestURI());
-                                return;
-                            }
-                            JSONObject warn = new JSONObject(); warn.put("problems", new JSONArray() {{ addAll(captureProblems); }}); warn.put("policy_id", policyId);
+                        if (minorProblem != null) {
+                            JSONObject warn = new JSONObject(); warn.put("problems", new JSONArray() {{ add(minorProblem); }}); warn.put("policy_id", policyId);
                             new Audit().logEventAsync(userId, fiduciaryId, Constants.SERVICE_TYPE_APP, appId, "CONSENT_CAPTURE_WARNING", warn.toJSONString());
                         }
 
-                        // Determine consent expiry
+                        // Determine consent expiry for what this request grants or declines
                         JSONArray revisedDataPoints =  CESUtil.appendConsentExpiry( policy,
                                                                                     dataPointConsents,
                                                                                     Constants.ACTION_CONSENT_GIVEN);
 
+                        // Single-purpose consent: choices the request does not mention are kept from the principal's active record
+                        // for this policy, so naming one purpose changes only that one.
+                        Optional<JSONObject> priorActive = getActiveConsentFromDb(userId, fiduciaryId, policyId);
+                        if (priorActive.isPresent() && priorActive.get().get("data_point_consents") instanceof JSONArray) {
+                            JSONObject pr = priorActive.get();
+                            revisedDataPoints = ConsentMerge.merge((JSONArray) pr.get("data_point_consents"), revisedDataPoints,
+                                    ConsentPurposes.declaredPurposes(policy, languageSelected), (String) pr.get("id"), (String) pr.get("policy_version"));
+                        }
+
                         output = recordConsentToDb(userId, fiduciaryId, policyId, policyVersion, timestamp, jurisdiction, languageSelected,
                                 consentStatusGeneral, consentMechanism, ipAddressStr, userAgent, revisedDataPoints, appId, verificationLogId,
                                 captureMechanism, clientMetadataJson);
+                        // The application says this principal is a child whose guardian is not verified yet. This can only restrict:
+                        // it never clears or downgrades a stored MINOR, and processing is refused until the guardian is verified.
+                        if (Boolean.TRUE.equals(input.get("is_minor")) && markMinorPending(fiduciaryId, userId)) {
+                            new Audit().logEventAsync(userId, fiduciaryId, Constants.SERVICE_TYPE_APP, appId, "MINOR_DECLARED_GUARDIAN_PENDING", "policy_id: " + policyId);
+                        }
+                        JSONObject outData = output.get("data") instanceof JSONObject ? (JSONObject) output.get("data") : output;
+                        outData.put("purposes_carried_over", (long) ConsentMerge.carried(revisedDataPoints));
                         OutputProcessor.send(res, HttpServletResponse.SC_CREATED, output);
                     }
                     break;
@@ -474,6 +491,17 @@ public class Consent implements Action {
         } finally { pool.cleanup(rs, ps, conn); }
     }
 
+    /** Records the principal as a MINOR with the guardian's verification PENDING. True if this changed anything. Never touches an existing MINOR. */
+    private boolean markMinorPending(UUID fiduciaryId, String userId) throws SQLException {
+        PoolDB pool = new PoolDB(); Connection conn = null; PreparedStatement ps = null;
+        try {
+            conn = pool.getConnection();
+            ps = conn.prepareStatement("UPDATE data_principal SET age_category = 'MINOR', verification_status = 'PENDING' WHERE fiduciary_id = ? AND user_id = ? AND age_category IS DISTINCT FROM 'MINOR'");
+            ps.setObject(1, fiduciaryId); ps.setString(2, userId);
+            return ps.executeUpdate() > 0;
+        } finally { pool.cleanup(null, ps, conn); }
+    }
+
     /** True if the log exists, is for this child at this fiduciary and carries a verification time. */
     private boolean hasVerifiedGuardianLog(UUID logId, String userId, UUID fiduciaryId) throws SQLException {
         if (logId == null) return false;
@@ -639,6 +667,21 @@ public class Consent implements Action {
                                     granted = false;
                                 }
                                 if (granted != null && granted) break;
+                            }
+                        }
+
+                        // A child's consent counts for processing only once the guardian is verified (DPDP s.9).
+                        if (Boolean.TRUE.equals(granted)) {
+                            try (PreparedStatement mp = conn.prepareStatement("SELECT age_category, verification_status FROM data_principal WHERE fiduciary_id = ? AND user_id = ?")) {
+                                mp.setObject(1, UUID.fromString(fiduciaryId)); mp.setString(2, userId);
+                                try (ResultSet mr = mp.executeQuery()) {
+                                    if (mr.next() && Constants.AGE_MINOR.equalsIgnoreCase(mr.getString(1)) && !"VERIFIED".equalsIgnoreCase(mr.getString(2))) {
+                                        granted = false;
+                                        result.put("reason", "GUARDIAN_VERIFICATION_PENDING");
+                                        result.put("message", "Consent is recorded, but this principal is a minor and the guardian's verification is pending. Do not process until it is verified.");
+                                        // Not logged as a validation: that table records which apps processed a principal's data (erasure uses it).
+                                    }
+                                }
                             }
                         }
 

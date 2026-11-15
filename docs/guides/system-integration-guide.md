@@ -97,7 +97,7 @@ Both fields are required - this is the one call where you must pass `fiduciary_i
 { "_func": "get_policy", "policy_id": "p4" }
 ```
 
-For archival/audit view of a specific past version, rather than the live one. `version` is optional: if you leave it out, the policy's only non-archived version is returned, and if the policy has none or several you get a `400` asking you to name one. Policy versions are mandatory and dotted-numeric (for example `1.0` or `2.1.3`).
+For archival/audit view of a specific past version, rather than the live one. `version` is optional: if you leave it out, the policy's live (`ACTIVE`) version is returned, even while a draft or a version under review exists next to it. If nothing is live, the policy's only non-archived version is returned, and if it has none or several you get a `400` asking you to name one. A policy has only one live version at a time. Policy versions are mandatory and dotted-numeric (for example `1.0` or `2.1.3`).
 
 ### Record Consent
 
@@ -129,11 +129,31 @@ Required: `user_id`, `policy_id`, and `data_point_consents` (each entry requires
 
 **Policy version:** every consent record is stamped with the policy's currently `ACTIVE` version, and that version is part of the evidence certificate. Send `policy_version` as the version your UI actually showed the principal (it is the `version` returned by `get_active_policy`). If it is omitted or blank, the active version is used. If it is present but is not the active version - for example the DPO published a new version while the principal was reading the notice - the call is rejected with `409 Conflict` and the message names both versions; re-fetch the active policy, show it, and ask again. A policy with no active version returns `400`.
 
+**One purpose, or some purposes:** you do not have to send every purpose. Name only the ones you are asking about, for example a purpose added by a new policy version:
+
+```json
+{
+  "_func": "record_consent",
+  "user_id": "data_principal_xyz123",
+  "policy_id": "p13",
+  "data_point_consents": [
+    { "data_point_id": "purpose_new_offers", "consent_granted": true, "purpose_agreed_to": "Personalised offers", "timestamp_updated": "2026-11-15T10:00:00Z" }
+  ]
+}
+```
+
+The call changes the purposes it names and keeps the principal's other choices from their active record for this policy. Each kept choice is marked with `carried_from_record_id` and `given_under_policy_version`, so the new record shows what was agreed and under which version; a kept choice keeps its original expiry. `purposes_carried_over` in the response says how many were kept. Things to know:
+
+* A purpose you never sent is **not consent** (`validate_consent` returns not granted). Leaving a purpose out does not withdraw it either: to withdraw, send `consent_granted: false` for it, or use `withdraw_consent` with `purpose_ids`.
+* Choices for purposes the policy no longer declares are dropped, and nothing is carried over from a record for a different policy.
+* An unknown purpose, a repeated one, a missing `consent_granted`, or an empty list is refused with `400`. A closed purpose cannot be granted (`403`).
+* A principal with no earlier consent gets a record holding just the purposes you sent.
+
 **Gotcha:** whatever you send for `consent_status_general` is ignored - the server always records `CONSENT_GIVEN` for this call. Don't rely on that field to represent a partial/declined state; per-purpose grant/deny lives in `data_point_consents`.
 
 ### Minors (children)
 
-If the principal is a child, **your application is responsible** for collecting verifiable parental consent and telling the CMS: call `record_parent_consent`, then `link_user` with `age_category: "MINOR"` and the `guardian_id`, then send the resulting `verification_log_id` with every `record_consent` for that child. The CMS records the reference and lets the DPO audit it afterwards; it does not verify age or guardians and will not refuse a consent that lacks the reference. The full flow, the audit view and the limits are in the [Parental Consent Guide](parental-consent-guide.md).
+If the principal is a child, **your application is responsible** for collecting verifiable parental consent and telling the CMS: call `record_parent_consent` (this is what marks the principal as a minor; `link_user` ignores age fields), then send the resulting `verification_log_id` with every `record_consent` for that child. The guardian's verification can take days, so the child's consent is accepted **before** it arrives: send `is_minor: true` with `record_consent`. The CMS records the principal as a minor with verification pending, and `validate_consent` returns `consent_granted: false` with `reason: GUARDIAN_VERIFICATION_PENDING` until `record_parent_consent` verifies the guardian; from then the same consent validates, with no need to record it again. Always call `validate_consent` before processing, and do not process on a refusal. The consent also shows in the Minor Consent Audit as "Missing reference" until you record it again with the `verification_log_id` (name any one purpose; the others stand). The CMS records the reference and lets the DPO audit it; it does not verify age or guardians, and it cannot know a child your application never declares. The full flow, the audit view and the limits are in the [Parental Consent Guide](parental-consent-guide.md).
 
 ### Link Identity
 
@@ -187,7 +207,7 @@ Same shape as `withdraw_consent`; only the `_func` value differs, and the server
 
 `submit_rights_request` (`type` `ACCESS` or `CORRECTION`, `description`), `get_rights_request`, `list_user_rights_requests`, `create_nomination`, `list_nominations`, `revoke_nomination`, `get_withdrawal_implications` (`policy_id`, optional `purpose_ids`) and `list_closed_purposes` are available to your App's key. The first six go to `/api/v1/client/rights`; `get_withdrawal_implications` goes to `/api/v1/client/consent`. The fiduciary always comes from your key. What each does, and what the CMS deliberately does not do (for example it holds no personal data values for an access request, and a nomination grants the nominee no access) is in [Access and correction requests](../security/rights-requests.md) and [Nominations and purpose lifecycle](../security/nominations-and-purpose-lifecycle.md).
 
-A granted purpose that the DPO has closed is refused by `record_consent` with `403`. With `CONSENT_CAPTURE_MODE=strict`, a consent that leaves a declared purpose unanswered, or a minor without a guardian verification log, is rejected (in the default `warn` mode it is accepted and logged); see [Consent capture](../security/consent-capture.md).
+A granted purpose that the DPO has closed is refused by `record_consent` with `403`. You may send consent for some purposes only, or one: the call changes the purposes it names and keeps the principal's other choices (see [Consent capture](../security/consent-capture.md)). A minor's consent is accepted before the guardian's verification arrives; send `record_parent_consent` when it does.
 
 `erasure_request` now needs an existing consent record for the principal (`404` if there is none).
 

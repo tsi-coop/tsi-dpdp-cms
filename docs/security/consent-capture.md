@@ -17,15 +17,30 @@ Migrations: `db/21_consent_capture.sql`, `db/22_grievance_enhancements.sql`.
 *action* (`CONSENT_GIVEN`, `CONSENT_WITHDRAWN`, `ERASURE_REQUEST`) and the CES engine, the exports and the rights portal
 read it as such, so its values were left alone and the capture path went into the new `capture_mechanism` column.
 
-## Explicit choices and minors: `CONSENT_CAPTURE_MODE`
+## Single-purpose consent and minors
 
-* **Always enforced:** every `data_point_consents` entry must be an object with a `data_point_id` and a real `true`/`false`
-  (a missing value used to fail later with a 500).
-* **Governed by the mode** (`warn` by default, `strict` to reject):
-  * every purpose the policy declares must be answered exactly once, none unknown or repeated;
-  * a principal recorded as a MINOR needs a `verification_log_id` that points to a guardian log for that child at this fiduciary.
-* In `warn` mode a breach of those rules is accepted and recorded as an audit event `CONSENT_CAPTURE_WARNING` listing the
-  problems. Read those events, fix the integrations, then set `strict`.
+* **Always refused (400):** an entry that is not an object with a `data_point_id` and a real `true`/`false`, a purpose the policy
+  does not declare, a purpose named twice, or an empty list.
+* **Naming some purposes is fine.** `record_consent` changes the purposes it names and keeps the principal's other choices from
+  their active record for this policy, so one purpose can be asked about on its own, for example a purpose added by a new policy
+  version. A purpose that was never answered is not consent (`validate_consent` says not granted). The new record is complete and
+  the old one stays in the history chain (`supersedes_record_id`).
+* **Kept choices show where they came from:** each carries `carried_from_record_id` and `given_under_policy_version`, so the
+  record still proves what was agreed and under which version of the policy. A kept choice keeps its original expiry; only the
+  purposes named in the call get a new one. Choices for purposes the policy no longer declares are dropped. The response reports
+  `purposes_carried_over`.
+* **Minors:** a child's consent is accepted before the guardian's verification arrives, which can take days, but it does not count
+  for processing until the guardian is verified (DPDP s.9).
+  * Send `is_minor: true` in `record_consent` when you know the principal is a child. The principal is recorded as a MINOR with
+    verification `PENDING` (audit event `MINOR_DECLARED_GUARDIAN_PENDING`). This can only restrict: `false` or absence changes
+    nothing, and a stored MINOR is never downgraded (`link_user` still cannot declare age fields).
+  * `validate_consent` for a MINOR whose verification is not `VERIFIED` returns `consent_granted: false` with
+    `reason: GUARDIAN_VERIFICATION_PENDING`. It is not logged as a validation (that table records which apps processed the data).
+  * `record_parent_consent` sets `VERIFIED`; from then on the same consent validates, with no need to record it again.
+  * A MINOR's consent without a verified `verification_log_id` is also noted as a `CONSENT_CAPTURE_WARNING` and appears in the
+    Minor Consent Audit (Principals page) until the consent is recorded again with the reference.
+  * What the CMS cannot know: a child your application never declares (`is_minor`) or verifies looks like an adult.
+* There is no setting for any of this: `CONSENT_CAPTURE_MODE` has been removed.
 
 **Who is a minor.** Only a recorded guardian verification (`record_parent_consent`) marks a principal as a MINOR; it also stores
 the guardian and `VERIFIED`. `link_user` no longer accepts `age_category`, `guardian_id` or `verification_status` (they are

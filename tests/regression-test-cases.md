@@ -25,7 +25,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
   repo yet, so these are manual today.
 - **Automated** (v0.6 cases) - names the JUnit class in `tests/java` that runs the case. `mvn clean test` runs it; the database
   classes need PostgreSQL (see `tests/README.md`) and skip themselves without it. Run them in default mode **and** with
-  `MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict`. A case with no `Automated` line is manual.
+  `MFA_ENFORCE=true`. A case with no `Automated` line is manual.
 - **Priority** - `Critical` (release-blocking if broken), `High`, `Medium`.
 - **Last Verified** - `version · date · pass/fail`. Update this field, not
   the test case itself, each time you run it. A blank field means never
@@ -292,7 +292,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 ### TC-DPO-06c: Breaches reported before the upgrade are not tracked
 **Type:** DB / UI · **Priority:** Medium
 **Steps:** Upgrade a database that already holds breach incidents (including OPEN ones) and open the Dashboard and Breach page.
-**Expected Result:** Existing incidents show "—" / "Not tracked (reported before deadlines were introduced)"; none appear as overdue on the dashboard. Running `db/15_breach_deadline.sql` twice changes nothing.
+**Expected Result:** Existing incidents show "-" / "Not tracked (reported before deadlines were introduced)"; none appear as overdue on the dashboard. Running `db/15_breach_deadline.sql` twice changes nothing.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - pre-existing incident: NOT_TRACKED, no deadline, never on the overdue list; db/15 re-run twice is a no-op on the full schema
 
 ### TC-DPO-07: Notify affected principals and generate the PDF record
@@ -391,7 +391,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 3. Change the Breach notification message in Settings, then reopen the breach.
 4. Click **Download CSV**.
 5. Open a breach reported before the upgrade.
-**Expected Result:** The detail shows **Message Sent to Principals** with the configured text, and a **Principals Notified** table with the three principals and their notified times (step 1). After step 2 the summary reads "3 notified · 1 read · 2 unread" and the read principal shows a time. The message still shows the wording that was sent, not the edited one (step 3). The CSV has `principal`, `notified_at`, `read_at` for all three (step 4). The pre-upgrade breach lists its principals with "—" for read status and "Not recorded" for the message (step 5).
+**Expected Result:** The detail shows **Message Sent to Principals** with the configured text, and a **Principals Notified** table with the three principals and their notified times (step 1). After step 2 the summary reads "3 notified · 1 read · 2 unread" and the read principal shows a time. The message still shows the wording that was sent, not the edited one (step 3). The CSV has `principal`, `notified_at`, `read_at` for all three (step 4). The pre-upgrade breach lists its principals with "-" for read status and "Not recorded" for the message (step 5).
 **Last Verified:** not yet run
 
 ### TC-DPO-16b: Notification Log export
@@ -887,7 +887,7 @@ Full contract: [Webhook Integration Guide](../docs/guides/webhook-integration-gu
 ## 10. v0.6 additions
 
 Added for v0.6.0. Cases with an **Automated** line were run on 2026-11-14 as JUnit tests against PostgreSQL 17, in default mode and
-with `MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict` (247 tests, 0 failures, 12 skipped for the other mode),
+with `MFA_ENFORCE=true` (247 tests, 0 failures, 12 skipped for the other mode),
 and the unit tests also without a database (158, 0 failures). Manual (UI and Ops) cases have **not** been run.
 
 ### Operator access
@@ -953,10 +953,10 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 **Automated:** `ConsentCaptureDbTest`, `ClientIpTest`
 **Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
 
-### TC-V06-10: Explicit choices and minors, warn versus strict
+### TC-V06-10: Single-purpose consent and minors
 **Type:** API · **Priority:** Critical
-**Steps:** Record consent that leaves a declared purpose unanswered; record a MINOR's consent with and without a verified guardian log; call `link_user` declaring an age category.
-**Expected Result:** `warn` (default): accepted and a `CONSENT_CAPTURE_WARNING` event is logged. `strict`: rejected with `400`. Only `record_parent_consent` marks a MINOR; `link_user` ignores declared age fields and never downgrades a MINOR; child and guardian must differ.
+**Steps:** Record consent for one purpose of several, then for another; record an unknown purpose, a repeated one and an empty list; record consent with `is_minor: true`, then `validate_consent`, then `record_parent_consent` and `validate_consent` again; record a MINOR's consent with and without a verified guardian log; call `link_user` declaring an age category.
+**Expected Result:** Naming one purpose changes only that one: the other choices stand in the new record (each marked `carried_from_record_id` and `given_under_policy_version`, expiry not renewed), the history is chained and only one record is active; no warning. An unknown or repeated purpose, or an empty list, is `400` and nothing is recorded. A child's consent declared with `is_minor` is accepted, the principal is MINOR with verification PENDING, and `validate_consent` returns `consent_granted: false` with `GUARDIAN_VERIFICATION_PENDING` (not logged as a validation) until `record_parent_consent` verifies the guardian, after which the same consent validates. `is_minor` false or absent changes nothing and never downgrades a MINOR. A minor's consent without a guardian log is accepted and a `CONSENT_CAPTURE_WARNING` event is logged. Only `record_parent_consent` marks a MINOR; `link_user` ignores declared age fields and never downgrades a MINOR; child and guardian must differ.
 **Automated:** `ConsentCaptureDbTest`, `ConsentCaptureTest`
 **Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
 

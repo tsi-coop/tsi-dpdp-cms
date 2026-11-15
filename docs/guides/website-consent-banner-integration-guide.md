@@ -166,6 +166,7 @@ Your endpoint must:
 - Hard-code `_func` and `policy_id`. Never take them from the browser.
 - **Decide the user id yourself** (Step 7). Use the logged-in account from your session if there is one. Otherwise accept the browser's id only if it matches `^anon_[A-Za-z0-9_-]{8,64}$`, and reject anything else. This stops anyone writing consent records against someone else's account id.
 - Copy only known fields, validate their types, and cap the body size (the example uses 32 KB).
+- The widget may send all purposes or only some: a call that names only some purposes changes those and the visitor's other choices stand (see *One purpose, or some purposes* in the [System Integration Guide](system-integration-guide.md#record-consent)). Do not rely on leaving a purpose out to withdraw it: send `consent_granted: false`.
 - Rate-limit per IP, because this endpoint is public.
 
 > **IP address caveat.** The CMS records the *caller's* address, which is your backend's, not the visitor's. The visitor's IP is not passed through, so do not rely on it in the evidence record.

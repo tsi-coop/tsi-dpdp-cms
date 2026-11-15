@@ -55,9 +55,6 @@ TSI_KEYSTORE_ALIAS=abc-consentmgr
 # PURGE_COMPLETION_SLA_DAYS: a purge request still unconfirmed after this many days is flagged to the DPO (whole
 # number 1-365). Leave UNSET until you have decided your processors' deadline: with no value nothing is flagged.
 # PURGE_COMPLETION_SLA_DAYS=
-# CONSENT_CAPTURE_MODE: warn (default) accepts consent that breaks the capture rules (a purpose left unanswered, a
-# minor without a verified guardian log) and records a CONSENT_CAPTURE_WARNING audit event; strict rejects it.
-# CONSENT_CAPTURE_MODE=warn
 # MFA (TOTP): operators can enrol in every mode. In production it is mandatory for ADMIN, DPO and AUDITOR
 # and cannot be switched off. For other modes, MFA_ENFORCE=true applies the production rule (for testing).
 # MFA_ENFORCE=false

@@ -8,7 +8,6 @@ import org.json.simple.parser.JSONParser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.tsicoop.dpdpcms.framework.*;
-import org.tsicoop.dpdpcms.util.ConsentCaptureMode;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -25,8 +24,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Consent capture evidence, explicit choices, history chain, minors and link_user. Needs Postgres with
- * db/01..21 applied (see tests/README.md); skipped otherwise. The strict-mode tests run only when
- * CONSENT_CAPTURE_MODE=strict, the warn-mode tests only when it is not.
+ * db/01..21 applied (see tests/README.md); skipped otherwise.
  */
 class ConsentCaptureDbTest {
     private static final String SECRET = "s3cret-secret-secret-secret-0123456789";
@@ -156,27 +154,38 @@ class ConsentCaptureDbTest {
     }
 
     @Test
-    void incompleteChoicesAreAcceptedWithAWarningInWarnMode() throws Exception {
-        assumeTrue(!ConsentCaptureMode.strict(), "warn-mode test");
+    void aSinglePurposeIsAcceptedWithoutAWarning() throws Exception {
         String u = user();
-        Call k = record(u, choices("p1", true)); // p2 not answered
+        Call k = record(u, choices("p1", true)); // p2 not mentioned
         assertEquals(201, k.status, k.out.toString());
-        assertEquals(1, auditCount("CONSENT_CAPTURE_WARNING", u));
+        assertEquals(0, auditCount("CONSENT_CAPTURE_WARNING", u));
     }
 
     @Test
-    void incompleteChoicesAreRejectedInStrictMode() throws Exception {
-        assumeTrue(ConsentCaptureMode.strict(), "strict-mode test");
+    void namingOnePurposeKeepsTheOthersAndChainsTheHistory() throws Exception {
         String u = user();
-        Call k = record(u, choices("p1", true));
-        assertEquals(400, k.status, k.out.toString());
-        assertTrue(k.out.toString().contains("p2"));
+        String first = consentId(record(u, choices("p1", true, "p2", true)));
+        Call one = record(u, choices("p2", false)); // only p2 changes
+        assertEquals(201, one.status, one.out.toString());
+        String second = consentId(one);
+        assertEquals("1", String.valueOf(((JSONObject) one.json().get("data")).get("purposes_carried_over")));
+        JSONArray stored = (JSONArray) new org.json.simple.parser.JSONParser().parse(scalar("SELECT data_point_consents::text FROM consent_records WHERE id = ?::uuid", second));
+        assertEquals(2, stored.size());
+        JSONObject p1 = (JSONObject) stored.get(0), p2 = (JSONObject) stored.get(1);
+        assertEquals(Boolean.TRUE, p1.get("consent_granted"), "p1 stands");
+        assertEquals(first, p1.get("carried_from_record_id"), "and says where it came from");
+        assertEquals(Boolean.FALSE, p2.get("consent_granted"));
+        assertEquals(first, scalar("SELECT supersedes_record_id::text FROM consent_records WHERE id = ?::uuid", second));
+        assertEquals("1", scalar("SELECT COUNT(*)::text FROM consent_records WHERE user_id = ? AND is_active_consent", u), "one active record");
+    }
+
+    @Test
+    void realDataErrorsAreAlwaysRefused() throws Exception {
+        String u = user();
+        assertEquals(400, record(u, choices("p1", true, "p1", false)).status, "repeated purpose");
+        assertEquals(400, record(u, choices("zzz", true)).status, "unknown purpose");
+        assertEquals(400, record(u, new JSONArray()).status, "nothing at all");
         assertEquals("0", scalar("SELECT COUNT(*)::text FROM consent_records WHERE user_id = ?", u), "nothing recorded");
-        Call dup = record(u, choices("p1", true, "p1", false, "p2", true));
-        assertEquals(400, dup.status);
-        Call unknown = record(u, choices("p1", true, "p2", true, "zzz", true));
-        assertEquals(400, unknown.status);
-        assertEquals(201, record(u, choices("p1", true, "p2", false)).status);
     }
 
     // ---- minors ----
@@ -214,21 +223,54 @@ class ConsentCaptureDbTest {
     }
 
     @Test
-    void minorConsentWithoutALogIsWarnedOrRejectedByMode() throws Exception {
+    void minorConsentWithoutALogIsAcceptedNowAndNotedForTheGuardianToFollow() throws Exception {
         String child = user();
         parentalLog(child, "guardian-3");
-        Call k = record(child, choices("p1", true, "p2", true)); // no verification_log_id
-        if (ConsentCaptureMode.strict()) {
-            assertEquals(400, k.status, k.out.toString());
-        } else {
-            assertEquals(201, k.status, k.out.toString());
-            assertEquals(1, auditCount("CONSENT_CAPTURE_WARNING", child));
-        }
-        // a log that belongs to someone else does not count
-        String other = user();
-        String otherLog = parentalLog(other, "guardian-4");
-        Call k2 = record(child, choices("p1", true, "p2", true), "verification_log_id", otherLog);
-        if (ConsentCaptureMode.strict()) assertEquals(400, k2.status);
+        Call k = record(child, choices("p1", true, "p2", true)); // no verification_log_id yet
+        assertEquals(201, k.status, k.out.toString());
+        assertEquals(1, auditCount("CONSENT_CAPTURE_WARNING", child), "noted, so it shows in the Minor Consent Audit follow-up");
+    }
+
+    private static Call validate(String user, String purpose) {
+        Call k = call(body("_func", "validate_consent", "user_id", user, "required_purpose_id", purpose), false, null);
+        new Consent().post(k.req, k.res); return k;
+    }
+
+    @Test
+    void aChildsConsentIsNotValidForProcessingUntilTheGuardianIsVerified() throws Exception {
+        String child = user();
+        // the application says this is a child; the consent is accepted and noted, but processing is refused
+        Call k = record(child, choices("p1", true, "p2", true), "is_minor", Boolean.TRUE);
+        assertEquals(201, k.status, k.out.toString());
+        assertEquals("MINOR", scalar("SELECT age_category FROM data_principal WHERE user_id = ? AND fiduciary_id = ?", child, fid));
+        assertEquals("PENDING", scalar("SELECT verification_status FROM data_principal WHERE user_id = ? AND fiduciary_id = ?", child, fid));
+        Call v = validate(child, "p1");
+        assertEquals(200, v.status, v.out.toString());
+        assertEquals(Boolean.FALSE, v.json().get("consent_granted"));
+        assertEquals("GUARDIAN_VERIFICATION_PENDING", v.json().get("reason"));
+        assertEquals("0", scalar("SELECT COUNT(*)::text FROM consent_validations WHERE user_id = ? AND fiduciary_id = ?", child, fid), "a refusal is not logged as processing");
+
+        // the guardian is verified: the same consent now counts, with no need to record it again
+        parentalLog(child, "guardian-v");
+        Call ok = validate(child, "p1");
+        assertEquals(Boolean.TRUE, ok.json().get("consent_granted"), ok.out.toString());
+        assertEquals("VERIFIED", scalar("SELECT verification_status FROM data_principal WHERE user_id = ? AND fiduciary_id = ?", child, fid));
+    }
+
+    @Test
+    void declaringAMinorOnlyRestrictsAndAdultsAreUnaffected() throws Exception {
+        String adult = user();
+        record(adult, choices("p1", true, "p2", true));
+        assertEquals(Boolean.TRUE, validate(adult, "p1").json().get("consent_granted"));
+        record(adult, choices("p1", true), "is_minor", Boolean.FALSE); // false changes nothing
+        assertEquals(Boolean.TRUE, validate(adult, "p1").json().get("consent_granted"));
+
+        // a verified child stays verified when the application declares is_minor again
+        String child = user();
+        parentalLog(child, "guardian-w");
+        record(child, choices("p1", true, "p2", true), "is_minor", Boolean.TRUE);
+        assertEquals("VERIFIED", scalar("SELECT verification_status FROM data_principal WHERE user_id = ? AND fiduciary_id = ?", child, fid));
+        assertEquals(Boolean.TRUE, validate(child, "p1").json().get("consent_granted"));
     }
 
     // ---- link_user ----

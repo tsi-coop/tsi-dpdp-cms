@@ -25,14 +25,13 @@ class ConsentCaptureTest {
         return a;
     }
 
-    // ---- explicit choice for every declared purpose ----
-    @Test void everyPurposeAnsweredExactlyOnceIsValid() throws Exception {
+    // ---- what a submission may contain ----
+    @Test void purposesAnsweredOnceAreValid() throws Exception {
         assertTrue(ConsentPurposes.problems(policy("a", "b"), "en", choices("a", true, "b", false)).isEmpty());
     }
 
-    @Test void aMissingPurposeIsReported() throws Exception {
-        List<String> p = ConsentPurposes.problems(policy("a", "b"), "en", choices("a", true));
-        assertEquals(1, p.size()); assertTrue(p.get(0).contains("b"));
+    @Test void aPurposeLeftOutIsNotAnError() throws Exception {
+        assertTrue(ConsentPurposes.problems(policy("a", "b"), "en", choices("a", true)).isEmpty(), "single-purpose consent");
     }
 
     @Test void anUnknownPurposeIsReported() throws Exception {
@@ -51,7 +50,7 @@ class ConsentCaptureTest {
         assertFalse(ConsentPurposes.problems(policy("a"), "en", choices("a", null)).isEmpty()); // omitted
     }
 
-    @Test void declaringNothingForAPolicyWithPurposesIsReported() throws Exception {
+    @Test void declaringNothingIsReported() throws Exception {
         assertFalse(ConsentPurposes.problems(policy("a"), "en", new JSONArray()).isEmpty());
     }
 
@@ -68,13 +67,49 @@ class ConsentCaptureTest {
         assertFalse(ConsentPurposes.problems(policy("a"), "en", a).isEmpty());
     }
 
-    // ---- mode ----
-    @Test void captureModeIsWarnUnlessExactlyStrict() {
-        assertFalse(ConsentCaptureMode.isStrict(null));
-        assertFalse(ConsentCaptureMode.isStrict("warn"));
-        assertFalse(ConsentCaptureMode.isStrict("stict"));
-        assertTrue(ConsentCaptureMode.isStrict("strict"));
-        assertTrue(ConsentCaptureMode.isStrict(" STRICT "));
+    // ---- single-purpose consent (merge) ----
+    private static JSONObject entry(String id, boolean granted, String expiry) {
+        JSONObject o = new JSONObject(); o.put("data_point_id", id); o.put("consent_granted", granted);
+        if (expiry != null) o.put("consent_expiry", expiry);
+        return o;
+    }
+
+    @Test void namingOnePurposeChangesOnlyThatOneAndKeepsTheRest() {
+        JSONArray prior = new JSONArray(); prior.add(entry("a", true, "2027-01-01")); prior.add(entry("b", true, "2027-01-01")); prior.add(entry("c", false, null));
+        JSONArray in = new JSONArray(); in.add(entry("b", false, null));
+        JSONArray out = ConsentMerge.merge(prior, in, java.util.Set.of("a", "b", "c"), "rec-1", "1.0");
+        assertEquals(3, out.size());
+        assertEquals("a", ((JSONObject) out.get(0)).get("data_point_id"));
+        assertEquals(Boolean.TRUE, ((JSONObject) out.get(0)).get("consent_granted"));
+        assertEquals("2027-01-01", ((JSONObject) out.get(0)).get("consent_expiry"), "a carried choice keeps its expiry");
+        assertEquals("rec-1", ((JSONObject) out.get(0)).get(ConsentMerge.CARRIED_FROM));
+        assertEquals("1.0", ((JSONObject) out.get(0)).get(ConsentMerge.GIVEN_UNDER));
+        assertEquals(Boolean.FALSE, ((JSONObject) out.get(1)).get("consent_granted"), "the named one changed");
+        assertFalse(((JSONObject) out.get(1)).containsKey(ConsentMerge.CARRIED_FROM), "the new answer is not marked as carried");
+        assertEquals(2, ConsentMerge.carried(out));
+    }
+
+    @Test void aNewPurposeIsAdded_aDroppedOneIsNotCarried() {
+        JSONArray prior = new JSONArray(); prior.add(entry("a", true, null)); prior.add(entry("gone", true, null));
+        JSONArray in = new JSONArray(); in.add(entry("new", true, null));
+        JSONArray out = ConsentMerge.merge(prior, in, java.util.Set.of("a", "new"), "rec-1", "1.0");
+        assertEquals(2, out.size());
+        assertEquals("a", ((JSONObject) out.get(0)).get("data_point_id"));
+        assertEquals("new", ((JSONObject) out.get(1)).get("data_point_id"));
+    }
+
+    @Test void noPriorRecordMeansJustTheRequest() {
+        JSONArray in = new JSONArray(); in.add(entry("a", true, null));
+        assertEquals(1, ConsentMerge.merge(null, in, java.util.Set.of("a", "b"), null, null).size());
+    }
+
+    @Test void theFirstSourceIsKeptWhenACarriedChoiceIsCarriedAgain() {
+        JSONObject already = entry("a", true, null); already.put(ConsentMerge.CARRIED_FROM, "rec-0"); already.put(ConsentMerge.GIVEN_UNDER, "0.9");
+        JSONArray prior = new JSONArray(); prior.add(already);
+        JSONArray in = new JSONArray(); in.add(entry("b", true, null));
+        JSONObject a = (JSONObject) ConsentMerge.merge(prior, in, java.util.Set.of("a", "b"), "rec-1", "1.0").get(0);
+        assertEquals("rec-0", a.get(ConsentMerge.CARRIED_FROM));
+        assertEquals("0.9", a.get(ConsentMerge.GIVEN_UNDER));
     }
 
     // ---- minors ----

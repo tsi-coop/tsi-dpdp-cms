@@ -54,7 +54,7 @@ Your application runs the DigiLocker flow itself. Once the guardian has been ver
 
 ## 2. The flow in your application
 
-Three calls, in this order, for a child:
+Three calls for a child. The guardian's verification can take days, so the order is flexible: you may record the child's consent first (`record_consent` with `is_minor: true`, without the reference) and complete the guardian steps when they arrive. Until `record_parent_consent` verifies the guardian, `validate_consent` returns `consent_granted: false` with `reason: GUARDIAN_VERIFICATION_PENDING`, so a processing check that follows the guide cannot use the consent. Once verified, the same consent validates with no further call. For a complete audit trail, record consent again with the `verification_log_id` (name any one purpose; the child's other choices stand): until then the consent shows as "Missing reference". The usual order is:
 
 **1. Record the guardian verification** (`record_parent_consent`, WRITE scope):
 
@@ -72,20 +72,17 @@ Three calls, in this order, for a child:
 
 `child_principal_id`, `guardian_principal_id` and `verification_mechanism` are required; without them the call returns `400 Parental Consent Failed`. Success is `201` with a `verification_log_id`. Put your provider's transaction reference in `verification_ref_id`. `proof_metadata` is stored exactly as sent and is copied into the audit trail, so keep it to references and hashes - not identity documents or raw ID numbers.
 
-**2. Flag the principal as a minor** (`link_user`):
+**2. Link the identity** (`link_user`, only if the child started as an anonymous session):
 
 ```json
 {
   "_func": "link_user",
   "anonymous_user_id": "anon_12345",
-  "authenticated_user_id": "c-4d21e8b0",
-  "age_category": "MINOR",
-  "guardian_id": "c-5b92c0de",
-  "verification_status": "VERIFIED"
+  "authenticated_user_id": "c-4d21e8b0"
 }
 ```
 
-This sets the principal's `age_category`, `guardian_id` and `verification_status`, and also merges the anonymous session's consent history into the authenticated id (see the [System Integration Guide](system-integration-guide.md)).
+This merges the anonymous session's consent history into the authenticated id (see the [System Integration Guide](system-integration-guide.md)). It does **not** set the minor flag: `link_user` ignores `age_category`, `guardian_id` and `verification_status`. The CMS marks a principal as a MINOR in two ways only: `record_parent_consent` in step 1 (guardian verified), or `is_minor: true` on `record_consent` (guardian still pending).
 
 **3. Record the consent with the reference** (`record_consent`), for the child's principal id, every time consent is recorded:
 
@@ -119,16 +116,16 @@ Withdrawal and erasure need no guardian reference in the CMS.
 | Finding | Meaning | Usual cause |
 |---|---|---|
 | OK | A reference is present, its log is for this child and this fiduciary, and its guardian matches the principal's `guardian_id` | - |
-| Missing reference | The consent has no `verification_log_id` | The application did not send it, or flagged the principal as a minor after the consent was recorded |
+| Missing reference | The consent has no `verification_log_id` | The guardian's verification is still pending, the application did not send the reference, or it flagged the principal as a minor after the consent was recorded |
 | Reference mismatch | The reference points to a log for another child, another fiduciary, or another guardian | Wrong log id passed, or the guardian on file changed |
 
-A finding is something to review with the application owner, not an automatic violation. Recorded consents cannot be edited; to correct a gap, fix the integration and collect fresh consent with the reference.
+A finding is something to review with the application owner, not an automatic violation. Recorded consents cannot be edited; to close a gap, record consent again with the `verification_log_id` once the guardian is verified (name any one purpose and the child's other choices stand), or fix the integration and collect fresh consent with the reference.
 
 ## 5. Limits worth knowing
 
 - **Only principals flagged `MINOR` are covered.** `ADULT` is the default, so a child the application never flags is invisible to the audit.
 - **The flag belongs to your application.** `link_user` can change it at any time, including back to `ADULT`. When a child comes of age, do that deliberately.
-- **Order matters.** Consent recorded before the principal is flagged shows as "Missing reference".
+- **Consent before verification is accepted, and pending.** Consent recorded before the guardian is verified, or before the principal is flagged, shows as "Missing reference" until it is recorded again with the reference. `validate_consent` refuses such a child's consent until the guardian is verified. A child your application never declares with `is_minor` or `record_parent_consent` looks like an adult to the CMS.
 - **"Verified" means "your application says so".** The CMS checks that the reference exists and is consistent, not that the guardian was genuinely verified. Running the DigiLocker check is up to your application (see [Is an OTP enough?](#is-an-otp-enough-for-verifiable-consent)).
 
 ## 6. Integrator checklist

@@ -23,7 +23,7 @@ The chatbot backend acts as an authenticated client application to TSI DPDP CMS 
 
 1. **Session start:** the backend calls `/policy` `get_active_policy`, passing `fiduciary_id`. The chatbot presents the multilingual notice, or a short summary with a link to the full notice.
 2. **Consent turn:** the chatbot prompts per purpose (for example, "Can we save your contact details?"). Quick-reply buttons (Yes/No) are used instead of free text, so each answer is unambiguous.
-3. **Record consent:** the backend posts to `/consent` `record_consent` with `user_id`, `policy_id`, `language_selected`, `consent_mechanism` (for example, `chatbot`), and `data_point_consents[]`. Record declines as well as grants.
+3. **Record consent:** the backend posts to `/consent` `record_consent` with `user_id`, `policy_id`, `language_selected`, `consent_mechanism` (for example, `chatbot`), and `data_point_consents[]`. Record declines as well as grants. A conversation does not have to cover every purpose: name only the purposes you asked about and the principal's other choices stand (see *One purpose, or some purposes* in the [System Integration Guide](system-integration-guide.md#record-consent)). A purpose you never asked about is not consent.
 4. **Gate processing:** before storing data or triggering an action, the backend calls `validate_consent` with the `user_id` and the `required_purpose_id` for that action.
 5. **Withdrawal:** when the backend detects an intent such as "Delete my data", it calls `withdraw_consent` or `erasure_request`.
 6. **Downstream cleanup:** local vector stores and message logs subscribe to the CMS purge webhooks (or poll the purge list) to remove the user's data, then confirm fulfillment back to the CMS.
@@ -44,7 +44,7 @@ For phone-based helplines, both the telephony switch (IVR gateway) and the agent
 ### 3.1 Voice Call Lifecycle
 
 1. **Call greeting:** the IVR fetches the active notice via `/policy` and plays a short (about 15 seconds) regional-language audio notice to the caller. Optionally, an SMS or WhatsApp message with a link to the full policy is sent in parallel.
-2. **DTMF / audio consent capture:** the caller presses a key (for example, "Press 1 to agree") or speaks a short acknowledgment. The IVR translates the outcome into a `record_consent` call to `/consent`, with a `consent_mechanism` that identifies the channel (for example, `ivr_dtmf`).
+2. **DTMF / audio consent capture:** the caller presses a key (for example, "Press 1 to agree") or speaks a short acknowledgment. The IVR translates the outcome into a `record_consent` call to `/consent`, with a `consent_mechanism` that identifies the channel (for example, `ivr_dtmf`). A call that asks about one purpose sends just that purpose; the caller's other choices stand.
 3. **Gated CRM screen:** before routing the call to a live agent, the CRM calls `validate_consent` with the caller's `user_id` (the phone hash) and the `required_purpose_id` for the service (for example, `HELPLINE_COUNSELING`). A granted result unlocks the caller's records on the agent's screen.
 4. **Voice withdrawal and purge:** callers can revoke consent through an IVR menu option, or by telling the live agent. The agent portal calls `withdraw_consent`, which creates purge requests and fires purge webhooks to clean up the CRM and MIS databases.
 
