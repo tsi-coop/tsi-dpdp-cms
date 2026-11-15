@@ -405,6 +405,9 @@
                         <p class="text-xs text-green-600 mt-0.5">Review and publish each entry below to activate the policy. Your DPO accountability is recorded automatically on publish.</p>
                     </div>
                 </div>
+                <div class="mb-3">
+                    <span id="ropa-review-summary" class="text-xs text-slate-500 font-medium"></span>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
@@ -424,7 +427,9 @@
                 <p class="text-xs text-slate-400 mt-4 font-medium">Publishing all entries will activate the policy and enable consent collection.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors">Done</button>
+                <button type="button" id="review-close-link" onclick="closeModal()" class="hidden mr-auto text-slate-500 hover:text-slate-800 text-sm font-medium underline">Close</button>
+                <button type="button" id="publish-all-btn" onclick="publishAllRopaEntries()" class="hidden bg-green-600 text-white px-6 py-2 rounded-md text-sm font-bold hover:bg-green-700 transition-colors">Publish all</button>
+                <button type="button" id="review-done-btn" onclick="closeModal()" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors">Done</button>
             </div>
         </div>
     </div>
@@ -861,6 +866,7 @@
 
     // ---- ROPA Review Panel state ----
     let currentReviewPolicyId = null;
+    let ropaReviewPendingIds = [];
     let currentViewingEntryId = null;
 
     async function reviewRopa(policyId) {
@@ -900,6 +906,16 @@
             }
             tbody.innerHTML = '';
             entries.forEach(e => tbody.appendChild(buildRopaReviewRow(e)));
+            ropaReviewPendingIds = entries.filter(e => e.status === 'draft' || e.status === 'under_review').map(e => e.id);
+            const allBtn = document.getElementById('publish-all-btn');
+            allBtn.textContent = 'Publish all ' + ropaReviewPendingIds.length;
+            allBtn.classList.toggle('hidden', ropaReviewPendingIds.length < 1);
+            // While activities are pending, Publish all takes the place of Done; a quiet Close link stays on the left
+            document.getElementById('review-done-btn').classList.toggle('hidden', ropaReviewPendingIds.length >= 1);
+            document.getElementById('review-close-link').classList.toggle('hidden', ropaReviewPendingIds.length < 1);
+            document.getElementById('ropa-review-summary').textContent = ropaReviewPendingIds.length
+                ? ropaReviewPendingIds.length + ' of ' + entries.length + ' activities waiting to be published.'
+                : 'All ' + entries.length + ' activities are published.';
         } catch(err) {
             tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-bold">Failed to load ROPA entries.</td></tr>';
         }
@@ -1009,6 +1025,29 @@
         if (!confirm(`Publish "${name}"?\n\nThis will transition the entry to ACTIVE status. All required fields must be complete.`)) return;
         await doPublishRopaEntry(id);
     }
+
+    // Publish every pending activity of the policy under review. Each is checked on its own: incomplete ones are listed and left for you.
+    async function publishAllRopaEntries() {
+        const ids = ropaReviewPendingIds.slice();
+        if (!ids.length) return;
+        if (!confirm('Publish all ' + ids.length + ' pending activities of policy ' + currentReviewPolicyId + '?\n\nUse View on any activity first to check its details. When all are published the policy goes live.')) return;
+        const btn = document.getElementById('publish-all-btn');
+        btn.disabled = true; btn.textContent = 'Publishing...';
+        const failed = [];
+        for (const id of ids) {
+            const res = await fetch('/api/v1/admin/ropa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ _func: 'publish_entry', id })
+            });
+            let d = null; try { d = await res.json(); } catch (e) { /* not JSON */ }
+            if (!(res.ok && d && d.success)) failed.push(id.slice(0, 8) + ': ' + ((d && d.missing_fields) ? 'missing ' + d.missing_fields.join(', ') : ((d && d.message) || res.status)));
+        }
+        btn.disabled = false;
+        if (currentReviewPolicyId) await loadRopaReviewEntries(currentReviewPolicyId);
+        if (failed.length) alert(failed.length + ' activit' + (failed.length === 1 ? 'y was' : 'ies were') + ' not published:\n\u2022 ' + failed.join('\n\u2022 '));
+    }
+    window.publishAllRopaEntries = publishAllRopaEntries;
 
     async function doPublishRopaEntry(id) {
         const res = await fetch('/api/v1/admin/ropa', {
