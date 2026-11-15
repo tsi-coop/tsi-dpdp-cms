@@ -525,6 +525,12 @@ paths:
         closed purpose can no longer be granted: `record_consent` returns
         `403` if it is. Use this to hide or disable those purposes in your
         own consent screens.
+
+        When the DPO closes a purpose, the published policy keeps listing it
+        until a revised policy version without it is approved and goes live
+        (the old version is then archived). Until that moment, hide the
+        purposes returned here even though `get_policy` and
+        `get_active_policy` still include them.
       operationId: purposeOperation
       requestBody:
         required: true
@@ -680,8 +686,11 @@ components:
           type: string
           description: >-
             The policy version to fetch. Optional: if omitted, the policy's
-            only non-archived version is used; if it has none or several,
-            the call fails with `400` asking for `version`.
+            live (ACTIVE) version is returned, even while a draft or a version
+            under review exists next to it. If nothing is live, the policy's
+            only non-archived version is used; if it has none or several, the
+            call fails with `400` asking for `version`. A policy has only one
+            live version at a time.
       required: [_func, policy_id]
 
     GetActivePolicyRequest:
@@ -1585,7 +1594,7 @@ components:
         action:
           type: string
           enum: [ERASE, DE_IDENTIFY]
-          description: "What the processor should do. DE_IDENTIFY means: remove the link to the person but keep the data."
+          description: "What the processor should do. Every purge created by closing a purpose, or by an erasure request, is ERASE. A purge created earlier may still carry DE_IDENTIFY, which means: remove the link to the person but keep the data."
         claimed_record_count: { type: integer, nullable: true, description: What the processor said it removed (a claim, not verified). }
         confirmed_by: { type: string, nullable: true, description: The app or operator that confirmed it, taken from the credential. }
         confirmed_by_type: { type: string, nullable: true, enum: [API_KEY, OPERATOR] }

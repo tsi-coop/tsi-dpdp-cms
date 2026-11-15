@@ -9,7 +9,7 @@ A data principal can nominate a person to exercise their rights if they die or b
 * **What the CMS does:** records the nomination. It grants the nominee **no access**: the DPO verifies any later claim.
 * **Stored encrypted:** nominee name and contact use the same database encryption as operator e-mail addresses. The audit trail
   records `NOMINATION_CREATED` / `NOMINATION_REVOKED` with the nomination id only, never the nominee's details.
-* **Who sees what:** the principal sees what they entered; a DPO/ADMIN sees the name and a **masked** contact (`a***@example.com`,
+* **Who sees what:** the principal sees what they entered; a DPO/ADMIN sees the name and a **masked** contact, on the **Principals** (consent review) page once a principal is searched (`a***@example.com`,
   `********3210`); an OPERATOR sees nothing. Only the principal (or an API key naming them) can create or revoke.
 * **Rules:** name 2-100 characters; contact is an e-mail address or phone number; optional relationship; optional end date
   (at most 10 years, in the future); a future start date makes it PENDING; at most 5 current nominations per principal.
@@ -74,4 +74,5 @@ purpose; the review itself (who, when, what is recorded) is a process decision t
 * **Re-consent** (`request_reconsent`, notifying principals of a policy change only after the new version is ACTIVE, marking the old
   version SUPERSEDED): there is no existing notification or status for it to build on, so it is a separate piece of work.
 * Notification texts are English only.
-* The DPO dashboard overdue count and report exports for rights requests; OpenAPI entries for the new functions.
+* The DPO dashboard overdue count and report exports for rights requests.
+* The OpenAPI document (`docs/api/openapi.yaml`) covers the client functions only (`/rights` nominations, `/purpose` `list_closed_purposes`, `get_withdrawal_implications`). The DPO console functions (`close_purpose`, `reopen_purpose`, `list_purpose_lifecycle`, `draft_policy_without_purpose`) are staff-only and are described here, not there.

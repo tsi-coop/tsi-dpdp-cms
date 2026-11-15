@@ -1074,6 +1074,30 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 **Expected Result:** The startup line reports MFA enforced and MFA is required. With them blank the defaults apply (warn, no deadlines). Access control is always enforced.
 **Last Verified:** not run
 
+### TC-V06-27: Guided "Close purpose" flow ends with a live policy without the purpose
+**Type:** UI · **Priority:** High
+**Steps:** On the ROPA page press **Close purpose** on an activity: give a reason; Create draft; Publish; Approve all; Finish. Repeat but cancel after Publish, then press **Finish closing**. Try to close a purpose while a revision is already under review.
+**Expected Result:** The five steps run in order (Close, Revise policy, Publish, Approve, Done). Done says the new version is live, the old one is archived and the purpose's activity left the register. **Finish closing** resumes at the Approve step; no second revision is started; only one version of the policy is ACTIVE. The portal and `get_policy` (no version) return the new version. There is no erase/de-identify choice. New purposes are not added from ROPA (the note points to Policies).
+**Last Verified:** not run (JUnit: `PurposeLifecycleDbTest`, 6 cases, pass 2026-11-15; the screens were checked in headless Chrome against a mock API)
+
+### TC-V06-28: Only one live version of a policy
+**Type:** Ops · **Priority:** High
+**Steps:** Apply `db/28` on a database where one policy has two ACTIVE versions; archive the older; apply again; then try to make a second version ACTIVE.
+**Expected Result:** The first run stops with a message naming the policy; after archiving it applies and a re-run is harmless; the database refuses a second ACTIVE version of the same policy.
+**Last Verified:** 2026-11-15 · pass (throwaway database; `PurposeLifecycleDbTest`)
+
+### TC-V06-29: Breach Information and Action reports
+**Type:** UI · **Priority:** Medium
+**Steps:** On the breach page download both PDFs from the list icons (contained or resolved), the incident dialog and the Board intimation section; request `report_type` = `BOARD`.
+**Expected Result:** Two distinct PDFs (`breach-information-report-<id>.pdf`, `breach-action-report-<id>.pdf`) with the contents described in `docs/security/erasure-retention-breach.md`; the Information report is marked interim while the breach is open; an unknown `report_type` returns 400.
+**Last Verified:** not run (JUnit `BreachBoardDbTest` covers the two types; compiled, not run)
+
+### TC-V06-30: Console navigation and first run
+**Type:** UI · **Priority:** Low
+**Steps:** Open Compliance Enforcement and each tab (Search & Filter, Legal Holds, Webhook Deliveries, Jobs) and the old Webhook Deliveries URL; check the menu label on every DPO page; search a principal that has a nominee on the consent review page; open `/` on a database with no administrator; enrol MFA.
+**Expected Result:** All four sections are tabs on one screen and the old URL redirects to it; the menu says **Rights**; the nominee shows with a masked contact (not for an OPERATOR); `/` goes to the setup screen; enrolment shows a QR code and the key, and the app shows the account under the configured brand name.
+**Last Verified:** not run
+
 ### TC-V06-26: Upgrade from v0.5.4
 **Type:** Ops · **Priority:** Critical
 **Steps:** Restore a v0.5.4 database, apply `db/18` to `db/28` twice, deploy the v0.6.0 WAR.

@@ -47,7 +47,7 @@ purge under legal hold is not late.
   the fiduciary's breach window (default 72 h, tighten-only). Older breaches stay "not tracked".
 * `record_board_intimation` (DPO / ADMIN, once only): when the Board was informed (not in the future, not before detection) and the Board's
   reference. The breach page has a button; the PDF report shows it.
-* The breach PDF can be downloaded at any status (an open breach is marked "INTERIM REPORT"), so a report can go to the Board within 72 hours while the incident is still being handled.
+* There are two PDFs per breach (`download_breach_report`, `report_type`): the **Information report** (`INFORMATION`, the default: fiduciary, incident ID, severity, status, detection and report times, description, affected purpose and policy, extent) and the **Action report** (`ACTION`: principal-notification deadline, Board intimation, principals notified, actionable steps, resolution notes). The Information report can be downloaded at any status (an open breach is marked "INTERIM REPORT"), so a report can go to the Board within 72 hours while the incident is still being handled. Any other `report_type` is refused with 400. They are offered in the breach list (icons, once the incident is contained or resolved), in the incident dialog and next to the Board intimation record.
 * A sweep alerts the DPO **once** when the deadline is within 12 hours and **once** when it has been missed
   (`BREACH_BOARD_DEADLINE_DUE` / `_MISSED` audit events and a notice). The DPO dashboard shows two clocks per breach: telling the principals
   and informing the Board.

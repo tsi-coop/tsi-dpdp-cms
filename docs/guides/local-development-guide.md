@@ -119,7 +119,7 @@ If it does not appear, look at the end of the log with `docker compose logs --ta
 
 ### Step 6: Create the admin account
 
-1. Open <http://localhost:8080/console/setup/init.html>.
+1. Open <http://localhost:8080/>. On a fresh install, with no administrator yet, it takes you to the setup screen (<http://localhost:8080/console/setup/init.html>) instead of the login form.
 2. Enter your `TSI_BOOTSTRAP_TOKEN` value as the **Setup Token**.
 3. Create your Super-Admin account, then sign in.
 

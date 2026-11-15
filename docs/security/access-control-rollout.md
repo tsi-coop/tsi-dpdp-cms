@@ -41,3 +41,12 @@ one-line edit in `RolePermissions` and `db/20_roles.sql`:
 * OPERATOR can list and view operator accounts of its own fiduciary (`users:read`).
 * OPERATOR and AUDITOR can call the self-service functions (`update_user`, `generate_recovery_key`,
   `list_notifications`, `mark_notification_read`), which the service limits to the caller's own account.
+
+## MFA enrolment (authenticator app)
+
+* **Who is asked:** with `TSI_DPDP_CMS_ENV=production` (or `MFA_ENFORCE=true`) every ADMIN, DPO and AUDITOR must enrol at their next
+  login. Otherwise enrolment is optional per operator (the `mfa_enabled` flag): an operator with it on is always challenged.
+* **Enrolling:** the login page shows a **QR code** to scan with any authenticator app, with the secret key underneath for typing in
+  ("Can't scan? Enter this key manually"). If the QR library cannot load (for example no internet), only the key is shown.
+* **Name in the app:** the account appears under your brand, taken from `BRAND_NAME` (default "TSI DPDP CMS"), so staff recognise it.
+* **First run:** a fresh installation with no administrator sends the login page to the setup screen instead of the login form.
