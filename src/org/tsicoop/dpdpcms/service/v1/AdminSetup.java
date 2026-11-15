@@ -36,6 +36,21 @@ public class AdminSetup implements Action {
             input = InputProcessor.getInput(req);
             String func = (String) input.get("_func");
 
+            if ("setup_status".equals(func)) {
+                // Unauthenticated, exposes a single boolean: lets the login page send a
+                // brand-new installation to the setup screen. Reveals nothing else.
+                PoolDB statusPool = new PoolDB();
+                Connection statusConn = null;
+                try {
+                    statusConn = statusPool.getConnection();
+                    boolean required = !isAdminUserExists(statusConn);
+                    OutputProcessor.send(res, HttpServletResponse.SC_OK, new JSONObject() {{ put("setup_required", required); }});
+                } finally {
+                    statusPool.cleanup(null, null, statusConn);
+                }
+                return;
+            }
+
             if (!"initial_setup".equals(func)) {
                 OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Unsupported function for setup service: " + func, req.getRequestURI());
                 return;

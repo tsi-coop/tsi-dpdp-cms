@@ -7,6 +7,7 @@
     <title>TSI DPDP CMS - Console Login</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --tsi-primary: #006A67; /* Primary Dark Teal Color */
@@ -122,7 +123,9 @@
     <div id="mfa-panel" class="hidden">
         <div id="mfa-enrol-info" class="hidden mb-4 text-xs text-slate-600 space-y-2">
             <p class="font-bold">Set up two-step verification</p>
-            <p>Your role requires it. In an authenticator app (Google Authenticator, Microsoft Authenticator, Authy) add an account using this key, then enter the 6-digit code it shows.</p>
+            <p>Your role requires it. In an authenticator app (Google Authenticator, Microsoft Authenticator, Authy) scan this QR code, then enter the 6-digit code it shows.</p>
+            <div id="mfa-qr" class="flex justify-center" role="img" aria-label="QR code for your authenticator app"><div class="p-2 bg-white border border-slate-200 rounded"></div></div>
+            <p class="text-center">Can't scan? Enter this key manually:</p>
             <p class="font-mono text-sm break-all bg-slate-50 border border-slate-200 rounded p-2 select-all" id="mfa-secret"></p>
             <p><a id="mfa-uri" href="#" class="primary-text underline">Open in authenticator app</a> (on the same device)</p>
         </div>
@@ -175,6 +178,32 @@ function finishLogin(responseData) {
     setTimeout(() => {
         window.location.href = responseData.role === 'ADMIN' ? 'console/admin/dashboard.html' : 'console/dpo/dashboard.html';
     }, 800);
+}
+
+// Brand-new installation (no admin yet): send the user to the setup screen.
+// Fails open - on any error the normal login page just stays.
+(async function redirectIfSetupRequired() {
+    try {
+        const r = await fetch('api/v1/bootstrap/setup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ _func: 'setup_status' })
+        });
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.setup_required === true) window.location.replace('console/setup/init.html');
+    } catch (e) { /* stay on login */ }
+})();
+
+function renderMfaQr(uri) {
+    const box = document.getElementById('mfa-qr');
+    box.innerHTML = '';
+    if (typeof QRCode === 'undefined') { box.classList.add('hidden'); return; }
+    const holder = document.createElement('div');
+    holder.className = 'p-2 bg-white border border-slate-200 rounded';
+    box.appendChild(holder);
+    new QRCode(holder, { text: uri, width: 180, height: 180, colorDark: '#000000',
+                         colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
 }
 
 async function handleMfaCode(event) {
@@ -251,6 +280,7 @@ async function handleLogin(event) {
             if (!er.ok || !ed.secret) throw new Error(ed.message || 'Could not start MFA enrolment.');
             document.getElementById('mfa-secret').textContent = ed.secret;
             document.getElementById('mfa-uri').href = ed.otpauth_uri;
+            renderMfaQr(ed.otpauth_uri);
             showMfaPanel(true);
         } else if (response.ok && responseData.success === true) {
             finishLogin(responseData);

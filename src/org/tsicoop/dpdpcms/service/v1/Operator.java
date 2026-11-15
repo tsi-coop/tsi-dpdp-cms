@@ -214,7 +214,7 @@ public class Operator implements Action {
     // ------------------------------------------------------------------------------------------
     private static final int MFA_MAX_FAILURES = 5;
     private static final long MFA_LOCK_MINUTES = 15;
-    private static final String MFA_ISSUER = "TSI DPDP CMS";
+    private static String mfaIssuer() { return org.tsicoop.dpdpcms.framework.BrandConfig.name(); }
 
     private static final class OpRow {
         UUID id, fid;
@@ -307,8 +307,8 @@ public class Operator implements Action {
         JSONObject out = new JSONObject();
         out.put("success", true);
         out.put("secret", secret);
-        out.put("otpauth_uri", Totp.otpauthUri(MFA_ISSUER, email, secret));
-        out.put("issuer", MFA_ISSUER);
+        out.put("otpauth_uri", Totp.otpauthUri(mfaIssuer(), email, secret));
+        out.put("issuer", mfaIssuer());
         OutputProcessor.send(res, 200, out);
     }
 
