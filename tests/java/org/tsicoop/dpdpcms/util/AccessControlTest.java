@@ -236,15 +236,4 @@ class AccessControlTest {
         assertEquals(TenantRule.Outcome.UNBOUND, TenantRule.evaluate("DPO", null, FID_A).outcome);
         assertEquals(TenantRule.Outcome.UNBOUND, TenantRule.evaluate("OPERATOR", NIL, FID_A).outcome);
     }
-
-    // ---------- mode ----------
-    @Test
-    void modeDefaultsToShadowAndOnlyExactEnforceEnforces() {
-        assertFalse(AccessPolicy.isEnforce(null));
-        assertFalse(AccessPolicy.isEnforce(""));
-        assertFalse(AccessPolicy.isEnforce("shadow"));
-        assertFalse(AccessPolicy.isEnforce("enfore")); // a typo stays in shadow mode (and is warned about at startup)
-        assertTrue(AccessPolicy.isEnforce("enforce"));
-        assertTrue(AccessPolicy.isEnforce(" ENFORCE "));
-    }
 }

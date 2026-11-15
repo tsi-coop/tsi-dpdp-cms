@@ -25,7 +25,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
   repo yet, so these are manual today.
 - **Automated** (v0.6 cases) - names the JUnit class in `tests/java` that runs the case. `mvn clean test` runs it; the database
   classes need PostgreSQL (see `tests/README.md`) and skip themselves without it. Run them in default mode **and** with
-  `ACCESS_CONTROL_MODE=enforce MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict`. A case with no `Automated` line is manual.
+  `MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict`. A case with no `Automated` line is manual.
 - **Priority** - `Critical` (release-blocking if broken), `High`, `Medium`.
 - **Last Verified** - `version · date · pass/fail`. Update this field, not
   the test case itself, each time you run it. A blank field means never
@@ -740,11 +740,11 @@ Full contract: [Webhook Integration Guide](../docs/guides/webhook-integration-gu
 **Type:** UI · **Priority:** Medium
 **Steps:**
 1. As a DPO with at least one Failed delivery (TC-WHK-03), open Compliance Enforcement.
-2. Note the **Webhook Deliveries** button beside **View Jobs** and its red "N failed" badge; click it.
-3. On the Webhook Deliveries screen check that **Compliance** is highlighted in the sidebar, then click **← Back to Compliance Enforcement**.
+2. Note the **Webhook Deliveries** tab in the sub-menu (beside Search & Filter, Legal Holds and View Jobs) and its red "N failed" badge; click it.
+3. Check that the deliveries list shows in place (no new page) with **Compliance** highlighted in the sidebar, then click **Search & Filter** to go back. Also open `webhook-deliveries.html` directly: it redirects here.
 4. Retry the Failed delivery (TC-WHK-05), then open Compliance Enforcement again.
 5. Open Settings and its Webhooks section; click the **Compliance → Webhook Deliveries** link in its text.
-6. Sign in as an Operator and open Compliance Enforcement; then open `webhook-deliveries.html` directly.
+6. Sign in as an Operator and open Compliance Enforcement; then open `compliance.html#webhooks` and `webhook-deliveries.html` directly.
 **Expected Result:** The button shows the Failed count (steps 1-2) and opens the screen (step 2); Back returns to Compliance Enforcement (step 3); the badge is gone once nothing is Failed (step 4); Settings has no Webhook Deliveries section, only the link, which opens the screen (step 5); an Operator sees no button, and opening the page directly sends them back to Compliance Enforcement (step 6).
 **Last Verified:** not yet run
 
@@ -887,7 +887,7 @@ Full contract: [Webhook Integration Guide](../docs/guides/webhook-integration-gu
 ## 10. v0.6 additions
 
 Added for v0.6.0. Cases with an **Automated** line were run on 2026-11-14 as JUnit tests against PostgreSQL 17, in default mode and
-with `ACCESS_CONTROL_MODE=enforce MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict` (247 tests, 0 failures, 12 skipped for the other mode),
+with `MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict` (247 tests, 0 failures, 12 skipped for the other mode),
 and the unit tests also without a database (158, 0 failures). Manual (UI and Ops) cases have **not** been run.
 
 ### Operator access
@@ -914,20 +914,11 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 **Automated:** `OperatorMfaDbTest`, `JWTUtilOperatorTokenTest`, `OperatorAccessPolicyTest`
 **Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
 
-### TC-V06-04: Roles and tenant binding: shadow mode only reports
+### TC-V06-05: Roles and tenant binding are enforced
 **Type:** API · **Priority:** Critical
-**Preconditions:** `ACCESS_CONTROL_MODE` unset or `shadow`.
-**Steps:** As a DPO, call an ADMIN-only function, and send another fiduciary's `fiduciary_id`.
-**Expected Result:** Nothing is blocked or rewritten. `ACCESS_SHADOW_DENY` / `ACCESS_SHADOW_TENANT` audit events appear, once per person and case per hour.
-**Automated:** `AccessControlDbTest#shadow_*`, `AccessControlTest`
-**Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
-
-### TC-V06-05: Roles and tenant binding: enforce mode blocks
-**Type:** API · **Priority:** Critical
-**Preconditions:** `ACCESS_CONTROL_MODE=enforce`.
-**Steps:** As in TC-V06-04; also as an AUDITOR (read and write); also with an unmapped function; also as ADMIN.
-**Expected Result:** The DPO gets `403` for admin-only functions and a foreign `fiduciary_id` is replaced with their own. AUDITOR reads but cannot write. An unmapped function is denied. ADMIN is never restricted. An AUDITOR account can be created only in enforce mode.
-**Automated:** `AccessControlDbTest#enforce_*`
+**Steps:** As a DPO, call an ADMIN-only function, and send another fiduciary's `fiduciary_id`; also as an AUDITOR (read and write); also with an unmapped function; also as ADMIN.
+**Expected Result:** The DPO gets `403` for admin-only functions and a foreign `fiduciary_id` is replaced with their own. AUDITOR reads but cannot write. An unmapped function is denied. ADMIN is never restricted. Refusals are audited as `ACCESS_DENIED`, once per person and case per minute.
+**Automated:** `AccessControlDbTest`, `AccessControlTest`
 **Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
 
 ### TC-V06-06: By-id requests cannot cross fiduciaries
@@ -1079,8 +1070,8 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 
 ### TC-V06-25: Docker passes the v0.6 settings through
 **Type:** Ops · **Priority:** Medium
-**Steps:** Set `MFA_ENFORCE=true` and `ACCESS_CONTROL_MODE=enforce` in `.env`, run `docker compose up`, and check the startup log and a login.
-**Expected Result:** The startup line reports enforcement and MFA is required. With all of them blank the defaults apply (shadow, warn, no deadlines).
+**Steps:** Set `MFA_ENFORCE=true` in `.env`, run `docker compose up`, and check the startup log and a login.
+**Expected Result:** The startup line reports MFA enforced and MFA is required. With them blank the defaults apply (warn, no deadlines). Access control is always enforced.
 **Last Verified:** not run
 
 ### TC-V06-26: Upgrade from v0.5.4

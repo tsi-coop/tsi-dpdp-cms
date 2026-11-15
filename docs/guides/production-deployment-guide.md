@@ -499,13 +499,13 @@ done
 
 - `db/18` makes the audit trail append-only and numbers the existing rows; on a large audit table allow a few minutes. Take the backup first.
 - Before you deploy, make sure `.env` has real secrets: production now refuses to start on a placeholder, or a `JWT_SECRET` shorter than 32 characters.
-- Optional settings (all described in `production.env`; leave them unset for the defaults): `ACCESS_CONTROL_MODE`, `MFA_ENFORCE`, `CONSENT_CAPTURE_MODE`, `TOKEN_TTL_MINUTES`, `TRUSTED_PROXY`, `ACCESS_SLA_DAYS`, `CORRECTION_SLA_DAYS`, `PURGE_COMPLETION_SLA_DAYS`, `POLICY_CACHE_TTL_SECONDS`. If you run behind nginx or another proxy, set `TRUSTED_PROXY` to its address.
+- Optional settings (all described in `production.env`; leave them unset for the defaults): `MFA_ENFORCE`, `CONSENT_CAPTURE_MODE`, `TOKEN_TTL_MINUTES`, `TRUSTED_PROXY`, `ACCESS_SLA_DAYS`, `CORRECTION_SLA_DAYS`, `PURGE_COMPLETION_SLA_DAYS`, `POLICY_CACHE_TTL_SECONDS`. If you run behind nginx or another proxy, set `TRUSTED_PROXY` to its address.
 
 **After upgrading to v0.6, check:**
 
 - **MFA:** every ADMIN, DPO and AUDITOR is asked to enrol an authenticator app at their next login (production). Tell them beforehand, and keep one ADMIN's phone details safe, since a lost authenticator needs another ADMIN to reset it.
 - **Everyone is signed in again**, because sessions use the new format.
-- **Shadow mode:** after a normal week of use, read the `ACCESS_SHADOW_DENY` and `ACCESS_SHADOW_TENANT` events in the audit page, then decide whether to set `ACCESS_CONTROL_MODE=enforce` ([rollout guide](../security/access-control-rollout.md)).
+- **Access control:** role and tenant checks are enforced from the start. After a normal week of use, read the `ACCESS_DENIED` events in the audit page to catch any legitimate use that is being refused ([guide](../security/access-control-rollout.md)).
 - **Consent capture warnings:** read `CONSENT_CAPTURE_WARNING` events, fix the integrations, then consider `CONSENT_CAPTURE_MODE=strict`.
 - **Audit chain:** the daily check writes its result to the audit page; the first run should report the chain as intact.
 - **Security controls outside the CMS:** fill in the table in [Key management](../security/KEY_MANAGEMENT.md) (disk encryption, encrypted backups, TLS, restore rehearsal).

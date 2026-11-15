@@ -358,17 +358,17 @@ public class InterceptingFilter implements Filter {
                 return;
             }
 
-            // Client API: the credential's fiduciary overrides whatever the body names (shadow mode by default)
+            // Client API: the credential's fiduciary overrides whatever the body names
             if (CLIENT_URI_PATH.equalsIgnoreCase(apiCategory)) {
                 if (!AccessControl.checkClient(req, res, func)) {
-                    return; // 403 already sent (enforce mode only)
+                    return; // 403 already sent
                 }
             }
 
-            // Operator API: role permissions and tenant binding (shadow mode by default: logs, never blocks)
+            // Operator API: role permissions and tenant binding
             if (ADMIN_URI_PATH.equalsIgnoreCase(apiCategory) && !ADMIN_NOAUTH_FUNCS.contains(func.toLowerCase())) {
                 if (!AccessControl.check(req, res, serviceName, func)) {
-                    return; // 403 already sent (enforce mode only)
+                    return; // 403 already sent
                 }
             }
 
@@ -401,7 +401,7 @@ public class InterceptingFilter implements Filter {
         JSONSchemaValidator.createInstance(filterConfig.getServletContext());
         System.out.println("Loaded TSI Schema Validator");
         System.out.println(AppVersion.display() + " Service started in " + System.getenv("TSI_DPDP_CMS_ENV") + " environment");
-        System.out.println("Access control: " + AccessControl.describeMode());
+        System.out.println("Access control: ENFORCED (role permissions and tenant binding).");
         System.out.println("MFA: enrolment available to all operators; " + (org.tsicoop.dpdpcms.util.MfaPolicy.enforcing()
                 ? "ENFORCED for ADMIN and DPO." : "not enforced (set MFA_ENFORCE=true or TSI_DPDP_CMS_ENV=production)."));
         if (!Env.isSet()) {

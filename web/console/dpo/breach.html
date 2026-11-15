@@ -282,6 +282,11 @@
             <p class="font-semibold">Data Protection Board intimation</p>
             <p><strong>Deadline:</strong> <span id="detail-board-deadline"></span></p>
             <p><strong>Status:</strong> <span id="detail-board-status" class="font-semibold"></span></p>
+            <div class="mt-2 flex flex-wrap items-center gap-3">
+                <button type="button" id="board-download-info-btn" onclick="downloadReport(this.getAttribute('data-id'), 'INFORMATION')" class="bg-slate-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-slate-700">Breach Information Report (PDF)</button>
+                <button type="button" id="board-download-action-btn" onclick="downloadReport(this.getAttribute('data-id'), 'ACTION')" class="bg-slate-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-slate-700">Breach Action Report (PDF)</button>
+            </div>
+            <p class="mt-1 text-xs text-gray-500"><strong>Information report:</strong> what happened (when, what, extent). <strong>Action report:</strong> what was done (principals notified, steps given, Board intimation, resolution). Send them to the Board, then record below that it was informed.</p>
             <form id="board-form" class="mt-2 flex flex-wrap items-end gap-3 hidden">
                 <div>
                     <label for="board-when" class="block text-xs font-medium text-gray-600">When the Board was informed</label>
@@ -338,7 +343,8 @@
             </div>
             <div class="modal-footer">
                 <span id="download-report-hint" class="text-xs text-gray-400 self-center hidden">An open incident is reported as an interim report</span>
-                <button type="button" id="download-report-btn" onclick="downloadReport(document.getElementById('status-update-form').getAttribute('data-id'))" class="bg-slate-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-700 hidden">Download PDF Report</button>
+                <button type="button" id="download-report-btn" onclick="downloadReport(document.getElementById('status-update-form').getAttribute('data-id'), 'INFORMATION')" class="bg-slate-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-700 hidden">Information Report</button>
+                <button type="button" id="download-action-report-btn" onclick="downloadReport(document.getElementById('status-update-form').getAttribute('data-id'), 'ACTION')" class="bg-slate-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-700 hidden">Action Report</button>
                 <button type="submit" id="status-update-btn" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">Save Status</button>
             </div>
         </form>
@@ -426,8 +432,17 @@
     function createBreachRow(b) {
         const row = document.createElement('tr');
         const reportAvailable = b.status === 'CONTAINED' || b.status === 'RESOLVED';
+        const pdfIcon = (type, label, glyph) => `
+            <button type="button" class="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    title="${label} (PDF)" aria-label="${label} (PDF)" onclick="downloadReport('${b.id}', '${type}')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>${glyph}
+                </svg>
+            </button>`;
         const downloadButton = reportAvailable
-            ? `<button class="text-slate-600 hover:text-slate-900 font-medium ml-3" onclick="downloadReport('${b.id}')">Download PDF</button>`
+            ? `<span class="mx-1 h-4 w-px bg-slate-200" aria-hidden="true"></span>`
+              + pdfIcon('INFORMATION', 'Breach Information Report', '<line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/>')
+              + pdfIcon('ACTION', 'Breach Action Report', '<path d="m9 15 2 2 4-4"/>')
             : '';
         row.innerHTML = `
             <td class="px-4 py-3 text-sm font-medium text-gray-800">${b.title}</td>
@@ -437,7 +452,9 @@
             <td class="px-4 py-3 whitespace-nowrap text-sm ${deadlineClass(b)}">${deadlineText(b)}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm">${createStatusBadge(b.status)}</td>
             <td class="px-4 py-3 text-sm">
-                <button class="text-indigo-600 hover:text-indigo-900 font-medium" onclick="viewBreach('${b.id}')">Manage</button>${downloadButton}
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                    <button class="text-indigo-600 hover:text-indigo-900 font-medium mr-1" onclick="viewBreach('${b.id}')">Manage</button>${downloadButton}
+                </div>
             </td>
         `;
         return row;
@@ -647,6 +664,8 @@
         const canRecord = !IS_OPERATOR && b.board_notification_deadline && !b.board_notified_at;
         form.classList.toggle('hidden', !canRecord);
         form.setAttribute('data-id', id);
+        document.getElementById('board-download-info-btn').setAttribute('data-id', id);
+        document.getElementById('board-download-action-btn').setAttribute('data-id', id);
         const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         document.getElementById('board-when').value = now.toISOString().slice(0, 16);
         document.getElementById('board-ref').value = '';
@@ -705,6 +724,7 @@
             // an incident that is still open is marked "interim" in the PDF.
             const reportFinal = b.status === 'CONTAINED' || b.status === 'RESOLVED';
             document.getElementById('download-report-btn').classList.remove('hidden');
+            document.getElementById('download-action-report-btn').classList.remove('hidden');
             document.getElementById('download-report-hint').classList.toggle('hidden', reportFinal);
 
             statusUpdateForm.setAttribute('data-id', id);
@@ -712,19 +732,19 @@
         } catch (e) { alert("Error fetching breach details."); }
     }
 
-    async function downloadReport(id) {
+    async function downloadReport(id, reportType) {
         try {
             const response = await fetch(API_URL_BREACH, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-                body: JSON.stringify({ "_func": "download_breach_report", "id": id })
+                body: JSON.stringify({ "_func": "download_breach_report", "id": id, "report_type": reportType || 'INFORMATION' })
             });
             if (!response.ok) { alert("Failed to generate PDF report."); return; }
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `breach-report-${id}.pdf`;
+            a.download = `breach-${(reportType || 'INFORMATION').toLowerCase()}-report-${id}.pdf`;
             document.body.appendChild(a);
             a.click();
             a.remove();

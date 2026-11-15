@@ -156,4 +156,18 @@ class BreachBoardDbTest {
         Call other = breach(body("_func", "download_breach_report", "id", id), otherDpoEmail);
         assertNotEquals(200, other.status);
     }
+
+    @Test
+    void informationAndActionReportsAreDistinctPdfsAndOtherTypesAreRefused() throws Exception {
+        String id = report(Instant.now().minus(2, ChronoUnit.HOURS));
+        Call info = breach(body("_func", "download_breach_report", "id", id, "report_type", "INFORMATION"), dpoEmail);
+        Call action = breach(body("_func", "download_breach_report", "id", id, "report_type", "ACTION"), dpoEmail);
+        assertEquals(200, info.status, info.out.toString());
+        assertEquals(200, action.status, action.out.toString());
+        assertEquals("%PDF", new String(info.bytes.toByteArray(), 0, 4, java.nio.charset.StandardCharsets.ISO_8859_1));
+        assertEquals("%PDF", new String(action.bytes.toByteArray(), 0, 4, java.nio.charset.StandardCharsets.ISO_8859_1));
+        assertFalse(java.util.Arrays.equals(info.bytes.toByteArray(), action.bytes.toByteArray()), "the two reports must differ");
+        Call bad = breach(body("_func", "download_breach_report", "id", id, "report_type", "OTHER"), dpoEmail);
+        assertEquals(400, bad.status);
+    }
 }

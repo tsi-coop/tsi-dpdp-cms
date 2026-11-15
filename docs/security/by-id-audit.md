@@ -15,7 +15,7 @@ operator's). API-key and principal callers have no operator role, and several ow
 |---|---|---|---|---|
 | 1 | `Compliance.update_purge_status` | An API key could change any fiduciary's purge request (erasure evidence) and fire its webhook | High | **Fixed**, tested |
 | 2 | `Consent.link_user` | `UPDATE consent_records ... WHERE user_id = ?` was not scoped to a fiduciary: naming another tenant's principal as the "anonymous" id reassigned that person's records | High | **Fixed** (`AND fiduciary_id = ?`), tested |
-| 3 | Client API (`Consent`, `Compliance`, `Grievance`) | The body's `fiduciary_id` took precedence over the API key's own fiduciary | High | **Fixed** for every function that calls the ownership helper (reads, withdraw, erasure, purge, record_consent, record_parent_consent, link_user). Central rewrite of the body value follows `ACCESS_CONTROL_MODE` (see below) |
+| 3 | Client API (`Consent`, `Compliance`, `Grievance`) | The body's `fiduciary_id` took precedence over the API key's own fiduciary | High | **Fixed** for every function that calls the ownership helper (reads, withdraw, erasure, purge, record_consent, record_parent_consent, link_user). Central rewrite of the body value is always on (see below) |
 | 4 | `Policy.get_policy` | No ownership check: any caller could read any fiduciary's policy, including drafts | Medium-High | **Fixed**, tested |
 | 5 | Ownership helpers in `Compliance`, `Grievance`, `Consent` | `callerRole == null` (API key / principal) bypassed the check | Medium-High | **Fixed**: one shared rule, `InputProcessor.callerOwns` |
 | 6 | `Notification.mark_notification_read` | Updated by id with no owner check (breach read-receipts are compliance evidence) | Medium | **Fixed**, tested |
@@ -45,8 +45,7 @@ operator's). API-key and principal callers have no operator role, and several ow
 
 ## Still open (not changed, by design)
 
-* **Central body rewrite for the client API** (`AccessControl.checkClient`) follows `ACCESS_CONTROL_MODE`: in
-  shadow mode it only logs `ACCESS_SHADOW_TENANT CLIENT_FOREIGN_FIDUCIARY_IN_BODY`; in enforce mode it also
+* **Central body rewrite for the client API** (`AccessControl.checkClient`) is always on: it
   replaces a foreign `fiduciary_id` and fills a missing one. Functions that do not call the ownership helper and
   resolve the fiduciary from the body (see `Wallet`, `Principal`, `Notification.list_notifications`) rely on it.
 * **Second-step statements** such as `UPDATE ... WHERE id = ?` run only after the ownership check passed. They are

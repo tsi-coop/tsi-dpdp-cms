@@ -12,8 +12,9 @@
         .section-divider { border: none; border-top: 1px solid #f1f5f9; margin: 28px 0; }
         .section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 20px; }
         label { display: block; font-size: 0.8rem; font-weight: 700; color: #374151; margin-bottom: 8px; }
-        input, select { width: 100%; padding: 13px 14px; border: 1px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 0.95rem; margin-bottom: 22px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background: #fafafa; }
-        input:focus, select:focus { border-color: var(--tsi-primary); box-shadow: 0 0 0 3px rgba(0,106,103,0.1); background: white; }
+        /* Scoped under .login-card so the Tailwind CDN reset (input{padding:0;margin:0}, injected later) cannot override these. */
+        .login-card input, .login-card select { width: 100%; padding: 13px 14px; border: 1px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 0.95rem; margin-bottom: 22px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background: #fafafa; }
+        .login-card input:focus, .login-card select:focus { border-color: var(--tsi-primary); box-shadow: 0 0 0 3px rgba(0,106,103,0.1); background: white; }
         .btn-primary { background-color: var(--tsi-primary); color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: 700; font-size: 1rem; transition: background 0.2s, transform 0.1s; margin-top: 6px; }
         .btn-primary:hover { background-color: #004F4C; transform: translateY(-1px); }
         .btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; }

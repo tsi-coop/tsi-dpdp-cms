@@ -250,21 +250,9 @@ class ByIdOwnershipDbTest {
         assertEquals(200, g2.status, g2.out.toString());
     }
 
-    // ---- central client binding (follows ACCESS_CONTROL_MODE) ----
-    @Test
-    void clientBinding_shadowLogsButDoesNotChange() throws Exception {
-        assumeTrue(!AccessControl.enforcing());
-        Call k = call(body("_func", "record_consent", "fiduciary_id", fidB.toString()), key(keyA));
-        PrintStream old = System.err; ByteArrayOutputStream buf = new ByteArrayOutputStream(); System.setErr(new PrintStream(buf, true));
-        boolean ok; try { ok = AccessControl.checkClient(k.req, k.res, "record_consent"); } finally { System.setErr(old); }
-        assertTrue(ok);
-        assertTrue(buf.toString().contains("CLIENT_FOREIGN_FIDUCIARY_IN_BODY"), buf.toString());
-        assertTrue(((String) k.attrs.get(InputProcessor.REQUEST_DATA)).contains(fidB.toString()), "shadow must not rewrite the body");
-    }
-
+    // ---- central client binding  ----
     @Test
     void clientBinding_enforceOverwritesWithTheKeysOwnFiduciary() throws Exception {
-        assumeTrue(AccessControl.enforcing());
         Call k = call(body("_func", "record_consent", "fiduciary_id", fidB.toString()), key(keyA));
         assertTrue(AccessControl.checkClient(k.req, k.res, "record_consent"));
         assertTrue(((String) k.attrs.get(InputProcessor.REQUEST_DATA)).contains(fidA.toString()));

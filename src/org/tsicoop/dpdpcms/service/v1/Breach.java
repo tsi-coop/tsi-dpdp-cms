@@ -235,7 +235,13 @@ public class Breach implements Action {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'id' is required for 'download_breach_report'.", req.getRequestURI());
                         return;
                     }
-                    streamBreachReportPdf(UUID.fromString(id), res, req);
+                    // INFORMATION (default): what happened. ACTION: what was done about it.
+                    String reportType = input.get("report_type") == null ? "INFORMATION" : String.valueOf(input.get("report_type")).trim().toUpperCase();
+                    if (!"INFORMATION".equals(reportType) && !"ACTION".equals(reportType)) {
+                        OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'report_type' must be INFORMATION or ACTION.", req.getRequestURI());
+                        return;
+                    }
+                    streamBreachReportPdf(UUID.fromString(id), "ACTION".equals(reportType), res, req);
                     break;
                 }
 
@@ -750,11 +756,13 @@ public class Breach implements Action {
     }
 
     /**
-     * Builds a PDF for one breach incident and streams it inline as the HTTP
-     * response body -- a single incident's report is small/instant, so this is
-     * synchronous rather than routed through Job.java's async CSV-export pipeline.
+     * Builds a PDF for one breach incident and streams it as the HTTP response body -- a single
+     * incident's report is small/instant, so this is synchronous rather than routed through
+     * Job.java's async CSV-export pipeline. Two reports exist for an incident:
+     *   Information report: what happened (timeline, description, affected purpose, extent).
+     *   Action report: what was done (notifying principals, steps given to them, Board intimation, resolution).
      */
-    private void streamBreachReportPdf(UUID id, HttpServletResponse res, HttpServletRequest req) throws Exception {
+    private void streamBreachReportPdf(UUID id, boolean actionReport, HttpServletResponse res, HttpServletRequest req) throws Exception {
         JSONObject breach = getBreachFromDb(id);
         if (breach == null) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_NOT_FOUND, "Not Found", "Breach incident not found.", req.getRequestURI());
@@ -775,7 +783,7 @@ public class Breach implements Action {
         Font bodyFont = FontFactory.getFont(FontFactory.HELVETICA, 11);
         Font footerFont = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9);
 
-        document.add(new Paragraph("Personal Data Breach Report", titleFont));
+        document.add(new Paragraph(actionReport ? "Personal Data Breach Action Report" : "Personal Data Breach Information Report", titleFont));
         document.add(new Paragraph(" "));
         document.add(new Paragraph("Data Fiduciary: " + fiduciaryName, bodyFont));
         document.add(new Paragraph("Incident ID: " + breach.get("id"), bodyFont));
@@ -785,42 +793,51 @@ public class Breach implements Action {
             // The Board's detailed report is due within 72 hours, while the incident may still be open.
             document.add(new Paragraph("INTERIM REPORT: the incident is still " + status + "; the details below may change.", bodyFont));
         }
-        document.add(new Paragraph("Detected At: " + breach.get("detected_at"), bodyFont));
-        document.add(new Paragraph("Reported At: " + breach.get("reported_at"), bodyFont));
-        if (breach.get("notification_deadline") != null) {
-            document.add(new Paragraph("Notification Deadline: " + breach.get("notification_deadline") + " (" + breach.get("deadline_state") + ")", bodyFont));
-        }
-        if (breach.get("board_notification_deadline") != null) {
-            document.add(new Paragraph("Data Protection Board intimation: deadline " + breach.get("board_notification_deadline") + " (" + breach.get("board_state") + ")"
-                    + (breach.get("board_notified_at") != null ? "; informed on " + breach.get("board_notified_at") + (breach.get("board_reference") != null ? ", reference " + breach.get("board_reference") : "") : "; not yet recorded"), bodyFont));
-        }
-        document.add(new Paragraph(" "));
 
-        document.add(new Paragraph("Description", headingFont));
-        document.add(new Paragraph(String.valueOf(breach.get("description")), bodyFont));
-        document.add(new Paragraph(" "));
+        if (!actionReport) {
+            document.add(new Paragraph("Detected At: " + breach.get("detected_at"), bodyFont));
+            document.add(new Paragraph("Reported At: " + breach.get("reported_at"), bodyFont));
+            document.add(new Paragraph(" "));
 
-        if (breach.get("affected_purpose_id") != null) {
-            document.add(new Paragraph("Affected Purpose", headingFont));
-            if (breach.get("affected_policy_id") != null) {
-                document.add(new Paragraph("Policy: " + breach.get("affected_policy_id"), bodyFont));
+            document.add(new Paragraph("Description", headingFont));
+            document.add(new Paragraph(String.valueOf(breach.get("description")), bodyFont));
+            document.add(new Paragraph(" "));
+
+            if (breach.get("affected_purpose_id") != null) {
+                document.add(new Paragraph("Affected Purpose", headingFont));
+                if (breach.get("affected_policy_id") != null) {
+                    document.add(new Paragraph("Policy: " + breach.get("affected_policy_id"), bodyFont));
+                }
+                document.add(new Paragraph(String.valueOf(breach.get("affected_purpose_id")), bodyFont));
+                document.add(new Paragraph(" "));
             }
-            document.add(new Paragraph(String.valueOf(breach.get("affected_purpose_id")), bodyFont));
+
+            document.add(new Paragraph("Extent", headingFont));
+            document.add(new Paragraph("Data Principals affected: " + breach.get("affected_principal_count"), bodyFont));
             document.add(new Paragraph(" "));
-        }
-
-        document.add(new Paragraph("Affected Data Principals", headingFont));
-        document.add(new Paragraph("Count notified: " + breach.get("affected_principal_count"), bodyFont));
-        document.add(new Paragraph(" "));
-
-        document.add(new Paragraph("Actionable Steps Communicated to Affected Principals", headingFont));
-        document.add(new Paragraph(String.valueOf(breach.get("actionable_steps")), bodyFont));
-        document.add(new Paragraph(" "));
-
-        if (breach.get("resolution_notes") != null) {
-            document.add(new Paragraph("Resolution Notes", headingFont));
-            document.add(new Paragraph(String.valueOf(breach.get("resolution_notes")), bodyFont));
+        } else {
+            if (breach.get("notification_deadline") != null) {
+                document.add(new Paragraph("Principal Notification Deadline: " + breach.get("notification_deadline") + " (" + breach.get("deadline_state") + ")", bodyFont));
+            }
+            if (breach.get("board_notification_deadline") != null) {
+                document.add(new Paragraph("Data Protection Board intimation: deadline " + breach.get("board_notification_deadline") + " (" + breach.get("board_state") + ")"
+                        + (breach.get("board_notified_at") != null ? "; informed on " + breach.get("board_notified_at") + (breach.get("board_reference") != null ? ", reference " + breach.get("board_reference") : "") : "; not yet recorded"), bodyFont));
+            }
             document.add(new Paragraph(" "));
+
+            document.add(new Paragraph("Affected Data Principals Notified", headingFont));
+            document.add(new Paragraph("Count notified: " + breach.get("affected_principal_count"), bodyFont));
+            document.add(new Paragraph(" "));
+
+            document.add(new Paragraph("Actionable Steps Communicated to Affected Principals", headingFont));
+            document.add(new Paragraph(String.valueOf(breach.get("actionable_steps")), bodyFont));
+            document.add(new Paragraph(" "));
+
+            if (breach.get("resolution_notes") != null) {
+                document.add(new Paragraph("Resolution Notes", headingFont));
+                document.add(new Paragraph(String.valueOf(breach.get("resolution_notes")), bodyFont));
+                document.add(new Paragraph(" "));
+            }
         }
 
         Paragraph footer = new Paragraph("Generated " + Instant.now() + " by " + AppVersion.display() + " -- Prepared for management / Data Protection Board review.", footerFont);
@@ -831,7 +848,7 @@ public class Breach implements Action {
 
         byte[] pdfBytes = baos.toByteArray();
         res.setContentType("application/pdf");
-        res.setHeader("Content-Disposition", "attachment; filename=\"breach-report-" + id + ".pdf\"");
+        res.setHeader("Content-Disposition", "attachment; filename=\"breach-" + (actionReport ? "action" : "information") + "-report-" + id + ".pdf\"");
         res.setContentLength(pdfBytes.length);
         res.getOutputStream().write(pdfBytes);
         res.getOutputStream().flush();

@@ -25,9 +25,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * AccessControl.check against Postgres (db/01..20 applied). Skipped without POSTGRES_* and DB_ENCRYPTION_KEY.
- * The mode comes from the environment, so run it twice:
- *   (default)                          shadow-mode tests
- *   ACCESS_CONTROL_MODE=enforce        enforce-mode tests
  */
 class AccessControlDbTest {
     private static UUID FID_A, FID_B;
@@ -119,35 +116,19 @@ class AccessControlDbTest {
         return new String[]{buf.toString()};
     }
 
-    // ---- shadow mode ----------------------------------------------------------------------
+    // ---- reporting ------------------------------------------------------------------------
     @Test
-    void shadow_logsButNeverBlocksOrChanges() throws Exception {
-        assumeTrue(!AccessControl.enforcing(), "shadow-mode test");
-        String dpo = operator("DPO", FID_A);
-        Call k = request(dpo, body("_func", "generate_api_key", "fiduciary_id", FID_B.toString()));
-        boolean[] ok = new boolean[1];
-        String err = checkCapturingStderr(k, "apikey", "generate_api_key", ok)[0];
-        assertTrue(ok[0], "shadow mode must not block");
-        assertEquals(200, k.status);
-        assertEquals(FID_B.toString(), bodyFid(k), "shadow mode must not rewrite the request");
-        assertTrue(err.contains("[ACCESS-SHADOW] DENY DENY_NO_PERMISSION"), err);
-        assertTrue(err.contains("[ACCESS-SHADOW] TENANT FOREIGN_FIDUCIARY_IN_BODY"), err);
-    }
-
-    @Test
-    void shadow_sameCaseIsReportedOncePerWindow() throws Exception {
-        assumeTrue(!AccessControl.enforcing());
+    void report_sameCaseIsReportedOncePerWindow() throws Exception {
         String dpo = operator("DPO", FID_A);
         boolean[] ok = new boolean[1];
         String first = checkCapturingStderr(request(dpo, body("_func", "x")), "apikey", "list_api_keys", ok)[0];
         String second = checkCapturingStderr(request(dpo, body("_func", "x")), "apikey", "list_api_keys", ok)[0];
         assertTrue(first.contains("DENY_NO_PERMISSION"));
-        assertFalse(second.contains("DENY_NO_PERMISSION"), "repeat must be throttled so a wrong map cannot flood the log");
+        assertFalse(second.contains("DENY_NO_PERMISSION"), "repeat must be throttled so a repeated denial cannot flood the log");
     }
 
     @Test
-    void shadow_aDifferentPersonDeniedTheSameThingIsReportedToo() throws Exception {
-        assumeTrue(!AccessControl.enforcing());
+    void report_aDifferentPersonDeniedTheSameThingIsReportedToo() throws Exception {
         String first = operator("DPO", FID_A), second = operator("DPO", FID_A);
         boolean[] ok = new boolean[1];
         String a = checkCapturingStderr(request(first, body("_func", "x")), "apikey", "list_api_keys", ok)[0];
@@ -157,8 +138,7 @@ class AccessControlDbTest {
     }
 
     @Test
-    void shadow_allowedRequestsAreSilent() throws Exception {
-        assumeTrue(!AccessControl.enforcing());
+    void report_allowedRequestsAreSilent() throws Exception {
         String dpo = operator("DPO", FID_A);
         boolean[] ok = new boolean[1];
         String err = checkCapturingStderr(request(dpo, body("_func", "x", "fiduciary_id", FID_A.toString())), "policy", "publish_policy", ok)[0];
@@ -166,21 +146,9 @@ class AccessControlDbTest {
         assertFalse(err.contains("ACCESS-"), err);
     }
 
+    // ---- enforcement ----------------------------------------------------------------------
     @Test
-    void shadow_auditorAccountCannotBeCreatedYet() throws Exception {
-        assumeTrue(!AccessControl.enforcing());
-        String admin = operator("ADMIN", null);
-        Call k = request(admin, body("_func", "create_user", "username", "aud" + UUID.randomUUID().toString().substring(0, 6),
-                "email", "aud-" + UUID.randomUUID().toString().substring(0, 6) + "@example.test", "password", "Passw0rd!Passw0rd!", "role", "AUDITOR"));
-        new Operator().post(k.req, k.res);
-        assertEquals(400, k.status, k.out.toString());
-        assertTrue(k.out.toString().contains("ACCESS_CONTROL_MODE=enforce"));
-    }
-
-    // ---- enforce mode ---------------------------------------------------------------------
-    @Test
-    void enforce_dpoCannotUseAdminOnlyFunctions() throws Exception {
-        assumeTrue(AccessControl.enforcing(), "enforce-mode test");
+    void dpoCannotUseAdminOnlyFunctions() throws Exception {
         String dpo = operator("DPO", FID_A);
         Call k = request(dpo, body("_func", "generate_api_key"));
         assertFalse(AccessControl.check(k.req, k.res, "apikey", "generate_api_key"));
@@ -188,8 +156,7 @@ class AccessControlDbTest {
     }
 
     @Test
-    void enforce_auditorReadsButCannotWrite() throws Exception {
-        assumeTrue(AccessControl.enforcing());
+    void auditorReadsButCannotWrite() throws Exception {
         String aud = operator("AUDITOR", FID_A);
         assertTrue(AccessControl.check(request(aud, body("_func", "x")).req, request(aud, body()).res, "policy", "list_policies"));
         Call w = request(aud, body("_func", "publish_policy"));
@@ -200,8 +167,7 @@ class AccessControlDbTest {
     }
 
     @Test
-    void enforce_foreignFiduciaryIsOverwrittenAndMissingOneIsFilled() throws Exception {
-        assumeTrue(AccessControl.enforcing());
+    void foreignFiduciaryIsOverwrittenAndMissingOneIsFilled() throws Exception {
         String dpo = operator("DPO", FID_A);
         Call foreign = request(dpo, body("_func", "list_policies", "fiduciary_id", FID_B.toString()));
         assertTrue(AccessControl.check(foreign.req, foreign.res, "policy", "list_policies"));
@@ -215,8 +181,7 @@ class AccessControlDbTest {
     }
 
     @Test
-    void enforce_adminIsNeverRestrictedOrRewritten() throws Exception {
-        assumeTrue(AccessControl.enforcing());
+    void adminIsNeverRestrictedOrRewritten() throws Exception {
         String admin = operator("ADMIN", null);
         Call k = request(admin, body("_func", "list_policies", "fiduciary_id", FID_B.toString()));
         assertTrue(AccessControl.check(k.req, k.res, "apikey", "generate_api_key"));
@@ -224,8 +189,7 @@ class AccessControlDbTest {
     }
 
     @Test
-    void enforce_nonAdminWithoutFiduciaryAndUnknownRoleAreRefused() throws Exception {
-        assumeTrue(AccessControl.enforcing());
+    void nonAdminWithoutFiduciaryAndUnknownRoleAreRefused() throws Exception {
         String unbound = operator("DPO", null);
         Call u = request(unbound, body("_func", "list_policies"));
         assertFalse(AccessControl.check(u.req, u.res, "policy", "list_policies"));
@@ -237,8 +201,7 @@ class AccessControlDbTest {
     }
 
     @Test
-    void enforce_unmappedFunctionIsDeniedEvenForAdmin() throws Exception {
-        assumeTrue(AccessControl.enforcing());
+    void unmappedFunctionIsDeniedEvenForAdmin() throws Exception {
         String admin = operator("ADMIN", null);
         Call k = request(admin, body("_func", "brand_new"));
         assertFalse(AccessControl.check(k.req, k.res, "policy", "brand_new"));
@@ -246,8 +209,7 @@ class AccessControlDbTest {
     }
 
     @Test
-    void enforce_rolesTableCanTightenARole() throws Exception {
-        assumeTrue(AccessControl.enforcing());
+    void rolesTableCanTightenARole() throws Exception {
         PoolDB pool = new PoolDB(); Connection c = pool.getConnection();
         try (PreparedStatement ps = c.prepareStatement("UPDATE roles SET permissions = ARRAY['policies:read'] WHERE name = 'OPERATOR' AND fiduciary_id IS NULL")) {
             ps.executeUpdate();
@@ -265,8 +227,7 @@ class AccessControlDbTest {
     }
 
     @Test
-    void enforce_auditorAccountCanBeCreatedByAdmin() throws Exception {
-        assumeTrue(AccessControl.enforcing());
+    void auditorAccountCanBeCreatedByAdmin() throws Exception {
         String admin = operator("ADMIN", null);
         Call k = request(admin, body("_func", "create_user", "username", "aud" + UUID.randomUUID().toString().substring(0, 6),
                 "email", "aud-" + UUID.randomUUID().toString().substring(0, 6) + "@example.test", "password", "Passw0rd!Passw0rd!",

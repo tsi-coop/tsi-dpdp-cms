@@ -443,12 +443,6 @@ public class Operator implements Action {
             return;
         }
         role = role.trim().toUpperCase();
-        if ("AUDITOR".equals(role) && !AccessControl.enforcing()) {
-            // The read-only guarantee comes from the central access check; until it is enforced a
-            // service that only blocks OPERATOR would treat an AUDITOR like a DPO.
-            OutputProcessor.errorResponse(res, 400, "Bad Request", "AUDITOR accounts can only be created when " + AccessControl.MODE_VAR + "=enforce.", req.getRequestURI());
-            return;
-        }
         if ("ADMIN".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(callerRole)) {
             OutputProcessor.errorResponse(res, 403, "Forbidden", "Only ADMIN users may assign the ADMIN role.", req.getRequestURI());
             return;

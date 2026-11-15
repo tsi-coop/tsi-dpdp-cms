@@ -26,6 +26,9 @@
         }
 
         .primary-bg { background-color: var(--tsi-primary); }
+        .compliance-tab { padding: 10px 16px; font-size: 0.875rem; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; cursor: pointer; }
+        .compliance-tab:hover { color: #0f172a; }
+        .compliance-tab.active { color: var(--tsi-primary); border-bottom-color: var(--tsi-primary); }
         .primary-text { color: var(--tsi-primary); }
         .accent-text { color: var(--tsi-accent); }
         .border-primary { border-color: var(--tsi-primary); }
@@ -198,14 +201,6 @@
     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h1 class="text-2xl font-black text-slate-800 tracking-tight">Compliance Enforcement</h1>
         <div class="flex gap-3">
-            <a id="webhook-deliveries-link" href="webhook-deliveries.html" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition duration-150 flex items-center gap-2">
-                Webhook Deliveries
-                <span id="webhook-failed-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-600 text-white"></span>
-            </a>
-            <button onclick="openCesJobsModal()" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition duration-150 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
-                View Jobs
-            </button>
             <button id="run-compliance-check-btn" onclick="openNewCesJobModal()" class="primary-bg text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition duration-150 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
                 Run Compliance Check
@@ -213,8 +208,19 @@
         </div>
     </div>
 
+    <!-- Sub-menu -->
+    <nav id="compliance-tabs" class="flex flex-wrap gap-1 border-b border-slate-200 mb-6" aria-label="Compliance sections">
+        <button type="button" data-tab="purges" onclick="showComplianceTab('purges')" class="compliance-tab">Search &amp; Filter</button>
+        <button type="button" id="tab-holds" data-tab="holds" onclick="showComplianceTab('holds')" class="compliance-tab">Legal Holds</button>
+        <button type="button" id="tab-webhooks" data-tab="webhooks" onclick="showComplianceTab('webhooks')" class="compliance-tab inline-flex items-center gap-2">
+            Webhook Deliveries
+            <span id="webhook-failed-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-600 text-white"></span>
+        </button>
+        <button type="button" data-tab="jobs" onclick="showComplianceTab('jobs')" class="compliance-tab">View Jobs</button>
+    </nav>
+
     <!-- Purge Request List Card -->
-    <div class="card">
+    <div class="card" id="purges-card">
         <h2 class="text-lg font-bold text-slate-700 mb-4 tracking-tight">Search & Filter</h2>
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
             <div class="flex gap-3">
@@ -259,7 +265,7 @@
         </div>
     </div>
 
-    <div class="card mt-6" id="holds-card">
+    <div class="card hidden" id="holds-card">
         <h2 class="text-lg font-bold text-slate-700 mb-1 tracking-tight">Legal holds</h2>
         <p class="text-sm text-gray-500 mb-4 max-w-3xl">A court order or investigation can require a principal's data to be kept. While a hold is active, purges for that principal (or one purpose) are put on hold instead of being sent to processors. A hold always has a reason and an end date; when it ends, the purges resume automatically.</p>
         <form id="hold-form" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end mb-4">
@@ -274,6 +280,78 @@
             <table class="min-w-full divide-y divide-gray-200 text-xs">
                 <thead><tr class="table-header"><th class="px-2 py-2">Principal</th><th class="px-2 py-2">Purpose</th><th class="px-2 py-2">Reason</th><th class="px-2 py-2">Until</th><th class="px-2 py-2">Status</th><th class="px-2 py-2"></th></tr></thead>
                 <tbody id="hold-table-body" class="bg-white divide-y divide-gray-200"><tr><td colspan="6" class="p-3 text-center text-gray-500">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Webhook Deliveries (DPO / ADMIN only) -->
+    <div class="card hidden" id="webhooks-card">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-1">
+            <h2 class="text-lg font-bold text-slate-700 tracking-tight">Webhook deliveries</h2>
+            <a href="settings.html" class="bg-white border border-slate-300 text-slate-600 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-slate-50">Webhook Settings</a>
+        </div>
+        <p class="text-sm text-gray-500 mb-4 max-w-3xl">
+            Every notification and purge event sent to your webhooks. A failed attempt is retried automatically
+            (after 1 min, 5 min, 30 min, 2 h and 12 h); after the last attempt the delivery is marked
+            <strong>Failed</strong> and stays here so you can fix the endpoint and retry it. Your endpoint may
+            receive the same event more than once - de-duplicate on <code>delivery_id</code>.
+        </p>
+        <div class="flex flex-wrap items-center gap-3 mb-3">
+            <select id="webhook-delivery-status" class="p-2 border border-gray-300 rounded-md text-sm" onchange="whGoPage(1)">
+                <option value="FAILED">Failed</option>
+                <option value="PENDING">Retrying / pending</option>
+                <option value="DELIVERED">Delivered</option>
+                <option value="">All</option>
+            </select>
+            <button class="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 hover:bg-gray-50" onclick="loadWebhookDeliveries()">Refresh</button>
+            <span id="webhook-delivery-counts" class="text-xs text-slate-500"></span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                <tr class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">
+                    <th class="px-3 py-2">Created</th>
+                    <th class="px-3 py-2">Event</th>
+                    <th class="px-3 py-2">Status</th>
+                    <th class="px-3 py-2">Attempts</th>
+                    <th class="px-3 py-2">Last result</th>
+                    <th class="px-3 py-2">Next attempt</th>
+                    <th class="px-3 py-2"></th>
+                </tr>
+                </thead>
+                <tbody id="webhook-deliveries-body" class="divide-y divide-slate-50 text-slate-600">
+                <tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="flex items-center justify-between mt-3 text-sm text-slate-600">
+            <span id="webhook-delivery-range" class="text-xs text-slate-500"></span>
+            <div class="flex gap-2">
+                <button id="webhook-prev-btn" class="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed" onclick="whGoPage(whPage - 1)" disabled>Previous</button>
+                <button id="webhook-next-btn" class="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed" onclick="whGoPage(whPage + 1)" disabled>Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background enforcement jobs -->
+    <div class="card hidden" id="jobs-card">
+        <div class="flex justify-between items-center mb-1">
+            <h2 class="text-lg font-bold text-slate-700 tracking-tight">Background enforcement jobs</h2>
+            <button type="button" onclick="loadCesJobs()" class="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 hover:bg-gray-50">Refresh</button>
+        </div>
+        <p class="text-sm text-gray-500 mb-4 max-w-3xl">The ten most recent compliance enforcement runs.</p>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                    <th class="pb-2 px-2">Job ID</th>
+                    <th class="pb-2 px-2">Type</th>
+                    <th class="pb-2 px-2">Target</th>
+                    <th class="pb-2 px-2">Started</th>
+                    <th class="pb-2 px-2">Status</th>
+                </tr>
+                </thead>
+                <tbody id="ces-jobs-body" class="text-sm divide-y divide-slate-50"></tbody>
             </table>
         </div>
     </div>
@@ -349,33 +427,6 @@
     </div>
 </div>
 
-<!-- Modal: View CES Jobs -->
-<div id="ces-jobs-modal" class="modal-overlay">
-    <div class="modal-content">
-        <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl" onclick="closeModal('ces-jobs-modal'); loadPurgeRequests()">&times;</button>
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold text-gray-800">Background Enforcement Jobs</h2>
-            <button onclick="loadCesJobs()" class="text-xs text-teal-600 font-bold uppercase hover:underline">Refresh</button>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead>
-                <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                    <th class="pb-2 px-2">Job ID</th>
-                    <th class="pb-2 px-2">Type</th>
-                    <th class="pb-2 px-2">Target</th>
-                    <th class="pb-2 px-2">Started</th>
-                    <th class="pb-2 px-2">Status</th>
-                </tr>
-                </thead>
-                <tbody id="ces-jobs-body" class="text-sm divide-y divide-slate-50"></tbody>
-            </table>
-        </div>
-        <div class="modal-footer">
-            <button type="button" onclick="closeModal('ces-jobs-modal'); loadPurgeRequests()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300">Close</button>
-        </div>
-    </div>
-</div>
 
 <!-- Modal: New CES Job -->
 <div id="new-ces-job-modal" class="modal-overlay">
@@ -430,7 +481,8 @@
         document.querySelectorAll('#new-status option[value="PURGE_CANCELLED"], #new-status option[value="LEGAL_HOLD_APPLIED"]').forEach(o => o.remove());
         document.querySelectorAll('a[href="policies.html"], a[href="settings.html"], a[href="team.html"]').forEach(el => el.remove());
         document.getElementById('run-compliance-check-btn').remove();
-        document.getElementById('webhook-deliveries-link').remove();
+        document.getElementById('tab-webhooks').remove();
+        document.getElementById('webhooks-card').remove();
         document.getElementById('assignment-section').remove();
     }
     const USER_NAME = localStorage.getItem('username');
@@ -603,11 +655,6 @@
 
     // --- CES JOB LOGIC ---
 
-    function openCesJobsModal() {
-        document.getElementById('ces-jobs-modal').style.display = 'flex';
-        loadCesJobs();
-    }
-
     function openNewCesJobModal() {
         document.getElementById('new-ces-job-modal').style.display = 'flex';
     }
@@ -686,7 +733,7 @@
             if (response.ok) {
                 alert("Compliance Enforcement Job Initiated.");
                 closeModal('new-ces-job-modal');
-                openCesJobsModal(); // Switch to view jobs
+                showComplianceTab('jobs'); // Switch to view jobs
             } else {
                 alert("Failed to schedule job.");
             }
@@ -699,7 +746,118 @@
     });
 
 
-    // Failed-webhook count on the Webhook Deliveries button, so a failure is noticed from this screen.
+    // --- Webhook deliveries (DPO / ADMIN only) ---
+    const MAX_WEBHOOK_ATTEMPTS = 6;
+    const WEBHOOK_PAGE_SIZE = 30;
+    let whPage = 1;
+
+    function whStatusBadge(status) {
+        const cls = status === 'FAILED' ? 'bg-red-100 text-red-800' : status === 'DELIVERED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+        const label = status === 'PENDING' ? 'RETRYING' : status;
+        return `<span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${cls}">${label}</span>`;
+    }
+
+    async function whCall(func, extra) {
+        const response = await fetch('/api/v1/admin/notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+            body: JSON.stringify({ "_func": func, "fiduciary_id": FIDUCIARY_ID, ...extra })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || data.error || response.status);
+        return data;
+    }
+
+    function whGoPage(page) {
+        whPage = Math.max(1, page);
+        loadWebhookDeliveries();
+    }
+
+    async function loadWebhookDeliveries() {
+        const body = document.getElementById('webhook-deliveries-body');
+        const status = document.getElementById('webhook-delivery-status').value;
+        try {
+            const data = await whCall('list_webhook_deliveries', { ...(status ? { status } : {}), page: whPage, limit: WEBHOOK_PAGE_SIZE });
+            const c = data.counts || {};
+            const total = status ? (c[status] || 0) : (c.FAILED || 0) + (c.PENDING || 0) + (c.DELIVERED || 0);
+            // The page we asked for no longer exists (e.g. the last row on it was just retried): step back.
+            if (whPage > 1 && (!data.deliveries || data.deliveries.length === 0) && total > 0) {
+                whPage = Math.max(1, Math.ceil(total / WEBHOOK_PAGE_SIZE));
+                return loadWebhookDeliveries();
+            }
+            const shown = (data.deliveries || []).length;
+            const from = shown ? (whPage - 1) * WEBHOOK_PAGE_SIZE + 1 : 0;
+            document.getElementById('webhook-delivery-range').textContent = total ? `Showing ${from}\u2013${from + shown - 1} of ${total}` : '';
+            document.getElementById('webhook-prev-btn').disabled = whPage <= 1;
+            document.getElementById('webhook-next-btn').disabled = whPage * WEBHOOK_PAGE_SIZE >= total;
+            document.getElementById('webhook-delivery-counts').textContent =
+                `${c.FAILED || 0} failed \u00b7 ${c.PENDING || 0} retrying \u00b7 ${c.DELIVERED || 0} delivered (delivered history is kept 7 days)`;
+            updateWebhookBadge(c.FAILED || 0);
+
+            if (!data.deliveries || data.deliveries.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Nothing to show.</td></tr>';
+                return;
+            }
+            body.innerHTML = data.deliveries.map(d => {
+                const result = d.last_error ? esc(d.last_error) : (d.last_http_status ? 'HTTP ' + d.last_http_status : '\u2014');
+                const next = d.status === 'PENDING' && d.next_attempt_at ? new Date(d.next_attempt_at).toLocaleString() : '\u2014';
+                const retryBtn = d.status === 'FAILED'
+                    ? `<button class="text-indigo-600 hover:text-indigo-900 font-medium mr-3" onclick="retryWebhookDelivery('${d.id}')">Retry</button>` : '';
+                return `
+                    <tr>
+                        <td class="px-3 py-2 whitespace-nowrap">${new Date(d.created_at).toLocaleString()}</td>
+                        <td class="px-3 py-2"><span class="font-mono text-xs">${esc(d.event_type)}</span><div class="text-[10px] text-slate-400">${esc(d.category)}</div></td>
+                        <td class="px-3 py-2">${whStatusBadge(d.status)}</td>
+                        <td class="px-3 py-2">${d.attempts} / ${MAX_WEBHOOK_ATTEMPTS}</td>
+                        <td class="px-3 py-2 text-xs">${result}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs">${next}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${retryBtn}<button class="text-slate-600 hover:text-slate-900 font-medium" onclick="viewWebhookPayload('${d.id}', this)">Payload</button></td>
+                    </tr>`;
+            }).join('');
+        } catch (e) {
+            console.error("Could not load webhook deliveries", e);
+            body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Failed to load deliveries.</td></tr>';
+        }
+    }
+
+    async function retryWebhookDelivery(id) {
+        if (!confirm("Retry this delivery now? It gets a fresh set of attempts.")) return;
+        try {
+            await whCall('retry_webhook_delivery', { id });
+            await loadWebhookDeliveries();
+        } catch (e) {
+            alert("Could not retry: " + e.message);
+        }
+    }
+
+    async function viewWebhookPayload(id, btn) {
+        const row = btn.closest('tr');
+        const next = row.nextElementSibling;
+        if (next && next.classList.contains('wh-payload-row')) { next.remove(); return; }
+        try {
+            const d = await whCall('get_webhook_delivery', { id });
+            const tr = document.createElement('tr');
+            tr.className = 'wh-payload-row';
+            tr.innerHTML = `<td colspan="7" class="px-3 py-2 bg-slate-50"><pre class="text-[11px] whitespace-pre-wrap break-all">${esc(JSON.stringify(d.body, null, 2))}</pre></td>`;
+            row.after(tr);
+        } catch (e) {
+            alert("Could not load payload: " + e.message);
+        }
+    }
+
+    window.loadWebhookDeliveries = loadWebhookDeliveries;
+    window.whGoPage = whGoPage;
+    window.retryWebhookDelivery = retryWebhookDelivery;
+    window.viewWebhookPayload = viewWebhookPayload;
+
+    function updateWebhookBadge(failed) {
+        const badge = document.getElementById('webhook-failed-badge');
+        if (!badge) return;
+        badge.textContent = `${failed} failed`;
+        badge.classList.toggle('hidden', failed === 0);
+    }
+
+    // Failed-webhook count on the Webhook Deliveries tab, so a failure is noticed from this screen.
     async function loadWebhookFailedBadge() {
         try {
             const response = await fetch('/api/v1/admin/notification', {
@@ -708,10 +866,7 @@
                 body: JSON.stringify({ "_func": "list_webhook_deliveries", "fiduciary_id": FIDUCIARY_ID, "status": "FAILED", "page": 1, "limit": 1 })
             });
             if (!response.ok) return;
-            const failed = ((await response.json()).counts || {}).FAILED || 0;
-            const badge = document.getElementById('webhook-failed-badge');
-            badge.textContent = `${failed} failed`;
-            badge.classList.toggle('hidden', failed === 0);
+            updateWebhookBadge(((await response.json()).counts || {}).FAILED || 0);
         } catch (e) {
             console.error("Could not load webhook failure count", e);
         }
@@ -762,6 +917,7 @@
     }
     if (IS_OPERATOR) {
         document.getElementById('holds-card').remove();
+        document.getElementById('tab-holds').remove();
     } else {
         document.getElementById('hold-form').addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -776,6 +932,21 @@
         });
         loadHolds();
     }
+    // Sub-menu: Search & Filter and Legal Holds switch in place; the other two entries open elsewhere.
+    const COMPLIANCE_TABS = { purges: 'purges-card', holds: 'holds-card', webhooks: 'webhooks-card', jobs: 'jobs-card' };
+    function showComplianceTab(name, initial) {
+        if (!COMPLIANCE_TABS[name] || !document.getElementById(COMPLIANCE_TABS[name])) name = 'purges'; // unknown, or hidden for this role
+        Object.entries(COMPLIANCE_TABS).forEach(([tab, cardId]) => {
+            const card = document.getElementById(cardId);
+            if (card) card.classList.toggle('hidden', tab !== name);
+        });
+        document.querySelectorAll('#compliance-tabs [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+        try { history.replaceState(null, '', name === 'purges' ? location.pathname + location.search : '#' + name); } catch (e) {}
+        if (name === 'purges') { if (!initial) loadPurgeRequests(); } // first paint: the init code below loads it once operator names are known
+        else if (name === 'webhooks') loadWebhookDeliveries();
+        else if (name === 'jobs') loadCesJobs();
+    }
+    showComplianceTab(location.hash.slice(1), true);
     statusFilter.addEventListener('change', loadPurgeRequests);
     searchInput.addEventListener('input', () => { loadPurgeRequests(); });
 
@@ -852,7 +1023,6 @@
 
     window.viewPurgeRequest = viewPurgeRequest;
     window.closeModal = closeModal;
-    window.openCesJobsModal = openCesJobsModal;
     window.openNewCesJobModal = openNewCesJobModal;
     window.togglePrincipalInput = togglePrincipalInput;
     window.loadCesJobs = loadCesJobs;

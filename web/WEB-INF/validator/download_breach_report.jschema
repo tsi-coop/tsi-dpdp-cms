@@ -11,6 +11,10 @@
     },
     "fiduciary_id": {
       "type": "string"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": ["INFORMATION", "ACTION"]
     }
   },
   "required": [

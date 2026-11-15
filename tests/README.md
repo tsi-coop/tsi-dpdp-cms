@@ -4,7 +4,7 @@
 specification: every capability, including UI and operations cases, with its last verified result. JUnit (`mvn clean test`) is the
 automated coverage: a regression case that can be automated names its JUnit class in an `Automated:` line, so the two stay linked.
 There is no hosted CI; run the suite yourself before a release (default mode, then
-`ACCESS_CONTROL_MODE=enforce MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict`, then without a database) and update the "Last Verified" lines.
+`MFA_ENFORCE=true CONSENT_CAPTURE_MODE=strict`, then without a database) and update the "Last Verified" lines.
 
 | Test | What it covers |
 |---|---|
@@ -332,8 +332,7 @@ mvn test
   `POSTGRES_USER`, `POSTGRES_PASSWD`, `TSI_DPDP_CMS_ENV=local`, `TSI_LOOKUP_SALT`, and
   `DB_ENCRYPTION_KEY` (must equal the database's `app.enc_key`). Use a **throwaway database**:
   `audit_logs` is append-only, so the rows the tests write cannot be deleted.
-- `AccessControlDbTest` covers the access check; run it normally (shadow mode) and again with
-  `ACCESS_CONTROL_MODE=enforce mvn test -Dtest=AccessControlDbTest`.
+- `AccessControlDbTest` covers the access check; `mvn test -Dtest=AccessControlDbTest`.
 - `ByIdOwnershipDbTest` is a set of cross-tenant attack scenarios (fiduciary A's credentials against B's records).
   It also needs the database variables above. Run it in both modes like `AccessControlDbTest`.
 - `ConsentCaptureDbTest` (consent evidence, explicit choices, history chain, minors, `link_user`) and

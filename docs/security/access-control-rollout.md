@@ -1,4 +1,4 @@
-# Access control rollout (shadow mode, then enforce)
+# Access control
 
 Operator API calls (`/api/v1/admin/...`) pass through one check, `framework/AccessControl.java`:
 
@@ -8,39 +8,29 @@ Operator API calls (`/api/v1/admin/...`) pass through one check, `framework/Acce
    request body is replaced with theirs; a missing one is filled in; an account with no fiduciary is refused.
    ADMIN is platform-wide and never bound.
 
-`ACCESS_CONTROL_MODE` selects the behaviour:
+Both checks are always enforced: denials return 403, a body `fiduciary_id` is rewritten, and an internal error in
+the check refuses the request. There is no setting to turn this off.
 
-| Value | Effect |
-|---|---|
-| `shadow` (default; also any other/unset value) | Nothing is blocked or changed. Each case that *would* be refused is logged. |
-| `enforce` | Denials return 403; body `fiduciary_id` is rewritten; an internal error in the check refuses the request. |
+## Upgrading
 
-## Rolling out
-
-1. Apply `db/20_roles.sql`. Deploy with the default (shadow). Startup prints `Access control: SHADOW ...`.
-2. Use the system normally, ideally with every role (ADMIN, DPO, OPERATOR) exercising their screens in staging first.
-3. Read the findings. Each distinct case is reported once per hour as a line on stderr and as an audit event:
-   `ACCESS_SHADOW_DENY` (permission) or `ACCESS_SHADOW_TENANT` (`UNBOUND_ACCOUNT` / `FOREIGN_FIDUCIARY_IN_BODY`),
-   with role, `service.function` and the operator's fiduciary. In the console audit page filter by action `ACCESS_SHADOW_DENY`.
-4. For each finding decide: the map or role is **wrong** (fix `AccessMap` / `roles`) or the caller is **wrong**
-   (nothing to change; enforcing will refuse it). A finding on something users legitimately do is a bug in the map.
-5. When a representative period shows only findings you accept, set `ACCESS_CONTROL_MODE=enforce` and restart.
-   Rollback is setting it back to `shadow`.
+1. Apply `db/20_roles.sql`. Startup prints `Access control: ENFORCED ...`.
+2. Before go-live, exercise every role (ADMIN, DPO, OPERATOR, AUDITOR) through their screens in staging.
+3. Refusals are written to stderr and to the audit log as `ACCESS_DENIED` (with the reason, role, `service.function`
+   and the operator's fiduciary), once per person and case per minute. Filter the console audit page by `ACCESS_DENIED`.
+4. For each refusal decide: the map or role is **wrong** (fix `AccessMap` / `roles`) or the caller is **wrong**
+   (nothing to change). A refusal of something users legitimately do is a bug in the map.
 
 ## Things to know
 
-* A function that is **not in the map** is denied under enforce (and logged `DENY_UNMAPPED` in shadow). A unit test
+* A function that is **not in the map** is denied (logged `DENY_UNMAPPED`). A unit test
   fails the build if a service gains a function that is missing from the map.
-* `AUDITOR` (read everything, change nothing, no API keys or admin metrics) **cannot be created until
-  `ACCESS_CONTROL_MODE=enforce`**: the older per-service checks only block OPERATOR, so before enforcement an
-  AUDITOR would behave like a DPO.
+* `AUDITOR` reads everything, changes nothing, and has no API keys or admin metrics.
 * `ADMIN` is always `*` in code; editing the `roles` table cannot lock the administrator out. Role changes in the
   table take effect within 60 seconds.
 * Services still do their own checks (own-fiduciary, assigned-to-me). Those stay as the second layer.
-* Record-level ownership checks for by-id requests are always on (not part of shadow mode); see
+* Record-level ownership checks for by-id requests are always on ; see
   `by-id-audit.md`. Client API calls (API key / principal token) get the same tenant rule as operators:
-  in shadow mode a foreign `fiduciary_id` in the body is logged as `CLIENT_FOREIGN_FIDUCIARY_IN_BODY`, in
-  enforce mode it is replaced by the credential's own.
+  a foreign `fiduciary_id` in the body is replaced by the credential's own.
 
 ## Where the built-in roles are deliberately as open as before (review these)
 

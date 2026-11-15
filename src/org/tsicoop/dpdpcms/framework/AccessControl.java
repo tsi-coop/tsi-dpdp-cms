@@ -16,26 +16,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * Central access check for operator (admin) API calls: role permissions from {@link AccessMap} and
  * tenant binding from {@link TenantRule}.
  *
- * ACCESS_CONTROL_MODE=shadow (default): nothing is blocked or changed. Each decision that WOULD have
- * been a denial, an overwrite or a refusal is logged (stderr and an ACCESS_SHADOW_* audit event, once
- * per distinct case per hour) so the map can be corrected from real traffic before it is enforced.
- * ACCESS_CONTROL_MODE=enforce: denials return 403, a foreign fiduciary_id in the body is replaced by
- * the operator's own, and any internal error in the check refuses the request.
+ * Always enforced: denials return 403, a foreign fiduciary_id in the body is replaced by the
+ * operator's own, and any internal error in the check refuses the request.
  */
 public final class AccessControl {
     private AccessControl() {}
 
-    public static final String MODE_VAR = "ACCESS_CONTROL_MODE";
     private static final UUID SYSTEM_FID = new UUID(0L, 0L);
-
-    public static boolean enforcing() { return AccessPolicy.isEnforce(System.getenv(MODE_VAR)); }
-
-    public static String describeMode() {
-        String raw = System.getenv(MODE_VAR);
-        if (!AccessPolicy.isRecognisedMode(raw))
-            return "SHADOW (" + MODE_VAR + "='" + raw + "' is not recognised; use 'shadow' or 'enforce')";
-        return enforcing() ? "ENFORCE" : "SHADOW (decisions are logged, nothing is blocked)";
-    }
 
     // ---------------------------------------------------------------------------------------
     // Role -> permissions (roles table, 60 s cache, compiled-in defaults as fallback)
@@ -86,10 +73,8 @@ public final class AccessControl {
     // ---------------------------------------------------------------------------------------
     /**
      * @return true to continue with the request; false if it was refused (a 403 has been sent).
-     *         Always true in shadow mode.
      */
     public static boolean check(HttpServletRequest req, HttpServletResponse res, String service, String func) {
-        boolean enforce = enforcing();
         try {
             String role = InputProcessor.getVerifiedRole(req);
             UUID opFid = InputProcessor.getVerifiedFiduciaryId(req);
@@ -97,11 +82,11 @@ public final class AccessControl {
 
             AccessPolicy.Decision d = AccessPolicy.decide(role, permissionsFor(role), service, func);
             if (!d.allowed()) {
-                report(enforce, "DENY", d.name(), who, role, opFid, service, func);
-                if (enforce) { forbid(res, req, "You do not have permission for this action."); return false; }
+                report("DENY", d.name(), who, role, opFid, service, func);
+                forbid(res, req, "You do not have permission for this action."); return false;
             }
 
-            // Tenant binding (only meaningful for a known operator on a function that is allowed or being observed)
+            // Tenant binding (only meaningful for a known operator on an allowed function)
             JSONObject body = InputProcessor.getInput(req);
             UUID bodyFid = null;
             boolean bodyFidInvalid = false;
@@ -112,15 +97,15 @@ public final class AccessControl {
             TenantRule.Result t = TenantRule.evaluate(role, opFid, bodyFidInvalid ? SYSTEM_FID : bodyFid);
             switch (t.outcome) {
                 case UNBOUND:
-                    report(enforce, "TENANT", "UNBOUND_ACCOUNT", who, role, opFid, service, func);
-                    if (enforce) { forbid(res, req, "This account is not bound to a fiduciary."); return false; }
-                    break;
+                    report("TENANT", "UNBOUND_ACCOUNT", who, role, opFid, service, func);
+                    forbid(res, req, "This account is not bound to a fiduciary.");
+                    return false;
                 case OVERWRITE:
-                    report(enforce, "TENANT", "FOREIGN_FIDUCIARY_IN_BODY", who, role, opFid, service, func);
-                    if (enforce) setBodyFiduciary(req, body, t.fiduciaryId);
+                    report("TENANT", "FOREIGN_FIDUCIARY_IN_BODY", who, role, opFid, service, func);
+                    setBodyFiduciary(req, body, t.fiduciaryId);
                     break;
                 case FILL:
-                    if (enforce && body != null) setBodyFiduciary(req, body, t.fiduciaryId);
+                    if (body != null) setBodyFiduciary(req, body, t.fiduciaryId);
                     break;
                 default:
                     break;
@@ -128,19 +113,17 @@ public final class AccessControl {
             return true;
         } catch (Exception e) {
             System.err.println("[AccessControl] check failed for " + service + "." + func + ": " + e);
-            if (enforce) { forbid(res, req, "Access check failed."); return false; }
-            return true; // shadow mode never blocks
+            forbid(res, req, "Access check failed."); return false;
         }
     }
 
     /**
      * Tenant binding for the client API (API key or principal token): the request is for the fiduciary the
-     * credential belongs to, whatever {@code fiduciary_id} the body names. Same shadow/enforce behaviour as
-     * {@link #check}. Record-level ownership checks inside the services apply in both modes.
-     * @return true to continue; false if refused (403 sent, enforce mode only).
+     * credential belongs to, whatever {@code fiduciary_id} the body names. Record-level ownership checks inside
+     * the services apply as well.
+     * @return true to continue; false if refused (403 sent).
      */
     public static boolean checkClient(HttpServletRequest req, HttpServletResponse res, String func) {
-        boolean enforce = enforcing();
         try {
             UUID bound = InputProcessor.getCallerFiduciaryId(req);
             String who = InputProcessor.getPrincipalSubject(req);
@@ -156,15 +139,15 @@ public final class AccessControl {
             TenantRule.Result t = TenantRule.evaluate("CLIENT", bound, invalid ? SYSTEM_FID : bodyFid);
             switch (t.outcome) {
                 case UNBOUND:
-                    report(enforce, "TENANT", "CLIENT_UNBOUND_CREDENTIAL", who, "CLIENT", bound, "client", func);
-                    if (enforce) { forbid(res, req, "This credential is not bound to a fiduciary."); return false; }
-                    break;
+                    report("TENANT", "CLIENT_UNBOUND_CREDENTIAL", who, "CLIENT", bound, "client", func);
+                    forbid(res, req, "This credential is not bound to a fiduciary.");
+                    return false;
                 case OVERWRITE:
-                    report(enforce, "TENANT", "CLIENT_FOREIGN_FIDUCIARY_IN_BODY", who, "CLIENT", bound, "client", func);
-                    if (enforce) setBodyFiduciary(req, body, t.fiduciaryId);
+                    report("TENANT", "CLIENT_FOREIGN_FIDUCIARY_IN_BODY", who, "CLIENT", bound, "client", func);
+                    setBodyFiduciary(req, body, t.fiduciaryId);
                     break;
                 case FILL:
-                    if (enforce && body != null) setBodyFiduciary(req, body, t.fiduciaryId);
+                    if (body != null) setBodyFiduciary(req, body, t.fiduciaryId);
                     break;
                 default:
                     break;
@@ -172,8 +155,7 @@ public final class AccessControl {
             return true;
         } catch (Exception e) {
             System.err.println("[AccessControl] client check failed for " + func + ": " + e);
-            if (enforce) { forbid(res, req, "Access check failed."); return false; }
-            return true;
+            forbid(res, req, "Access check failed."); return false;
         }
     }
 
@@ -187,24 +169,24 @@ public final class AccessControl {
     }
 
     // ---------------------------------------------------------------------------------------
-    // Reporting: one line + one audit event per distinct case per window, so a wrong map cannot flood the log
+    // Reporting: one line + one audit event per distinct case per minute, so a repeated denial cannot flood the log
     // ---------------------------------------------------------------------------------------
     private static final Map<String, Long> lastReported = new ConcurrentHashMap<>();
 
-    private static void report(boolean enforce, String kind, String reason, String who, String role, UUID fid,
+    private static void report(String kind, String reason, String who, String role, UUID fid,
                                String service, String func) {
         // Per person as well: a different user denied the same thing a moment later must leave their own trail.
         String key = kind + "|" + reason + "|" + who + "|" + role + "|" + service + "|" + func;
         long now = System.currentTimeMillis();
-        long window = enforce ? 60_000L : 3_600_000L;
+        long window = 60_000L;
         Long last = lastReported.get(key);
         if (last != null && now - last < window) return;
         if (lastReported.size() > 5000) lastReported.clear();
         lastReported.put(key, now);
 
-        String action = enforce ? "ACCESS_DENIED" : "ACCESS_SHADOW_" + kind;
-        String detail = reason + " role=" + role + " " + service + "." + func + (enforce ? "" : " (not enforced)");
-        System.err.println("[ACCESS-" + (enforce ? "ENFORCE" : "SHADOW") + "] " + kind + " " + detail + " operator_fiduciary=" + fid);
+        String action = "ACCESS_DENIED";
+        String detail = reason + " role=" + role + " " + service + "." + func;
+        System.err.println("[ACCESS] " + kind + " " + detail + " operator_fiduciary=" + fid);
         try {
             new Audit().logEventAsync(who == null ? "UNKNOWN" : who, fid == null ? SYSTEM_FID : fid,
                     Constants.SERVICE_TYPE_SYSTEM, null, action, detail);
