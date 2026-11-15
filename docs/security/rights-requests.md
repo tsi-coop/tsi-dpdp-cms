@@ -41,7 +41,7 @@ The fiduciary is taken from the caller's credential, never from the request body
   "Right to Erasure", "Data Portability" or "Correction" options). It shows the grievance **reference number**, an optional
   **attachment**, and a **feedback** control once a grievance is resolved or closed.
 
-**DPO console** (`web/console/dpo/rights-requests.html`, "Rights Requests" in the menu)
+**DPO console** (`web/console/dpo/rights-requests.html`, "Rights" in the menu)
 * List with type, status and overdue filters; a detail dialog with assignment, outcome and a read-only **data map**: the apps and
   processors that checked consent for the principal, the purposes in their latest consent, and the ROPA entries for those
   purposes.
