@@ -924,7 +924,7 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 ### TC-V06-06: By-id requests cannot cross fiduciaries
 **Type:** API · **Priority:** Critical
 **Steps:** From fiduciary B (operator, API key and principal token), request fiduciary A's policy draft, purge request, grievance, consent record, notification receipt, audit row; try `link_user` and `record_consent` against A's principals.
-**Expected Result:** Every one is refused (403/404) and nothing of A's changes. Assignments must name an operator of the same fiduciary. A client API key's body `fiduciary_id` is ignored in favour of its own (reported in shadow, overwritten in enforce).
+**Expected Result:** Every one is refused (403/404) and nothing of A's changes. Assignments must name an operator of the same fiduciary. A client API key's body `fiduciary_id` is ignored in favour of its own (overwritten).
 **Automated:** `ByIdOwnershipDbTest`, `RecordOwnershipTest`
 **Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
 
@@ -994,8 +994,8 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 
 ### TC-V06-15: Closing a purpose, and withdrawal implications
 **Type:** API · **Priority:** High
-**Steps:** As a DPO, close a purpose (erase, then de-identify); try to grant it with `record_consent`; reopen; call `get_withdrawal_implications`; send an erasure request.
-**Expected Result:** Everyone who granted it has it withdrawn through the normal chained path and is notified; a new grant is `403`; the later purge carries the DPO's `action` (ERASE or DE_IDENTIFY), but a principal's own erasure request is always ERASE. Withdrawal implications come from the published policy (consequence, mandatory flag, legal basis, retention).
+**Steps:** As a DPO, close a purpose; try to grant it with `record_consent`; reopen; call `get_withdrawal_implications`; send an erasure request.
+**Expected Result:** Everyone who granted it has it withdrawn through the normal chained path and is notified; a new grant is `403`; the later purge carries `action` ERASE (an `action` sent to `close_purpose` is ignored), and a principal's own erasure request is always ERASE. Withdrawal implications come from the published policy (consequence, mandatory flag, legal basis, retention).
 **Automated:** `PurposeLifecycleDbTest`, `PurposeAndNominationRulesTest`
 **Last Verified:** v0.6.0 · 2026-11-14 · pass (JUnit)
 
@@ -1056,9 +1056,9 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 **Expected Result:** An "Evaluation portal" banner shows on both pages. The field is "Data Principal ID" (text, opaque placeholder, a note against email or phone IDs) in every mode; the hint after "Send OTP" does not mention email or mobile. Login works with the opaque ID.
 **Last Verified:** not run
 
-### TC-V06-23: DPO console: Rights Requests, Purposes, Legal holds, Compliance evidence
+### TC-V06-23: DPO console: Rights Requests, ROPA purposes, Legal holds, Compliance evidence
 **Type:** UI · **Priority:** High
-**Steps:** As a DPO: work a rights request end to end; close and reopen a purpose; in Compliance place and release a legal hold; open a confirmed purge. As an OPERATOR open Compliance.
+**Steps:** As a DPO: work a rights request end to end; close and reopen a purpose from the ROPA page, and revise the policy without a closed purpose (preview, draft, publish, approve the RoPA entries: the old version is archived); in Compliance place and release a legal hold; open a confirmed purge. As an OPERATOR open Compliance.
 **Expected Result:** Each screen works as in TC-V06-13/15/16/18. A confirmed purge shows who confirmed it, when, and the processor's count labelled as its own figure; "Overdue" and "De-identify" tags show when relevant. The operator is not offered Cancel or Legal hold, and has no Legal holds section.
 **Last Verified:** not run
 
@@ -1076,6 +1076,6 @@ and the unit tests also without a database (158, 0 failures). Manual (UI and Ops
 
 ### TC-V06-26: Upgrade from v0.5.4
 **Type:** Ops · **Priority:** Critical
-**Steps:** Restore a v0.5.4 database, apply `db/18` to `db/27` twice, deploy the v0.6.0 WAR.
+**Steps:** Restore a v0.5.4 database, apply `db/18` to `db/28` twice, deploy the v0.6.0 WAR.
 **Expected Result:** Every script runs cleanly twice; the audit chain verifies; existing consents, policies and grievances are intact; users are signed in again; the post-upgrade checks in the Production Deployment Guide pass.
 **Last Verified:** not run (migrations 01-27 were applied from scratch and 25-27 re-run on a throwaway database on 2026-11-14; an upgrade from a populated v0.5.4 database was not tried)

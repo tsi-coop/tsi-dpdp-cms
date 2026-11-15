@@ -14,7 +14,6 @@ public class PasswordHasher {
     public String hashPassword(String plaintextPassword) {
         // Generate a salt and hash the password
         String salt = BCrypt.gensalt(BCRYPT_LOG_ROUNDS);
-        //String salt = System.getenv("TSI_AADHAR_VAULT_SALT");
         return BCrypt.hashpw(plaintextPassword, salt);
     }
 

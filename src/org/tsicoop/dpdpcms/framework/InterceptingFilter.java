@@ -151,7 +151,7 @@ public class InterceptingFilter implements Filter {
         String uri = req.getRequestURI();
         String servletPath = req.getServletPath(); // e.g., /api/v1/user, /api/v1/policy
 
-        // CORS — origin driven by environment; defaults to deny-all if unset
+        // CORS - origin driven by environment; defaults to deny-all if unset
         String allowedOrigin = System.getenv("ALLOWED_ORIGINS");
         if (allowedOrigin != null && !allowedOrigin.trim().isEmpty()) {
             res.setHeader("Access-Control-Allow-Origin", allowedOrigin.trim());
@@ -269,7 +269,7 @@ public class InterceptingFilter implements Filter {
         }
 
         // Origin validation: for admin browser requests, reject if Origin is present but not in allowlist.
-        // Client API calls are server-to-server and typically have no Origin header — not checked.
+        // Client API calls are server-to-server and typically have no Origin header - not checked.
         if (ADMIN_URI_PATH.equalsIgnoreCase(apiCategory) && !isOriginAllowed(req)) {
             OutputProcessor.errorResponse(res, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Origin not permitted.", uri);
             return;
@@ -338,7 +338,7 @@ public class InterceptingFilter implements Filter {
                     authenticated = InputProcessor.processAdminHeader(req, res);
                 }
             } else if (BOOTSTRAP_URI_PATH.equalsIgnoreCase(apiCategory)){
-                // Only the first-run setup service is allowed unauthenticated here —
+                // Only the first-run setup service is allowed unauthenticated here -
                 // it self-gates via AdminSetup.isAdminUserExists(). Every other service
                 // must go through normal admin auth, not this bootstrap prefix.
                 authenticated = "setup".equalsIgnoreCase(serviceName);

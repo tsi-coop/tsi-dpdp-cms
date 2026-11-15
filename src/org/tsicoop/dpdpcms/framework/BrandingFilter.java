@@ -16,11 +16,11 @@ import java.util.Locale;
  * Rewrites the configured brand name (see {@link BrandConfig}) into served HTML.
  *
  * Static pages under web/ hardcode the default brand "TSI DPDP CMS" (and a few
- * shorter variants — see BrandConfig.tokens()). There is no templating layer to
+ * shorter variants - see BrandConfig.tokens()). There is no templating layer to
  * inject a runtime value, so this filter buffers each HTML response, performs a
  * longest-match-first literal substitution, and rewrites Content-Length to match.
  *
- * Passes straight through, with no buffering, whenever BRAND_NAME is unset —
+ * Passes straight through, with no buffering, whenever BRAND_NAME is unset -
  * i.e. for the overwhelming majority of deployments that keep the default brand.
  */
 public class BrandingFilter implements Filter {
@@ -82,7 +82,7 @@ public class BrandingFilter implements Filter {
     /**
      * Buffers the response body in memory instead of writing it to the client, so
      * the filter can rewrite it before the real write happens. Headers and status
-     * set by the chain pass straight through to the wrapped response as usual —
+     * set by the chain pass straight through to the wrapped response as usual -
      * only the body (getWriter()/getOutputStream()) is intercepted.
      */
     private static class CharResponseWrapper extends HttpServletResponseWrapper {

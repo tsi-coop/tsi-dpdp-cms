@@ -716,7 +716,7 @@ public class Compliance implements Action {
 
             // Give the Data Principal full lifecycle visibility: notify them once the purge
             // they triggered (erasure/retention expiry) actually completes, or if it's put on
-            // legal hold instead. Fire-and-forget — a notification failure must not fail the
+            // legal hold instead. Fire-and-forget - a notification failure must not fail the
             // status update itself.
             try {
                 if (Constants.EVENT_PURGE_COMPLETED.equals(confirmationStatus)) {

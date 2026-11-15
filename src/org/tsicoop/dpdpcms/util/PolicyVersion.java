@@ -21,6 +21,18 @@ public final class PolicyVersion {
 
     private PolicyVersion() {}
 
+    /** The next version after this one: the last number goes up by one (1.0 -> 1.1, 2 -> 3). Null if it would not fit. */
+    public static String next(String version) {
+        if (!isValid(version)) return null;
+        int dot = version.lastIndexOf('.');
+        String head = dot < 0 ? "" : version.substring(0, dot + 1);
+        String last = dot < 0 ? version : version.substring(dot + 1);
+        String n;
+        try { n = String.valueOf(Long.parseLong(last) + 1); } catch (NumberFormatException e) { return null; }
+        String out = head + n;
+        return isValid(out) ? out : null;
+    }
+
     public static boolean isValid(String version) {
         return version != null && version.length() <= MAX_LENGTH && FORMAT.matcher(version).matches();
     }
@@ -52,6 +64,22 @@ public final class PolicyVersion {
      * non-archived version, or null when there are none or several (caller must then ask
      * for an explicit version).
      */
+    /** The version that is live for this policy id (newest ACTIVE), or null. Used when a read names no version. */
+    public static String liveVersion(String policyId) throws SQLException {
+        String sql = "SELECT version FROM consent_policies WHERE id = ? AND status = 'ACTIVE' AND effective_date <= NOW() ORDER BY effective_date DESC, created_at DESC LIMIT 1";
+        PoolDB pool = new PoolDB();
+        Connection conn = null; PreparedStatement pstmt = null; ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, policyId);
+            rs = pstmt.executeQuery();
+            return rs.next() ? rs.getString(1) : null;
+        } finally {
+            pool.cleanup(rs, pstmt, conn);
+        }
+    }
+
     public static String soleOpenVersion(String policyId) throws SQLException {
         String sql = "SELECT version FROM consent_policies WHERE id = ? AND status <> 'ARCHIVED' LIMIT 2";
         PoolDB pool = new PoolDB();

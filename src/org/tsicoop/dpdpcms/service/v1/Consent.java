@@ -257,7 +257,7 @@ public class Consent implements Action {
                         return;
                     }
                     if (rejectIfOperatorNotOwnFiduciary(fiduciaryId, req, res)) return;
-                    String activeConsentPolicyId = (String) input.get("policy_id"); // optional — scope to a specific policy
+                    String activeConsentPolicyId = (String) input.get("policy_id"); // optional - scope to a specific policy
                     Optional<JSONObject> activeConsentOptional = getActiveConsentFromDb(userId, fiduciaryId, activeConsentPolicyId);
                     if (activeConsentOptional.isPresent()) {
                         output = activeConsentOptional.get();
@@ -364,8 +364,8 @@ public class Consent implements Action {
                 case "withdraw_consent":
                     userId = (String) input.get("user_id");
                     reason = (String) input.get("reason");
-                    String withdrawPolicyId = (String) input.get("policy_id"); // optional — scope to a specific policy
-                    JSONArray withdrawPurposeIds = (JSONArray) input.get("purpose_ids"); // optional — scope to specific purposes
+                    String withdrawPolicyId = (String) input.get("policy_id"); // optional - scope to a specific policy
+                    JSONArray withdrawPurposeIds = (JSONArray) input.get("purpose_ids"); // optional - scope to specific purposes
 
                     if (userId == null || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
@@ -382,7 +382,7 @@ public class Consent implements Action {
                 case "erasure_request":
                     userId = (String) input.get("user_id");
                     reason = (String) input.get("reason");
-                    String erasurePolicyId = (String) input.get("policy_id"); // optional — scope to a specific policy
+                    String erasurePolicyId = (String) input.get("policy_id"); // optional - scope to a specific policy
 
                     if (userId == null || fiduciaryId == null) {
                         OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "Missing required parameters (user_id, fiduciary_id) for withdrawal.", req.getRequestURI());
@@ -816,7 +816,7 @@ public class Consent implements Action {
                 // Partial withdrawal: only withdraw the specified purposes.
                 // appendConsentExpiry forces consent_granted=false on every entry when called with
                 // ACTION_CONSENT_WITHDRAWN, so we must split the array, process each half with the
-                // correct action, then merge — otherwise all purposes get wiped.
+                // correct action, then merge - otherwise all purposes get wiped.
                 java.util.Set<String> toWithdraw = new java.util.HashSet<>();
                 for (Object pid : purposeIds) toWithdraw.add(pid.toString());
 
@@ -1054,12 +1054,12 @@ public class Consent implements Action {
                 if (prev.next()) supersededId = (UUID) prev.getObject(1);
             }
 
-            // 2. Insert the NEW consent record — hash IP before storage
+            // 2. Insert the NEW consent record - hash IP before storage
             String storedIp = ipAddress;
             try {
                 storedIp = new LookupHasher().hashData(ipAddress != null ? ipAddress : "0.0.0.0");
             } catch (Exception ignored) {
-                // TSI_LOOKUP_SALT not set or SHA-256 unavailable — store original
+                // TSI_LOOKUP_SALT not set or SHA-256 unavailable - store original
             }
 
             UUID ropaEntryId = resolveRopaEntryId(conn, fiduciaryId, policyId);
@@ -1535,6 +1535,6 @@ public class Consent implements Action {
                 return false; // rtp is non-empty and appName not found
             }
         } catch (Exception ignored) {}
-        return true; // purpose not found or parse error — fail-open
+        return true; // purpose not found or parse error - fail-open
     }
 }

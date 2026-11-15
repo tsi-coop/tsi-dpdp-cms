@@ -222,7 +222,6 @@
             <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link active">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
-            <a href="purposes.html" class="nav-link">Purposes</a>
             <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
@@ -350,7 +349,7 @@
                             <input type="file" id="policy-file-input" accept=".json" class="hidden" />
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                             <p class="text-sm font-semibold text-slate-600">Click to upload or drag &amp; drop</p>
-                            <p class="text-xs text-slate-400 mt-1">.json files only — provided by your system designer</p>
+                            <p class="text-xs text-slate-400 mt-1">.json files only - provided by your system designer</p>
                             <p id="policy-file-name" class="text-xs font-mono text-teal-700 mt-2 hidden"></p>
                         </div>
                         <div id="policy-preview" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
@@ -402,7 +401,7 @@
                 <div class="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl mb-5">
                     <span class="text-green-600 text-lg font-black mt-0.5">✓</span>
                     <div>
-                        <p class="font-bold text-green-800 text-sm">Policy submitted — ROPA entries generated</p>
+                        <p class="font-bold text-green-800 text-sm">Policy submitted - ROPA entries generated</p>
                         <p class="text-xs text-green-600 mt-0.5">Review and publish each entry below to activate the policy. Your DPO accountability is recorded automatically on publish.</p>
                     </div>
                 </div>
@@ -445,35 +444,35 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Legal Basis</p>
-                            <p id="rem-legal-basis" class="text-sm font-semibold text-slate-700 mt-1">—</p>
+                            <p id="rem-legal-basis" class="text-sm font-semibold text-slate-700 mt-1">-</p>
                         </div>
                         <div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retention</p>
-                            <p id="rem-retention" class="text-sm font-semibold text-slate-700 mt-1">—</p>
+                            <p id="rem-retention" class="text-sm font-semibold text-slate-700 mt-1">-</p>
                         </div>
                         <div class="col-span-2">
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Purpose</p>
-                            <p id="rem-purpose" class="text-sm text-slate-600 mt-1">—</p>
+                            <p id="rem-purpose" class="text-sm text-slate-600 mt-1">-</p>
                         </div>
                         <div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Categories</p>
-                            <p id="rem-data-categories" class="text-xs font-mono text-slate-600 mt-1 break-words">—</p>
+                            <p id="rem-data-categories" class="text-xs font-mono text-slate-600 mt-1 break-words">-</p>
                         </div>
                         <div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Subjects</p>
-                            <p id="rem-data-subjects" class="text-xs font-mono text-slate-600 mt-1 break-words">—</p>
+                            <p id="rem-data-subjects" class="text-xs font-mono text-slate-600 mt-1 break-words">-</p>
                         </div>
                         <div class="col-span-2">
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Security Measures</p>
-                            <p id="rem-security" class="text-sm text-slate-600 mt-1">—</p>
+                            <p id="rem-security" class="text-sm text-slate-600 mt-1">-</p>
                         </div>
                         <div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Processors</p>
-                            <p id="rem-processors" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
+                            <p id="rem-processors" class="text-xs font-mono text-slate-500 mt-1 break-words">-</p>
                         </div>
                         <div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cross-Border Transfers</p>
-                            <p id="rem-cross-border" class="text-xs font-mono text-slate-500 mt-1 break-words">—</p>
+                            <p id="rem-cross-border" class="text-xs font-mono text-slate-500 mt-1 break-words">-</p>
                         </div>
                     </div>
                 </div>
@@ -583,7 +582,7 @@
 
         row.innerHTML = `
             <td class="px-4 py-4 whitespace-nowrap text-sm font-bold text-slate-800">${policy.id}</td>
-            <td class="px-4 py-4 whitespace-nowrap text-sm font-mono text-slate-600">${policy.version || '—'}</td>
+            <td class="px-4 py-4 whitespace-nowrap text-sm font-mono text-slate-600">${policy.version || '-'}</td>
             <td class="px-4 py-4 whitespace-nowrap text-sm text-slate-500">${policy.jurisdiction}</td>
             <td class="px-4 py-4 whitespace-nowrap">
                 ${createStatusBadge(policy.status)}
@@ -597,7 +596,7 @@
 
     async function viewRopa(policyId) {
         currentReviewPolicyId = policyId;
-        document.getElementById('modal-title').textContent = `ROPA Entries — ${policyId}`;
+        document.getElementById('modal-title').textContent = `ROPA Entries - ${policyId}`;
         document.getElementById('modal-step-hint').classList.add('hidden');
         policyForm.classList.add('hidden');
         policyModalOverlay.style.display = 'flex';
@@ -666,7 +665,7 @@
         document.getElementById('ropa-review-panel').style.display = 'none';
         document.getElementById('save-policy-btn').textContent = 'Next →';
         const stepHint = document.getElementById('modal-step-hint');
-        stepHint.textContent = 'Step 1 of 2 — Upload policy JSON';
+        stepHint.textContent = 'Step 1 of 2 - Upload policy JSON';
         stepHint.classList.remove('hidden');
         // Reset file upload state
         parsedPolicyJson = null;
@@ -865,7 +864,7 @@
     let currentViewingEntryId = null;
 
     async function reviewRopa(policyId) {
-        document.getElementById('modal-title').textContent = `ROPA Review — ${policyId}`;
+        document.getElementById('modal-title').textContent = `ROPA Review - ${policyId}`;
         policyForm.classList.add('hidden');
         policyModalOverlay.style.display = 'flex';
         await showRopaReviewPanel(policyId);
@@ -873,9 +872,9 @@
 
     async function showRopaReviewPanel(policyId) {
         currentReviewPolicyId = policyId;
-        document.getElementById('modal-title').textContent = `ROPA Review — ${policyId}`;
+        document.getElementById('modal-title').textContent = `ROPA Review - ${policyId}`;
         const stepHint = document.getElementById('modal-step-hint');
-        stepHint.textContent = 'Step 2 of 2 — Review & publish ROPA entries';
+        stepHint.textContent = 'Step 2 of 2 - Review & publish ROPA entries';
         stepHint.classList.remove('hidden');
         policyForm.classList.add('hidden');
         const panel = document.getElementById('ropa-review-panel');
@@ -912,7 +911,7 @@
         tr.className = 'hover:bg-slate-50/50 transition-colors';
         const canPublish = e.status === 'draft' || e.status === 'under_review';
         const retention = e.retention_period_days
-            ? `${e.retention_period_days}d (${e.retention_start_event || '—'})`
+            ? `${e.retention_period_days}d (${e.retention_start_event || '-'})`
             : '<span class="text-red-400 text-[10px] font-bold">NOT SET</span>';
         const statusColors = { draft: 'bg-yellow-100 text-yellow-800', active: 'bg-green-100 text-green-800', under_review: 'bg-blue-100 text-blue-800' };
         const badge = `<span class="px-2 py-0.5 text-[10px] font-black rounded-full uppercase ${statusColors[e.status] || 'bg-gray-100 text-gray-600'}">${e.status}</span>`;
@@ -948,10 +947,10 @@
             const v = await validateRes.json();
             document.getElementById('rem-title').textContent = e.activity_name || 'Entry';
             document.getElementById('rem-subtitle').textContent = `ID: ${e.id} • Status: ${e.status} • v${e.version}`;
-            document.getElementById('rem-legal-basis').textContent = (e.legal_basis || '—').replace(/_/g,' ');
-            document.getElementById('rem-purpose').textContent = e.purpose || '—';
-            document.getElementById('rem-retention').textContent = e.retention_period_days ? `${e.retention_period_days} days (${e.retention_start_event || '—'})` : '—';
-            document.getElementById('rem-security').textContent = e.security_measures || '—';
+            document.getElementById('rem-legal-basis').textContent = (e.legal_basis || '-').replace(/_/g,' ');
+            document.getElementById('rem-purpose').textContent = e.purpose || '-';
+            document.getElementById('rem-retention').textContent = e.retention_period_days ? `${e.retention_period_days} days (${e.retention_start_event || '-'})` : '-';
+            document.getElementById('rem-security').textContent = e.security_measures || '-';
             document.getElementById('rem-data-categories').textContent = prettyRopaJson(e.data_categories);
             document.getElementById('rem-data-subjects').textContent = prettyRopaJson(e.data_subject_categories);
             document.getElementById('rem-processors').textContent = prettyRopaJson(e.processors);
@@ -984,7 +983,7 @@
         }).join('');
         const nonDpoMissing = missingArr.filter(f => !f.startsWith('dpo_id'));
         if (v.complete || nonDpoMissing.length === 0) {
-            banner.textContent = '✓ Ready to publish — your DPO accountability will be recorded automatically';
+            banner.textContent = '✓ Ready to publish - your DPO accountability will be recorded automatically';
             banner.className = 'mt-4 p-2 rounded-lg text-center text-xs font-bold bg-green-100 text-green-700';
         } else {
             banner.textContent = `${nonDpoMissing.length} field(s) incomplete`;
@@ -1035,7 +1034,7 @@
     }
 
     function prettyRopaJson(val) {
-        if (val == null) return '—';
+        if (val == null) return '-';
         if (typeof val === 'string') {
             try { return JSON.stringify(JSON.parse(val), null, 0); } catch(e) { return val; }
         }

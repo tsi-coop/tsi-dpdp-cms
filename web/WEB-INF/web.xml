@@ -67,8 +67,8 @@
 	<!--
       Partner/reseller white-labeling: rewrites the brand name in served HTML
       when BRAND_NAME is configured (see BrandConfig / BrandingFilter). The
-      *.html mapping covers every static page — console, rights portal, tour,
-      login — including welcome-file forwards (e.g. '/' -> '/index.html').
+      *.html mapping covers every static page - console, rights portal, tour,
+      login - including welcome-file forwards (e.g. '/' -> '/index.html').
       No-ops when BRAND_NAME is unset, so default deployments are unaffected.
     -->
 	<filter>

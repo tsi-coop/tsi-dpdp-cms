@@ -28,7 +28,7 @@ apps). Permission `purposes:manage` (DPO) / `purposes:read` (OPERATOR); the migr
    history is chained (`supersedes_record_id`, capture mechanism `PURPOSE_CLOSED`), the action value is still `CONSENT_WITHDRAWN`
    (so the existing retention handling works unchanged), and each principal gets a `PURPOSE_CLOSED_NOTIFICATION`.
 3. The existing retention engine then raises the purge once the purpose's governing retention period has run.
-4. That purge carries `action` = **ERASE** or **DE_IDENTIFY**, as the DPO chose. Processors see it in `get_purge_request`,
+4. That purge carries `action` = **ERASE**. Closing always means erase: an `action` sent to `close_purpose` is ignored, because de-identified data can still be personal data unless it is irreversibly anonymised. The `action` field stays on purge requests (always `ERASE` for new closures); a purge already stamped `DE_IDENTIFY` keeps it. Processors see it in `get_purge_request`,
    `list_purge_requests` and the purge webhook. A principal's own erasure request is always ERASE.
 
 **Granting a closed purpose** in `record_consent` (and from the wallet) is refused with **403**; declining it, and granting other
@@ -51,8 +51,17 @@ withdrawal; if it cannot be loaded the withdrawal still goes ahead (withdrawing 
 
 * **Rights portal:** a **Nominee** section under My Rights (add, list, revoke); closed purposes shown as closed and switched off in
   Manage Consent; the consequences shown before a withdrawal.
-* **DPO console:** a **Purposes** page (list with state, principals with consent, retention action, last change; close and reopen
-  dialogs).
+* **DPO console:** on the **ROPA** page, each activity that comes from a policy purpose shows whether the purpose is open or closed
+  and how many principals have consented, with **Close purpose** and **Reopen** actions. **Close purpose** opens a guided flow (Close, Revise policy, Publish, Approve, Done) that carries the closure through to a live policy without the purpose; a half-finished closure shows **Finish closing** and resumes at the right step. A closed purpose that is
+  still in the published policy is flagged.
+
+## Revising the policy after a purpose is closed
+
+Closing records the state; it does not edit the published policy. **Revise policy** (`draft_policy_without_purpose`) shows a preview
+of the policy without the purpose, then creates it as a DRAFT at the next version (1.0 becomes 1.1) with the purpose removed from every
+language. Publishing the draft sends it for review; when its RoPA entries are approved it goes live and **supersedes** the old
+version, which is archived. The RoPA activity for the closed purpose is retired at that point. Other versions of the same policy no
+longer count as a publication conflict. Migration `db/28_one_live_policy_version.sql` makes the database itself refuse a second live version of a policy. DPO and ADMIN only; repeating it returns the existing draft.
 
 ## Decisions assumed
 

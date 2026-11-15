@@ -15,11 +15,8 @@ public final class PurposeLifecycleRules {
 
     public static final int MIN_REASON = 10;
     private static final Set<String> STATES = Set.of("OPEN", "CLOSED");
-    /** What the processors must do with the data once the governing retention period has run: erase it or de-identify it. */
-    private static final Set<String> ACTIONS = Set.of("ERASE", "DE_IDENTIFY");
 
     public static boolean isKnownState(String s) { return s != null && STATES.contains(s.trim().toUpperCase(Locale.ROOT)); }
-    public static boolean isKnownAction(String a) { return a != null && ACTIONS.contains(a.trim().toUpperCase(Locale.ROOT)); }
 
     public static String reasonProblem(String reason) {
         return reason == null || reason.trim().length() < MIN_REASON ? "a reason of at least " + MIN_REASON + " characters is required" : null;

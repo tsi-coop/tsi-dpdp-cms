@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Privacy Dashboard — Login</title>
+    <title>My Privacy Dashboard - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --tsi-primary: #006A67; --tsi-dark: #0f172a; }
@@ -66,7 +66,7 @@
 
         <div class="otp-hint" id="otp-hint" aria-live="polite">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Evaluation mode — use OTP <strong style="font-family:monospace;letter-spacing:0.1em;">1234</strong> to log in.
+            Evaluation mode - use OTP <strong style="font-family:monospace;letter-spacing:0.1em;">1234</strong> to log in.
         </div>
 
         <div id="login-error" role="alert" aria-live="assertive" style="display:none;color:#b91c1c;font-size:0.875rem;margin:0 0 18px;padding:10px 12px;background:#fef2f2;border-radius:8px;"></div>
@@ -113,7 +113,7 @@
             loginBtn.disabled = true;
         } else if (selectedOtpMode === 'DUMMY_OTP') {
             sendOtpRow.style.display = 'none';
-            hint.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Evaluation mode — use OTP <strong style="font-family:monospace;letter-spacing:0.1em;">1234</strong> to log in.';
+            hint.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Evaluation mode - use OTP <strong style="font-family:monospace;letter-spacing:0.1em;">1234</strong> to log in.';
             loginBtn.disabled = false;
         } else {
             sendOtpRow.style.display = 'block';
@@ -243,7 +243,7 @@
                 section.innerHTML = `
                     <label for="fid-select">Select Organisation</label>
                     <select id="fid-select">
-                        <option value="">— Choose your organisation —</option>
+                        <option value="">- Choose your organisation -</option>
                         ${list.map(f => `<option value="${esc(f.fiduciary_id)}">${esc(f.name)}</option>`).join('')}
                     </select>
                 `;

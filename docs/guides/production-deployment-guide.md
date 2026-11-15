@@ -484,19 +484,21 @@ The scripts in `db/` run automatically only when the database is first created. 
 
 ### Upgrading to v0.6
 
-Apply `db/18` to `db/27`, in this order. Each is safe to run again; run them as the database owner or a superuser.
+Apply `db/18` to `db/28`, in this order. Each is safe to run again; run them as the database owner or a superuser.
 
 ```bash
 set -a; source .env; set +a
 for f in db/18_audit_ledger_integrity.sql db/19_operator_access.sql db/20_roles.sql db/21_consent_capture.sql \
          db/22_grievance_enhancements.sql db/23_rights_requests.sql db/24_nominations_and_purposes.sql \
-         db/25_purge_and_legal_holds.sql db/26_breach_board_intimation.sql db/27_purge_processor_obligation.sql; do
+         db/25_purge_and_legal_holds.sql db/26_breach_board_intimation.sql db/27_purge_processor_obligation.sql \
+         db/28_one_live_policy_version.sql; do
   docker compose exec -T postgres_db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 < "$f"
 done
 ```
 
 (Binary: `psql -h <host> -U <user> -d <db> -v ON_ERROR_STOP=1 -f db/<file>.sql` for each.)
 
+- `db/28` allows only one live version per policy. It stops with a message if a policy already has two ACTIVE versions (archive the older one, then run it again).
 - `db/18` makes the audit trail append-only and numbers the existing rows; on a large audit table allow a few minutes. Take the backup first.
 - Before you deploy, make sure `.env` has real secrets: production now refuses to start on a placeholder, or a `JWT_SECRET` shorter than 32 characters.
 - Optional settings (all described in `production.env`; leave them unset for the defaults): `MFA_ENFORCE`, `CONSENT_CAPTURE_MODE`, `TOKEN_TTL_MINUTES`, `TRUSTED_PROXY`, `ACCESS_SLA_DAYS`, `CORRECTION_SLA_DAYS`, `PURGE_COMPLETION_SLA_DAYS`, `POLICY_CACHE_TTL_SECONDS`. If you run behind nginx or another proxy, set `TRUSTED_PROXY` to its address.

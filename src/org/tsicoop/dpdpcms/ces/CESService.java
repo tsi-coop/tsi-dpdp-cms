@@ -192,7 +192,7 @@ public class CESService {
                 System.out.println("[CES DEBUG] handleErasure: NO apps found in consent_validations for principal=" + principalId
                         + " fiduciary=" + fiduciaryId + " purpose=" + purposeId + " -- recording orphan compliance event so DPO is not blind to this");
                 recordOrphanComplianceEvent(principalId, fiduciaryId, purposeId, Constants.PURGE_TRIGGER_ERASURE,
-                        "Erasure request received but no linked data processor found for this purpose — manual review/erasure confirmation required.");
+                        "Erasure request received but no linked data processor found for this purpose - manual review/erasure confirmation required.");
             }
             // Notify the Data Principal that purge has been initiated for this purpose,
             // once per purpose, regardless of whether a linked App was found.
@@ -336,7 +336,7 @@ public class CESService {
                 return result;
             }
         } catch (Exception e) {
-            // non-blocking — fall back to JSONB expiry
+            // non-blocking - fall back to JSONB expiry
         } finally {
             if (pool != null) pool.cleanup(rs, pstmt, conn);
         }
@@ -383,7 +383,7 @@ public class CESService {
                         System.out.println("[CES DEBUG] handleRetentionPurge: NO apps found in consent_validations for principal=" + principalId
                                 + " fiduciary=" + fiduciaryId + " purpose=" + purposeId + " -- recording orphan compliance event so DPO is not blind to this");
                         recordOrphanComplianceEvent(principalId, fiduciaryId, purposeId, Constants.PURGE_TRIGGER_EXPIRY,
-                                "Consent/retention period expired but no linked data processor found for this purpose — manual review/erasure confirmation required.");
+                                "Consent/retention period expired but no linked data processor found for this purpose - manual review/erasure confirmation required.");
                     }
                     // Notify the Data Principal that purge has been initiated for this purpose,
                     // once per purpose, regardless of whether a linked App was found.

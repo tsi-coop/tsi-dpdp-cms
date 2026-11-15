@@ -26,6 +26,17 @@ TSI_KEYSTORE_PATH=/var/lib/tsi/consentmgr.p12
 TSI_KEYSTORE_PASS=changeit
 TSI_KEYSTORE_ALIAS=abc-consentmgr
 
+# ALLOWED_ORIGINS: comma-separated origins allowed to call the API from a browser (CORS). Set it to your public
+# address in production, e.g. https://consent.example.com. Docker defaults to http://localhost:8080.
+# ALLOWED_ORIGINS=http://localhost:8080
+
+# --- Docker only (optional) ---
+# IMAGE_NAME: which image `docker compose up` runs when not building from source (docker-compose.yml).
+# APP_PORT_MAP / DB_PORT_MAP: host:container port mappings (defaults 8080:8080 and 5432:5432).
+# IMAGE_NAME=tsicoop/tsi-dpdp-cms:latest
+# APP_PORT_MAP=8080:8080
+# DB_PORT_MAP=5432:5432
+
 # --- White-labeling (optional) ---
 # BRAND_NAME: partner/reseller brand shown throughout the UI instead of the
 # default "TSI DPDP CMS". Max 12 characters — the app refuses to start if this
@@ -33,3 +44,26 @@ TSI_KEYSTORE_ALIAS=abc-consentmgr
 # value is guaranteed to fit existing layouts without redesign).
 # BRAND_NAME=Acme Privacy
 
+# --- v0.6 settings (all optional; leave commented to keep the defaults) ---
+# ACCESS_SLA_DAYS / CORRECTION_SLA_DAYS: days allowed to fulfil an access (s.11) / correction (s.12) request. Leave
+# UNSET until your counsel has confirmed the timelines under the Rules: with no value a request has no deadline and
+# is never shown as overdue. Whole numbers from 1 to 365.
+# ACCESS_SLA_DAYS=
+# CORRECTION_SLA_DAYS=
+# PURGE_COMPLETION_SLA_DAYS: a purge request still unconfirmed after this many days is flagged to the DPO (whole
+# number 1-365). Leave UNSET until you have decided your processors' deadline: with no value nothing is flagged.
+# PURGE_COMPLETION_SLA_DAYS=
+# CONSENT_CAPTURE_MODE: warn (default) accepts consent that breaks the capture rules (a purpose left unanswered, a
+# minor without a verified guardian log) and records a CONSENT_CAPTURE_WARNING audit event; strict rejects it.
+# CONSENT_CAPTURE_MODE=warn
+# MFA (TOTP): operators can enrol in every mode. In production it is mandatory for ADMIN, DPO and AUDITOR
+# and cannot be switched off. For other modes, MFA_ENFORCE=true applies the production rule (for testing).
+# MFA_ENFORCE=false
+# TOKEN_TTL_MINUTES: operator session lifetime (default 480 = 8 hours)
+# TOKEN_TTL_MINUTES=480
+# POLICY_CACHE_TTL_SECONDS: how long a policy is cached before it is re-read, so a change made on another
+# instance is seen within this time (default 30; 0-3600).
+# POLICY_CACHE_TTL_SECONDS=30
+# TRUSTED_PROXY: comma-separated addresses of your reverse proxies (e.g. nginx). X-Forwarded-For is believed only
+# when the request comes from one of them, so the recorded client address is the real one, not the proxy's.
+# TRUSTED_PROXY=

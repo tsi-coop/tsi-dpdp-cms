@@ -304,7 +304,7 @@
             const personaLower = (SESSION.persona || '').toLowerCase();
             const allMatchPersona = personaLower && policies.every(p => (p.personas || []).some(c => (c || '').toLowerCase() === personaLower));
             const personaHint = allMatchPersona
-                ? `<p style="font-size:0.7rem;color:#64748b;margin:6px 0 0;">Showing policies for: <strong style="color:#0e7490;">${esc(getPersonaLabel(SESSION.persona))}</strong> — you can still view any policy above.</p>`
+                ? `<p style="font-size:0.7rem;color:#64748b;margin:6px 0 0;">Showing policies for: <strong style="color:#0e7490;">${esc(getPersonaLabel(SESSION.persona))}</strong> - you can still view any policy above.</p>`
                 : '';
             selectorHtml = `
                 <div style="margin-bottom:20px;">
@@ -662,9 +662,9 @@
 
         const container = document.getElementById('verify-result');
         if (result && result.consent_granted) {
-            container.innerHTML = `<div class="verify-result verify-granted">✓ Consent Active — you have granted consent for this purpose.</div>`;
+            container.innerHTML = `<div class="verify-result verify-granted">✓ Consent Active - you have granted consent for this purpose.</div>`;
         } else {
-            container.innerHTML = `<div class="verify-result verify-denied">✕ No Active Consent — consent has not been granted for this purpose.</div>`;
+            container.innerHTML = `<div class="verify-result verify-denied">✕ No Active Consent - consent has not been granted for this purpose.</div>`;
         }
     }
 
@@ -681,7 +681,7 @@
         const entries = Array.isArray(dpc) ? dpc : Object.values(dpc);
         entries.forEach(item => {
             // Use the actual per-purpose consent_granted value from the record.
-            // Do NOT blanket-override to false — partial withdrawals have a mix of true/false.
+            // Do NOT blanket-override to false - partial withdrawals have a mix of true/false.
             const granted = item.consent_granted === true;
             let label = granted ? '✓ GRANTED' : (isErasure ? '✕ ERASED' : isWithdrawal ? '✕ WITHDRAWN' : '✕ DENIED');
             let color = granted ? '#15803d' : '#b91c1c';

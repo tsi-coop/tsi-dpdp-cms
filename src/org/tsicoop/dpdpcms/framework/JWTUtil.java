@@ -20,8 +20,8 @@ public class JWTUtil {
     private static final long DEFAULT_OPERATOR_TTL_MINUTES = 480L;   // 8 hours; override with TOKEN_TTL_MINUTES
     private static final long MFA_CHALLENGE_TTL_MS = 5 * 60_000L;    // password verified, waiting for the TOTP code
     private static final long MFA_ENROL_TTL_MS = 15 * 60_000L;       // enrol-only session
-    private static final long SYNC_TOKEN_EXPIRY = 31536000000L;      // 365 days — wallet sync tokens
-    private static final long PRINCIPAL_TOKEN_EXPIRY = 86400000L;    // 24 hours — data principal portal sessions
+    private static final long SYNC_TOKEN_EXPIRY = 31536000000L;      // 365 days - wallet sync tokens
+    private static final long PRINCIPAL_TOKEN_EXPIRY = 86400000L;    // 24 hours - data principal portal sessions
     private static final Key SECRET_KEY = loadSecretKey();
     private static final long OPERATOR_TTL_MS = operatorTtlMs(System.getenv("TOKEN_TTL_MINUTES"));
     /** Operator tokens carry typ=OPERATOR. Untyped ones are honoured only if issued before this process started. */

@@ -1,5 +1,5 @@
 /**
- * TSI DPDP CMS — Data Principal Self-Service Portal
+ * TSI DPDP CMS - Data Principal Self-Service Portal
  * Shared session management and API utilities.
  * All session state is stored in sessionStorage (auto-clears on tab close).
  */

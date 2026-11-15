@@ -21,7 +21,7 @@ public class AdminSetup implements Action {
     private static final String SUPER_ADMIN_ROLE_NAME = "ADMIN";
 
     // Shared secret gating initial_setup. Must be set by whoever deploys the app
-    // (e.g. injected from their secrets manager) — there is no built-in fallback,
+    // (e.g. injected from their secrets manager) - there is no built-in fallback,
     // so setup stays disabled (fails closed) until this is explicitly configured.
     private static final String BOOTSTRAP_TOKEN_ENV = "TSI_BOOTSTRAP_TOKEN";
 
@@ -131,7 +131,7 @@ public class AdminSetup implements Action {
             conn = pool.getConnection();
             // SERIALIZABLE + explicit commit closes the check-then-insert race: two
             // requests that both observe an empty operators table can no longer both
-            // succeed — Postgres aborts the loser with SQLState 40001 below.
+            // succeed - Postgres aborts the loser with SQLState 40001 below.
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 

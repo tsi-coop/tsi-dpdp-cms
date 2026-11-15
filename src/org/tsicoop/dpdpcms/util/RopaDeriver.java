@@ -13,7 +13,7 @@ public class RopaDeriver {
     /**
      * Reads a published consent policy and upserts one draft ropa_entry per
      * processing purpose. On re-publish (new policy version), existing entries
-     * matched by (fiduciary_id, source_purpose_id) are updated in place — all
+     * matched by (fiduciary_id, source_purpose_id) are updated in place - all
      * fields overwritten from the policy and a history snapshot taken. Active
      * entries are moved to under_review so the DPO re-approves the changes.
      *

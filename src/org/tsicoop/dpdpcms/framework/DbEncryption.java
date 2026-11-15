@@ -36,7 +36,7 @@ public class DbEncryption {
     public static String key() { return key; }
 
     // ------------------------------------------------------------------
-    // SQL fragment constants — use these to build PreparedStatement SQL
+    // SQL fragment constants - use these to build PreparedStatement SQL
     // ------------------------------------------------------------------
 
     /** Encrypts a bound parameter value. Consumes 2 bind slots: (value, key). */
@@ -49,7 +49,7 @@ public class DbEncryption {
 
     /**
      * Decrypts the named column inline in a SELECT.
-     * Consumes 1 bind slot: (key) — positioned wherever the fragment appears in the query.
+     * Consumes 1 bind slot: (key) - positioned wherever the fragment appears in the query.
      *
      * Example:
      *   "SELECT " + DbEncryption.decryptCol("email_enc") + " AS email FROM operators WHERE id = ?"

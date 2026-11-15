@@ -125,6 +125,7 @@ public final class AccessMap {
         m.put("principal.principal_login", "NONE");
         m.put("principal.request_principal_otp", "NONE");
         m.put("purpose.close_purpose", "purposes:manage");
+        m.put("purpose.draft_policy_without_purpose", "purposes:manage");
         m.put("purpose.list_closed_purposes", "purposes:read");
         m.put("purpose.list_purpose_lifecycle", "purposes:read");
         m.put("purpose.reopen_purpose", "purposes:manage");

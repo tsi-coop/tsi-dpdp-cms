@@ -54,14 +54,10 @@ class PurposeAndNominationRulesTest {
     }
 
     // ---------------- purpose lifecycle ----------------
-    @Test void purposeStatesAndActions() {
+    @Test void purposeStates() {
         assertTrue(PurposeLifecycleRules.isKnownState("OPEN"));
         assertTrue(PurposeLifecycleRules.isKnownState("closed"));
         assertFalse(PurposeLifecycleRules.isKnownState("PAUSED"));
-        assertTrue(PurposeLifecycleRules.isKnownAction("ERASE"));
-        assertTrue(PurposeLifecycleRules.isKnownAction("de_identify"));
-        assertFalse(PurposeLifecycleRules.isKnownAction("DELETE"));
-        assertFalse(PurposeLifecycleRules.isKnownAction(null));
     }
 
     @Test void closingNeedsAWrittenReason() {
@@ -127,5 +123,15 @@ class PurposeAndNominationRulesTest {
     @Test void emptyRequestMeansEveryDeclaredPurpose() {
         JSONArray out = WithdrawalImplications.build(policy(purpose("p1", true, null), purpose("p2", false, null)), "en", List.of(), Set.of());
         assertEquals(2, out.size());
+    }
+
+    // ---------------- next policy version ----------------
+    @Test void nextVersionRaisesTheLastNumber() {
+        assertEquals("2", PolicyVersion.next("1"));
+        assertEquals("1.1", PolicyVersion.next("1.0"));
+        assertEquals("2.1.4", PolicyVersion.next("2.1.3"));
+        assertEquals("1.10", PolicyVersion.next("1.9"));
+        assertNull(PolicyVersion.next("abc"));
+        assertNull(PolicyVersion.next("9999999.9999"), "does not fit in 10 characters");
     }
 }

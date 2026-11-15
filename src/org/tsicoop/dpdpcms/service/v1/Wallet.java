@@ -56,7 +56,7 @@ public class Wallet implements Action {
                 return;
             }
 
-            // userId and fiduciaryId are extracted from the signed token — request body values are not trusted
+            // userId and fiduciaryId are extracted from the signed token - request body values are not trusted
             PrincipalContext ctx = validateSyncToken(syncToken);
             if (ctx == null) {
                 OutputProcessor.errorResponse(res, 401, "Unauthorized", "Invalid or expired Sync Token.", req.getRequestURI());
@@ -404,7 +404,7 @@ public class Wallet implements Action {
 
     /**
      * Validates the wallet sync token (a signed JWT with type=SYNC).
-     * userId and fiduciaryId are extracted from the token claims — the request body is not trusted.
+     * userId and fiduciaryId are extracted from the token claims - the request body is not trusted.
      */
     private PrincipalContext validateSyncToken(String token) {
         Claims claims = JWTUtil.getSyncClaimsFromToken(token);

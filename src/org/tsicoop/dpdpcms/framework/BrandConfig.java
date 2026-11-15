@@ -22,7 +22,7 @@ public class BrandConfig {
 
     /**
      * Brand-token variants found across web/, ordered longest-match-first so that
-     * "TSI DPDP CMS" is substituted before its prefix "TSI DPDP" — otherwise the
+     * "TSI DPDP CMS" is substituted before its prefix "TSI DPDP" - otherwise the
      * shorter match would fire first and leave a mangled "{brand} CMS" behind.
      */
     private static final List<String> BRAND_TOKENS = Collections.unmodifiableList(Arrays.asList(
@@ -58,7 +58,7 @@ public class BrandConfig {
         return brand;
     }
 
-    /** True only when a non-default brand is active — lets callers skip rewriting work in the common case. */
+    /** True only when a non-default brand is active - lets callers skip rewriting work in the common case. */
     public static boolean isCustomized() {
         return !DEFAULT_BRAND.equals(brand);
     }

@@ -244,7 +244,7 @@ Design accordingly: don't build an integration that expects `erasure_request` to
 
 **Rules (v0.6):** the purge must belong to your App (otherwise `403`), `status` must be a known value, and a purge that is `PURGE_COMPLETED` or `PURGE_CANCELLED` is final (`409` on any later change). Through an API key you can report `PURGE_IN_PROGRESS`, `PURGE_COMPLETED` and `PURGE_FAILED`, and report a legal obligation with `LEGAL_HOLD_APPLIED` (see below); cancelling is the DPO's decision. Who confirmed it and when are recorded from your key, never from the request. You may add `records_affected` (a whole number): it is stored and shown to the DPO as **your claim**, since the CMS cannot count records in your systems.
 
-Each purge request now has an `action`: `ERASE` (the default) or `DE_IDENTIFY`. When it is `DE_IDENTIFY`, de-identify the data instead of deleting it, then confirm as usual. A purge for a principal under a legal hold is not released to you until the hold ends.
+Each purge request has an `action`, `ERASE` for every new purge. A purge created earlier may carry `DE_IDENTIFY`: for those, de-identify the data instead of deleting it, then confirm as usual. A purge for a principal under a legal hold is not released to you until the hold ends.
 
 ## 10. Notification & Purge Polling/Webhooks
 

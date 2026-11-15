@@ -517,7 +517,7 @@
                     personas: detailRes.personas || [],
                     pendingPurposes: null,
                     consents: mappedConsents,
-                    audit: [{ phase: 'COLLECTION', action: noActiveConsent ? 'PCA Imported — No Consent Provided Yet' : 'PCA Imported & Registry Synced', time: 'Just now', actor: 'WALLET', status: noActiveConsent ? 'PENDING_CONSENT' : 'VERIFIED' }]
+                    audit: [{ phase: 'COLLECTION', action: noActiveConsent ? 'PCA Imported - No Consent Provided Yet' : 'PCA Imported & Registry Synced', time: 'Just now', actor: 'WALLET', status: noActiveConsent ? 'PENDING_CONSENT' : 'VERIFIED' }]
                 };
 
                 state.fiduciaries.push(newFid);

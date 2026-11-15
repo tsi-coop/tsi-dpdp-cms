@@ -155,7 +155,7 @@ public class Ropa implements Action {
             return;
         }
 
-        // Auto-record publishing DPO from session — sets dpo_id so validator sees it as complete
+        // Auto-record publishing DPO from session - sets dpo_id so validator sees it as complete
         UUID dpoFromSession = InputProcessor.getAuthenticatedUserId(req);
         if (dpoFromSession != null) {
             existing.put("dpo_id", dpoFromSession.toString());
@@ -793,7 +793,7 @@ public class Ropa implements Action {
         return ids;
     }
 
-    private void activatePolicyIfComplete(String policyId, UUID fiduciaryId) {
+    void activatePolicyIfComplete(String policyId, UUID fiduciaryId) {
         String countSql = "SELECT COUNT(*) FROM ropa_entries " +
                 "WHERE linked_policy_ids @> ?::jsonb AND fiduciary_id = ? " +
                 "AND status NOT IN ('active', 'retired')";
@@ -811,10 +811,47 @@ public class Ropa implements Action {
             if (rs.next() && rs.getLong(1) == 0) {
                 pool.cleanup(rs, pstmt, null);
                 rs = null; pstmt = null;
-                pstmt = conn.prepareStatement(activateSql);
-                pstmt.setString(1, policyId);
-                int activated = pstmt.executeUpdate();
+                // A new version supersedes the one that is live: archive it as the new one goes live, together.
+                conn.setAutoCommit(false);
+                int archived, activated;
+                try {
+                    // Only the newest version under review goes live; the live one and any older version still under review are superseded.
+                    String newest = null;
+                    try (PreparedStatement nv = conn.prepareStatement(
+                            "SELECT version FROM consent_policies WHERE id = ? AND fiduciary_id = ? AND status = 'UNDER_REVIEW' ORDER BY created_at DESC, effective_date DESC LIMIT 1")) {
+                        nv.setString(1, policyId); nv.setObject(2, fiduciaryId);
+                        try (ResultSet nr = nv.executeQuery()) { if (nr.next()) newest = nr.getString(1); }
+                    }
+                    if (newest == null) { archived = 0; activated = 0; }
+                    else {
+                        try (PreparedStatement ar = conn.prepareStatement(
+                                "UPDATE consent_policies SET status = 'ARCHIVED', last_updated_at = NOW() WHERE id = ? AND fiduciary_id = ? AND status IN ('ACTIVE', 'UNDER_REVIEW') AND version <> ?")) {
+                            ar.setString(1, policyId); ar.setObject(2, fiduciaryId); ar.setString(3, newest);
+                            archived = ar.executeUpdate();
+                        }
+                        pstmt = conn.prepareStatement("UPDATE consent_policies SET status = 'ACTIVE', last_updated_at = NOW() WHERE id = ? AND fiduciary_id = ? AND version = ? AND status = 'UNDER_REVIEW'");
+                        pstmt.setString(1, policyId); pstmt.setObject(2, fiduciaryId); pstmt.setString(3, newest);
+                        activated = pstmt.executeUpdate();
+                    }
+                    if (activated > 0) {
+                        // Activities for purposes the DPO has closed leave the register with the old version.
+                        try (PreparedStatement rt = conn.prepareStatement(
+                                "UPDATE ropa_entries SET status = 'retired', updated_at = NOW() WHERE fiduciary_id = ? AND status <> 'retired' AND linked_policy_ids @> ?::jsonb " +
+                                "AND source_purpose_id IN (SELECT purpose_id FROM purpose_states WHERE fiduciary_id = ? AND state = 'CLOSED') " +
+                                "AND NOT EXISTS (SELECT 1 FROM consent_policies cp, jsonb_each(cp.policy_content) l(lang, block), jsonb_array_elements(CASE WHEN jsonb_typeof(l.block -> 'data_processing_purposes') = 'array' THEN l.block -> 'data_processing_purposes' ELSE '[]'::jsonb END) pu " +
+                                "WHERE cp.id = ? AND cp.fiduciary_id = ? AND cp.status = 'ACTIVE' AND pu ->> 'id' = ropa_entries.source_purpose_id)")) {
+                            rt.setObject(1, fiduciaryId); rt.setString(2, "[\"" + policyId + "\"]"); rt.setObject(3, fiduciaryId); rt.setString(4, policyId); rt.setObject(5, fiduciaryId);
+                            rt.executeUpdate();
+                        }
+                    }
+                    conn.commit();
+                } catch (SQLException ex) { conn.rollback(); throw ex; }
+                finally { conn.setAutoCommit(true); }
                 PolicyCache.removeAll(policyId); // status changed by id only: evict every version
+                if (archived > 0) {
+                    new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE,
+                            fiduciaryId, "POLICY_SUPERSEDED", "policy:" + policyId + ", versions archived: " + archived);
+                }
                 if (activated > 0) {
                     new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE,
                             fiduciaryId, "POLICY_ACTIVATED_BY_DPO", "policy:" + policyId);

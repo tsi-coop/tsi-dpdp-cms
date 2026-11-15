@@ -184,7 +184,6 @@
             <div class="nav-divider" role="separator"></div>
             <a href="policies.html" class="nav-link">Policies</a>
             <a href="ropa.html" class="nav-link">ROPA</a>
-            <a href="purposes.html" class="nav-link">Purposes</a>
             <div class="nav-divider" role="separator"></div>
             <a href="principals.html" class="nav-link active">Principals</a>
             <a href="compliance.html" class="nav-link">Compliance</a>
@@ -291,6 +290,13 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
             Initiate Erasure Request
         </button>
+    </div>
+
+    <!-- Nominee (DPDP s.14): recorded by the principal; grants the nominee no access -->
+    <div class="card mb-6 hidden" id="nominee-card">
+        <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Nominee (DPDP s.14)</h2>
+        <p class="text-xs text-slate-500 mb-3">Recorded by the principal to exercise their rights if they die or become unable to. It grants the nominee no access: verify any claim before acting. Contact details are masked.</p>
+        <div id="nominee-body" class="text-sm text-slate-600"></div>
     </div>
 
     <!-- Consent History List Card -->
@@ -507,8 +513,33 @@
         }
     }
 
+    async function loadNominees(userId) {
+        const card = document.getElementById('nominee-card');
+        const body = document.getElementById('nominee-body');
+        card.classList.add('hidden');
+        if (localStorage.getItem('role') === 'OPERATOR') return; // operators cannot view nominations
+        try {
+            const response = await fetch('/api/v1/rights', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
+                body: JSON.stringify({ "_func": "list_nominations", "user_id": userId })
+            });
+            const d = await response.json();
+            const list = Array.isArray(d.nominations) ? d.nominations : (Array.isArray(d.data) ? d.data : (Array.isArray(d) ? d : null));
+            if (!list) { return; }
+            card.classList.remove('hidden');
+            if (list.length === 0) { body.innerHTML = '<p class="text-slate-500">No nominee recorded.</p>'; return; }
+            const fmt = v => v ? esc(String(v).substring(0, 10)) : '-';
+            body.innerHTML = '<div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="bg-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">' +
+                '<th class="px-4 py-2">Nominee</th><th class="px-4 py-2">Contact</th><th class="px-4 py-2">Relationship</th><th class="px-4 py-2">From</th><th class="px-4 py-2">Until</th><th class="px-4 py-2">Status</th></tr></thead><tbody class="divide-y divide-slate-50">' +
+                list.map(n => '<tr><td class="px-4 py-2 font-medium">' + esc(n.nominee_name) + '</td><td class="px-4 py-2 font-mono text-xs">' + esc(n.nominee_contact) + '</td><td class="px-4 py-2">' + esc(n.nominee_relationship || '-') + '</td><td class="px-4 py-2">' + fmt(n.valid_from) + '</td><td class="px-4 py-2">' + fmt(n.valid_until) + '</td><td class="px-4 py-2 font-bold">' + esc(n.status) + '</td></tr>').join('') +
+                '</tbody></table></div>';
+        } catch (e) { /* nominee panel is optional; leave hidden */ }
+    }
+
     async function loadConsentHistory(principalIdentifier) {
         recentPrincipalsCard.classList.add('hidden');
+        document.getElementById('nominee-card').classList.add('hidden');
         consentHistoryCard.classList.add('hidden');
         principalStatusCard.classList.add('hidden');
         consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Searching...</td></tr>`;
@@ -554,6 +585,7 @@
                 });
                 principalDisplayId.textContent = principalIdentifier;
                 consentHistoryCard.classList.remove('hidden');
+                loadNominees(principalIdentifier);
             } else {
                 consentTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No records found.</td></tr>`;
                 recentPrincipalsCard.classList.remove('hidden');
@@ -587,7 +619,7 @@
                 modalRecordStatus.innerHTML = createStatusBadge(record.consent_status_general, record.is_active_consent);
 
                 provenanceDetails.innerHTML = `
-                    <p><strong>Policy Ref:</strong> ${esc(record.policy_id)} (v${esc(record.policy_version || '—')})</p>
+                    <p><strong>Policy Ref:</strong> ${esc(record.policy_id)} (v${esc(record.policy_version || '-')})</p>
                     ${record.ropa_entry_id ? `<p><strong>ROPA Entry:</strong> ${esc(record.ropa_activity_name || record.ropa_entry_id)}</p>` : ''}
                     <p><strong>Time:</strong> ${esc(new Date(record.timestamp).toLocaleString())} (${esc(record.consent_mechanism)})</p>
                     <p><strong>IP:</strong> ${esc(record.ip_address || 'N/A')} | <strong>User Agent:</strong> ${esc(record.user_agent || 'N/A')}</p>

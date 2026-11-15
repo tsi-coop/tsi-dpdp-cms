@@ -7,7 +7,9 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.tsicoop.dpdpcms.framework.*;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.PolicyVersion;
 import org.tsicoop.dpdpcms.util.PurposeLifecycleRules;
+import java.util.Iterator;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,7 +29,7 @@ import java.util.UUID;
  *  2. withdraws the purpose from every principal who had consented to it, using the normal withdrawal path, so the history
  *     is chained, the principal is told, and the purpose's retention timer starts;
  *  3. lets the existing retention machinery raise the purge once the governing retention period has run;
- *  4. stamps that purge with the action the DPO chose: ERASE or DE_IDENTIFY.
+ *  4. stamps that purge with the closed purpose's action, which is ERASE (a purge already stamped DE_IDENTIFY keeps it).
  * Reopening a purpose allows grants again; it does not bring old consents back, principals must opt in afresh.
  */
 public class Purpose implements Action {
@@ -78,6 +80,11 @@ public class Purpose implements Action {
                     changeState(input, state, fiduciaryId, loginUserId, InputProcessor.getEmail(req), res, req);
                     break;
                 }
+                case "draft_policy_without_purpose":
+                    if (callerRole == null) { forbidStaffOnly(res, req); return; }
+                    if (InputProcessor.rejectIfOperator(req, res)) return;
+                    draftPolicyWithoutPurpose(input, fiduciaryId, res, req);
+                    break;
                 default:
                     OutputProcessor.errorResponse(res, 400, "Bad Request", "Unknown '_func': " + func, req.getRequestURI());
             }
@@ -175,14 +182,13 @@ public class Purpose implements Action {
                              HttpServletResponse res, HttpServletRequest req) throws Exception {
         String purposeId = (String) input.get("purpose_id");
         String reason = (String) input.get("reason");
-        boolean actionGiven = input.get("action") != null;
-        String action = actionGiven ? input.get("action").toString().trim().toUpperCase() : "ERASE";
+        // Closing always means erase. An 'action' sent by an older client is ignored; a purpose already recorded with another action keeps it.
+        String action = "ERASE";
         if (purposeId == null || purposeId.isEmpty()) { OutputProcessor.errorResponse(res, 400, "Bad Request", "'purpose_id' is required.", req.getRequestURI()); return; }
         if (!PurposeLifecycleRules.isKnownState(state)) { OutputProcessor.errorResponse(res, 400, "Bad Request", "'state' must be OPEN or CLOSED.", req.getRequestURI()); return; }
         state = state.trim().toUpperCase();
         String problem = PurposeLifecycleRules.reasonProblem(reason);
         if (problem != null) { OutputProcessor.errorResponse(res, 400, "Bad Request", "Invalid reason: " + problem + ".", req.getRequestURI()); return; }
-        if (state.equals("CLOSED") && !PurposeLifecycleRules.isKnownAction(action)) { OutputProcessor.errorResponse(res, 400, "Bad Request", "'action' must be ERASE or DE_IDENTIFY.", req.getRequestURI()); return; }
 
         PoolDB pool = new PoolDB(); Connection conn = null;
         List<String[]> principals = new ArrayList<>();
@@ -194,7 +200,7 @@ public class Purpose implements Action {
                 return;
             }
             // Running close again (to finish a large tenant) without naming an action keeps the one already chosen.
-            if (state.equals("CLOSED") && !actionGiven) {
+            if (state.equals("CLOSED")) {
                 try (PreparedStatement e = conn.prepareStatement("SELECT retention_action FROM purpose_states WHERE fiduciary_id = ? AND purpose_id = ? AND state = 'CLOSED'")) {
                     e.setObject(1, fiduciaryId); e.setString(2, purposeId);
                     try (ResultSet er = e.executeQuery()) { if (er.next()) action = er.getString(1); }
@@ -250,6 +256,87 @@ public class Purpose implements Action {
         if (state.equals("CLOSED")) { ctx.put("retention_action", action); ctx.put("principals_invalidated", invalidated); ctx.put("failed", failed); }
         new Audit().logEventAsync(actorEmail == null ? "UNKNOWN" : actorEmail, fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, actorId,
                 state.equals("CLOSED") ? "PURPOSE_CLOSED" : "PURPOSE_REOPENED", ctx.toJSONString());
+    }
+
+    /**
+     * After a purpose is closed, the published policy still lists it. This creates, for each ACTIVE policy that declares
+     * the purpose, a DRAFT at the next version with the purpose removed from every language block. The DPO reviews and
+     * publishes it from the Policies page; nothing goes live here. Safe to repeat: an open draft is returned, not duplicated.
+     */
+    private void draftPolicyWithoutPurpose(JSONObject input, UUID fiduciaryId, HttpServletResponse res, HttpServletRequest req) throws Exception {
+        String purposeId = (String) input.get("purpose_id");
+        boolean preview = Boolean.TRUE.equals(input.get("preview"));
+        if (purposeId == null || purposeId.isEmpty()) { OutputProcessor.errorResponse(res, 400, "Bad Request", "'purpose_id' is required.", req.getRequestURI()); return; }
+        PoolDB pool = new PoolDB(); Connection conn = null;
+        JSONArray drafts = new JSONArray();
+        try {
+            conn = pool.getConnection();
+            boolean closed;
+            try (PreparedStatement p = conn.prepareStatement("SELECT 1 FROM purpose_states WHERE fiduciary_id = ? AND purpose_id = ? AND state = 'CLOSED'")) {
+                p.setObject(1, fiduciaryId); p.setString(2, purposeId);
+                try (ResultSet r = p.executeQuery()) { closed = r.next(); }
+            }
+            if (!closed) { OutputProcessor.errorResponse(res, 409, "Conflict", "Close the purpose first; a revised policy is drafted only for a closed purpose.", req.getRequestURI()); return; }
+
+            List<String[]> actives = new ArrayList<>(); // id, version, jurisdiction, content
+            try (PreparedStatement p = conn.prepareStatement("SELECT id, version, jurisdiction, policy_content::text FROM consent_policies WHERE fiduciary_id = ? AND status = 'ACTIVE'")) {
+                p.setObject(1, fiduciaryId);
+                try (ResultSet r = p.executeQuery()) { while (r.next()) actives.add(new String[]{r.getString(1), r.getString(2), r.getString(3), r.getString(4)}); }
+            }
+            Policy policies = new Policy();
+            for (String[] a : actives) {
+                JSONObject content = (JSONObject) new JSONParser().parse(a[3]);
+                if (!removePurpose(content, purposeId)) continue; // this policy does not declare it
+                JSONObject d = new JSONObject();
+                d.put("policy_id", a[0]); d.put("based_on_version", a[1]);
+                String openDraft = null;
+                try (PreparedStatement p = conn.prepareStatement("SELECT version FROM consent_policies WHERE id = ? AND fiduciary_id = ? AND status = 'DRAFT' ORDER BY created_at DESC LIMIT 1")) {
+                    p.setString(1, a[0]); p.setObject(2, fiduciaryId);
+                    try (ResultSet r = p.executeQuery()) { if (r.next()) openDraft = r.getString(1); }
+                }
+                String underReview = null;
+                try (PreparedStatement p = conn.prepareStatement("SELECT version FROM consent_policies WHERE id = ? AND fiduciary_id = ? AND status = 'UNDER_REVIEW' ORDER BY created_at DESC LIMIT 1")) {
+                    p.setString(1, a[0]); p.setObject(2, fiduciaryId);
+                    try (ResultSet r = p.executeQuery()) { if (r.next()) underReview = r.getString(1); }
+                }
+                d.put("under_review_version", underReview);
+                if (preview) {
+                    String pv = PolicyVersion.next(a[1]);
+                    while (pv != null && policies.policyExists(a[0], pv)) pv = PolicyVersion.next(pv);
+                    d.put("version", pv); d.put("existing_draft_version", openDraft); d.put("preview_content", content);
+                    drafts.add(d); continue;
+                }
+                if (underReview != null && !preview) { d.put("version", underReview); d.put("already_existed", true); drafts.add(d); continue; } // one revision at a time
+                if (openDraft != null) { d.put("version", openDraft); d.put("already_existed", true); drafts.add(d); continue; }
+                String v = PolicyVersion.next(a[1]);
+                while (v != null && policies.policyExists(a[0], v)) v = PolicyVersion.next(v);
+                if (v == null) { d.put("error", "Could not work out the next version number from " + a[1] + "; create the revised version in the Policies page."); drafts.add(d); continue; }
+                policies.savePolicyToDb(a[0], v, fiduciaryId, java.sql.Timestamp.from(java.time.Instant.now()), a[2], content, "DRAFT");
+                d.put("version", v); d.put("already_existed", false);
+                drafts.add(d);
+            }
+        } finally { pool.cleanup(null, null, conn); }
+        JSONObject out = new JSONObject();
+        out.put("success", true); out.put("purpose_id", purposeId); out.put("preview", preview); out.put("drafts", drafts);
+        if (drafts.isEmpty()) out.put("message", "No active policy declares this purpose, so there is nothing to revise.");
+        OutputProcessor.send(res, 200, out);
+        if (!preview) new Audit().logEventAsync("DPO", fiduciaryId, Constants.SERVICE_TYPE_DPO_CONSOLE, fiduciaryId, "PURPOSE_POLICY_DRAFTED", "Purpose: " + purposeId + ", drafts: " + drafts.size());
+    }
+
+    /** Removes the purpose from every language block's data_processing_purposes. True if it was declared anywhere. */
+    static boolean removePurpose(JSONObject content, String purposeId) {
+        boolean found = false;
+        for (Object block : content.values()) {
+            if (!(block instanceof JSONObject)) continue;
+            Object arr = ((JSONObject) block).get("data_processing_purposes");
+            if (!(arr instanceof JSONArray)) continue;
+            Iterator<?> it = ((JSONArray) arr).iterator();
+            while (it.hasNext()) {
+                Object o = it.next();
+                if (o instanceof JSONObject && purposeId.equals(((JSONObject) o).get("id"))) { it.remove(); found = true; }
+            }
+        }
+        return found;
     }
 
     private boolean purposeExists(Connection conn, UUID fiduciaryId, String purposeId) throws SQLException {

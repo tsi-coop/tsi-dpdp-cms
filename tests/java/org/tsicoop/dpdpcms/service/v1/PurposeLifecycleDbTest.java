@@ -102,15 +102,14 @@ class PurposeLifecycleDbTest {
         assertEquals(403, purpose(body("_func", "close_purpose", "purpose_id", "p2", "reason", "Campaign finished for good."), staff(opEmail)).status);
         assertEquals(404, purpose(body("_func", "close_purpose", "purpose_id", "p2", "reason", "Campaign finished for good."), staff(otherDpoEmail)).status, "their fiduciary has no such purpose");
         assertEquals(400, purpose(body("_func", "close_purpose", "purpose_id", "p2", "reason", "no"), staff(dpoEmail)).status);
-        assertEquals(400, purpose(body("_func", "close_purpose", "purpose_id", "p2", "reason", "Campaign finished for good.", "action", "SHRED"), staff(dpoEmail)).status);
         assertEquals(404, purpose(body("_func", "close_purpose", "purpose_id", "nope", "reason", "Campaign finished for good."), staff(dpoEmail)).status);
         assertEquals(403, purpose(body("_func", "close_purpose", "purpose_id", "p2", "reason", "Campaign finished for good."), apiKeyCred(key)).status, "staff only");
 
-        Call close = purpose(body("_func", "close_purpose", "purpose_id", "p2", "reason", "Campaign finished for good.", "action", "DE_IDENTIFY"), staff(dpoEmail));
+        Call close = purpose(body("_func", "close_purpose", "purpose_id", "p2", "reason", "Campaign finished for good.", "action", "DE_IDENTIFY"), staff(dpoEmail)); // an older client sending an action: ignored
         assertEquals(200, close.status, close.out.toString());
         assertTrue(((Long) close.json().get("principals_invalidated")) >= 2L, close.out.toString());
         assertEquals("CLOSED", scalar("SELECT state FROM purpose_states WHERE fiduciary_id = ? AND purpose_id = 'p2'", fid));
-        assertEquals("DE_IDENTIFY", scalar("SELECT retention_action FROM purpose_states WHERE fiduciary_id = ? AND purpose_id = 'p2'", fid));
+        assertEquals("ERASE", scalar("SELECT retention_action FROM purpose_states WHERE fiduciary_id = ? AND purpose_id = 'p2'", fid), "closing always means erase; the action sent is ignored");
 
         for (String u : new String[]{u1, u2}) {
             // p2 is no longer granted, p1 is untouched, and the history is a chain
@@ -127,7 +126,7 @@ class PurposeLifecycleDbTest {
         Call again = purpose(body("_func", "close_purpose", "purpose_id", "p2", "reason", "Campaign finished for good."), staff(dpoEmail));
         assertEquals(200, again.status);
         assertEquals(0L, again.json().get("principals_invalidated"));
-        assertEquals("DE_IDENTIFY", scalar("SELECT retention_action FROM purpose_states WHERE fiduciary_id = ? AND purpose_id = 'p2'", fid), "the chosen action is kept");
+        assertEquals("ERASE", scalar("SELECT retention_action FROM purpose_states WHERE fiduciary_id = ? AND purpose_id = 'p2'", fid), "the recorded action is kept");
 
         // granting the closed purpose is refused (403) in every path; declining it, and granting others, is fine
         Call grant = consent(body("_func", "record_consent", "user_id", u3, "policy_id", policyId, "data_point_consents", choices(true, true)), apiKeyCred(key));
@@ -198,5 +197,110 @@ class PurposeLifecycleDbTest {
 
         assertEquals(404, consent(body("_func", "get_withdrawal_implications", "policy_id", "no-such-policy"), apiKeyCred(key)).status);
         assertEquals(404, consent(body("_func", "get_withdrawal_implications", "policy_id", policyId), apiKeyCred(keyOther)).status, "another fiduciary has no such policy");
+    }
+
+    // ---- revised policy after closing ----
+    @Test
+    void aClosedPurposeCanBeRemovedFromThePolicyAsANewVersionAndPublished() throws Exception {
+        UUID f = fiduciary();
+        String dpo = operator("DPO", f);
+        String pid = "rv-" + UUID.randomUUID().toString().substring(0, 8);
+        String content = "{\"en\":{\"data_processing_purposes\":[{\"id\":\"a1\",\"name\":\"Service\"},{\"id\":\"a2\",\"name\":\"Marketing\"}]},\"hi\":{\"data_processing_purposes\":[{\"id\":\"a1\",\"name\":\"S\"},{\"id\":\"a2\",\"name\":\"M\"}]}}";
+        sql("INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) VALUES (?, '1.0', ?, NOW() - interval '1 day', 'ACTIVE', 'IN', ?::jsonb, NOW(), NOW())", pid, f, content);
+
+        // not closed yet: refused
+        assertEquals(409, purpose(body("_func", "draft_policy_without_purpose", "purpose_id", "a2"), staff(dpo)).status);
+        assertEquals(200, purpose(body("_func", "close_purpose", "purpose_id", "a2", "reason", "Marketing is discontinued."), staff(dpo)).status);
+
+        // operators cannot
+        String op = operator("OPERATOR", f);
+        assertEquals(403, purpose(body("_func", "draft_policy_without_purpose", "purpose_id", "a2"), staff(op)).status);
+
+        // preview writes nothing
+        Call pv = purpose(body("_func", "draft_policy_without_purpose", "purpose_id", "a2", "preview", Boolean.TRUE), staff(dpo));
+        assertEquals(200, pv.status, pv.out.toString());
+        JSONObject d0 = (JSONObject) ((JSONArray) pv.json().get("drafts")).get(0);
+        assertEquals("1.1", d0.get("version"));
+        assertFalse(d0.get("preview_content").toString().contains("a2"), "the purpose is gone from every language");
+        assertTrue(d0.get("preview_content").toString().contains("a1"));
+        assertEquals("0", scalar("SELECT COUNT(*) FROM consent_policies WHERE id = ? AND status = 'DRAFT'", pid));
+
+        // create the draft; repeating returns the same draft
+        Call mk = purpose(body("_func", "draft_policy_without_purpose", "purpose_id", "a2"), staff(dpo));
+        assertEquals(200, mk.status, mk.out.toString());
+        assertEquals("1.1", ((JSONObject) ((JSONArray) mk.json().get("drafts")).get(0)).get("version"));
+        Call again = purpose(body("_func", "draft_policy_without_purpose", "purpose_id", "a2"), staff(dpo));
+        assertEquals(Boolean.TRUE, ((JSONObject) ((JSONArray) again.json().get("drafts")).get(0)).get("already_existed"));
+        assertEquals("1", scalar("SELECT COUNT(*) FROM consent_policies WHERE id = ? AND status = 'DRAFT'", pid));
+        assertEquals("ACTIVE", scalar("SELECT status FROM consent_policies WHERE id = ? AND version = '1.0'", pid), "nothing goes live until published");
+
+        // The register has an activity for each purpose, linked to the live policy
+        sql("INSERT INTO ropa_entries (fiduciary_id, source_purpose_id, activity_name, purpose, legal_basis, linked_policy_ids, status) VALUES (?, 'a2', 'Marketing', 'Marketing', 'consent', ?::jsonb, 'active')", f, "[\"" + pid + "\"]");
+
+        // Publishing the new version is allowed while 1.0 is live: it goes for review, and 1.0 stays live meanwhile
+        Call pub = call((q, r) -> new Policy().post(q, r), body("_func", "publish_policy", "policy_id", pid, "version", "1.1", "fiduciary_id", f.toString()), staff(dpo));
+        assertEquals(200, pub.status, pub.out.toString());
+        assertEquals("UNDER_REVIEW", scalar("SELECT status FROM consent_policies WHERE id = ? AND version = '1.1'", pid));
+        assertEquals("ACTIVE", scalar("SELECT status FROM consent_policies WHERE id = ? AND version = '1.0'", pid));
+
+        // Approving its register entries makes 1.1 live and archives 1.0; the closed purpose's activity is retired
+        sql("UPDATE ropa_entries SET status = 'active' WHERE fiduciary_id = ? AND source_purpose_id = 'a1'", f);
+        new Ropa().activatePolicyIfComplete(pid, f);
+        assertEquals("ACTIVE", scalar("SELECT status FROM consent_policies WHERE id = ? AND version = '1.1'", pid));
+        assertEquals("ARCHIVED", scalar("SELECT status FROM consent_policies WHERE id = ? AND version = '1.0'", pid));
+        assertEquals("retired", scalar("SELECT status FROM ropa_entries WHERE fiduciary_id = ? AND source_purpose_id = 'a2'", f));
+        assertEquals("active", scalar("SELECT status FROM ropa_entries WHERE fiduciary_id = ? AND source_purpose_id = 'a1'", f));
+        assertEquals("1", scalar("SELECT COUNT(*) FROM consent_policies WHERE id = ? AND status = 'ACTIVE'", pid), "only one version is live");
+    }
+
+    @Test
+    void onlyOneVersionIsEverLive_andAVersionlessReadReturnsIt() throws Exception {
+        UUID f = fiduciary();
+        String dpo = operator("DPO", f);
+        String pid = "ov-" + UUID.randomUUID().toString().substring(0, 8);
+        String content = "{\"en\":{\"data_processing_purposes\":[{\"id\":\"b1\",\"name\":\"Service\"},{\"id\":\"b2\",\"name\":\"Marketing\"}]}}";
+        sql("INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) VALUES (?, '1.0', ?, NOW() - interval '1 day', 'ACTIVE', 'IN', ?::jsonb, NOW(), NOW())", pid, f, content);
+        assertEquals(200, purpose(body("_func", "close_purpose", "purpose_id", "b2", "reason", "Marketing is discontinued."), staff(dpo)).status);
+
+        // a draft exists next to the live version: a read with no version still returns the live one
+        Call mk = purpose(body("_func", "draft_policy_without_purpose", "purpose_id", "b2"), staff(dpo));
+        assertEquals(200, mk.status, mk.out.toString());
+        Call get = call((q, r) -> new Policy().post(q, r), body("_func", "get_policy", "policy_id", pid, "fiduciary_id", f.toString()), staff(dpo));
+        assertEquals(200, get.status, get.out.toString());
+        assertTrue(get.out.toString().contains("\"1.0\""), "the live version is returned, not an error");
+
+        // publish the draft: while it awaits review no second revision is started
+        assertEquals(200, call((q, r) -> new Policy().post(q, r), body("_func", "publish_policy", "policy_id", pid, "version", "1.1", "fiduciary_id", f.toString()), staff(dpo)).status);
+        Call again = purpose(body("_func", "draft_policy_without_purpose", "purpose_id", "b2"), staff(dpo));
+        assertEquals("1.1", ((JSONObject) ((JSONArray) again.json().get("drafts")).get(0)).get("version"));
+        assertEquals("2", scalar("SELECT COUNT(*) FROM consent_policies WHERE id = ?", pid), "no version 1.2 was created");
+
+        // two versions under review (the state that used to leave two live): only the newest goes live, the rest are superseded
+        sql("INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) VALUES (?, '1.2', ?, NOW(), 'UNDER_REVIEW', 'IN', ?::jsonb, NOW() + interval '1 second', NOW())", pid, f, content.replace(",{\"id\":\"b2\",\"name\":\"Marketing\"}", ""));
+        sql("UPDATE ropa_entries SET status = 'active' WHERE fiduciary_id = ?", f); // the DPO has approved the activities
+        new Ropa().activatePolicyIfComplete(pid, f);
+        assertEquals("ACTIVE", scalar("SELECT status FROM consent_policies WHERE id = ? AND version = '1.2'", pid));
+        assertEquals("ARCHIVED", scalar("SELECT status FROM consent_policies WHERE id = ? AND version = '1.1'", pid));
+        assertEquals("ARCHIVED", scalar("SELECT status FROM consent_policies WHERE id = ? AND version = '1.0'", pid));
+        assertEquals("1", scalar("SELECT COUNT(*) FROM consent_policies WHERE id = ? AND status = 'ACTIVE'", pid));
+        Call get2 = call((q, r) -> new Policy().post(q, r), body("_func", "get_policy", "policy_id", pid, "fiduciary_id", f.toString()), staff(dpo));
+        assertEquals(200, get2.status, get2.out.toString());
+        assertTrue(get2.out.toString().contains("\"1.2\""));
+    }
+
+    @Test
+    void theDatabaseRefusesASecondLiveVersionOfAPolicy() throws Exception {
+        UUID f = fiduciary();
+        String pid = "ix-" + UUID.randomUUID().toString().substring(0, 8);
+        String content = "{\"en\":{\"data_processing_purposes\":[{\"id\":\"c1\",\"name\":\"Service\"}]}}";
+        sql("INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) VALUES (?, '1.0', ?, NOW(), 'ACTIVE', 'IN', ?::jsonb, NOW(), NOW())", pid, f, content);
+        // a draft is fine; making it live next to the live one is not
+        sql("INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) VALUES (?, '1.1', ?, NOW(), 'DRAFT', 'IN', ?::jsonb, NOW(), NOW())", pid, f, content);
+        assertThrows(Exception.class, () -> sql("UPDATE consent_policies SET status = 'ACTIVE' WHERE id = ? AND version = '1.1'", pid));
+        assertThrows(Exception.class, () -> sql("INSERT INTO consent_policies (id, version, fiduciary_id, effective_date, status, jurisdiction, policy_content, created_at, last_updated_at) VALUES (?, '1.2', ?, NOW(), 'ACTIVE', 'IN', ?::jsonb, NOW(), NOW())", pid, f, content));
+        // archiving the live one first (what activation does) then activating is allowed
+        sql("UPDATE consent_policies SET status = 'ARCHIVED' WHERE id = ? AND version = '1.0'", pid);
+        sql("UPDATE consent_policies SET status = 'ACTIVE' WHERE id = ? AND version = '1.1'", pid);
+        assertEquals("1", scalar("SELECT COUNT(*) FROM consent_policies WHERE id = ? AND status = 'ACTIVE'", pid));
     }
 }

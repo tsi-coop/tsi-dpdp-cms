@@ -73,7 +73,9 @@ public class Policy implements Action {
             if (versionStr.isEmpty() && policyIdStr != null && !policyIdStr.isEmpty()
                     && (func.equalsIgnoreCase("get_policy") || func.equalsIgnoreCase("update_policy")
                     || func.equalsIgnoreCase("publish_policy") || func.equalsIgnoreCase("delete_policy"))) {
-                String soleVersion = PolicyVersion.soleOpenVersion(policyIdStr);
+                // A read names the live version when no version is given, so a draft or a version under review never hides it.
+                String soleVersion = func.equalsIgnoreCase("get_policy") ? PolicyVersion.liveVersion(policyIdStr) : null;
+                if (soleVersion == null) soleVersion = PolicyVersion.soleOpenVersion(policyIdStr);
                 if (soleVersion == null) {
                     OutputProcessor.errorResponse(res, HttpServletResponse.SC_BAD_REQUEST, "Bad Request", "'version' is required for '" + func + "': policy '" + policyIdStr + "' does not have exactly one open version.", req.getRequestURI());
                     return;
@@ -452,7 +454,7 @@ public class Policy implements Action {
             }
         }
 
-        // 2. Fall back to request body — required for ADMIN users not bound to a fiduciary
+        // 2. Fall back to request body - required for ADMIN users not bound to a fiduciary
         try {
             JSONObject input = InputProcessor.getInput(req);
             if (input != null) {
@@ -468,7 +470,7 @@ public class Policy implements Action {
     /**
      * Checks if a policy version already exists.
      */
-    private boolean policyExists(String policyId, String version) throws SQLException {
+    boolean policyExists(String policyId, String version) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -690,7 +692,7 @@ public class Policy implements Action {
         return Optional.empty();
     }
 
-    private JSONObject savePolicyToDb(String policyId, String version, UUID fiduciaryId, Timestamp effectiveDate, String jurisdiction, JSONObject policyContent, String status) throws SQLException {
+    JSONObject savePolicyToDb(String policyId, String version, UUID fiduciaryId, Timestamp effectiveDate, String jurisdiction, JSONObject policyContent, String status) throws SQLException {
         JSONObject output = new JSONObject();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -795,11 +797,12 @@ public class Policy implements Action {
 
             // 2. Scan all currently ACTIVE/UNDER_REVIEW policies for the fiduciary for potential collisions
             Set<String> activePurposes = new HashSet<>();
-            String scanSql = "SELECT policy_content FROM consent_policies WHERE fiduciary_id = ? AND status IN ('ACTIVE', 'UNDER_REVIEW') AND (id != ? OR version != ?)";
+            // Other versions of this same policy are not conflicts: a new version supersedes the active one when it goes live
+            // (see Ropa.activatePolicyIfComplete, which archives the old version).
+            String scanSql = "SELECT policy_content FROM consent_policies WHERE fiduciary_id = ? AND status IN ('ACTIVE', 'UNDER_REVIEW') AND id != ?";
             pstmtCheck = conn.prepareStatement(scanSql);
             pstmtCheck.setObject(1, fiduciaryId);
             pstmtCheck.setString(2, policyId);
-            pstmtCheck.setString(3, version);
             rs = pstmtCheck.executeQuery();
             while (rs.next()) {
                 activePurposes.addAll(extractPurposeIdsFromContent(rs.getString("policy_content")));
@@ -809,10 +812,10 @@ public class Policy implements Action {
             Set<String> collisions = new HashSet<>(targetPurposes);
             collisions.retainAll(activePurposes);
             if (!collisions.isEmpty()) {
-                throw new SQLException("Publication Conflict: The following Purpose IDs are already defined in other active policies for this fiduciary: " + collisions + ". Please archive conflicting policies first.");
+                throw new SQLException("Publication Conflict: The following Purpose IDs are already defined in other active policies for this fiduciary: " + collisions + ". Archive or revise the conflicting policy first.");
             }
 
-            // 4. Update target to UNDER_REVIEW — DPO activates via ROPA approval
+            // 4. Update target to UNDER_REVIEW - DPO activates via ROPA approval
             String activateSql = "UPDATE consent_policies SET status = 'UNDER_REVIEW', last_updated_at = NOW() WHERE id = ? AND version = ?";
             pstmtActivate = conn.prepareStatement(activateSql);
             pstmtActivate.setString(1, policyId);

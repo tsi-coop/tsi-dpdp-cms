@@ -56,7 +56,7 @@ public class JacksonUtil {
             for (Object item : (List<?>) value) arr.add(toValue(item));
             return arr;
         }
-        return value; // String, Long, Double, Boolean, null — all native types
+        return value; // String, Long, Double, Boolean, null - all native types
     }
 
     /** Serializes any object to a JSON string using Jackson. Falls back to "{}" on error. */

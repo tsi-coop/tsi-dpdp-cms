@@ -16,8 +16,8 @@ import java.io.IOException;
  * the only login check was client-side JS reading localStorage after the full page
  * had already been delivered (CWE-602 / CWE-306). This filter runs before the
  * default servlet dispatches the file and requires a valid, non-revoked operator
- * JWT — issued at login and carried in an HttpOnly session cookie so plain browser
- * navigation (not just XHR/fetch) can present it — or the page is never served.
+ * JWT - issued at login and carried in an HttpOnly session cookie so plain browser
+ * navigation (not just XHR/fetch) can present it - or the page is never served.
  *
  * This does not change how the API itself authenticates: /api/v1/admin/* and
  * /api/v1/client/* calls continue to be validated independently by

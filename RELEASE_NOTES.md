@@ -2,7 +2,7 @@
 
 ### v0.6 (in development)
 
-**Upgrading.** Back up first (`./backup/backup.sh`), then apply `db/18` to `db/27` in order (each is safe to run again; see the
+**Upgrading.** Back up first (`./backup/backup.sh`), then apply `db/18` to `db/28` in order (each is safe to run again; see the
 [Production Deployment Guide](docs/guides/production-deployment-guide.md#upgrading-to-v06)). Read "What you will notice on day one"
 below before you deploy.
 
@@ -31,10 +31,10 @@ below before you deploy.
 - **Grievances:** channel, reference number (`GRV-year-nnnnnn`), link to a consent record, principal feedback and validated attachments.
 - **Access and correction requests (DPDP s.11, s.12):** new Rights Requests screen for the DPO and a My Rights section in the portal, with assignment, outcome notes and optional deadlines. The CMS tracks the request and holds no personal data values. [Details](docs/security/rights-requests.md)
 - **Nominations (s.14):** principals can nominate a person; stored encrypted, masked for the DPO, no access granted. [Details](docs/security/nominations-and-purpose-lifecycle.md)
-- **Purpose lifecycle:** the DPO can close a purpose (consents are withdrawn or de-identified, new grants refused) and reopen it. The portal shows the consequences of a withdrawal before it is made.
+- **Purpose lifecycle:** the DPO can close a purpose (consents are withdrawn, new grants refused) and reopen it, from the ROPA page. After closing, **Revise policy** previews the policy without the purpose and drafts it as the next version. Publishing a new version no longer conflicts with the active one: when its RoPA entries are approved it goes live and the old version is archived. The portal shows the consequences of a withdrawal before it is made.
 - **Erasure reminder:** the reminder to the principal before a retention-driven erasure now also covers erasure driven by the RoPA retention period (it used to cover only a consent's own expiry), using the same due date as the erasure itself.
 - **Legal holds:** time-bound, with a written reason; purges for the principal are deferred and resume automatically when the hold ends. [Details](docs/security/erasure-retention-breach.md)
-- **Purge evidence:** the Compliance screen shows who confirmed a purge and when, the record count the processor claims (not verified), an "Overdue" tag when a deadline is set, and whether the processor should erase or de-identify.
+- **Purge evidence:** the Compliance screen shows who confirmed a purge and when, the record count the processor claims (not verified), an "Overdue" tag when a deadline is set, and the purge's `action`.
 - **Breach report:** the PDF can now be downloaded while a breach is still open (marked as an interim report), since the Board's detailed report is due within 72 hours.
 - **Breach intimation to the Board:** the Board deadline is tracked from the moment a breach is reported, the DPO records when the Board was informed and its reference, and the DPO is alerted once when it is near and once when it is missed. The dashboard shows both clocks.
 - **Evaluation portal:** the Rights portal now says it is for implementers to evaluate the consent lifecycle, not for data principals, and its login accepts any principal ID in every OTP mode.
