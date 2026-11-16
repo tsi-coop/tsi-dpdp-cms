@@ -1,6 +1,6 @@
 # Release Notes
 
-### v0.6 (in development)
+### v0.6
 
 **Upgrading.** Back up first (`./backup/backup.sh`), then apply `db/18` to `db/28` in order (each is safe to run again; see the
 [Production Deployment Guide](docs/guides/production-deployment-guide.md#upgrading-to-v06)). Read "What you will notice on day one"

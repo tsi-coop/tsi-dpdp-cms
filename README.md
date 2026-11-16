@@ -11,9 +11,8 @@ See Section 1.2 (Configure Consent Manager) of the System Design document, linke
 
 ## What's New
 
+- **[v0.6](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6) (latest release):** operator MFA, roles and tenant isolation, a tamper-evident audit ledger, consent capture evidence, access/correction requests and nominations, purpose lifecycle, legal holds and Board breach intimation, and guidance on opaque principal IDs. See [what's new and how to upgrade](RELEASE_NOTES.md), and the full version history there.
 - **Python port:** [Intelehealth](https://intelehealth.org/), a tech nonprofit delivering quality healthcare where there is no doctor, now maintains a Python (FastAPI) port of TSI DPDP CMS for organisations that prefer a leaner Python stack. [Read more](#partners--community-ports)
-- **v0.6 (in development):** operator MFA, roles and tenant isolation, a tamper-evident audit ledger, consent capture evidence, access/correction requests and nominations, purpose lifecycle, legal holds and Board breach intimation, and guidance on opaque principal IDs. See [what's new and how to upgrade](RELEASE_NOTES.md).
-- **Latest release:** [v0.5.4](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.4). See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 
 ## Introduction
 
@@ -145,7 +144,7 @@ The TSI DPDP CMS lets administrators export system-generated configurations, aud
 
 ## Release Notes
 
-Check out [v0.5.4 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.5.4). The v0.6 changes are described under "v0.6 (in development)" in [RELEASE_NOTES.md](RELEASE_NOTES.md).
+Check out [v0.6 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6). The v0.6 changes are described under "v0.6" in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 
