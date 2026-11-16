@@ -11,7 +11,7 @@ See Section 1 (Introduction and positioning) of the System Design document, link
 
 > [!NOTE]
 > This is a tool for technology teams. It is not suitable for business teams to use directly. Deploying it, wiring it into
-> applications (consent capture, `validate_consent`, purge handling, webhooks), setting secrets and TLS, and
+> applications (consent capture, validate consent, purge handling, webhooks), setting secrets and TLS, and
 > compiling a policy and RoPA all need engineers. The consoles are for the DPO and operators after technical teams
 > have integrated and configured it. The bundled rights portal is an evaluation aid for implementers, not a product for data
 > principals. Business and legal teams should expect to work through their technology team or an integrator.
