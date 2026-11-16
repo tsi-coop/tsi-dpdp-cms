@@ -13,7 +13,7 @@ TSI DPDP CMS serves two categories of adopters:
 > have integrated and configured it. The bundled rights portal is an evaluation aid for implementers, not a product for data
 > principals. Business and legal teams should expect to work through their technology team or an integrator.
 
-See Section 1.2 (Configure Consent Manager) of the System Design document, linked below, for details on both deployment modes.
+See Section 1 (Introduction and positioning) of the System Design document, linked below, for details on both deployment modes.
 
 ## What's New
 
