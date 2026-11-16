@@ -1,6 +1,6 @@
 # Access and correction requests (v0.6, part A of "Data Principal rights")
 
-Migration `db/23_rights_requests.sql`. New service `Rights` (`/api/v1/rights`). Design: `docs/plan/access-and-correction-requests.md`.
+Migration `db/23_rights_requests.sql`. New service `Rights` (`/api/v1/rights`).
 
 ## What it is
 

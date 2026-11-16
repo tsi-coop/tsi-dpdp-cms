@@ -84,5 +84,3 @@ purge under legal hold is not late.
 * **Access denials:** reported per person, not once per kind of denial.
 * **Old sessions:** tokens from the previous release are accepted for at most the new session lifetime, and not at all once MFA is enforced.
 * **Policy cache:** entries expire after 30 seconds (`POLICY_CACHE_TTL_SECONDS`), so a change made on another instance is seen quickly.
-* **Docs links:** `docs/plan/README.md`, `docs/plan/python-sdk.md` and `examples/integration/README.md` still link to the two plan files that were
-  deleted (`integrations-roadmap.md`, `google-tag-manager-template.md`); restore the files or remove the links.

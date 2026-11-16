@@ -9,7 +9,7 @@ Implementers should send **opaque principal IDs** (a customer number or UUID), n
 (see the [system integration guide](../guides/system-integration-guide.md#choosing-the-principal-id)), prefixed with the kind of principal (`c-1234`, `e-2345`) so IDs from different systems cannot collide, and with a prefix that reveals nothing sensitive. An opaque ID identifies nobody
 on its own, but it is still personal data because you can link it to a person. The CMS therefore relies on your **deployment** to
 protect it at rest and in transit. Principal IDs are stored as plain text in the database and in the audit log. The CMS does not
-encrypt them in the database columns; that is an optional hardening step (see `docs/plan/principal-data-protection-evaluation.md`).
+encrypt them in the database columns; that is an optional hardening step, listed in `docs/plan/gaps.md`.
 
 ## 2. Application secrets
 

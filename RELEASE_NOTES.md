@@ -56,7 +56,7 @@ below before you deploy.
 - `link_user` can no longer overwrite a stored MINOR with a declared ADULT.
 
 **Not in this release**
-- Re-consent when a policy changes, a retention-policy editor, custom role management, and erasure or pseudonymisation of the CMS's own consent and audit records (a legal decision). Principal IDs are not encrypted or hashed in the database; see the [evaluation](docs/plan/principal-data-protection-evaluation.md) for the opt-in hardening design.
+- Re-consent when a policy changes, a retention-policy editor, custom role management, and erasure or pseudonymisation of the CMS's own consent and audit records (a legal decision). Principal IDs are not encrypted or hashed in the database; see [gaps](docs/plan/gaps.md) for the opt-in hardening item.
 - Notification texts for the new alerts are English only.
 
 ---
