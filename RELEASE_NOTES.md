@@ -1,6 +1,10 @@
 # Release Notes
 
 ### v0.6.1
+**Upgrading.** No database migration needed.
+- **Docker:** `docker compose pull && docker compose up -d` (or pin `IMAGE_NAME=tsicoop/tsi-dpdp-cms:0.6.1` in `.env` first) pulls the patched image and recreates the container.
+- **Binary installs:** rebuild from the `v0.6.1` tag (`mvn package`), add `JAVA_TOOL_OPTIONS=-XX:-UseBASE64Intrinsics` to your `.env`, then restart via `server/serve.sh` (it exports everything in `.env`, including this, to the JVM).
+
 **Security**
 - Mitigated **CVE-2026-114938** ("Java4Shell"), a heap out-of-bounds write in
   OpenJDK's AVX-512-accelerated Base64 decoder intrinsic. The project's
