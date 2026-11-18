@@ -18,7 +18,8 @@ See Section 1 (Introduction and positioning) of the System Design document, link
 
 ## What's New
 
-- **[v0.6.1](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6.1) (latest release):** security patch - mitigates CVE-2026-114938 ("Java4Shell"), a heap out-of-bounds write in the bundled JDK's AVX-512-accelerated Base64 decoder intrinsic. v0.6 added operator MFA, roles and tenant isolation, a tamper-evident audit ledger, consent capture evidence, access/correction requests and nominations, purpose lifecycle, legal holds and Board breach intimation, and guidance on opaque principal IDs. See [what's new and how to upgrade](RELEASE_NOTES.md), and the full version history there.
+- **[v0.6.1](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6.1) (latest release):** security patch - mitigates CVE-2026-114938 ("Java4Shell"), a heap out-of-bounds write in the bundled JDK's AVX-512-accelerated Base64 decoder intrinsic.
+- **[v0.6](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6):** operator MFA, roles and tenant isolation, a tamper-evident audit ledger, consent capture evidence, access/correction requests and nominations, purpose lifecycle, legal holds and Board breach intimation, and guidance on opaque principal IDs. See [what's new and how to upgrade](RELEASE_NOTES.md), and the full version history there.
 - **Python port:** [Intelehealth](https://intelehealth.org/), a tech nonprofit delivering quality healthcare where there is no doctor, now maintains a Python (FastAPI) port of TSI DPDP CMS for organisations that prefer a leaner Python stack. [Read more](#partners--community-ports)
 
 ## Introduction
