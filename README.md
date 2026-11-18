@@ -18,7 +18,7 @@ See Section 1 (Introduction and positioning) of the System Design document, link
 
 ## What's New
 
-- **[v0.6](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6) (latest release):** operator MFA, roles and tenant isolation, a tamper-evident audit ledger, consent capture evidence, access/correction requests and nominations, purpose lifecycle, legal holds and Board breach intimation, and guidance on opaque principal IDs. See [what's new and how to upgrade](RELEASE_NOTES.md), and the full version history there.
+- **[v0.6.1](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6.1) (latest release):** security patch - mitigates CVE-2026-114938 ("Java4Shell"), a heap out-of-bounds write in the bundled JDK's AVX-512-accelerated Base64 decoder intrinsic. v0.6 added operator MFA, roles and tenant isolation, a tamper-evident audit ledger, consent capture evidence, access/correction requests and nominations, purpose lifecycle, legal holds and Board breach intimation, and guidance on opaque principal IDs. See [what's new and how to upgrade](RELEASE_NOTES.md), and the full version history there.
 - **Python port:** [Intelehealth](https://intelehealth.org/), a tech nonprofit delivering quality healthcare where there is no doctor, now maintains a Python (FastAPI) port of TSI DPDP CMS for organisations that prefer a leaner Python stack. [Read more](#partners--community-ports)
 
 ## Introduction
@@ -139,7 +139,7 @@ The TSI DPDP CMS lets administrators export system-generated configurations, aud
 * **Regulatory Compliance:** Built in accordance with India's Digital Personal Data Protection (DPDP) Act, 2023, with signed, immutable audit and compliance log entries and verifiable consent withdrawal and erasure workflows.
 * **Principal IDs:** send opaque IDs (a customer number or UUID), not email addresses or phone numbers, as the principal ID. The CMS stores IDs as plain text in its database and audit log, so the deployment must encrypt the disk and backups and use TLS. See [Key management](docs/security/KEY_MANAGEMENT.md).
 * **Rights portal:** the portal in `web/rights` is an evaluation tool for implementers. Real data principals use your own application, which calls the CMS API.
-* **Security Patching:** This repository actively patches and mitigates vulnerabilities. Standard deployments should use version 0.5.3 or later. Version 0.5.1 fixed missing server-side authentication on the admin and DPO console pages and on the first-run setup endpoint (CVE-2026-84840 / CVE-2026-84841); version 0.5.3 fixed the API dispatcher validating request payloads before authentication, which let unauthenticated callers enumerate parameter names (CVE-2026-108810, Low). See the [release notes](RELEASE_NOTES.md) for details and [`SECURITY.md`](SECURITY.md) for how to report vulnerabilities.
+* **Security Patching:** This repository actively patches and mitigates vulnerabilities. Standard deployments should use version 0.6.1 or later. Version 0.5.1 fixed missing server-side authentication on the admin and DPO console pages and on the first-run setup endpoint (CVE-2026-84840 / CVE-2026-84841); version 0.5.3 fixed the API dispatcher validating request payloads before authentication, which let unauthenticated callers enumerate parameter names (CVE-2026-108810, Low); version 0.6.1 mitigated a heap out-of-bounds write in the bundled JDK's Base64 decoder intrinsic (CVE-2026-114938, "Java4Shell") by disabling the vulnerable intrinsic via a JVM flag, pending an upstream JDK fix. See the [release notes](RELEASE_NOTES.md) for details and [`SECURITY.md`](SECURITY.md) for how to report vulnerabilities.
 * **Community Conduct:** Participation in the project is governed by the [Code of Conduct](CODE_OF_CONDUCT.md), which sets expected behavior and explains how to report harassment or abuse.
 
 ## Testing
@@ -151,7 +151,7 @@ The TSI DPDP CMS lets administrators export system-generated configurations, aud
 
 ## Release Notes
 
-Check out [v0.6 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6). The v0.6 changes are described under "v0.6" in [RELEASE_NOTES.md](RELEASE_NOTES.md).
+Check out [v0.6.1 release](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6.1). The v0.6.1 changes are described under "v0.6.1" in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full version history.
 

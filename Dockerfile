@@ -9,6 +9,12 @@ ENV JETTY_BASE /var/lib/jetty
 ENV JETTY_HOME /usr/local/jetty
 ENV JETTY_RUN /tmp/jetty
 
+# Mitigation for CVE-2026-114938 ("Java4Shell"): heap out-of-bounds write in the
+# AVX-512-accelerated Base64 decoder intrinsic in OpenJDK 17.0.6-17.0.21/21.x/25.x.
+# Forces the plain-Java Base64 fallback until the base image ships a patched JDK build.
+# Revisit/remove once jetty base image is upgraded past the affected JDK range.
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
+
 RUN java -jar "$JETTY_HOME/start.jar" --add-modules=http,jdbc,jndi,ee10-deploy
 
 # Switch to the 'jetty' user

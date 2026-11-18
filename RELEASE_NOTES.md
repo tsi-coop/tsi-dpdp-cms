@@ -1,5 +1,18 @@
 # Release Notes
 
+### v0.6.1
+**Security**
+- Mitigated **CVE-2026-114938** ("Java4Shell"), a heap out-of-bounds write in
+  OpenJDK's AVX-512-accelerated Base64 decoder intrinsic. The project's
+  Docker base image (`jetty:jdk17`) resolves to Temurin 17.0.21, within the
+  publicly reported affected range (17.0.6-17.0.21). `Dockerfile` now sets
+  `JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"`, forcing the plain-Java
+  Base64 fallback regardless of host CPU. This is a runtime mitigation
+  pending an upstream JDK patch, not a code change in this application; see
+  [docs/security-fixes/5.md](docs/security-fixes/5.md).
+
+---
+
 ### v0.6
 
 **Upgrading.** Back up first (`./backup/backup.sh`), then apply `db/18` to `db/28` in order (each is safe to run again; see the
