@@ -38,6 +38,8 @@ See Section 1 (Introduction and positioning) of the System Design document, link
 
 [Standardized Erasure Interface for DPDP Consent Managers](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
 
+[Visualising DPDP Consent Manager Interoperability](https://techadvisory.substack.com/p/visualizing-dpdp-consent-manager?r=1if4r7)
+
 ## Installation
 
 1.  **Clone the repository to a separate folder**
