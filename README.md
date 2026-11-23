@@ -2,45 +2,37 @@
 
 An open-source consent management system compliant with India's DPDP Act, 2023.
 
-TSI DPDP CMS serves two categories of adopters:
+## Who It Is For
+
+TSI DPDP CMS serves two categories of adopters. Both deployment modes are described in Section 1 (Introduction and positioning) of the [System Design document](https://github.com/tsi-coop/tsi-dpdp-cms/blob/main/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf).
 
 - **Data Fiduciaries**, who can self-host the solution to manage consents of their data principals
 - **Platform Providers**, who can deploy the solution in multi-tenant (aggregator) mode to offer consent management as a service to one or more data fiduciaries, each as an isolated tenant
 
-**Terminology.** In this project, *CMS* means this consent management platform. A *Consent Manager* in the sense of the DPDP Act and Rules is a separate, registered intermediary that acts for the Data Principal. Running this software, in single or aggregator mode, does not by itself make an organisation a registered Consent Manager.
+## Before You Start
 
-See Section 1 (Introduction and positioning) of the System Design document, linked below, for details on both deployment modes.
-
-> [!NOTE]
-> This is a tool for technology teams. It is not suitable for business teams to use directly. Deploying it, wiring it into
-> applications (consent capture, validate consent, purge handling, webhooks), setting secrets and TLS, and
-> compiling a policy and RoPA all need engineers. The consoles are for the DPO and operators after technical teams
-> have integrated and configured it. The bundled rights portal is an evaluation aid for implementers, not a product for data
-> principals. Business and legal teams should expect to work through their technology team or an integrator.
+- **Built for technology teams.** Deploying it, wiring it into applications (consent capture, consent validation, purge handling, webhooks), setting secrets and TLS, and compiling a policy and RoPA all need engineers. The consoles are for the DPO and operators after technical teams have integrated and configured it. Business and legal teams should expect to work through their technology team or an integrator.
+- **Rights portal is an evaluation aid.** The bundled portal is for implementers to evaluate, not a product for data principals.
+- **CMS is not a registered Consent Manager.** Here, *CMS* means this consent management platform. A *Consent Manager* under the DPDP Act and Rules is a separate, registered intermediary that acts for the Data Principal. Running this software, in single or aggregator mode, does not by itself make an organisation one.
 
 ## What's New
 
-- **[v0.6.1](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6.1) (latest release):** security patch - mitigates CVE-2026-114938 ("Java4Shell"), a heap out-of-bounds write in the bundled JDK's AVX-512-accelerated Base64 decoder intrinsic.
+- **[v0.6.1](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6.1) (latest release):** security patch for CVE-2026-114938 ("Java4Shell"), a Java vulnerability in Base64 decoding.
 - **[v0.6](https://github.com/tsi-coop/tsi-dpdp-cms/releases/tag/v0.6):** operator MFA, roles and tenant isolation, a tamper-evident audit ledger, consent capture evidence, access/correction requests and nominations, purpose lifecycle, legal holds and Board breach intimation, and guidance on opaque principal IDs. See [what's new and how to upgrade](RELEASE_NOTES.md), and the full version history there.
 - **Python port:** [Intelehealth](https://intelehealth.org/), a tech nonprofit delivering quality healthcare where there is no doctor, now maintains a Python (FastAPI) port of TSI DPDP CMS for organisations that prefer a leaner Python stack. [Read more](#partners--community-ports)
 
-## Introduction
+## Learn More
 
-[Launch Note](https://techadvisory.substack.com/p/tsi-dpdp-cms-an-open-source-consent)
+- [Launch Note](https://techadvisory.substack.com/p/tsi-dpdp-cms-an-open-source-consent)
+- [The Big Picture - Video](https://youtu.be/caQFjwrZj9w)
+- [System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/main/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf)
+- [Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
 
-[The Big Picture - Video](https://youtu.be/caQFjwrZj9w)
+**Future forward proposals**
 
-[System Design](https://github.com/tsi-coop/tsi-dpdp-cms/blob/main/docs/design/TSI%20DPDP%20Consent%20Management%20System%20-%20System%20Design5.pdf)
-
-[Managing the Data Lifecycle](https://techadvisory.substack.com/p/managing-the-data-lifecycle-a-first)
-
-### Future Forward Proposals
-
-[Solving Consent Fatigue via Portable Consent Artefacts (PCA)](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
-
-[Standardized Erasure Interface for DPDP Consent Management Systems](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
-
-[Visualising DPDP Consent Manager Interoperability](https://techadvisory.substack.com/p/visualizing-dpdp-consent-manager?r=1if4r7)
+- [Solving Consent Fatigue via Portable Consent Artefacts (PCA)](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
+- [Standardized Erasure Interface for DPDP Consent Management Systems](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
+- [Visualising DPDP Consent Manager Interoperability](https://techadvisory.substack.com/p/visualizing-dpdp-consent-manager?r=1if4r7)
 
 ## Installation
 
