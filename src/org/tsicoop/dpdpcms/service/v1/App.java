@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.regex.Pattern; // For domain validation, if needed
 
 /**
- * App class for managing interfacing with Consent Manager.
+ * App class for managing Apps (processors and other integrations) that interface with the CMS.
  * All operations are exposed via the POST method, using a '_func' attribute
  * in the JSON request body to specify the desired operation.
  *

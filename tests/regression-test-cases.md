@@ -202,7 +202,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 ### TC-ADM-17: `BRAND_NAME` rebrands console, rights portal, tour, report footers
 **Type:** UI · **Priority:** Medium
 **Steps:** Set `BRAND_NAME` (≤12 chars) at deploy time; load each surface.
-**Expected Result:** Brand name replaced consistently everywhere - login, console, rights portal, tour - and in generated artifacts (the breach report PDF footer and the certificate's `software` metadata show the brand, never "TSI DPDP CMS"); layouts (sidebar, title bar, report footer) don't overflow.
+**Expected Result:** Brand name replaced consistently everywhere - login, console, rights portal, tour - and in generated artefacts (the breach report PDF footer and the certificate's `software` metadata show the brand, never "TSI DPDP CMS"); layouts (sidebar, title bar, report footer) don't overflow.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - BRAND_NAME='Acme Consent': none of the 7 pages (login, rights portal, tour, console) contain 'TSI DPDP CMS' and all carry the brand; breach PDF footer reads 'Acme Consent v0.5.4'; certificate metadata software='Acme Consent'; startup log 'Acme Consent v0.5.4 Service started in local environment'
 
 ### TC-ADM-18: `BRAND_NAME` over 12 characters fails fast at startup
@@ -253,7 +253,7 @@ exhaustive combinatorial suite - add edge cases as they matter.
 **Steps:**
 1. Publish a DRAFT policy. Confirm it lands in `UNDER_REVIEW`, not `ACTIVE` - by design, this is a deliberate gate, not a bug: a policy cannot go live until it's been reviewed.
 2. Complete RoPA review/approval for every RoPA entry linked to that `policy_id`.
-**Expected Result:** After step 1, the policy is `UNDER_REVIEW` and does **not** yet appear via `get_active_policy`/`list_active_policies`. Only after step 2 (every linked RoPA entry reaches `active`/`retired`) does it flip to `ACTIVE` and become visible. (Confirmed as intentional product behavior, not an API-only artifact - `Policy.publishPolicyInDb` sets `UNDER_REVIEW`; `Ropa.activatePolicyIfComplete` is the actual activation trigger.)
+**Expected Result:** After step 1, the policy is `UNDER_REVIEW` and does **not** yet appear via `get_active_policy`/`list_active_policies`. Only after step 2 (every linked RoPA entry reaches `active`/`retired`) does it flip to `ACTIVE` and become visible. (Confirmed as intentional product behavior, not an API-only artefact - `Policy.publishPolicyInDb` sets `UNDER_REVIEW`; `Ropa.activatePolicyIfComplete` is the actual activation trigger.)
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - publish -> UNDER_REVIEW (not listed); after ROPA approval -> ACTIVE
 
 ### TC-DPO-04: Cannot have two ACTIVE versions of the same policy simultaneously
@@ -501,9 +501,9 @@ exhaustive combinatorial suite - add edge cases as they matter.
 **Expected Result:** Appears in principal's own list; also appears in DPO queue (TC-DPO-09).
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - grievance submitted from the portal; it appears in the principal's own list and in the DPO queue (status NEW)
 
-### TC-RTS-10: Download / QR the Portable Consent Artifact (PCA)
+### TC-RTS-10: Download / QR the Portable Consent Artefact (PCA)
 **Type:** UI · **Priority:** Medium
-**Steps:** Toggle PCA QR popover; download the JSON artifact.
+**Steps:** Toggle PCA QR popover; download the JSON artefact.
 **Expected Result:** QR renders; downloaded JSON contains `sync_token`, `policy_ref`, `consents`.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - PCA QR rendered; downloaded JSON has keys v,uid,fid,sync_url,sync_token,consents,policy_id,policy_version,policy_ref,generated_at
 
@@ -832,9 +832,9 @@ Full contract: [Webhook Integration Guide](../docs/guides/webhook-integration-gu
 **Expected Result:** No match. Production key management runs only through `DB_ENCRYPTION_KEY`.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - no software.amazon.awssdk in pom.xml
 
-### TC-XCUT-08: Multi-tenant / Aggregator (Consent Manager) mode
+### TC-XCUT-08: Multi-tenant / aggregator mode
 **Type:** UI · **Priority:** High
-**Steps:** Configure the system in Consent Manager mode per the System Design doc §1.2; onboard two distinct Fiduciaries under it.
+**Steps:** Configure the system in aggregator (multi-tenant) mode per the System Design doc §1.2; onboard two distinct Fiduciaries under it.
 **Expected Result:** Each Fiduciary's data (policies, consents, apps) stays isolated; console navigation correctly scopes an operator to their assigned Fiduciary/Fiduciaries.
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - Beta's DPO is refused Alpha's principals/grievances/ROPA/breaches/certificates (403,403,403,403,403) and sees only its own (empty) data | Beta's DPO console shows none of Alpha's policies (" f2pol 1.0 IN ACTIVE 10/27/2026 View ROP"), principals or breaches
 
@@ -876,10 +876,10 @@ Full contract: [Webhook Integration Guide](../docs/guides/webhook-integration-gu
 **Expected Result:** (a) and (b) log a `[WARNING]` to stderr saying it is running non-production (DUMMY_OTP allowed, transient-key certificates) and how to fix it; (c) and (d) log none. The startup line also shows the version (`TSI DPDP CMS v<version> Service started in <env> environment`).
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - unset -> '[WARNING] ... not set' (non-production behaviour spelled out); 'prod' -> 'not a recognised value'; production and local -> no warning; startup line shows the version
 
-### TC-XCUT-15: The version comes from `pom.xml` and appears on every artifact
+### TC-XCUT-15: The version comes from `pom.xml` and appears on every artefact
 **Type:** API · **Priority:** High
 **Steps:** Build the WAR and run it. Compare the `<version>` in `pom.xml` with: `WEB-INF/classes/version.properties` in the WAR, the startup log line, a generated evidence certificate's `system_metadata.software_version`, the footer of a breach report PDF, and the `X-TSI-Generated-By` header on a ROPA / job CSV download.
-**Expected Result:** All show the same version. Nothing hardcodes a version elsewhere. With `BRAND_NAME` set, the artifacts show the brand name with that version (see TC-ADM-17).
+**Expected Result:** All show the same version. Nothing hardcodes a version elsewhere. With `BRAND_NAME` set, the artefacts show the brand name with that version (see TC-ADM-17).
 **Last Verified:** v0.5.4 · 2026-10-27 · pass - single source pom.xml=0.5.4 -> WAR version.properties, startup log, certificate system_metadata.software_version=0.5.4, breach PDF footer, export header all agree | export download header: [('X-TSI-Generated-By', 'TSI DPDP CMS v0.5.4')]
 
 ---

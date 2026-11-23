@@ -190,7 +190,7 @@ public class Job implements Action {
             java.util.regex.Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
 
     /**
-     * Streams a completed CSV artifact to the client.
+     * Streams a completed CSV artefact to the client.
      */
     private void handleDownloadFile(HttpServletRequest req, HttpServletResponse res) throws IOException, SQLException {
         if (req.getAttribute(InputProcessor.AUTH_TOKEN) == null) {

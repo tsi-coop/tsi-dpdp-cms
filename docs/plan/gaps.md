@@ -47,7 +47,7 @@ Shipped in v0.6 and not listed: audit ledger, MFA, roles, tenant binding, consen
 | Custom role management | Four built-in roles; permissions are editable in the roles table. |
 | SSO (OIDC), email-OTP second factor | SSO via integrators. TOTP is built and replaces email OTP. |
 | DigiLocker / API Setu, verified guardian identity | Roadmap. The guardian flow records a reference only. |
-| Interoperable portable consent artifact standard | Concept and demo wallet; standardisation is a proposal. |
+| Interoperable portable consent artefact standard | Concept and demo wallet; standardisation is a proposal. |
 | Console accessibility (WCAG-AA) | Done for the rights portal; console still open. |
 | SDKs (Python first), packaged banner, GTM template, restricted public site key | Planned. A reference website integration ships in `examples/`. |
 | PostgreSQL 17 / OpenJDK 21 images; scale beyond shared-database instances | Proposed. |

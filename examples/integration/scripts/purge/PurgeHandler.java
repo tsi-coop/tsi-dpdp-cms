@@ -22,7 +22,7 @@ import java.util.Map;
  * tool: it polls for purge requests targeted at your App (status PURGE_INITIATED),
  * prints each one, and interactively asks the operator whether the underlying data has
  * actually been purged in your own system -- then writes that answer straight back into
- * the consent manager via update_purge_status.
+ * the CMS via update_purge_status.
  *
  * No in-memory "already seen" tracking is needed (unlike NotificationListener's seenIds):
  * a purge request's own status column is the source of truth. The moment this tool marks

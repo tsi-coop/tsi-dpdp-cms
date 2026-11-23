@@ -123,7 +123,7 @@
                 PCA QR
             </button>
             <div id="pca-popover" style="display:none;flex-direction:column;align-items:center;gap:6px;position:absolute;right:0;top:calc(100% + 8px);z-index:50;background:white;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);padding:12px;">
-                <div id="qrcode-container" role="img" aria-label="QR code encoding your Portable Consent Artifact" style="padding:6px;background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);"></div>
+                <div id="qrcode-container" role="img" aria-label="QR code encoding your Portable Consent Artefact" style="padding:6px;background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);"></div>
                 <button onclick="downloadPCA()" style="background:none;border:none;font-size:0.65rem;font-weight:800;color:var(--tsi-primary);text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;white-space:nowrap;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Download PCA
@@ -1176,7 +1176,7 @@
         }
     }
 
-    // ── Privacy Consent Artifact (PCA) & QR ────────────────────────────
+    // ── Privacy Consent Artefact (PCA) & QR ────────────────────────────
     function generatePCAArtifact() {
         const latest = historyCache.length > 0 ? historyCache[0] : null;
         const slimConsents = latest

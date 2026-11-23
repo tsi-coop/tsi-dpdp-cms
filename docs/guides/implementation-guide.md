@@ -63,7 +63,7 @@ Check all data types this application collects, processes, or stores. For every 
 | Contact Tokens (Mobile, Email, Secondary Numbers) | | |
 | Financial / Transaction (Bank Account No, IFSC, Credit Score, Income) | | |
 | Location Markers (Live GPS, IP Address) | | |
-| Device Artifacts (IMEI, Device ID, OS Version) | | |
+| Device Artefacts (IMEI, Device ID, OS Version) | | |
 
 **Part 3: Purpose Mapping & Legal Grounding**
 

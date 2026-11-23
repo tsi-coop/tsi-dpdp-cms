@@ -17,7 +17,7 @@ import java.time.Instant;
 
 /**
  * Wallet handles lifecycle commands originating from the user's Portable Wallet.
- * Maintains provenance by recording new consent artifacts for every action.
+ * Maintains provenance by recording new consent artefacts for every action.
  * Background purging (CES) is triggered by the state transitions in consent_records.
  */
 public class Wallet implements Action {

@@ -5,7 +5,9 @@ An open-source consent management system compliant with India's DPDP Act, 2023.
 TSI DPDP CMS serves two categories of adopters:
 
 - **Data Fiduciaries**, who can self-host the solution to manage consents of their data principals
-- **Consent Managers**, who can deploy the solution in multi-tenant mode to manage consent on behalf of one or more data fiduciaries
+- **Platform providers**, who can deploy the solution in multi-tenant (aggregator) mode to offer consent management as a service to one or more data fiduciaries, each as an isolated tenant
+
+**Terminology.** In this project, *CMS* means this consent management platform. A *Consent Manager* in the sense of the DPDP Act and Rules is a separate, registered intermediary that acts for the Data Principal. Running this software, in single or aggregator mode, does not by itself make an organisation a registered Consent Manager. This is not legal advice.
 
 See Section 1 (Introduction and positioning) of the System Design document, linked below, for details on both deployment modes.
 
@@ -34,9 +36,9 @@ See Section 1 (Introduction and positioning) of the System Design document, link
 
 ### Future Forward Proposals
 
-[Solving Consent Fatigue via Portable Consent Artifacts (PCA)](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
+[Solving Consent Fatigue via Portable Consent Artefacts (PCA)](https://techadvisory.substack.com/p/dpdpa-solving-consent-fatigue-via)
 
-[Standardized Erasure Interface for DPDP Consent Managers](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
+[Standardized Erasure Interface for DPDP Consent Management Systems](https://techadvisory.substack.com/p/the-need-for-standardized-erasure)
 
 [Visualising DPDP Consent Manager Interoperability](https://techadvisory.substack.com/p/visualizing-dpdp-consent-manager?r=1if4r7)
 
@@ -77,7 +79,7 @@ Follow the Guided Journey:
 
 3. ROPA Definition and Policy Creation: Define Records of Processing Activities for every data processing purpose, validate DPO accountability fields, and generate compliance reports. [Watch Video](https://youtu.be/O_yhxu2o4Mc)
 
-4. User Rights Management: Notice & capture, purpose-limited verification, and exercise of rights: view artifacts, withdraw, and grievances. [Watch Video](https://youtu.be/nlthzXlBc1M)
+4. User Rights Management: Notice & capture, purpose-limited verification, and exercise of rights: view artefacts, withdraw, and grievances. [Watch Video](https://youtu.be/nlthzXlBc1M)
 
 5. Consent Verifier: Test real-time API validation used by Data Processors to ensure purpose-limited processing.
 

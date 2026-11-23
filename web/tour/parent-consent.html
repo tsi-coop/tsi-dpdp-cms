@@ -164,7 +164,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
             </div>
             <h2 class="text-2xl font-black text-slate-900 mb-2">Onboarding Complete</h2>
-            <p class="text-sm text-slate-500 mb-8">Identity linked and parental consent artifact recorded in the national registry.</p>
+            <p class="text-sm text-slate-500 mb-8">Identity linked and parental consent artefact recorded in the national registry.</p>
             <button onclick="window.location.href='index.html'" class="btn-primary">Back to Tour</button>
         </section>
     </div>
@@ -300,7 +300,7 @@
             const anonymousId = localStorage.getItem('tsi_dpdp_cms_anon_id') || `anon_${Date.now()}`;
             const timestamp = new Date().toISOString();
 
-            // 1. Record Parental Verification Artifact
+            // 1. Record Parental Verification Artefact
             const vpcRes = await fetch(API_BASE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-API-Key': X_API_KEY, 'X-API-Secret': X_API_SECRET },
@@ -360,7 +360,7 @@
 
         } catch (e) {
             console.error(e);
-            showModal("Sync Failure", "The registry could not verify the parental artifact. Please try again.");
+            showModal("Sync Failure", "The registry could not verify the parental artefact. Please try again.");
             btn.disabled = false;
             btn.textContent = "Retry Authorization";
         }

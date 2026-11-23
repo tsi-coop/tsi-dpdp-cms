@@ -23,14 +23,14 @@ public final class AppVersion {
 
     /**
      * The product name as this deployment presents it: the partner brand when BRAND_NAME is set
-     * (white-labelling), otherwise "TSI DPDP CMS". Artifacts use this, not a hardcoded name, so a
+     * (white-labelling), otherwise "TSI DPDP CMS". Artefacts use this, not a hardcoded name, so a
      * partner-branded deployment never shows the upstream product name in its reports.
      */
     public static String product() {
         return BrandConfig.name();
     }
 
-    /** Product name and version for stamping onto artifacts, e.g. "TSI DPDP CMS v0.5.4". */
+    /** Product name and version for stamping onto artefacts, e.g. "TSI DPDP CMS v0.5.4". */
     public static String display() {
         return product() + " v" + VERSION;
     }

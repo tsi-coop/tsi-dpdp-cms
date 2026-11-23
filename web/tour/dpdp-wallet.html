@@ -87,7 +87,7 @@
                 <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01"/><path d="M11 7h.01"/><path d="M15 7h.01"/><path d="M7 11h.01"/><path d="M11 11h.01"/><path d="M15 11h.01"/></svg>
                 </div>
-                <p class="text-xs text-slate-400 font-medium leading-relaxed uppercase tracking-tighter text-center">Your vault is empty.<br/>Sync an artifact to start.</p>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed uppercase tracking-tighter text-center">Your vault is empty.<br/>Sync an artefact to start.</p>
             </div>
         </section>
 
@@ -99,7 +99,7 @@
                     <div class="w-full h-1 bg-teal-500/30 animate-bounce"></div>
                 </div>
             </div>
-            <h3 class="text-xl font-black text-slate-800 mb-2 leading-tight">Sync Consent Artifact</h3>
+            <h3 class="text-xl font-black text-slate-800 mb-2 leading-tight">Sync Consent Artefact</h3>
             <p class="text-[11px] text-slate-500 leading-relaxed mb-10 px-4">Hold your device over the "Export to Wallet" QR code shown on your dashboard.</p>
             <button onclick="simulateScan()" class="btn-action bg-teal-700 text-white py-4 rounded-[24px] font-black w-full shadow-xl uppercase tracking-widest text-[11px]">Simulate QR Scan</button>
             <button onclick="switchView('vault')" class="mt-6 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:text-slate-600">Cancel</button>
@@ -398,7 +398,7 @@
             actionsArea.innerHTML = '';
 
             if (!f.policy_id) {
-                consentsList.innerHTML = `<div class="p-6 text-center text-[10px] text-red-500 font-black uppercase tracking-widest leading-relaxed">This artifact has no policy reference.<br/>Re-download or re-scan a fresh PCA from your dashboard.</div>`;
+                consentsList.innerHTML = `<div class="p-6 text-center text-[10px] text-red-500 font-black uppercase tracking-widest leading-relaxed">This artefact has no policy reference.<br/>Re-download or re-scan a fresh PCA from your dashboard.</div>`;
                 return;
             }
 

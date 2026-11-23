@@ -1,5 +1,5 @@
 /**
- * TSI DPDP Consent Manager
+ * TSI DPDP CMS consent widget
  * Version: 1.3 (Identity Consolidation Update)
  * Features: Robust JSON parsing, Tour Link interception, and Interactive Link User flow.
  */
@@ -326,7 +326,7 @@ function closePreferenceCenter() { preferenceCenterOverlay.style.display = 'none
 function displayCurrentPreferencesAsJson() {
     const stored = localStorage.getItem(CONSENT_LOCAL_STORAGE_KEY);
     const body = stored ? `<pre style="background:#f4f4f4; padding:10px; border-radius:4px; font-size:0.8em; overflow-x:auto;">${JSON.stringify(JSON.parse(stored), null, 2)}</pre>` : '<p>No consent record found yet. Please interact with the banner first.</p>';
-    displayCustomModal("Auditable Consent Artifact", body);
+    displayCustomModal("Auditable Consent Artefact", body);
 }
 
 // --- Initialization ---
@@ -338,7 +338,7 @@ async function initConsentManager() {
 
     currentPolicy = await fetchConsentPolicy();
     if (!currentPolicy) {
-        console.warn("Consent Manager: Waiting for valid policy connection...");
+        console.warn("CMS: Waiting for valid policy connection...");
         return;
     }
 

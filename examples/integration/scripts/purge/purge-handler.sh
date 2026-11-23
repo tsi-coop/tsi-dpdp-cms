@@ -2,7 +2,7 @@
 # Compiles and runs PurgeHandler.java, which polls /api/v1/client/compliance for
 # PURGE_INITIATED requests targeting the given App API key, and interactively asks
 # the operator whether each purge has actually been completed -- writing the answer
-# back into the consent manager via update_purge_status. No fiduciary/config needed
+# back into the CMS via update_purge_status. No fiduciary/config needed
 # beyond the API key/secret.
 #
 # Requires: javac/java (JDK 15+), and json-simple-1.1.1.jar on disk somewhere under

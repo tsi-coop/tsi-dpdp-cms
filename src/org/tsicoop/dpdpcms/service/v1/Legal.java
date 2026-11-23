@@ -59,7 +59,7 @@ public class Legal implements Action {
     /**
      * Populates the evidence_certificates table by validating a segment of the audit_logs.
      * Captures system metadata and signs the result with a transient mock key.
-     * Updated to dynamically fetch fiduciary_name for the artifact.
+     * Updated to dynamically fetch fiduciary_name for the artefact.
      */
     private void handleGenerateCertificate(JSONObject input, HttpServletRequest req, HttpServletResponse res) throws SQLException {
         String userId = (String) input.get("user_id");
