@@ -267,14 +267,13 @@
                 <tr class="table-header">
                     <th class="px-4 py-3 text-sm">Principal ID</th>
                     <th class="px-4 py-3 text-sm">Last Consent Mechanism</th>
-                    <th class="px-4 py-3 text-sm">Age Category</th>
-                    <th class="px-4 py-3 text-sm">Verification</th>
+                    <th class="px-4 py-3 text-sm">Guardian Verification</th>
                     <th class="px-4 py-3 text-sm">Onboarded</th>
                     <th class="px-4 py-3 text-sm">Actions</th>
                 </tr>
                 </thead>
                 <tbody id="recent-principals-body" class="bg-white divide-y divide-gray-200">
-                <tr><td colspan="6" class="p-4 text-center text-gray-500">Loading recent principals...</td></tr>
+                <tr><td colspan="5" class="p-4 text-center text-gray-500">Loading recent principals...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -432,8 +431,7 @@
         row.innerHTML = `
             <td class="px-4 py-3 text-sm font-mono text-gray-700">${esc(principal.user_id)}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${esc(principal.last_consent_mechanism || 'N/A')}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${esc(principal.age_category || 'N/A')}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${esc(principal.verification_status || 'N/A')}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${esc(principal.age_category === 'MINOR' ? (principal.verification_status || 'N/A') : 'N/A')}</td>
             <td class="px-4 py-3 text-sm text-gray-600">${esc(new Date(principal.created_at).toLocaleDateString())}</td>
             <td class="px-4 py-3 text-sm">
                 <button class="view-recent-principal-btn text-indigo-600 hover:text-indigo-900 font-bold text-sm">View</button>
@@ -506,10 +504,10 @@
             if (Array.isArray(principals) && principals.length > 0) {
                 principals.forEach(p => recentPrincipalsBody.appendChild(createRecentPrincipalRow(p)));
             } else {
-                recentPrincipalsBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No principals onboarded yet.</td></tr>`;
+                recentPrincipalsBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">No principals onboarded yet.</td></tr>`;
             }
         } catch (error) {
-            recentPrincipalsBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">Error loading recent principals.</td></tr>`;
+            recentPrincipalsBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600">Error loading recent principals.</td></tr>`;
         }
     }
 

@@ -8,14 +8,19 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.tsicoop.dpdpcms.util.BreachDeadline;
 import org.tsicoop.dpdpcms.util.Constants;
+import org.tsicoop.dpdpcms.util.ConsentPurposes;
 
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -192,8 +197,8 @@ public class AdminDash implements Action {
             // 1. # Active Policy
             metrics.put("active_policies", getCount(conn, pool, "SELECT COUNT(*) FROM consent_policies WHERE fiduciary_id = ? AND status = 'ACTIVE' AND created_at >= ?::timestamp AND created_at <= ?::timestamp", fiduciaryId, start, end));
 
-            // 2. # Consents
-            metrics.put("total_consents", getCount(conn, pool, "SELECT COUNT(*) FROM consent_records WHERE fiduciary_id = ? AND timestamp >= ?::timestamp AND timestamp <= ?::timestamp", fiduciaryId, start, end));
+            // 2. # Consent Purposes (distinct purposes declared across the fiduciary's active policies, not consent events)
+            metrics.put("consent_purposes", getActivePurposeCount(conn, pool, fiduciaryId));
 
             // 3. # Data Principals
             metrics.put("data_principals", getCount(conn, pool, "SELECT COUNT(*) FROM data_principal WHERE fiduciary_id = ? AND created_at >= ?::timestamp AND created_at <= ?::timestamp", fiduciaryId, start, end));
@@ -231,6 +236,35 @@ public class AdminDash implements Action {
             pstmt.setString(3, end + " 23:59:59");
             rs = pstmt.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;
+        } finally {
+            if (pool != null) pool.cleanup(rs, pstmt, null);
+        }
+    }
+
+    /**
+     * Counts distinct purpose IDs declared across the fiduciary's currently ACTIVE policies.
+     * This is a snapshot of what's live right now, not a period activity count, so it is
+     * deliberately NOT filtered by the dashboard's date range: a policy activated before the
+     * selected period is still in effect today, and its purposes must still be counted.
+     * Purpose IDs are unique per fiduciary across active policies (collisions are rejected at
+     * publish time, see Policy.checkPurposeCollisions), so a plain union cannot double-count.
+     */
+    private int getActivePurposeCount(Connection conn, PoolDB pool, UUID fiduciaryId) throws SQLException {
+        Set<String> purposeIds = new HashSet<>();
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            pstmt = conn.prepareStatement("SELECT policy_content FROM consent_policies WHERE fiduciary_id = ? AND status = 'ACTIVE'");
+            pstmt.setObject(1, fiduciaryId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                try {
+                    JSONObject content = (JSONObject) new JSONParser().parse(rs.getString("policy_content"));
+                    Set<String> declared = ConsentPurposes.declaredPurposes(content, null);
+                    if (declared != null) purposeIds.addAll(declared);
+                } catch (ParseException e) { /* unparseable policy_content: skip */ }
+            }
+            return purposeIds.size();
         } finally {
             if (pool != null) pool.cleanup(rs, pstmt, null);
         }

@@ -173,7 +173,7 @@
 
         <!-- Widget 2: Consents -->
         <div class="card p-4 border-t-4 border-blue-600 shadow-sm">
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest"># Consents</p>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest"># Consent Purposes</p>
             <p class="text-3xl font-black text-slate-800 mt-2" id="metric-consents">--</p>
         </div>
 
@@ -316,7 +316,7 @@
             if (data.success && data.metrics) {
                 const m = data.metrics;
                 document.getElementById('metric-active-policies').textContent = m.active_policies || 0;
-                document.getElementById('metric-consents').textContent = m.total_consents || 0;
+                document.getElementById('metric-consents').textContent = m.consent_purposes || 0;
                 document.getElementById('metric-principals').textContent = m.data_principals || 0;
 
                 // Consolidated Purge Card
